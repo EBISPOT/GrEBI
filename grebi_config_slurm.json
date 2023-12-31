@@ -1,4 +1,5 @@
 {
+    "output_dir": "/hps/nobackup/parkinso/spot/grebi/tmp",
     "use_slurm":true,
     "slurm_max_workers": 100,
     "slurm_max_memory": {

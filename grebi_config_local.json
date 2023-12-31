@@ -1,6 +1,6 @@
 {
-    "use_slurm":false,
     "output_dir": "./tmp",
+    "use_slurm":false,
     "datasources": [
         {
             "name": "UniProt",
