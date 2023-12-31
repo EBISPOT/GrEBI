@@ -1,0 +1,54 @@
+{
+    "use_slurm":false,
+    "output_dir": "./tmp",
+    "datasources": [
+        {
+            "name": "UniProt",
+            "enabled": false,
+            "ingest_files": ["/nfs/production/parkinso/spot/jmcl/up/**/*.rdf.xz"],
+            "ingest_script": "./target/release/grebi_ingest_rdf",
+            "ingest_args": [
+                { "name": "--rdf-type", "value": "rdf_triples_xml" }
+            ]
+        },
+        {
+            "name": "UberGraph",
+            "enabled": false,
+            "ingest_files": ["./ubergraph.nq.gz"],
+            "ingest_script": "./target/release/grebi_ingest_rdf",
+            "ingest_args": [
+                { "name": "--rdf-type", "value": "rdf_quads_nq" },
+                { "name": "--rdf-graph", "value": "http://reasoner.renci.org/redundant" }
+            ]
+        },
+        {
+            "name": "GWAS",
+            "enabled": true,
+            "ingest_files": ["./gwas-catalog-associations_ontology-annotated.tsv"],
+            "ingest_script": "./target/release/grebi_ingest_gwas",
+            "ingest_args": [
+            ]
+        },
+        {
+            "name": "Ontologies",
+            "enabled": true,
+            "ingest_files": [
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_mondo.owl",
+                "/data/ontologies/downloads/http___www.ebi.ac.uk_efo_efo.owl",
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_doid.owl",
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_chebi.owl",
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_pr.owl",
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_dron.owl",
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_hp.owl",
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_mp.owl",
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_cl.owl",
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_uberon.owl",
+                "/data/ontologies/downloads/http___purl.obolibrary.org_obo_ncbitaxon.owl"
+            ],
+            "ingest_script": "./target/release/grebi_ingest_rdf",
+            "ingest_args": [
+                { "name": "--rdf-type", "value": "rdf_triples_xml" }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "paths": {
+        "tmp":  "./testowls/",
+        "outputCsv": "/hps/nobackup/parkinso/spot/grebi/out.csv.gz",
+        "rdf2json": "./grebi_rdf2json/target/x86_64-unknown-linux-musl/release/grebi_rdf2json",
+        "merge": "./grebi_merge/target/x86_64-unknown-linux-musl/release/grebi_merge"
+    },
+    "datasources": [
+        {
+            "name": "EFO",
+            "type": "rdf",
+            "glob": "./testowls/efo.owl"
+        },
+        {
+            "name": "MONDO",
+            "type": "rdf",
+            "glob": "./testowls/mondo.owl"
+        }
+    ]
+}

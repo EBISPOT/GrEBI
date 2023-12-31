@@ -1,0 +1,10 @@
+[package]
+name = "grebi_rocks2neo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+grebi_shared = { path = "../../grebi_shared" }
+flate2 = {version="1.0.28", features=["zlib-ng"]}
+rocksdb = "0.21.0"

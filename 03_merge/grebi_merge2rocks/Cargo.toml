@@ -1,0 +1,15 @@
+[package]
+name = "grebi_merge2rocks"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+flate2 = {version="1.0.28", features=["zlib-ng"]}
+jemallocator = "0.5.4"
+serde_json = { version = "1.0.108", features=["preserve_order"] }
+grebi_shared = { path = "../../grebi_shared" }
+rocksdb = "0.21.0"
+
+
+

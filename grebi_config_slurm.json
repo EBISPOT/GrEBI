@@ -1,0 +1,33 @@
+{
+    "use_slurm":true,
+    "slurm_max_workers": 100,
+    "slurm_max_memory": {
+        "ingest": "150G",
+        "build_equiv_db": "64G",
+        "expand_subjects": "64G",
+        "merge": "16G"
+    },
+    "slurm_max_time": {
+        "ingest": "8:0:0",
+        "build_equiv_db": "8:0:0",
+        "expand_subjects": "8:0:0",
+        "merge": "8:0:0"
+    },
+    "datasources": [
+        {
+            "name": "UniProt",
+            "enabled": true,
+            "type": "rdf_triples_xml",
+            "glob": "/nfs/production/parkinso/spot/jmcl/up/**/*.rdf.xz"
+        },
+        {
+            "name": "UberGraph",
+            "enabled": false,
+            "type": "rdf_quads_nq",
+            "rdf_quads_graphs": [
+                "http://reasoner.renci.org/redundant"
+            ],
+            "glob": "/nfs/production/parkinso/spot/jmcl/ubergraph.nq.gz"
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+[package]
+name = "grebi_json2rocks"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+grebi_shared = { path = "../../grebi_shared" }
+rocksdb = "0.21.0"
+flate2 = {version="1.0.28", features=["zlib-ng"]}
+
