@@ -154,10 +154,12 @@ fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<File>, equivalenc
     eprintln!("Writing JSONL took {} seconds", start_time2.elapsed().as_secs());
 }
 
-const EQUIV_PREDICATES :[&str;6]= [
+const EQUIV_PREDICATES :[&str;8]= [
     "http://www.w3.org/2002/07/owl#equivalentClass",
     "http://www.w3.org/2004/02/skos/core#exactMatch",
     "http://www.geneontology.org/formats/oboInOwl#hasAlternativeId",
+    "http://purl.uniprot.org/uniprot/replaces",
+    "http://purl.obolibrary.org/obo/IAO_0100001", // -> replacement term
     "http://purl.obolibrary.org/obo/chebi/inchi",
     "http://purl.obolibrary.org/obo/chebi/inchikey",
     "http://purl.obolibrary.org/obo/chebi/smiles"
