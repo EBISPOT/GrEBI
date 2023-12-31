@@ -56,6 +56,8 @@ def main():
     ### 1. Run ingest jobs
     ###
     datasource_files_listing = os.path.abspath( os.path.join(config['persistent_output_dir'], '01_ingest', 'datasource_files.jsonl') )
+    os.makedirs(os.path.dirname(datasource_files_listing), exist_ok=True)
+
     with open(datasource_files_listing, 'w') as f2:
         f2.write('\n'.join(datasource_files))
     print("Files listing written to " + datasource_files_listing)
