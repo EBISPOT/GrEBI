@@ -8,7 +8,7 @@
         "merge": "16G"
     },
     "slurm_max_time": {
-        "ingest": "8:0:0",
+        "ingest": "24:0:0",
         "build_equiv_db": "8:0:0",
         "expand_subjects": "8:0:0",
         "merge": "8:0:0"
