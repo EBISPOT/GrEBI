@@ -2,7 +2,6 @@
 
 use std::collections::{HashSet, HashMap, BTreeMap};
 use std::{env, io};
-use grebi_shared::leveldb;
 use rocksdb::{DB, Options};
 use csv;
 use rusqlite::Connection;

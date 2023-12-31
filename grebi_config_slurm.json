@@ -17,17 +17,21 @@
         {
             "name": "UniProt",
             "enabled": true,
-            "type": "rdf_triples_xml",
-            "glob": "/nfs/production/parkinso/spot/jmcl/up/**/*.rdf.xz"
+            "ingest_files": ["/nfs/production/parkinso/spot/jmcl/up/**/*.rdf.xz"],
+            "ingest_script": "./target/release/grebi_ingest_rdf",
+            "ingest_args": [
+                { "name": "--rdf-type", "value": "rdf_triples_xml" }
+            ]
         },
         {
             "name": "UberGraph",
             "enabled": false,
-            "type": "rdf_quads_nq",
-            "rdf_quads_graphs": [
-                "http://reasoner.renci.org/redundant"
-            ],
-            "glob": "/nfs/production/parkinso/spot/jmcl/ubergraph.nq.gz"
-        }
+            "ingest_files": ["./ubergraph.nq.gz"],
+            "ingest_script": "./target/release/grebi_ingest_rdf",
+            "ingest_args": [
+                { "name": "--rdf-type", "value": "rdf_quads_nq" },
+                { "name": "--rdf-graph", "value": "http://reasoner.renci.org/redundant" }
+            ]
+        },
     ]
 }

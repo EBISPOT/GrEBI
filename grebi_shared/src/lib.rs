@@ -2,7 +2,6 @@
 pub mod json_lexer;
 pub mod json_parser;
 pub mod prefix_map;
-pub mod leveldb;
 
 // get the id without parsing json
 pub fn get_id<'a>(json:&'a [u8])->&'a [u8] {
