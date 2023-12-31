@@ -41,10 +41,6 @@ def main():
     print(get_time() + " --- Config file: " + datasource_file['config'])
     print(get_time() + " --- Datasource: " + datasource_name, flush=True)
 
-    os.makedirs(config['output_dir'], exist_ok=True)
-
-    basename = os.path.splitext(os.path.basename(filename))[0]
-
     sorted_nodes_jsonl_gz_filename = datasource_file['artefacts']['sorted_nodes_jsonl_gz']
     expanded_subjects_jsonl_filename = datasource_file['artefacts']['expanded_subjects_jsonl']
     sorted_expanded_subjects_jsonl_filename = datasource_file['artefacts']['sorted_expanded_subjects_jsonl']

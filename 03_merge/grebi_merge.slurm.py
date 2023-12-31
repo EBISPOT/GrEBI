@@ -34,7 +34,7 @@ def main():
     result_filenames = list(filter(lambda x: exists(x), result_filenames))
 
 
-    out_path = os.path.join(config['output_dir'], "03_merge", "merged.jsonl.gz")
+    out_path = os.path.join(config['worker_output_dir'], "03_merge", "merged.jsonl.gz")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     cmd = './target/release/grebi_merge ' + ' '.join(result_filenames)

@@ -29,20 +29,13 @@ def main():
                 for file in files:
                     filename = os.path.abspath(file)
                     basename = os.path.splitext(os.path.basename(filename))[0]
-                    nodes_jsonl_filename = os.path.abspath( os.path.join(config['output_dir'], '01_ingest', datasource['name'], basename + '.jsonl' ))
-                    sorted_nodes_jsonl_filename = os.path.abspath( os.path.join(config['output_dir'], '01_ingest', datasource['name'], basename + '.sorted.jsonl' ))
-                    sorted_nodes_jsonl_gz_filename = os.path.abspath( os.path.join(config['output_dir'], '01_ingest', datasource['name'], basename + '.sorted.jsonl.gz' ))
-                    equivalences_tsv_filename = os.path.abspath( os.path.join(config['output_dir'], '01_ingest', datasource['name'], basename  + '.equivalences.tsv'  ))
-                    expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['output_dir'], '02_equivalences', datasource['name'], basename + '.expanded.jsonl' ))
-                    sorted_expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['output_dir'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl' ))
-                    sorted_expanded_subjects_jsonl_gz_filename = os.path.abspath( os.path.join(config['output_dir'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl.gz' ))
-                    os.makedirs(os.path.dirname(nodes_jsonl_filename), exist_ok=True)
-                    os.makedirs(os.path.dirname(sorted_nodes_jsonl_filename), exist_ok=True)
-                    os.makedirs(os.path.dirname(sorted_nodes_jsonl_gz_filename), exist_ok=True)
-                    os.makedirs(os.path.dirname(equivalences_tsv_filename), exist_ok=True)
-                    os.makedirs(os.path.dirname(expanded_subjects_jsonl_filename), exist_ok=True)
-                    os.makedirs(os.path.dirname(sorted_expanded_subjects_jsonl_filename), exist_ok=True)
-                    os.makedirs(os.path.dirname(sorted_expanded_subjects_jsonl_gz_filename), exist_ok=True)
+                    nodes_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename + '.jsonl' ))
+                    sorted_nodes_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename + '.sorted.jsonl' ))
+                    sorted_nodes_jsonl_gz_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename + '.sorted.jsonl.gz' ))
+                    equivalences_tsv_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename  + '.equivalences.tsv'  ))
+                    expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.expanded.jsonl' ))
+                    sorted_expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl' ))
+                    sorted_expanded_subjects_jsonl_gz_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl.gz' ))
                     datasource_files.append(json.dumps({
                         'config': config_filename,
                         'datasource': datasource,
@@ -62,8 +55,7 @@ def main():
     ###
     ### 1. Run ingest jobs
     ###
-    datasource_files_listing = os.path.abspath( os.path.join(config['output_dir'], '01_ingest', 'datasource_files.jsonl') )
-    os.makedirs(os.path.dirname(datasource_files_listing), exist_ok=True)
+    datasource_files_listing = os.path.abspath( os.path.join(config['persistent_output_dir'], '01_ingest', 'datasource_files.jsonl') )
     with open(datasource_files_listing, 'w') as f2:
         f2.write('\n'.join(datasource_files))
     print("Files listing written to " + datasource_files_listing)
@@ -91,8 +83,8 @@ def main():
     ###
     ### 2. Expand subjects with equivalences; this step also assigns IDs to entities
     ###
-    dir_to_search_for_equiv_files = os.path.abspath(os.path.join(config['output_dir'], '01_ingest'))
-    equiv_rocksdb_path = os.path.abspath(os.path.join(config['output_dir'], '02_equivalences', 'equivalences_db'))
+    dir_to_search_for_equiv_files = os.path.abspath(os.path.join(config['worker_output_dir'], '01_ingest'))
+    equiv_rocksdb_path = os.path.abspath(os.path.join(config['worker_output_dir'], '02_equivalences', 'equivalences_db'))
 
     # 2.1. Build database of equivalences
     if config['use_slurm'] == True:

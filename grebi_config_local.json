@@ -1,5 +1,6 @@
 {
-    "output_dir": "./tmp",
+    "worker_output_dir": "./tmp",
+    "persistent_output_dir": "./tmp",
     "use_slurm":false,
     "datasources": [
         {

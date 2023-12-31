@@ -36,10 +36,6 @@ def main():
     print(get_time() + " --- Datasource: " + datasource_name, flush=True)
     print(get_time() + " --- Loading file: " + filename, flush=True)
 
-    os.makedirs(config['output_dir'], exist_ok=True)
-
-    basename = os.path.splitext(os.path.basename(filename))[0]
-
     nodes_jsonl_filename = datasource_file['artefacts']['nodes_jsonl']
     sorted_nodes_jsonl_filename = datasource_file['artefacts']['sorted_nodes_jsonl']
     sorted_nodes_jsonl_gz_filename = datasource_file['artefacts']['sorted_nodes_jsonl_gz']

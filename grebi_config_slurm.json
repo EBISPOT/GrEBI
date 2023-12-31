@@ -1,5 +1,6 @@
 {
-    "output_dir": "/hps/nobackup/parkinso/spot/grebi/tmp",
+    "persistent_output_dir": "/nfs/production/parkinso/spot/grebi/tmp",
+    "worker_output_dir": "/hps/nobackup/parkinso/spot/grebi/tmp",
     "use_slurm":true,
     "slurm_max_workers": 100,
     "slurm_max_memory": {
