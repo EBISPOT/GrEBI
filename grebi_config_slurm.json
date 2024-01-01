@@ -2,17 +2,19 @@
     "persistent_output_dir": "/nfs/production/parkinso/spot/grebi/tmp",
     "worker_output_dir": "/hps/nobackup/parkinso/spot/grebi/tmp",
     "use_slurm":true,
-    "slurm_max_workers": 100,
+    "slurm_max_workers": {
+        "ingest": 100
+    },
     "slurm_max_memory": {
         "ingest": "150G",
         "build_equiv_db": "64G",
-        "expand_subjects": "64G",
+        "expand_subjects": "8G",
         "merge": "16G"
     },
     "slurm_max_time": {
-        "ingest": "24:0:0",
+        "ingest": "23:0:0",
         "build_equiv_db": "8:0:0",
-        "expand_subjects": "8:0:0",
+        "expand_subjects": "4:0:0",
         "merge": "8:0:0"
     },
     "datasources": [

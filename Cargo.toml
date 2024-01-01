@@ -4,6 +4,8 @@ resolver="2"
 
 members = [
 	"01_ingest/grebi_ingest_rdf",
+	"01_ingest/grebi_ingest_sssom",
+	"01_ingest/grebi_ingest_ols",
 	"01_ingest/grebi_ingest_gwas",
 	"02_equivalences/grebi_equivalences2groups",
 	"02_equivalences/grebi_groups2rocks",
