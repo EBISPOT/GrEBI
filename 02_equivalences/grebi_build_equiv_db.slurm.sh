@@ -1,3 +1,4 @@
+#!/bin/bash
 
 if [ $# -ne 2 ]; then
     echo "Usage: $0 <out_rocksdb_path> <dir to search for *.equivalences.tsv>"

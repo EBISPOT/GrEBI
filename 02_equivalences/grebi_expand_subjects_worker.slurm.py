@@ -46,6 +46,10 @@ def main():
     sorted_expanded_subjects_jsonl_filename = datasource_file['artefacts']['sorted_expanded_subjects_jsonl']
     sorted_expanded_subjects_jsonl_gz_filename = datasource_file['artefacts']['sorted_expanded_subjects_jsonl_gz']
 
+    os.makedirs(os.path.dirname(expanded_subjects_jsonl_filename), exist_ok=True)
+    os.makedirs(os.path.dirname(sorted_expanded_subjects_jsonl_filename), exist_ok=True)
+    os.makedirs(os.path.dirname(sorted_expanded_subjects_jsonl_gz_filename), exist_ok=True)
+
     print(get_time() + " --- Loading file: " + sorted_nodes_jsonl_gz_filename, flush=True)
     print(get_time() + " --- Writing uncompressed to file: " + expanded_subjects_jsonl_filename, flush=True)
     print(get_time() + " --- Then compressed to file: " + sorted_expanded_subjects_jsonl_gz_filename, flush=True)
