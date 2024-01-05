@@ -60,16 +60,14 @@ fn main() -> std::io::Result<()> {
     eprintln!("grebi_ingest_rdf running for {}", args.datasource_name);
 
 
-
-    let rdr = BufReader::new( std::fs::File::open("prefix_map.json").unwrap() );
-    let mut builder = PrefixMapBuilder::new();
-    serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-        builder.add_mapping(k, v);
-    });
-    let prefix_map = builder.build();
-    // let mut file = File::create("prefix_map.bin")?;
-    // file.write_all(&prefix_map.buf)?;
-
+    let normalise = {
+        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
+        let mut builder = PrefixMapBuilder::new();
+        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
+            builder.add_mapping(k, v);
+        });
+        builder.build()
+    };
 
 
     let start_time = std::time::Instant::now();
@@ -123,7 +121,7 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("Loading graph took {} seconds", start_time.elapsed().as_secs());
 
-    write_subjects(ds, &mut output_nodes, &mut output_equivalences, &args, &prefix_map);
+    write_subjects(ds, &mut output_nodes, &mut output_equivalences, &args, &normalise);
 
     eprintln!("Total time elapsed: {} seconds", start_time.elapsed().as_secs());
 
@@ -131,7 +129,7 @@ fn main() -> std::io::Result<()> {
 }
 
 
-fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<File>, equivalences_writer:&mut BufWriter<File>, args:&Args, prefix_map:&PrefixMap) {
+fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<File>, equivalences_writer:&mut BufWriter<File>, args:&Args, normalise: &PrefixMap) {
 
     let start_time2 = std::time::Instant::now();
 
@@ -145,9 +143,9 @@ fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<File>, equivalenc
         }
 
         nodes_writer.write_all(r#"{"subject":""#.as_bytes()).unwrap();
-        nodes_writer.write_all( prefix_map.compact(& s.value().to_string() ).as_bytes() ).unwrap();
+        nodes_writer.write_all( normalise.reprefix(& s.value().to_string() ).as_bytes());
         nodes_writer.write_all(&middle_json_fragment).unwrap();
-        nodes_writer.write_all( term_to_json(s, ds, &prefix_map, equivalences_writer).to_string().as_bytes()).unwrap();
+        nodes_writer.write_all( term_to_json(s, ds, &normalise, equivalences_writer).to_string().as_bytes()).unwrap();
         nodes_writer.write_all("}\n".as_bytes()).unwrap();
     }
 
@@ -165,7 +163,7 @@ const EQUIV_PREDICATES :[&str;8]= [
     "http://purl.obolibrary.org/obo/chebi/smiles"
 ];
 
-fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, prefix_map:&PrefixMap, equivalences_writer:&mut BufWriter<File>) -> Value {
+fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap, equivalences_writer:&mut BufWriter<File>) -> Value {
 
     let triples = ds.triples_matching(term, &ANY, &ANY);
 
@@ -177,7 +175,7 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, prefix_map:&PrefixMap, equ
 
         let tu = t.unwrap();
         let p_iri = tu.p().value().to_string();
-        let p = prefix_map.compact(&p_iri);
+        let p = normalise.reprefix(&p_iri);
 
         let o = tu.o();
 
@@ -186,10 +184,10 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, prefix_map:&PrefixMap, equ
         let v = match o.kind() {
             //Iri => json!({ "type": "iri", "value": o.value().to_string() }),
             Iri|Literal => {
-                let o_compact = prefix_map.compact(&o.value().to_string());
+                let o_compact = normalise.reprefix(&o.value().to_string());
                 if EQUIV_PREDICATES.contains(&p_iri.as_str()) {
 
-                        let s_compacted = prefix_map.compact(&tu.s().value().to_string());
+                        let s_compacted = normalise.reprefix(&tu.s().value().to_string());
                         let equiv_left = s_compacted.as_bytes();
 
                         let equiv = match p_iri.as_str() {
@@ -206,7 +204,7 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, prefix_map:&PrefixMap, equ
                 Value::String( o_compact )
             }
             // Literal => json!({ "type": "literal", "value": o.value().to_string() }),
-            BlankNode => term_to_json(o, ds, prefix_map, equivalences_writer),
+            BlankNode => term_to_json(o, ds, normalise, equivalences_writer),
             Variable => todo!(),
         };
 

@@ -8,13 +8,13 @@
     "slurm_max_memory": {
         "ingest": "150G",
         "build_equiv_db": "64G",
-        "expand_subjects": "8G",
+        "expand_subjects": "64G",
         "merge": "16G"
     },
     "slurm_max_time": {
         "ingest": "23:0:0",
         "build_equiv_db": "8:0:0",
-        "expand_subjects": "4:0:0",
+        "expand_subjects": "8:0:0",
         "merge": "8:0:0"
     },
     "datasources": [

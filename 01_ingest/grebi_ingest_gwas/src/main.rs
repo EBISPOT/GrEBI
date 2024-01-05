@@ -43,13 +43,14 @@ fn main() {
 
 
 
-    let rdr = BufReader::new( std::fs::File::open("prefix_map.json").unwrap() );
-    let mut builder = PrefixMapBuilder::new();
-    serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-        builder.add_mapping(k, v);
-    });
-    let prefix_map = builder.build();
-
+    let normalise = {
+        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
+        let mut builder = PrefixMapBuilder::new();
+        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
+            builder.add_mapping(k, v);
+        });
+        builder.build()
+    };
 
 
     let mut csv_reader =
@@ -60,14 +61,14 @@ fn main() {
         .from_reader(reader);
 
     if args.filename.starts_with("gwas-catalog-associations_ontology-annotated.") {
-        write_associations(&mut csv_reader, &mut output_nodes, &mut output_equivalences, &args.datasource_name, &prefix_map);
+        write_associations(&mut csv_reader, &mut output_nodes, &mut output_equivalences, &args.datasource_name, &normalise);
     } else {
         panic!("Unknown filename: {}", args.filename);
     }
 
 }
 
-fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<File>, equivalences_writer:&mut BufWriter<File>, datasource_name: &str, prefix_map: &PrefixMap) {
+fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<File>, equivalences_writer:&mut BufWriter<File>, datasource_name: &str, normalise: &PrefixMap) {
 
     {
         let headers = csv_reader.headers().unwrap();
@@ -209,7 +210,7 @@ fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_w
                 "platform": [platform],
                 "cnv": [cnv],
                 "mapped_trait_label": [mapped_trait],
-                "mapped_trait":[ prefix_map.compact( &String::from( mapped_trait_uri)) ],
+                "mapped_trait":[ normalise.reprefix(&String::from( mapped_trait_uri)) ],
                 // "study_accession": study_accession,
                 "genotyping_technology": [genotyping_technology]
             }).to_string().as_bytes()).unwrap();

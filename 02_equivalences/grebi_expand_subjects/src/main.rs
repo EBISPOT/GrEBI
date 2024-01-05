@@ -102,6 +102,10 @@ fn main() {
         writer.write_all(r#"","properties":{"#.as_bytes()).unwrap();
         let mut is_first = true;
 
+        // TODO: Replace property value iteration with a fast string finder that handles escaped quotes
+        // Any string that is a subject that maps to a group becomes the group
+        // Will fix problem of nested properties without increasing complexity
+        //
         for prop in sliced.props {
             if !is_first {
                 writer.write_all(r#","#.as_bytes()).unwrap();

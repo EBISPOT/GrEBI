@@ -46,14 +46,15 @@ fn main() {
 
 
 
-    let rdr = BufReader::new( std::fs::File::open("prefix_map.json").unwrap() );
-    let mut builder = PrefixMapBuilder::new();
-    serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-        builder.add_mapping(k, v);
-    });
-    let prefix_map = builder.build();
 
-
+    let normalise = {
+        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
+        let mut builder = PrefixMapBuilder::new();
+        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
+            builder.add_mapping(k, v);
+        });
+        builder.build()
+    };
 
     let mut json = JsonStreamReader::new(reader);
 
@@ -64,14 +65,14 @@ fn main() {
     }
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
-        read_ontology(&mut json, &mut output_nodes, &mut output_equivalences, &prefix_map, &datasource_name);
+        read_ontology(&mut json, &mut output_nodes, &mut output_equivalences, &normalise, &datasource_name);
     }
     json.end_array().unwrap();
     json.end_object().unwrap();
 
 }
 
-fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<File>, output_equivalences: &mut BufWriter<File>, prefix_map: &PrefixMap, datasource_name: &str) {
+fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<File>, output_equivalences: &mut BufWriter<File>, normalise: &PrefixMap, datasource_name: &str) {
 
     json.begin_object().unwrap();
 
@@ -85,7 +86,7 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             break;
         }
 
-        metadata.insert(prefix_map.compact(&key.to_string()), read_value(json, &prefix_map));
+        metadata.insert(normalise.reprefix(&key.to_string()), read_value(json, &normalise));
     }
 
     let ontology_id = metadata.get("ontologyId").unwrap().as_str().unwrap().to_string();
@@ -125,11 +126,11 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
     loop {
         if key.eq("classes") {
-            read_entities(json, output_nodes, output_equivalences, prefix_map, &datasource);
+            read_entities(json, output_nodes, output_equivalences, normalise, &datasource);
         } else if key.eq("properties") {
-            read_entities(json, output_nodes, output_equivalences, prefix_map, &datasource);
+            read_entities(json, output_nodes, output_equivalences, normalise, &datasource);
         } else if key.eq("individuals") {
-            read_entities(json, output_nodes, output_equivalences, prefix_map, &datasource);
+            read_entities(json, output_nodes, output_equivalences, normalise, &datasource);
         } else {
             panic!();
         }
@@ -155,10 +156,10 @@ const EQUIV_PREDICATES :[&str;8]= [
     "obo:chebi/smiles"
 ];
 
-fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<File>, output_equivalences: &mut BufWriter<File>, prefix_map: &PrefixMap, datasource:&String) {
+fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<File>, output_equivalences: &mut BufWriter<File>, normalise: &PrefixMap, datasource:&String) {
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
-        let mut val:Value = read_value(json, prefix_map);
+        let mut val:Value = read_value(json, normalise);
         let mut obj = val.as_object_mut().unwrap();
 
         // should already be compacted
@@ -214,13 +215,13 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
     json.end_array().unwrap();
 }
 
-fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, prefix_map: &PrefixMap) -> Value {
+fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, normalise: &PrefixMap) -> Value {
     match json.peek().unwrap() {
         struson::reader::ValueType::Array => {
             let mut elems:Vec<Value> = Vec::new();
             json.begin_array().unwrap();
             while json.has_next().unwrap() {
-                elems.push(read_value(json, prefix_map));
+                elems.push(read_value(json, normalise));
             }
             json.end_array().unwrap();
             return Value::Array(elems);
@@ -231,10 +232,10 @@ fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, prefix_map:
             while json.has_next().unwrap() {
                 let k = json.next_name_owned().unwrap();
                 if k.eq("type") {
-                    read_value(json, &prefix_map); // skip
+                    read_value(json, &normalise); // skip
                     continue; // bnode/literal/iri; don't care for grebi
                 }
-                obj.insert( prefix_map.compact(&k), read_value(json, prefix_map));
+                obj.insert( normalise.reprefix(&k), read_value(json, normalise));
             }
             json.end_object().unwrap();
             // if it was just a type and a value, the value is enough for grebi...
@@ -244,7 +245,7 @@ fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, prefix_map:
             return Value::Object(obj);
         }
         struson::reader::ValueType::String => {
-            return Value::String( prefix_map.compact( &json.next_string().unwrap().to_string() ));
+            return Value::String( normalise.reprefix( &json.next_string().unwrap().to_string() ));
         }
         struson::reader::ValueType::Number => {
             return Value::Number(json.next_number().unwrap().unwrap());

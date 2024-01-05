@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::mem::size_of;
 
 struct BuilderNode {
-    curie_prefix:String,
+    to_prefix:String,
     children:HashMap<u8, BuilderNode>
 }
 
@@ -13,8 +13,8 @@ impl BuilderNode {
     fn to_buf(&self) -> Vec<u8> {
 
         let mut inner_buf:Vec<u8> = Vec::new();
-        inner_buf.push(self.curie_prefix.len() as u8);
-        inner_buf.extend(self.curie_prefix.as_bytes());
+        inner_buf.push(self.to_prefix.len() as u8);
+        inner_buf.extend(self.to_prefix.as_bytes());
         for (k, v) in &self.children {
             inner_buf.push(*k);
             inner_buf.extend(v.to_buf());
@@ -35,23 +35,23 @@ pub struct PrefixMapBuilder {
 impl PrefixMapBuilder {
 
     pub fn new() -> PrefixMapBuilder {
-        return PrefixMapBuilder { root_node: BuilderNode { curie_prefix:String::new(), children: HashMap::new() } };
+        return PrefixMapBuilder { root_node: BuilderNode { to_prefix:String::new(), children: HashMap::new() } };
     }
 
-    pub fn add_mapping(&mut self, iri_prefix:String, curie_prefix:String) {
-        self.get_or_create_node(iri_prefix).curie_prefix = curie_prefix;
+    pub fn add_mapping(&mut self, from_prefix:String, to_prefix:String) {
+        self.get_or_create_node(from_prefix).to_prefix = to_prefix;
     }
 
-    fn get_or_create_node(&mut self, iri_prefix:String) -> &mut BuilderNode {
+    fn get_or_create_node(&mut self, from_prefix:String) -> &mut BuilderNode {
 
         let mut cur_node = &mut self.root_node;
 
-        let bytes = iri_prefix.as_bytes();
+        let bytes = from_prefix.as_bytes();
 
         for n in 0..bytes.len() {
             let b = bytes[n];
             if !cur_node.children.contains_key(&b) {
-                let new_node = BuilderNode { curie_prefix:String::new(), children: HashMap::new() };
+                let new_node = BuilderNode { to_prefix:String::new(), children: HashMap::new() };
                 cur_node.children.insert(b, new_node);
             }
             cur_node = cur_node.children.get_mut(&b).unwrap();
@@ -79,19 +79,19 @@ pub struct PrefixMap {
 
 impl PrefixMap {
 
-    // pub fn compact(&self, iri:&[u8]) -> Option<Vec<u8>> {
-    //     return compact_impl(iri, &self.buf);
+    // pub fn compact(&self, subject:&[u8]) -> Option<Vec<u8>> {
+    //     return compact_impl(subject, &self.buf);
     // }
-    pub fn compact(&self, iri:&String) -> String {
-        let iri_bytes = iri.as_bytes();
+    pub fn reprefix(&self, subject:&String) -> String {
+        let subject_bytes = subject.as_bytes();
 
-        let res = compact_impl(iri_bytes, &self.buf[
+        let res = reprefix_impl(subject_bytes, &self.buf[
             /* skip unused inner_size and curie_len of root node */
             (size_of::<usize>() + 1)..(self.buf.len())
             ]);
 
         if res.is_none() {
-            return iri.clone();
+            return subject.clone();
         }
         return String::from_utf8(res.unwrap()).unwrap();
     }
@@ -109,16 +109,16 @@ Node {
     inner_size:usize
 
     Inner {
-        curie_prefix_size:u8
-        curie_prefix:[u8]
+        to_prefix_size:u8
+        to_prefix:[u8]
         children:Node[...]
     }
 }
 */
 #[inline(always)]
-fn compact_impl<'a>(iri:&[u8], buf:&[u8]) -> Option<Vec<u8>> {
+fn reprefix_impl<'a>(subject:&[u8], buf:&[u8]) -> Option<Vec<u8>> {
 
-    if iri.len() == 0 {
+    if subject.len() == 0 {
         return None;
     }
 
@@ -136,21 +136,21 @@ fn compact_impl<'a>(iri:&[u8], buf:&[u8]) -> Option<Vec<u8>> {
         let inner_buf = &buf[buf_index..buf_index+inner_size];
         buf_index += inner_size;
 
-        // println!("iri {}", String::from_utf8( iri.to_vec()).unwrap() );
-        //println!("letter {}, inner size {}, buf index {}, iri index {}", String::from_utf8([ buf_b ].to_vec()).unwrap(), inner_size, buf_index, 0);
+        // println!("subject {}", String::from_utf8( subject.to_vec()).unwrap() );
+        //println!("letter {}, inner size {}, buf index {}, subject index {}", String::from_utf8([ buf_b ].to_vec()).unwrap(), inner_size, buf_index, 0);
 
-        let iri_b = iri[0];
+        let subject_b = subject[0];
 
-        if buf_b == iri_b {
+        if buf_b == subject_b {
             // the node at the beginning of buf is a match
             // see if we can get a longer match from its children
             //
-            let curie_prefix_size = inner_buf[0];
-            let children_buf = &inner_buf[(1+curie_prefix_size as usize)..inner_buf.len()];
+            let to_prefix_size = inner_buf[0];
+            let children_buf = &inner_buf[(1+to_prefix_size as usize)..inner_buf.len()];
 
             if children_buf.len() > 0 {
 
-                let longer_match = compact_impl(&iri[1..iri.len()], &children_buf);
+                let longer_match = reprefix_impl(&subject[1..subject.len()], &children_buf);
                     
                 if longer_match.is_some() {
                     return longer_match;
@@ -158,18 +158,16 @@ fn compact_impl<'a>(iri:&[u8], buf:&[u8]) -> Option<Vec<u8>> {
             }
 
             // there are no matching children (no longer prefixes than this that match)
-            // do we have a curie?
+            // do we have a to prefix? if so we have found our best match
             //
-            if curie_prefix_size > 0 {
-
-                let curie_prefix:&[u8] = &inner_buf[1..1+curie_prefix_size as usize];
-                return Some([curie_prefix, ":".as_bytes(), &iri[1..iri.len()]].concat());
-
+            if to_prefix_size > 0 {
+                let to_prefix:&[u8] = &inner_buf[1..1+to_prefix_size as usize];
+                return Some([to_prefix, &subject[1..subject.len()]].concat());
             }
 
 
             // there are no matching children and there is no curie assigned to this node
-            // = we are on an intermediate node but nothing else has the same next char as our iri
+            // = we are on an intermediate node but nothing else has the same next char as our subject
             // = no match
             return None;
 
