@@ -13,5 +13,10 @@ The pipeline makes property graphs (where both nodes and edges can have properti
 * All property values that are the identifier of another node in the graph become edges
 * Cliques of equivalent nodes are merged into single nodes
 
+The resulting graphs can be downloaded from https://ftp.ebi.ac.uk/pub/databases/spot/kg/
+
+
+
+
 
 
