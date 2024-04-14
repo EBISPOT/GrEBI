@@ -1,0 +1,20 @@
+[workspace]
+
+resolver="2"
+
+members = [
+	"01_ingest/grebi_ingest_rdf",
+	"01_ingest/grebi_ingest_sssom",
+	"01_ingest/grebi_ingest_ols",
+	"01_ingest/grebi_ingest_gwas",
+	"01_ingest/grebi_ingest_json",
+	"02_equivalences/grebi_equivalences2groups",
+	"02_equivalences/grebi_groups2rocks",
+	"02_equivalences/grebi_expand_subjects",
+	"03_merge/grebi_merge",
+	"04_index/grebi_json2rocks",
+	"05_materialize_edges/grebi_rocks2neo",
+	"grebi_shared",
+	"grebi_api"
+]
+

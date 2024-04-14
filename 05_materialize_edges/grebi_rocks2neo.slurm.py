@@ -1,0 +1,60 @@
+
+
+
+import json
+import os
+import sys
+import shlex
+import time
+import glob
+from subprocess import Popen, PIPE, STDOUT
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: grebi_rocks2neo.slurm.py <grebi_config.json>")
+        exit(1)
+
+    config_filename = os.path.abspath(sys.argv[1])
+
+    print(get_time() + " --- Config filename: " + config_filename, flush=True)
+
+    task_id = os.getenv('SLURM_ARRAY_TASK_ID')
+    if task_id == None:
+        print("Slurm task ID not found; is this definitely running as part of the pipeline?\n", flush=True);
+        exit(1)
+
+    with open(config_filename, 'r') as f:
+        config = json.load(f)
+
+    input_merged_gz_filenames = os.path.join(config['worker_output_dir'], "03_merge", "merged.jsonl.0*")
+    input_metadata_filename = os.path.join(config['worker_output_dir'], "04_index", "metadata.json")
+    input_rocksdb_path = os.path.join(config['worker_output_dir'], "04_index", "rocksdb")
+    # out_nodes_path = os.path.join(config['worker_output_dir'], "05_materialize_edges", "n4nodes_" + task_id + ".csv.gz")
+    # out_edges_path = os.path.join(config['worker_output_dir'], "05_materialize_edges", "n4edges_" + task_id + ".csv.gz")
+    out_nodes_path = os.path.join(config['worker_output_dir'], "05_materialize_edges", "n4nodes_" + task_id + ".csv")
+    out_edges_path = os.path.join(config['worker_output_dir'], "05_materialize_edges", "n4edges_" + task_id + ".csv")
+
+    os.makedirs(os.path.dirname(out_edges_path), exist_ok=True)
+
+    all_files = glob.glob(input_merged_gz_filenames)
+    our_file = list(filter(lambda f: int(f.split('.')[-2]) == int(task_id), all_files))[0]
+    print(get_time() + " --- Our file: " + our_file)
+
+    cmd = ' '.join([
+        'zcat ' + shlex.quote(our_file) + ' |',
+        './target/release/grebi_rocks2neo',
+        '--in-rocksdb-path ' + shlex.quote(input_rocksdb_path),
+        '--in-metadata-json-path ' + shlex.quote(input_metadata_filename),
+        '--out-nodes-csv-path ' + shlex.quote(out_nodes_path),
+        '--out-edges-csv-path ' + shlex.quote(out_edges_path)
+    ])
+
+    if os.system('bash -c "' + cmd + '"') != 0:
+        print("rocks2neo failed")
+        exit(1)
+
+def get_time():
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+
+if __name__=="__main__":
+    main()

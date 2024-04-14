@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd /opt/ols4-frontend
+
+echo Building frontend. REACT_APP_ENV: $REACT_APP_ENV
+
+npm run build
+
+caddy run --config ./Caddyfile

@@ -1,0 +1,11 @@
+[package]
+name = "grebi_ingest_reactome"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+csv = "1.3.0"
+grebi_shared = { path = "../../grebi_shared" }
+serde_json = { version = "1.0.108", features=["preserve_order"] }
+serde_yaml = "0.9.30"

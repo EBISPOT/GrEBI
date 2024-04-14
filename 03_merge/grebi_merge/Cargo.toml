@@ -1,0 +1,11 @@
+[package]
+name = "grebi_merge"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+flate2 = {version="1.0.28", features=["zlib-ng"]}
+jemallocator = "0.5.4"
+serde_json = { version = "1.0.108", features=["preserve_order"] }
+grebi_shared = { path = "../../grebi_shared" }
+
