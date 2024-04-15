@@ -10,9 +10,11 @@ curie = "0.1.2"
 libc = "0.2.150"
 mownstr = "0.1.3"
 serde_json = { version = "1.0.108", features=["preserve_order"] }
-sophia = { version = "0.7.2", features=["xml"] }
-sophia_api = "0.7.2"
-sophia_xml = "0.7.2"
+sophia_api = "0.8.0"
+sophia_xml = "0.8.0"
+sophia_inmem = "0.8.0"
+sophia_turtle = "0.8.0"
 grebi_shared = { path = "../../grebi_shared" }
+multimap = "0.10.0"
 
 

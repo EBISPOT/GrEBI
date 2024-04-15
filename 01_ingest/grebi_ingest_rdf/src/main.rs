@@ -1,35 +1,35 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{self, BufReader, BufWriter};
+use std::io::{self, BufReader, BufWriter, Write};
 use std::rc::Rc;
-use sophia::graph::Graph;
-use sophia::graph::inmem::{SpoWrapper, GenericGraph, GraphWrapper};
-use sophia::parser::xml::RdfXmlParser;
-use sophia::parser::nq::NQuadsParser;
-use sophia::graph::MutableGraph;
-use sophia::term::factory::RcTermFactory;
-use sophia_api::term::matcher::ANY;
-use sophia::triple::stream::TripleSource;
-use sophia::quad::stream::QuadSource;
-use sophia::quad::Quad;
-use serde_json::{Value, Map, json};
-use sophia::triple::Triple;
-use sophia::term::{TTerm, Term};
-use sophia::term::TermKind::{BlankNode, Iri, Literal, Variable};
-use sophia::parser::TripleParser;
-use sophia::parser::QuadParser;
-use std::io::Write;
+use serde_json::{Map, Value};
+use sophia_api::ns::{owl, rdf};
+use sophia_api::term::matcher::Any;
+use sophia_api::term::{SimpleTerm, TermKind};
+use sophia_api::graph::{Graph, MutableGraph};
+use sophia_api::prelude::Iri;
 use clap::Parser;
+use serde_json::json;
 
 use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
 use grebi_shared::serialize_equivalence;
+use sophia_inmem::graph::{FastGraph, GenericLightGraph, LightGraph};
+use sophia_xml::parser::RdfXmlParser;
+use sophia_api::parser::TripleParser;
+use sophia_api::parser::QuadParser;
+use sophia_api::prelude::TripleSource;
+use sophia_api::prelude::Triple;
+use sophia_api::prelude::QuadSource;
+use sophia_api::prelude::Quad;
+use sophia_api::prelude::Term;
+use sophia_turtle::parser::nq::NQuadsParser;
+use multimap::MultiMap;
 
 // #[global_allocator] 
 // static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-type CustomGraph = SpoWrapper<GenericGraph<u32, RcTermFactory>>;
-
+type ReifIndex = MultiMap<(SimpleTerm<'static>,SimpleTerm<'static>), SimpleTerm<'static>>;
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -86,11 +86,11 @@ fn main() -> std::io::Result<()> {
     // output_equivalences.write_all(b"subject_id\tobject_id\n").unwrap();
 
         
-    let gr:CustomGraph = match args.rdf_type.as_str() {
+    let gr:LightGraph = match args.rdf_type.as_str() {
         "rdf_triples_xml" => {
-            let parser = RdfXmlParser { base: Some("http://www.ebi.ac.uk/kg/".into()) };
-            let g:CustomGraph = parser.parse(reader).collect_triples::<CustomGraph>().unwrap();
-            Ok::<CustomGraph, io::Error>(g)
+            let parser = RdfXmlParser { base: Some(Iri::new("http://www.ebi.ac.uk/kg/".to_string()).unwrap()) };
+            let g:LightGraph = parser.parse(reader).collect_triples::<LightGraph>().unwrap();
+            Ok::<LightGraph, io::Error>(g)
         },
         "rdf_quads_nq" => {
 
@@ -101,9 +101,9 @@ fn main() -> std::io::Result<()> {
             let parser = NQuadsParser {};
             
             let quad_source = parser.parse(reader);
-            let mut filtered_quads = quad_source.filter_quads(|q| args.rdf_graph.contains(&q.g().unwrap().value().to_string()));
+            let mut filtered_quads = quad_source.filter_quads(|q| args.rdf_graph.contains(&q.g().unwrap().to_string()));
 
-            let mut g:CustomGraph = CustomGraph::new();
+            let mut g:LightGraph = LightGraph::new();
 
             // TODO: can't figure out how to stream the quad graph as triples
             // so this will have to do for now...
@@ -112,7 +112,8 @@ fn main() -> std::io::Result<()> {
                 g.insert(q.s(), q.p(), q.o()).unwrap();
             }).unwrap();
 
-            Ok::<CustomGraph, io::Error>(g)
+
+            Ok::<LightGraph, io::Error>(g)
         },
         _ => { panic!("unknown datasource type"); }
     }.unwrap();
@@ -121,7 +122,22 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("Loading graph took {} seconds", start_time.elapsed().as_secs());
 
-    write_subjects(ds, &mut output_nodes, &mut output_equivalences, &args, &normalise);
+    let start_time2 = std::time::Instant::now();
+
+    let mut reif:ReifIndex = ReifIndex::new();
+
+    for triple in ds.triples() {
+        let t = triple.unwrap();
+        let p = t.p().iri().unwrap().to_string();
+        if p == "http://www.w3.org/2002/07/owl#annotatedSource" {
+            let annotated_subject = t.o().clone();
+            let annotated_predicate = gr.triples_matching([t.s()], ["http://www.w3.org/2002/07/owl#annotatedProperty"], Any).next().unwrap().unwrap().o().clone();
+            reif.insert((annotated_subject, annotated_predicate), t.s().clone());
+        }
+    }
+    eprintln!("Building reification index took {} seconds", start_time2.elapsed().as_secs());
+
+    write_subjects(ds, &mut output_nodes, &mut output_equivalences, &args, &normalise, &reif);
 
     eprintln!("Total time elapsed: {} seconds", start_time.elapsed().as_secs());
 
@@ -129,42 +145,45 @@ fn main() -> std::io::Result<()> {
 }
 
 
-fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<File>, equivalences_writer:&mut BufWriter<File>, args:&Args, normalise: &PrefixMap) {
+
+fn write_subjects(ds:&LightGraph, nodes_writer:&mut BufWriter<File>, equivalences_writer:&mut BufWriter<File>, args:&Args, normalise: &PrefixMap, reif: &ReifIndex) {
 
     let start_time2 = std::time::Instant::now();
 
     let middle_json_fragment
          = [r#"","datasource":""#.as_bytes(), args.datasource_name.as_bytes(), r#"","properties":"#.as_bytes() ].concat();
 
-    for s in &ds.gw_subjects().unwrap() {
+    for s in ds.subjects() {
 
-        if s.kind() != Iri {
+        let su = s.unwrap();
+
+        if !su.is_iri() {
             continue; 
         }
 
         nodes_writer.write_all(r#"{"subject":""#.as_bytes()).unwrap();
-        nodes_writer.write_all( normalise.reprefix(& s.value().to_string() ).as_bytes());
+        nodes_writer.write_all( normalise.reprefix(& su.iri().unwrap().as_str().to_string() ).as_bytes()).unwrap();
         nodes_writer.write_all(&middle_json_fragment).unwrap();
-        nodes_writer.write_all( term_to_json(s, ds, &normalise, equivalences_writer).to_string().as_bytes()).unwrap();
+        nodes_writer.write_all( term_to_json(su, ds, &normalise, equivalences_writer, reif).to_string().as_bytes()).unwrap();
         nodes_writer.write_all("}\n".as_bytes()).unwrap();
     }
 
     eprintln!("Writing JSONL took {} seconds", start_time2.elapsed().as_secs());
 }
 
-const EQUIV_PREDICATES :[&str;7]= [
+const EQUIV_PREDICATES :[&str;3]= [
     "http://www.w3.org/2002/07/owl#equivalentClass",
     "http://www.w3.org/2002/07/owl#equivalentProperty",
-    "http://www.w3.org/2002/07/owl#sameAs",
-    "http://www.w3.org/2004/02/skos/core#exactMatch",
-    "http://www.geneontology.org/formats/oboInOwl#hasAlternativeId",
-    "http://purl.uniprot.org/uniprot/replaces",
-    "http://purl.obolibrary.org/obo/IAO_0100001" // -> replacement term
+    "http://www.w3.org/2002/07/owl#sameAs"
+    // "http://www.w3.org/2004/02/skos/core#exactMatch",
+    // "http://www.geneontology.org/formats/oboInOwl#hasAlternativeId",
+    // "http://purl.uniprot.org/uniprot/replaces",
+    // "http://purl.obolibrary.org/obo/IAO_0100001" // -> replacement term
 ];
 
-fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap, equivalences_writer:&mut BufWriter<File>) -> Value {
+fn term_to_json(term:&SimpleTerm, ds:&LightGraph, normalise:&PrefixMap, equivalences_writer:&mut BufWriter<File>, reif:&ReifIndex) -> Value {
 
-    let triples = ds.triples_matching(term, &ANY, &ANY);
+    let triples = ds.triples_matching([term.as_simple()], Any, Any);
 
     let mut json:Map<String,Value> = Map::new();
 
@@ -173,37 +192,76 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap, equi
     for t in triples {
 
         let tu = t.unwrap();
-        let p_iri = tu.p().value().to_string();
+        let p_iri = tu.p().iri().unwrap().as_str().to_string();
         let p = normalise.reprefix(&p_iri);
 
         let o = tu.o();
 
-
-
-        let v = match o.kind() {
-            //Iri => json!({ "type": "iri", "value": o.value().to_string() }),
-            Iri|Literal => {
-                let o_compact = normalise.reprefix(&o.value().to_string());
+        let mut v = 'to_str: {
+            if o.is_literal() {
+                let o_compact = normalise.reprefix(&o.lexical_form().unwrap().to_string());
                 if EQUIV_PREDICATES.contains(&p_iri.as_str()) {
 
-                        let s_compacted = normalise.reprefix(&tu.s().value().to_string());
-                        let equiv_left = s_compacted.as_bytes();
-
-                        let equiv = serialize_equivalence(equiv_left, o_compact.as_bytes());
+                        let equiv = serialize_equivalence(
+                            normalise.reprefix(&tu.s().iri().unwrap().to_string()).as_bytes(), o_compact.as_bytes());
 
                         if equiv.is_some() {
                             equivalences_writer.write_all(equiv.unwrap().as_slice()).unwrap();
                         }
                 }
-                Value::String( o_compact )
+                break 'to_str Value::String( o_compact );
             }
-            // Literal => json!({ "type": "literal", "value": o.value().to_string() }),
-            BlankNode => term_to_json(o, ds, normalise, equivalences_writer),
-            Variable => todo!(),
+            if o.is_iri() {
+                let o_compact = normalise.reprefix(&o.iri().unwrap().to_string());
+                if EQUIV_PREDICATES.contains(&p_iri.as_str()) {
+
+                        let equiv = serialize_equivalence(
+                            normalise.reprefix(&tu.s().iri().unwrap().to_string()).as_bytes(), o_compact.as_bytes());
+
+                        if equiv.is_some() {
+                            equivalences_writer.write_all(equiv.unwrap().as_slice()).unwrap();
+                        }
+                }
+                break 'to_str Value::String( o_compact );
+            }
+            if o.is_blank_node() {
+                break 'to_str term_to_json(o, ds, normalise, equivalences_writer, reif);
+            }
+            todo!()
         };
 
-        let existing = json.get_mut(&p);
+        // TODO why do we need to clone here
+        let reifs = reif.get_vec(&(tu.s().clone(), tu.p().clone()));
 
+        if reifs.is_some() {
+
+            let r = reifs.unwrap();
+            let mut reif_props:Map<String,Value> = Map::new();
+
+            for reif_id in r {
+                let reif_triples = ds.triples_matching([reif_id], Any, Any);
+                // let annotated_object = reif_triples.filter(|t| t.p().eq("http://www.w3.org/2002/07/owl#annotatedTarget")).next().unwrap().unwrap().o().clone();
+                // if is_isomorphic(&annotated_object, &o, ds) {
+                // }
+            }
+
+            // v = json!({
+            //     "value": v,
+            //     "properties": Value::Object(reif_props)
+            // })
+        }
+
+        if !term.is_blank_node() && p.eq("rdf:type") {
+            // copy into grebi:type field
+            let gr_existing = json.get_mut("grebi:type");
+            if gr_existing.is_some() {
+                gr_existing.unwrap().as_array_mut().unwrap().push(v.clone());
+            } else {
+                json.insert("grebi:type".to_owned(), json!([ v.clone() ]));
+            }
+        }
+
+        let existing = json.get_mut(&p);
         if existing.is_some() {
             existing.unwrap().as_array_mut().unwrap().push(v);
         } else {
@@ -214,6 +272,10 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap, equi
     return Value::Object(json);
 }
 
+fn is_isomorphic(a:SimpleTerm, b:SimpleTerm, gr:&LightGraph) -> bool {
+
+    return false;
+}
 
 
 
