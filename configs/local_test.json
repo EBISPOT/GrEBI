@@ -19,7 +19,7 @@
         },
         {
             "name": "UberGraph",
-            "enabled": false,
+            "enabled": true,
             "ingests": [
                 {
                     "ingest_files": ["./ubergraph.nq.gz"],
@@ -33,7 +33,7 @@
         },
         {
             "name": "GWAS",
-            "enabled": true,
+            "enabled": false,
             "ingests": [
                 {
                     "ingest_files": [
@@ -41,6 +41,19 @@
                         "./gwas-catalog-studies-download-alternative-v1.0.2.1.txt"
                     ],
                     "ingest_script": "./target/release/grebi_ingest_gwas",
+                    "ingest_args": []
+                }
+            ]
+        },
+        {
+            "name": "MP_HP",
+            "enabled": false,
+            "ingests": [
+                {
+                    "ingest_files": [
+                        "./mphp.sssom.tsv"
+                    ],
+                    "ingest_script": "./target/release/grebi_ingest_sssom",
                     "ingest_args": []
                 }
             ]
@@ -195,5 +208,10 @@
                 }
             ]
         }
+    ],
+    "exclude_edges": [
+        "iri",
+        "curie",
+        "oboinowl:id"
     ]
 }

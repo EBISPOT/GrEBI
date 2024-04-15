@@ -46,7 +46,8 @@ def main():
         '--in-rocksdb-path ' + shlex.quote(input_rocksdb_path),
         '--in-metadata-json-path ' + shlex.quote(input_metadata_filename),
         '--out-nodes-csv-path ' + shlex.quote(out_nodes_path),
-        '--out-edges-csv-path ' + shlex.quote(out_edges_path)
+        '--out-edges-csv-path ' + shlex.quote(out_edges_path),
+        '--exclude ' + ','.join(config['exclude_edges'])
     ])
 
     if os.system('bash -c "' + cmd + '"') != 0:

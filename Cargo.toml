@@ -14,7 +14,6 @@ members = [
 	"03_merge/grebi_merge",
 	"04_index/grebi_json2rocks",
 	"05_materialize_edges/grebi_rocks2neo",
-	"grebi_shared",
-	"grebi_api"
+	"grebi_shared"
 ]
 

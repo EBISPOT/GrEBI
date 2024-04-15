@@ -1,6 +1,7 @@
 
 
 use std::ascii::escape_default;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::BufReader;
@@ -44,7 +45,10 @@ struct Args {
     out_nodes_csv_path: String,
 
     #[arg(long)]
-    out_edges_csv_path: String
+    out_edges_csv_path: String,
+
+    #[arg(long)]
+    exclude: String
 }
 
 // Given (a) JSONL stream of entities on stdin
@@ -71,6 +75,9 @@ fn main() -> std::io::Result<()> {
 
     let all_entity_props: Vec<String> = index_metadata["entity_props"].as_object().unwrap().keys().cloned().collect();
     let all_edge_props: Vec<String> = index_metadata["edge_props"].as_object().unwrap().keys().cloned().collect();
+
+    let exclude:HashSet<Vec<u8>> = args.exclude.split(",").map(|s| s.to_string().as_bytes().to_vec()).collect();
+
 
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
@@ -127,7 +134,7 @@ fn main() -> std::io::Result<()> {
         }
 
         sliced.props.iter().for_each(|prop| {
-            maybe_write_edge(sliced.id, prop, &db, &all_edge_props, &mut edges_writer);
+            maybe_write_edge(sliced.id, prop, &db, &all_edge_props, &mut edges_writer, &exclude);
         });
     }
 
@@ -192,7 +199,11 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
 
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&HashSet<Vec<u8>>) {
+
+    if exclude.contains(prop.key) {
+        return;
+    }
 
     if prop.kind == JsonTokenType::StartObject {
 

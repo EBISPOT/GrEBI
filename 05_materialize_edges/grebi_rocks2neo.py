@@ -25,6 +25,8 @@ def main():
     max_file_num = max(list(map(lambda f: int(f.split('.')[-2]), all_files)))
     print(get_time() + " --- Max file num: " + str(max_file_num))
 
+    os.makedirs(os.path.join(config['persistent_output_dir'], '05_materialize_edges'), exist_ok=True)
+
     if config['use_slurm'] == True:
         print("Running rocks2neo on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
@@ -42,7 +44,7 @@ def main():
             exit(1)
         os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '05_materialize_edges', '*.log')))
     else:
-        for n in range(max_file_num):
+        for n in range(max_file_num+1):
             print("Running " + str(n) + " of " + str(max_file_num))
             if os.system('SLURM_ARRAY_TASK_ID=' + str(n) + ' ./05_materialize_edges/grebi_rocks2neo.slurm.sh ' + config_filename) != 0:
                 print("rocks2neo failed")

@@ -43,7 +43,7 @@ fn main() {
          File::create(args.output_equivalences.as_str()).unwrap());
 
     let normalise:PrefixMap = {
-        let rdr = BufReader::new( std::fs::File::open("/home/james/grebi2/prefix_map_normalise.json").unwrap() );
+        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
         let mut builder = PrefixMapBuilder::new();
         serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
             builder.add_mapping(k, v);
@@ -87,6 +87,7 @@ fn main() {
         csv::ReaderBuilder::new()
         .delimiter(b'\t')
         .has_headers(true)
+        .flexible(true)
         .from_reader(reader); // TODO not supposed to do this on a buffered reader... but I did
 
     let headers = csv_reader.headers().unwrap().clone();
@@ -100,7 +101,7 @@ fn main() {
 
         let subj = remap_subject(&record.get(subj_idx).unwrap().to_string(), &expand, &normalise);
         let pred = remap_subject(&record.get(pred_idx).unwrap().to_string(), &expand, &normalise);
-        let obj = remap_subject(&record.get(subj_idx).unwrap().to_string(), &expand, &normalise);
+        let obj = remap_subject(&record.get(obj_idx).unwrap().to_string(), &expand, &normalise);
 
         output_nodes.write_all(r#"{"subject":""#.as_bytes()).unwrap();
         output_nodes.write_all(subj.as_bytes()).unwrap();
@@ -108,27 +109,32 @@ fn main() {
         output_nodes.write_all(datasource_name.as_bytes()).unwrap();
         output_nodes.write_all(r#"","properties":{""#.as_bytes()).unwrap();
         output_nodes.write_all(pred.as_bytes()).unwrap();
-            output_nodes.write_all(r#"":{"#.as_bytes()).unwrap();
+            output_nodes.write_all(r#"":[{"#.as_bytes()).unwrap();
             output_nodes.write_all(r#""value":""#.as_bytes()).unwrap();
             output_nodes.write_all(obj.as_bytes()).unwrap();
-            output_nodes.write_all(r#"","sssom":{"#.as_bytes()).unwrap();
+            output_nodes.write_all(r#"","properties":{"#.as_bytes()).unwrap();
                 let mut n = 0;
                 let mut is_first = true;
                 for column_title in headers.iter() {
-                    if is_first {
-                        is_first = false;
-                    } else {
-                        output_nodes.write_all(r#","#.as_bytes()).unwrap();
+                    if !column_title.eq("subject_id") && !column_title.eq("predicate_id") && !column_title.eq("object_id") {
+                        let val = record.get(n);
+                        if val.is_some() {
+                            if is_first {
+                                is_first = false;
+                            } else {
+                                output_nodes.write_all(r#","#.as_bytes()).unwrap();
+                            }
+                            output_nodes.write_all(r#"""#.as_bytes()).unwrap();
+                            output_nodes.write_all(column_title.as_bytes()).unwrap();
+                            output_nodes.write_all(r#"":[""#.as_bytes()).unwrap();
+                            write_escaped_string(remap_subject(&record.get(n).unwrap().to_string(), &expand, &normalise).as_bytes(), &mut output_nodes);
+                            output_nodes.write_all(r#""]"#.as_bytes()).unwrap();
+                        }
                     }
-                    output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-                    output_nodes.write_all(column_title.as_bytes()).unwrap();
-                    output_nodes.write_all(r#"":""#.as_bytes()).unwrap();
-                    write_escaped_string(remap_subject(&record.get(n).unwrap().to_string(), &expand, &normalise).as_bytes(), &mut output_nodes);
-                    output_nodes.write_all(r#"""#.as_bytes()).unwrap();
                     n = n + 1;
                 }
                 output_nodes.write_all(r#"}"#.as_bytes()).unwrap(); // sssom
-            output_nodes.write_all(r#"}"#.as_bytes()).unwrap(); // value
+            output_nodes.write_all(r#"}]"#.as_bytes()).unwrap(); // value
         output_nodes.write_all(r#"}"#.as_bytes()).unwrap(); // properties
         output_nodes.write_all(r#"}"#.as_bytes()).unwrap(); // entity
         output_nodes.write_all("\n".as_bytes()).unwrap();

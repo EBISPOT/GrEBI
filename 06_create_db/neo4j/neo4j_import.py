@@ -23,12 +23,12 @@ def main():
     if config['use_slurm'] == True:
         cmd = ' '.join([
             'srun -t 23:0:0 --mem 128g -c 32',
-            './06_create_db/neo4j_import.slurm.sh',
+            './06_create_db/neo4j/neo4j_import.slurm.sh',
             config_filename
         ])
     else:
         cmd = ' '.join([
-            './06_create_db/neo4j_import.slurm.sh',
+            './06_create_db/neo4j/neo4j_import.slurm.sh',
             config_filename
         ])
 

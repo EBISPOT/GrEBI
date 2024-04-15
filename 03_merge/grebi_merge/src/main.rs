@@ -127,12 +127,26 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
         return SlicedEntity::from_json(line);
     }).collect();
 
+    let mut has_any_type:bool = false;
+
     let mut datasources: Vec<&[u8]> = jsons
         .iter()
         .map(|json| {
+            for prop in &json.props {
+                if prop.key == b"type" {
+                    has_any_type = true;
+                }
+            }
             return json.datasource;
         })
         .collect();
+
+    if !has_any_type {
+        // skip if after merging the node has no type
+        // this will remove e.g. all the ubergraph entries where the node is not defined by
+        // another datasource 
+        return;
+    }
 
     datasources.sort();
     datasources.dedup();

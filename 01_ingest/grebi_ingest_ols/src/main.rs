@@ -180,13 +180,13 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
 }
 
-const EQUIV_PREDICATES :[&str;6]= [
+const EQUIV_PREDICATES :[&str;2]= [
     "owl:equivalentClass",
     "owl:equivalentProperty",
-    "owl:sameAs",
-    "skos:exactMatch",
-    "oboinowl:hasAlternativeId",
-    "uniprot:replaces",
+    // "owl:sameAs",
+    // "skos:exactMatch",
+    // "oboinowl:hasAlternativeId",
+    // "uniprot:replaces",
     // "iao:0100001" // -> replacement term
 ];
 
