@@ -9,7 +9,7 @@
             "enabled": false,
             "ingests": [
                 {
-                    "ingest_files": ["/nfs/production/parkinso/spot/jmcl/up/**/*.rdf.xz"],
+                    "ingest_files": ["./efo.owl"],
                     "ingest_script": "./target/release/grebi_ingest_rdf",
                     "ingest_args": [
                         { "name": "--rdf-type", "value": "rdf_triples_xml" }
@@ -27,6 +27,18 @@
                     "ingest_args": [
                         { "name": "--rdf-type", "value": "rdf_quads_nq" },
                         { "name": "--rdf-graph", "value": "http://reasoner.renci.org/redundant" }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Reactome",
+            "enabled": false,
+            "ingests": [
+                {
+                    "ingest_files": ["./01_ingest/grebi_ingest_reactome/export/reactome.json"],
+                    "ingest_script": "./target/release/grebi_ingest_reactome",
+                    "ingest_args": [
                     ]
                 }
             ]
@@ -66,7 +78,7 @@
                     "ingest_files": ["/data/ontologies/ontologies.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_ols",
                     "ingest_args": [
-                        { "name": "--ontologies", "value": "efo,mp,hp,chebi,go" }
+                        { "name": "--ontologies", "value": "efo,mp,hp,go,ro,iao,uberon,pato" }
                     ]
                 }
             ]
@@ -210,8 +222,8 @@
         }
     ],
     "exclude_edges": [
-        "iri",
-        "curie",
+        "ols:iri",
+        "ols:curie",
         "oboinowl:id"
     ]
 }

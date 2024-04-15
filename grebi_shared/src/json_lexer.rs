@@ -28,8 +28,6 @@ pub struct JsonToken {
 
 pub fn lex(buf: &Vec<u8>) -> Vec<JsonToken> {
 
-    // eprintln!("lexing: {}", String::from_utf8(buf.to_vec()).unwrap());
-
     let mut tokens: Vec<JsonToken> = Vec::new();
 
     let mut index: usize = 0;
@@ -75,7 +73,7 @@ pub fn lex(buf: &Vec<u8>) -> Vec<JsonToken> {
             }
             b'0'|b'1'|b'2'|b'3'|b'4'|b'5'|b'6'|b'7'|b'8'|b'9'|b'-' => {
                 tokens.push(JsonToken { kind: JsonTokenType::StartNumber, index });
-                while buf[index] != b',' && buf[index] != b' ' && buf[index] != b'\t' && buf[index] != b'}' && buf[index] != b']' {
+                while index < buf.len() && buf[index] != b',' && buf[index] != b' ' && buf[index] != b'\t' && buf[index] != b'}' && buf[index] != b']' {
                     index += 1;
                 }
                 tokens.push(JsonToken { kind: JsonTokenType::EndNumber, index: index-1 });

@@ -74,33 +74,33 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
             nodes_writer.write_all(&middle_json_fragment).unwrap();
 
             nodes_writer.write_all(remove_empty_fields(&json!({
-                "type": ["GWAS"],
+                "grebi:type": ["GWAS"],
                 "rdf:type": [normalise.reprefix(&String::from("http://edamontology.org/topic_3517"))], // gwas study
 
                 "dcterms:created": [date_added_to_catalog],
                 "dcterms:creator": [first_author],
                 "dcterms:modified": [date],
-                "journal": [journal],
-                "pubmedid": [pubmedid],
+                "gwas:journal": [journal],
+                "gwas:pubmedid": [normalise.reprefix(&("pmid:".to_owned()+pubmedid))],
 
                 // Seems derived from PUBMEDID
                 // "link": link,
 
                 "dcterms:title": [study],
 
-                "disease_trait": [disease_trait],
+                "gwas:disease_trait": [disease_trait],
 
-                "initial_sample_size": [initial_sample_size],
-                "replication_sample_size": [replication_sample_size],
-                "platform": [platform],
-                "mapped_trait":[ normalise.reprefix(&String::from( mapped_trait_uri)) ],
-                "association_count": [association_count],
-                "mapped_trait":[ normalise.reprefix(&String::from( mapped_trait_uri)) ],
+                "gwas:initial_sample_size": [initial_sample_size],
+                "gwas:replication_sample_size": [replication_sample_size],
+                "gwas:platform": [platform],
+                "gwas:mapped_trait":[ normalise.reprefix(&String::from( mapped_trait_uri)) ],
+                "gwas:association_count": [association_count],
+                "gwas:mapped_trait":[ normalise.reprefix(&String::from( mapped_trait_uri)) ],
                 // "study_accession": [study_accession],
-                "genotyping_technology": [genotyping_technology],
-                "cohort": [cohort],
-                "full_summary_statistics": [full_summary_statistics],
-                "summary_stats_location": [summary_stats_location]
+                "gwas:genotyping_technology": [genotyping_technology],
+                "gwas:cohort": [cohort],
+                "gwas:full_summary_statistics": [full_summary_statistics],
+                "gwas:summary_stats_location": [summary_stats_location]
 
             })).unwrap().to_string().as_bytes()).unwrap();
 

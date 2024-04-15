@@ -88,7 +88,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "mgiGeneAccessionId" },
-                        { "name": "--json-inject-type", "value": "Gene" }
+                        { "name": "--json-inject-type", "value": "impc:Gene" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
 
@@ -97,7 +98,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "observationId" },
-                        { "name": "--json-inject-type", "value": "CategoricalObservation" }
+                        { "name": "--json-inject-type", "value": "CategoricalObservation" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -105,7 +107,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "specimenId" },
-                        { "name": "--json-inject-type", "value": "EmbryoSpecimen" }
+                        { "name": "--json-inject-type", "value": "impc:EmbryoSpecimen" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -113,7 +116,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "genePhenotypeAssociationId" },
-                        { "name": "--json-inject-type", "value": "GenePhenotypeAssociation" }
+                        { "name": "--json-inject-type", "value": "impc:GenePhenotypeAssociation" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -121,7 +125,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "observationId" },
-                        { "name": "--json-inject-type", "value": "ImageRecordObservation" }
+                        { "name": "--json-inject-type", "value": "impc:ImageRecordObservation" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -129,7 +134,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "experimentId" },
-                        { "name": "--json-inject-type", "value": "LineExperiment" }
+                        { "name": "--json-inject-type", "value": "impc:LineExperiment" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -137,7 +143,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "specimenId" },
-                        { "name": "--json-inject-type", "value": "MouseSpecimen" }
+                        { "name": "--json-inject-type", "value": "impc:MouseSpecimen" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -145,7 +152,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "observationId" },
-                        { "name": "--json-inject-type", "value": "OntologicalObservation" }
+                        { "name": "--json-inject-type", "value": "impc:OntologicalObservation" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -153,7 +161,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "parameterId" },
-                        { "name": "--json-inject-type", "value": "Parameter" }
+                        { "name": "--json-inject-type", "value": "impc:Parameter" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -161,7 +170,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "pipelineId" },
-                        { "name": "--json-inject-type", "value": "Pipeline" }
+                        { "name": "--json-inject-type", "value": "impc:Pipeline" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -169,7 +179,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "procedureId" },
-                        { "name": "--json-inject-type", "value": "Procedure" }
+                        { "name": "--json-inject-type", "value": "impc:Procedure" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -177,7 +188,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "experimentId" },
-                        { "name": "--json-inject-type", "value": "SpecimenExperiment" }
+                        { "name": "--json-inject-type", "value": "impc:SpecimenExperiment" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -185,7 +197,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "observationId" },
-                        { "name": "--json-inject-type", "value": "TextObservation" }
+                        { "name": "--json-inject-type", "value": "impc:TextObservation" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -193,7 +206,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "observationId" },
-                        { "name": "--json-inject-type", "value": "TimeSeriesObservation" }
+                        { "name": "--json-inject-type", "value": "impc:TimeSeriesObservation" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -201,7 +215,8 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "observationId" },
-                        { "name": "--json-inject-type", "value": "UnidimensionalObservation" }
+                        { "name": "--json-inject-type", "value": "impc:UnidimensionalObservation" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
                 {
@@ -209,15 +224,28 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "statisticalResultId" },
-                        { "name": "--json-inject-type", "value": "StatisticalResult" }
+                        { "name": "--json-inject-type", "value": "impc:StatisticalResult" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Reactome",
+            "enabled": true,
+            "ingests": [
+                {
+                    "ingest_files": ["./01_ingest/grebi_ingest_reactome/export/reactome.json"],
+                    "ingest_script": "./target/release/grebi_ingest_reactome",
+                    "ingest_args": [
                     ]
                 }
             ]
         }
     ],
     "exclude_edges": [
-        "iri",
-        "curie",
+        "ols:iri",
+        "ols:curie",
         "oboinowl:id"
     ]
 }

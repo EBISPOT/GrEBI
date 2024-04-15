@@ -33,7 +33,10 @@ struct Args {
     json_subject_field:String,
 
     #[arg(long, default_value_t = String::from(""))]
-    json_inject_type:String
+    json_inject_type:String,
+
+    #[arg(long, default_value_t = String::from(""))]
+    json_inject_key_prefix:String
 }
 
 fn main() {
@@ -109,7 +112,7 @@ fn main() {
             } else {
                 if is_first {
                     if args.json_inject_type.len() > 0 {
-                        output_nodes.write_all(r#""type":[""#.as_bytes()).unwrap();
+                        output_nodes.write_all(r#""grebi:type":[""#.as_bytes()).unwrap();
                         output_nodes.write_all(args.json_inject_type.as_bytes()).unwrap();
                         output_nodes.write_all(r#""],"#.as_bytes()).unwrap();
                     }
@@ -119,6 +122,9 @@ fn main() {
                 }
 
                 output_nodes.write_all(r#"""#.as_bytes()).unwrap();
+                if args.json_inject_key_prefix.len() > 0 {
+                    output_nodes.write_all(args.json_inject_key_prefix.as_bytes()).unwrap();
+                }
                 output_nodes.write_all(k).unwrap();
                 output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
 

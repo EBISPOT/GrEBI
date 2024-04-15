@@ -155,7 +155,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
     // :LABEL
     let mut is_first = true;
     entity.props.iter().for_each(|prop| {
-        if prop.key == "type".as_bytes() {
+        if prop.key == "grebi:type".as_bytes() {
             if is_first {
                 is_first = false;
             } else {

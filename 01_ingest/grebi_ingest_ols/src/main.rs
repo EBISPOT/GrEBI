@@ -105,6 +105,7 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
     let ontology_id = metadata.get("ontologyId").unwrap().as_str().unwrap().to_string();
 
     if !ontology_whitelist.contains(&ontology_id) {
+        eprintln!("Skipping ontology: {}", ontology_id);
         json.skip_value().unwrap();
         while json.has_next().unwrap() {
             json.skip_name().unwrap();
@@ -114,6 +115,7 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         return;
     }
 
+    eprintln!("Reading ontology: {}", ontology_id);
 
     let ontology_iri = metadata.get("iri");
     let datasource = datasource_name.to_string() + "." + ontology_id.as_str();
@@ -130,22 +132,16 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
     output_nodes.write_all(ontology_id.as_bytes()).unwrap();
     output_nodes.write_all(r#"","datasource":""#.as_bytes()).unwrap();
     output_nodes.write_all(datasource.as_bytes()).unwrap();
-    output_nodes.write_all(r#"","properties":{"#.as_bytes()).unwrap();
-
-    let mut is_first = true;
+    output_nodes.write_all(r#"","properties":{"grebi:type":["ols:Ontology"]"#.as_bytes()).unwrap();
 
     for k in metadata.keys() {
 
-        if is_first {
-            is_first = false;
-        } else {
-            output_nodes.write_all(r#","#.as_bytes()).unwrap();
-        }
+        output_nodes.write_all(r#","#.as_bytes()).unwrap();
 
         let v= metadata.get(k).unwrap();
 
         output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-        output_nodes.write_all(k.as_bytes()).unwrap();
+        output_nodes.write_all(reprefix_predicate(k, normalise).as_bytes()).unwrap();
         output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
 
         if v.is_array() {
@@ -161,11 +157,11 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
     loop {
         if key.eq("classes") {
-            read_entities(json, output_nodes, output_equivalences, normalise, &datasource);
+            read_entities(json, output_nodes, output_equivalences, normalise, &datasource, "ols:Class");
         } else if key.eq("properties") {
-            read_entities(json, output_nodes, output_equivalences, normalise, &datasource);
+            read_entities(json, output_nodes, output_equivalences, normalise, &datasource, "ols:Property");
         } else if key.eq("individuals") {
-            read_entities(json, output_nodes, output_equivalences, normalise, &datasource);
+            read_entities(json, output_nodes, output_equivalences, normalise, &datasource, "ols:Individual");
         } else {
             panic!();
         }
@@ -190,16 +186,18 @@ const EQUIV_PREDICATES :[&str;2]= [
     // "iao:0100001" // -> replacement term
 ];
 
-fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<File>, output_equivalences: &mut BufWriter<File>, normalise: &PrefixMap, datasource:&String) {
+fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<File>, output_equivalences: &mut BufWriter<File>, normalise: &PrefixMap, datasource:&String, grebitype:&str) {
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
         let mut val:Value = read_value(json, normalise);
         let obj = val.as_object_mut().unwrap();
 
-        let curie = normalise.reprefix(& obj.get("iri").unwrap().as_str().unwrap().to_string() );
+        // eprintln!("obj: {:?}", obj);
+
+        let curie = normalise.reprefix(& obj.get("ols:iri").unwrap().as_str().unwrap().to_string() );
 
         for k in obj.keys() {
-            if k.eq("iri") {
+            if k.eq("ols:iri") {
                 continue
             }
             let v = obj.get(k).unwrap();
@@ -238,26 +236,22 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         output_nodes.write_all(curie.as_bytes()).unwrap();
         output_nodes.write_all(r#"","datasource":""#.as_bytes()).unwrap();
         output_nodes.write_all(datasource.as_bytes()).unwrap();
-        output_nodes.write_all(r#"","properties":{"#.as_bytes()).unwrap();
-
-        let mut is_first = true;
+        output_nodes.write_all(r#"","properties":{"grebi:type":[""#.as_bytes()).unwrap();
+        output_nodes.write_all(grebitype.as_bytes()).unwrap();
+        output_nodes.write_all(r#""]"#.as_bytes()).unwrap();
 
         for k in obj.keys() {
 
-            if is_first {
-                is_first = false;
-            } else {
-                output_nodes.write_all(r#","#.as_bytes()).unwrap();
-            }
-
-            if k.eq("searchableAnnotationValues") {
+            if k.eq("ols:searchableAnnotationValues") {
                 continue;
             }
+
+            output_nodes.write_all(r#","#.as_bytes()).unwrap();
 
             let v= obj.get(k).unwrap();
 
             output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-            output_nodes.write_all(k.as_bytes()).unwrap();
+            output_nodes.write_all(k.as_bytes()).unwrap();// already reprefixed on load
             output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
 
             output_nodes.write_all(r#"["#.as_bytes()).unwrap();
@@ -301,12 +295,12 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<File>) {
 
     if v.is_object() {
         let obj = v.as_object().unwrap();
-        let obj_types = obj.get("type");
+        let obj_types = obj.get("ols:type");
 
         if obj_types.is_some() {
             if has_reification_type(obj_types.unwrap().as_array().unwrap()) {
-                let reified_value = obj.get("value").unwrap();
-                let axiom_sets = obj.get("axioms").unwrap().as_array().unwrap();
+                let reified_value = obj.get("ols:value").unwrap();
+                let axiom_sets = obj.get("ols:axioms").unwrap().as_array().unwrap();
                 for axiom_set in axiom_sets {
                     let reified_props = axiom_set.as_object().unwrap();
 
@@ -343,7 +337,7 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<File>) {
                     output_nodes.write_all(r#"}}"#.as_bytes()).unwrap();
                 }
             } else {
-                let value = obj.get("value").unwrap();
+                let value = obj.get("ols:value").unwrap();
                 write_value(&value, output_nodes);
             }
             return;
@@ -383,7 +377,7 @@ fn get_string_values<'a>(v:&'a Value) ->Vec<&'a str> {
         return [v.as_str().unwrap()].to_vec();
     }
     if v.is_object() {
-        let value = v.get("value");
+        let value = v.get("ols:value");
         if value.is_some() {
             return get_string_values(value.unwrap());
         }
@@ -409,7 +403,7 @@ fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, normalise: 
             json.begin_object().unwrap();
             while json.has_next().unwrap() {
                 let k = json.next_name_owned().unwrap();
-                obj.insert( normalise.reprefix(&k), read_value(json, normalise));
+                obj.insert( reprefix_predicate(&k, &normalise), read_value(json, normalise));
             }
             json.end_object().unwrap();
             return Value::Object(obj);
@@ -426,6 +420,21 @@ fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, normalise: 
         struson::reader::ValueType::Null => {
             json.next_null().unwrap();
             return Value::Null;
+        }
+    }
+}
+
+fn reprefix_predicate(pred:&str, normalise:&PrefixMap) -> String {
+
+    let reprefixed = normalise.maybe_reprefix(&pred.to_string());
+
+    if reprefixed.is_some() {
+        return reprefixed.unwrap();
+    } else {
+        if pred.contains("://") {
+            return pred.to_string();
+        } else {
+            return "ols:".to_owned() + pred;
         }
     }
 }

@@ -133,7 +133,7 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
         .iter()
         .map(|json| {
             for prop in &json.props {
-                if prop.key == b"type" {
+                if prop.key == b"grebi:type" {
                     has_any_type = true;
                 }
             }
@@ -143,8 +143,8 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
 
     if !has_any_type {
         // skip if after merging the node has no type
-        // this will remove e.g. all the ubergraph entries where the node is not defined by
-        // another datasource 
+        // this will remove e.g. all the ubergraph entries or sssom mappings
+        // where the node is not defined by another datasource 
         return;
     }
 

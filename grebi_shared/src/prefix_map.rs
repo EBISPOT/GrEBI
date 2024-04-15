@@ -91,6 +91,15 @@ impl PrefixMap {
         }
     }
 
+    pub fn maybe_reprefix(&self, subject:&String) -> Option<String> {
+        let res = self.reprefix_bytes(subject.as_bytes());
+        if res.is_some() {
+            return Some(String::from_utf8(res.unwrap()).unwrap());
+        } else {
+            return None;
+        }
+    }
+
     pub fn reprefix_bytes(&self, subject:&[u8]) -> Option<Vec<u8>> {
         return reprefix_impl(subject, &self.buf[
             /* skip unused inner_size and curie_len of root node */

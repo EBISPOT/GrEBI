@@ -143,7 +143,7 @@ fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<File>, equivalenc
         }
 
         nodes_writer.write_all(r#"{"subject":""#.as_bytes()).unwrap();
-        nodes_writer.write_all( normalise.reprefix(& s.value().to_string() ).as_bytes());
+        nodes_writer.write_all( normalise.reprefix(& s.value().to_string() ).as_bytes()).unwrap();
         nodes_writer.write_all(&middle_json_fragment).unwrap();
         nodes_writer.write_all( term_to_json(s, ds, &normalise, equivalences_writer).to_string().as_bytes()).unwrap();
         nodes_writer.write_all("}\n".as_bytes()).unwrap();
@@ -152,14 +152,14 @@ fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<File>, equivalenc
     eprintln!("Writing JSONL took {} seconds", start_time2.elapsed().as_secs());
 }
 
-const EQUIV_PREDICATES :[&str;7]= [
+const EQUIV_PREDICATES :[&str;3]= [
     "http://www.w3.org/2002/07/owl#equivalentClass",
     "http://www.w3.org/2002/07/owl#equivalentProperty",
     "http://www.w3.org/2002/07/owl#sameAs",
-    "http://www.w3.org/2004/02/skos/core#exactMatch",
-    "http://www.geneontology.org/formats/oboInOwl#hasAlternativeId",
-    "http://purl.uniprot.org/uniprot/replaces",
-    "http://purl.obolibrary.org/obo/IAO_0100001" // -> replacement term
+    // "http://www.w3.org/2004/02/skos/core#exactMatch",
+    // "http://www.geneontology.org/formats/oboInOwl#hasAlternativeId",
+    // "http://purl.uniprot.org/uniprot/replaces",
+    // "http://purl.obolibrary.org/obo/IAO_0100001" // -> replacement term
 ];
 
 fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap, equivalences_writer:&mut BufWriter<File>) -> Value {
