@@ -33,14 +33,6 @@ fn main() {
 
     let datasource_name = args.datasource_name.as_str();
 
-    let normalise = {
-        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
-        let mut builder = PrefixMapBuilder::new();
-        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-            builder.add_mapping(k, v);
-        });
-        builder.build()
-    };
 
 
 }

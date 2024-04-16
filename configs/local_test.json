@@ -6,7 +6,7 @@
     "datasources": [
         {
             "name": "HGNC",
-            "enabled": true,
+            "enabled": false,
             "ingests": [
                 {
                     "ingest_files": [
@@ -65,7 +65,7 @@
         },
         {
             "name": "GWAS",
-            "enabled": false,
+            "enabled": true,
             "ingests": [
                 {
                     "ingest_files": [
@@ -98,7 +98,7 @@
                     "ingest_files": ["/data/ontologies/ontologies.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_ols",
                     "ingest_args": [
-                        { "name": "--ontologies", "value": "efo,mp,hp,go,ro,iao,uberon,pato" }
+                        { "name": "--ontologies", "value": "efo,mp,hp,go,ro,iao,uberon,pato,chebi" }
                     ]
                 }
             ]

@@ -33,15 +33,6 @@ fn main() {
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
-    let normalise:PrefixMap = {
-        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
-        let mut builder = PrefixMapBuilder::new();
-        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-            builder.add_mapping(k, v);
-        });
-        builder.build()
-    };
-
     let mut yaml_header_lines:Vec<String> = Vec::new();
 
     loop {
@@ -90,9 +81,9 @@ fn main() {
 
         let record = record.unwrap();
 
-        let subj = remap_subject(&record.get(subj_idx).unwrap().to_string(), &expand, &normalise);
-        let pred = remap_subject(&record.get(pred_idx).unwrap().to_string(), &expand, &normalise);
-        let obj = remap_subject(&record.get(obj_idx).unwrap().to_string(), &expand, &normalise);
+        let subj = remap_subject(&record.get(subj_idx).unwrap().to_string(), &expand);
+        let pred = remap_subject(&record.get(pred_idx).unwrap().to_string(), &expand);
+        let obj = remap_subject(&record.get(obj_idx).unwrap().to_string(), &expand);
 
         output_nodes.write_all(r#"{"subject":""#.as_bytes()).unwrap();
         output_nodes.write_all(subj.as_bytes()).unwrap();
@@ -118,7 +109,7 @@ fn main() {
                             output_nodes.write_all(r#"""#.as_bytes()).unwrap();
                             output_nodes.write_all(column_title.as_bytes()).unwrap();
                             output_nodes.write_all(r#"":[""#.as_bytes()).unwrap();
-                            write_escaped_string(remap_subject(&record.get(n).unwrap().to_string(), &expand, &normalise).as_bytes(), &mut output_nodes);
+                            write_escaped_string(remap_subject(&record.get(n).unwrap().to_string(), &expand).as_bytes(), &mut output_nodes);
                             output_nodes.write_all(r#""]"#.as_bytes()).unwrap();
                         }
                     }
@@ -135,13 +126,9 @@ fn main() {
     
 }
 
-fn remap_subject(subject: &String, expand:&PrefixMap, normalise:&PrefixMap) -> String {
+fn remap_subject(subject: &String, expand:&PrefixMap) -> String {
 
-    let iri = expand.reprefix(subject);
-    // eprintln!("{} expanded to {}", subject, iri);
-    let curie = normalise.reprefix(&iri);
-    // eprintln!("{} compacted to {}", iri, curie);
-    return curie;
+    return expand.reprefix(subject);
 }
 
 

@@ -102,11 +102,11 @@ fn main() {
                 out_props.insert("grebi:equivalentTo".to_string(), Value::Array( equivalences));
             }
 
-            output_nodes.write_all(serde_json::to_string(&normalise_ids(json!({
+            output_nodes.write_all(serde_json::to_string(&json!({
                 "subject": id,
                 "datasource": datasource_name,
                 "properties": arrayify( Value::Object(out_props) ) 
-            }), &normalise)).unwrap().as_bytes()).unwrap();
+            })).unwrap().as_bytes()).unwrap();
             output_nodes.write_all("\n".as_bytes()).unwrap();
 
 
@@ -122,11 +122,11 @@ fn main() {
                 "properties": arrayify( obj.get("properties").unwrap().clone() )
             }]));
 
-            output_nodes.write_all(serde_json::to_string(&normalise_ids(json!({
+            output_nodes.write_all(serde_json::to_string(&json!({
                 "subject": "reactome_".to_owned() + start_id,
                 "datasource": datasource_name,
                 "properties": out_props
-            }), &normalise)).unwrap().as_bytes()).unwrap();
+            })).unwrap().as_bytes()).unwrap();
 
             output_nodes.write_all("\n".as_bytes()).unwrap();
 
@@ -154,20 +154,3 @@ fn arrayify(pv:Value) -> Value {
     return Value::Object(new_obj);
 }
 
-fn normalise_ids(json:Value, normalise:&PrefixMap)->Value {
-    if json.is_array() {
-        return Value::Array(json.as_array().unwrap().iter().map(|v| normalise_ids(v.clone(), &normalise)).collect::<Vec<Value>>());
-    }
-    if json.is_object() {
-        let obj = json.as_object().unwrap();
-        let mut new_obj = serde_json::Map::new();
-        for (k, v) in obj {
-            new_obj.insert( normalise.reprefix(k), normalise_ids(v.clone(), &normalise));
-        }
-        return Value::Object(new_obj);
-    }
-    if json.is_string() {
-        return Value::String(normalise.reprefix(&json.as_str().unwrap().to_string()));
-    }
-    return json.clone();
-}

@@ -1,13 +1,6 @@
 
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufWriter, self, BufReader, StdinLock, StdoutLock, Write};
-use std::ptr::eq;
+use std::io::{BufWriter, self, BufReader};
 use clap::Parser;
-use grebi_shared::prefix_map::PrefixMap;
-use grebi_shared::prefix_map::PrefixMapBuilder;
-use grebi_shared::serialize_equivalence;
-use serde_json::json;
 
 mod write_associations;
 mod write_studies;
@@ -38,16 +31,6 @@ fn main() {
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
-    let normalise = {
-        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
-        let mut builder = PrefixMapBuilder::new();
-        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-            builder.add_mapping(k, v);
-        });
-        builder.build()
-    };
-
-
     let mut csv_reader =
         csv::ReaderBuilder::new()
         .delimiter(b'\t')
@@ -57,10 +40,10 @@ fn main() {
 
     if args.filename.starts_with("gwas-catalog-associations") {
         eprintln!("GWAS ingest: writing associations");
-        write_associations(&mut csv_reader, &mut output_nodes, &args.datasource_name, &normalise);
+        write_associations(&mut csv_reader, &mut output_nodes, &args.datasource_name);
     } else if args.filename.starts_with("gwas-catalog-studies") {
         eprintln!("GWAS ingest: writing studies");
-        write_studies(&mut csv_reader, &mut output_nodes, &args.datasource_name, &normalise);
+        write_studies(&mut csv_reader, &mut output_nodes, &args.datasource_name);
     } else {
         panic!("GWAS ingest: Unknown filename: {}", args.filename);
     }

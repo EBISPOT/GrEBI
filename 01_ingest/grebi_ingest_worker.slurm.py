@@ -61,6 +61,7 @@ def main():
     cmd = cmd + ' --filename ' + shlex.quote( os.path.basename( filename ))
     for param in datasource_file['ingest']['ingest_args']:
         cmd = cmd + ' ' + param['name'] + ' ' + shlex.quote( param['value'] )
+    cmd = cmd + ' | ./target/release/grebi_normalise_prefixes '
     cmd = cmd + ' > ' + shlex.quote(  nodes_jsonl_filename )
 
     print(get_time() + " --- Running ingest script: " + cmd, flush=True)

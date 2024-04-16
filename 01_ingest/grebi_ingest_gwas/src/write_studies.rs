@@ -11,7 +11,7 @@ use serde_json::json;
 use crate::check_headers::check_headers;
 use crate::remove_empty_fields::remove_empty_fields;
 
-pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>, datasource_name: &str, normalise: &PrefixMap) {
+pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>, datasource_name: &str) {
 
     {
         let headers = csv_reader.headers().unwrap();
@@ -75,13 +75,13 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
 
             nodes_writer.write_all(remove_empty_fields(&json!({
                 "grebi:type": ["gwas:Study"],
-                "rdf:type": [normalise.reprefix(&String::from("http://edamontology.org/topic_3517"))], // gwas study
+                "rdf:type": ["http://edamontology.org/topic_3517"], // gwas study
 
                 "dcterms:created": [date_added_to_catalog],
                 "dcterms:creator": [first_author],
                 "dcterms:modified": [date],
                 "gwas:journal": [journal],
-                "gwas:pubmedid": [normalise.reprefix(&("pmid:".to_owned()+pubmedid))],
+                "gwas:pubmedid": ["pmid:".to_owned()+pubmedid],
 
                 // Seems derived from PUBMEDID
                 // "link": link,
@@ -93,9 +93,8 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
                 "gwas:initial_sample_size": [initial_sample_size],
                 "gwas:replication_sample_size": [replication_sample_size],
                 "gwas:platform": [platform],
-                "gwas:mapped_trait":[ normalise.reprefix(&String::from( mapped_trait_uri)) ],
+                "gwas:mapped_trait":[ mapped_trait_uri ],
                 "gwas:association_count": [association_count],
-                "gwas:mapped_trait":[ normalise.reprefix(&String::from( mapped_trait_uri)) ],
                 // "study_accession": [study_accession],
                 "gwas:genotyping_technology": [genotyping_technology],
                 "gwas:cohort": [cohort],

@@ -53,17 +53,6 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("grebi_ingest_rdf running for {}", args.datasource_name);
 
-
-    let normalise = {
-        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
-        let mut builder = PrefixMapBuilder::new();
-        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-            builder.add_mapping(k, v);
-        });
-        builder.build()
-    };
-
-
     let start_time = std::time::Instant::now();
 
     // Read RDF/XML from stdin
@@ -110,7 +99,7 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("Loading graph took {} seconds", start_time.elapsed().as_secs());
 
-    write_subjects(ds, &mut output_nodes, &args, &normalise);
+    write_subjects(ds, &mut output_nodes, &args);
 
     eprintln!("Total time elapsed: {} seconds", start_time.elapsed().as_secs());
 
@@ -118,7 +107,7 @@ fn main() -> std::io::Result<()> {
 }
 
 
-fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<StdoutLock>, args:&Args, normalise: &PrefixMap) {
+fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<StdoutLock>, args:&Args) {
 
     let start_time2 = std::time::Instant::now();
 
@@ -132,16 +121,16 @@ fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<StdoutLock>, args
         }
 
         nodes_writer.write_all(r#"{"subject":""#.as_bytes()).unwrap();
-        nodes_writer.write_all( normalise.reprefix(& s.value().to_string() ).as_bytes()).unwrap();
+        nodes_writer.write_all( & s.value().to_string().as_bytes()).unwrap();
         nodes_writer.write_all(&middle_json_fragment).unwrap();
-        nodes_writer.write_all( term_to_json(s, ds, &normalise).to_string().as_bytes()).unwrap();
+        nodes_writer.write_all( term_to_json(s, ds).to_string().as_bytes()).unwrap();
         nodes_writer.write_all("}\n".as_bytes()).unwrap();
     }
 
     eprintln!("Writing JSONL took {} seconds", start_time2.elapsed().as_secs());
 }
 
-fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap) -> Value {
+fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph) -> Value {
 
     let triples = ds.triples_matching(term, &ANY, &ANY);
 
@@ -153,7 +142,7 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap) -> V
 
         let tu = t.unwrap();
         let p_iri = tu.p().value().to_string();
-        let p = normalise.reprefix(&p_iri);
+        let p = &p_iri;
 
         let o = tu.o();
 
@@ -162,20 +151,19 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap) -> V
         let v = match o.kind() {
             //Iri => json!({ "type": "iri", "value": o.value().to_string() }),
             Iri|Literal => {
-                let o_compact = normalise.reprefix(&o.value().to_string());
-                Value::String( o_compact )
+                Value::String( o.value().to_string() )
             }
             // Literal => json!({ "type": "literal", "value": o.value().to_string() }),
-            BlankNode => term_to_json(o, ds, normalise),
+            BlankNode => term_to_json(o, ds),
             Variable => todo!(),
         };
 
-        let existing = json.get_mut(&p);
+        let existing = json.get_mut(&p_iri);
 
         if existing.is_some() {
             existing.unwrap().as_array_mut().unwrap().push(v);
         } else {
-            json.insert(p, json!([ v ]));
+            json.insert(p_iri, json!([ v ]));
         }
     }
 

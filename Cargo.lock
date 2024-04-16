@@ -538,6 +538,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_normalise_prefixes"
+version = "0.1.0"
+dependencies = [
+ "csv",
+ "grebi_shared",
+ "jemallocator",
+ "serde_json",
+]
+
+[[package]]
 name = "grebi_rocks2neo"
 version = "0.1.0"
 dependencies = [

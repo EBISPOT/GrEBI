@@ -47,15 +47,6 @@ fn main() {
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
-    let normalise = {
-        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
-        let mut builder = PrefixMapBuilder::new();
-        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-            builder.add_mapping(k, v);
-        });
-        builder.build()
-    };
-
     let subj_field:&[u8] = args.json_subject_field.as_bytes();
 
     let middle_json_fragment
@@ -90,7 +81,7 @@ fn main() {
                 let k = json.name(&line);
                 if k == subj_field {
                     let inject_prefix = value_prefixes.get(k);
-                    write_from_parser(&mut json, &line, &mut output_nodes, &normalise, inject_prefix);
+                    write_from_parser(&mut json, &line, &mut output_nodes, inject_prefix);
                     break 'write_subject;
                 } else {
                     json.value(&line); // skip
@@ -145,11 +136,11 @@ fn main() {
                         } else {
                             output_nodes.write_all(b",").unwrap();
                         }
-                        write_from_parser(&mut json, &line, &mut output_nodes, &normalise,inject_prefix);
+                        write_from_parser(&mut json, &line, &mut output_nodes, inject_prefix);
                     }
                     json.end_array();
                 } else {
-                    write_from_parser(&mut json, &line, &mut output_nodes, &normalise, inject_prefix);
+                    write_from_parser(&mut json, &line, &mut output_nodes, inject_prefix);
                 }
                 output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
             }
@@ -162,7 +153,7 @@ fn main() {
     output_nodes.flush().unwrap();
 }
 
-fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&mut BufWriter<StdoutLock>, normalise:&PrefixMap, inject_prefix:Option<&Vec<u8>>) {
+fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&mut BufWriter<StdoutLock>, inject_prefix:Option<&Vec<u8>>) {
 
     match json.peek().kind {
         JsonTokenType::StartObject => {
@@ -179,7 +170,7 @@ fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&m
                 output.write_all(r#"""#.as_bytes()).unwrap();
                 output.write_all(k).unwrap();
                 output.write_all(r#"":"#.as_bytes()).unwrap();
-                write_from_parser(json, line, output, normalise, None);
+                write_from_parser(json, line, output, None);
             }
             json.end_object();
             output.write_all(r#"}"#.as_bytes()).unwrap();
@@ -194,7 +185,7 @@ fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&m
                 } else {
                     output.write_all(b",").unwrap();
                 }
-                write_from_parser(json, line, output, normalise,None);
+                write_from_parser(json, line, output, None);
             }
             json.end_array();
             output.write_all(r#"]"#.as_bytes()).unwrap();
@@ -203,23 +194,13 @@ fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&m
             if inject_prefix.is_some() {
                 let mut str = inject_prefix.unwrap().to_vec();
                 str.extend(json.string(&line));
-                let reprefixed = normalise.reprefix_bytes(&str);
                 output.write_all(r#"""#.as_bytes()).unwrap();
-                if reprefixed.is_some() {
-                    output.write_all(&reprefixed.unwrap()).unwrap();
-                } else {
-                    output.write_all(&str).unwrap();
-                }
+                output.write_all(&str).unwrap();
                 output.write_all(r#"""#.as_bytes()).unwrap();
             } else {
                 let str = json.string(&line);
-                let reprefixed = normalise.reprefix_bytes(str);
                 output.write_all(r#"""#.as_bytes()).unwrap();
-                if reprefixed.is_some() {
-                    output.write_all(&reprefixed.unwrap()).unwrap();
-                } else {
-                    output.write_all(&str).unwrap();
-                }
+                output.write_all(&str).unwrap();
                 output.write_all(r#"""#.as_bytes()).unwrap();
             }
         }
@@ -227,13 +208,8 @@ fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&m
             if inject_prefix.is_some() {
                 let mut str = inject_prefix.unwrap().to_vec();
                 str.extend(json.value(&line));
-                let reprefixed = normalise.reprefix_bytes(&str);
                 output.write_all(r#"""#.as_bytes()).unwrap();
-                if reprefixed.is_some() {
-                    output.write_all(&reprefixed.unwrap()).unwrap();
-                } else {
-                    output.write_all(&str).unwrap();
-                }
+                output.write_all(&str).unwrap();
                 output.write_all(r#"""#.as_bytes()).unwrap();
             } else {
                 let v = json.value(&line);

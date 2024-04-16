@@ -1,0 +1,13 @@
+
+[package]
+name = "grebi_normalise_prefixes"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde_json = { version = "1.0.108", features=["preserve_order"] }
+grebi_shared = { path = "../../grebi_shared" }
+csv = "1.3.0"
+jemallocator = "0.5.4"
+
+

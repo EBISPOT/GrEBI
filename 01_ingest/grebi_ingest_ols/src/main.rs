@@ -44,21 +44,6 @@ fn main() {
         ontology_whitelist.insert(ontology.to_string());
     }
 
-
-    let normalise = {
-        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
-        let mut builder = PrefixMapBuilder::new();
-        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-            builder.add_mapping(k, v);
-        });
-        builder.build()
-    };
-
-
-    // write normalise.buf to a file
-
-
-
     let mut json = JsonStreamReader::new(reader);
 
     json.begin_object().unwrap();
@@ -68,14 +53,14 @@ fn main() {
     }
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
-        read_ontology(&mut json, &mut output_nodes, &normalise, &datasource_name, &ontology_whitelist);
+        read_ontology(&mut json, &mut output_nodes, &datasource_name, &ontology_whitelist);
     }
     json.end_array().unwrap();
     json.end_object().unwrap();
 
 }
 
-fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, normalise: &PrefixMap, datasource_name: &str, ontology_whitelist:&HashSet<String>) {
+fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource_name: &str, ontology_whitelist:&HashSet<String>) {
 
     json.begin_object().unwrap();
 
@@ -89,7 +74,7 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             break;
         }
 
-        metadata.insert(normalise.reprefix(&key.to_string()), read_value(json, &normalise));
+        metadata.insert(key, read_value(json));
     }
 
     let ontology_id = metadata.get("ontologyId").unwrap().as_str().unwrap().to_string();
@@ -123,7 +108,7 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         let v= metadata.get(k).unwrap();
 
         output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-        output_nodes.write_all(reprefix_predicate(k, normalise).as_bytes()).unwrap();
+        output_nodes.write_all(reprefix_predicate(k).as_bytes()).unwrap();
         output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
 
         if v.is_array() {
@@ -139,11 +124,11 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
     loop {
         if key.eq("classes") {
-            read_entities(json, output_nodes, normalise, &datasource, "ols:Class");
+            read_entities(json, output_nodes, &datasource, "ols:Class");
         } else if key.eq("properties") {
-            read_entities(json, output_nodes, normalise, &datasource, "ols:Property");
+            read_entities(json, output_nodes, &datasource, "ols:Property");
         } else if key.eq("individuals") {
-            read_entities(json, output_nodes, normalise, &datasource, "ols:Individual");
+            read_entities(json, output_nodes, &datasource, "ols:Individual");
         } else {
             panic!();
         }
@@ -168,29 +153,15 @@ const EQUIV_PREDICATES :[&str;2]= [
     // "iao:0100001" // -> replacement term
 ];
 
-fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, normalise: &PrefixMap, datasource:&String, grebitype:&str) {
+fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource:&String, grebitype:&str) {
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
-        let mut val:Value = read_value(json, normalise);
+        let mut val:Value = read_value(json);
         let obj = val.as_object_mut().unwrap();
 
         // eprintln!("obj: {:?}", obj);
 
-        let curie = normalise.reprefix(& obj.get("ols:iri").unwrap().as_str().unwrap().to_string() );
-
-        for k in obj.keys() {
-            if k.eq("ols:iri") {
-                continue
-            }
-            let mut v = obj.get(k).unwrap();
-            if k.eq("obo:chebi/inchi") {
-                v = &Value::String("inchi:".to_owned()+&v.as_str().unwrap().to_string());
-            } else if k.eq("obo:chebi/inchikey") {
-                v = &Value::String("inchikey:".to_owned()+&v.as_str().unwrap().to_string());
-            } else if k.eq("obo:chebi/smiles") {
-                v = &Value::String("smiles:".to_owned()+&v.as_str().unwrap().to_string());
-            }
-        }
+        let curie = & obj.get("ols:iri").unwrap().as_str().unwrap().to_string();
 
         output_nodes.write_all(r#"{"subject":""#.as_bytes()).unwrap();
         output_nodes.write_all(curie.as_bytes()).unwrap();
@@ -207,12 +178,11 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             }
 
             output_nodes.write_all(r#","#.as_bytes()).unwrap();
-
-            let v= obj.get(k).unwrap();
-
             output_nodes.write_all(r#"""#.as_bytes()).unwrap();
             output_nodes.write_all(k.as_bytes()).unwrap();// already reprefixed on load
             output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
+
+            let v = obj.get(k).unwrap();
 
             output_nodes.write_all(r#"["#.as_bytes()).unwrap();
                 if v.is_array() {
@@ -347,13 +317,13 @@ fn get_string_values<'a>(v:&'a Value) ->Vec<&'a str> {
     }
     return [].to_vec();
 }
-fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, normalise: &PrefixMap) -> Value {
+fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>) -> Value {
     match json.peek().unwrap() {
         struson::reader::ValueType::Array => {
             let mut elems:Vec<Value> = Vec::new();
             json.begin_array().unwrap();
             while json.has_next().unwrap() {
-                elems.push(read_value(json, normalise));
+                elems.push(read_value(json));
             }
             json.end_array().unwrap();
             return Value::Array(elems);
@@ -363,13 +333,13 @@ fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, normalise: 
             json.begin_object().unwrap();
             while json.has_next().unwrap() {
                 let k = json.next_name_owned().unwrap();
-                obj.insert( reprefix_predicate(&k, &normalise), read_value(json, normalise));
+                obj.insert( reprefix_predicate(&k), read_value(json));
             }
             json.end_object().unwrap();
             return Value::Object(obj);
         }
         struson::reader::ValueType::String => {
-            return Value::String( normalise.reprefix( &json.next_string().unwrap().to_string() ));
+            return Value::String(  json.next_string().unwrap().to_string() );
         }
         struson::reader::ValueType::Number => {
             return Value::Number(json.next_number().unwrap().unwrap());
@@ -384,18 +354,11 @@ fn read_value(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, normalise: 
     }
 }
 
-fn reprefix_predicate(pred:&str, normalise:&PrefixMap) -> String {
-
-    let reprefixed = normalise.maybe_reprefix(&pred.to_string());
-
-    if reprefixed.is_some() {
-        return reprefixed.unwrap();
+fn reprefix_predicate(pred:&str) -> String {
+    if pred.contains(":") {
+        return pred.to_string();
     } else {
-        if pred.contains("://") {
-            return pred.to_string();
-        } else {
-            return "ols:".to_owned() + pred;
-        }
+        return "ols:".to_owned() + pred;
     }
 }
 

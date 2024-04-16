@@ -41,15 +41,6 @@ fn main() {
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
-    let normalise:PrefixMap = {
-        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
-        let mut builder = PrefixMapBuilder::new();
-        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
-            builder.add_mapping(k, v);
-        });
-        builder.build()
-    };
-
     let mut csv_reader =
         csv::ReaderBuilder::new()
         .delimiter(b'\t')
@@ -63,9 +54,9 @@ fn main() {
 
         let record = record.unwrap();
 
-        let subj = remap_subject(&record.get(subj_idx).unwrap().to_string(), &expand, &normalise);
-        let pred = remap_subject(&record.get(pred_idx).unwrap().to_string(), &expand, &normalise);
-        let obj = remap_subject(&record.get(obj_idx).unwrap().to_string(), &expand, &normalise);
+        let subj = &record.get(subj_idx).unwrap().to_string();
+        let pred = &record.get(pred_idx).unwrap().to_string();
+        let obj = &record.get(obj_idx).unwrap().to_string();
 
         output_nodes.write_all(r#"{"subject":""#.as_bytes()).unwrap();
         output_nodes.write_all(subj.as_bytes()).unwrap();
@@ -107,16 +98,6 @@ fn main() {
 
     
 }
-
-fn remap_subject(subject: &String, expand:&PrefixMap, normalise:&PrefixMap) -> String {
-
-    let iri = expand.reprefix(subject);
-    // eprintln!("{} expanded to {}", subject, iri);
-    let curie = normalise.reprefix(&iri);
-    // eprintln!("{} compacted to {}", iri, curie);
-    return curie;
-}
-
 
 fn write_escaped_string(str:&[u8], writer:&mut BufWriter<StdoutLock>) {
     for c in str {

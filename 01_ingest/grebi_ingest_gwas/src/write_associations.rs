@@ -11,7 +11,7 @@ use serde_json::{json, Value};
 use crate::check_headers::check_headers;
 use crate::remove_empty_fields::remove_empty_fields;
 
-pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>, datasource_name: &str, normalise: &PrefixMap) {
+pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>, datasource_name: &str) {
     {
         let headers = csv_reader.headers().unwrap();
 
@@ -117,43 +117,46 @@ pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nod
                 "gwas:upstream_gene_id": [upstream_gene_id],
                 "gwas:downstream_gene_id": [downstream_gene_id],
                 "gwas:snp_gene_ids": [snp_gene_ids],
-                "gwas:associated_with": [{
-                    "value": normalise.reprefix(&String::from( mapped_trait_uri)),
-                    "properties": {
-                        "gwas:study": [ study_accession ],
+                "gwas:associated_with": Value::Array(mapped_trait_uri.split(", ").map(|tr| {
+                    return json!({
+                        "value": tr,
+                        "properties": {
+                            "gwas:study": [ study_accession ],
 
-                        "gwas:disease_trait": [disease_trait],
+                            "gwas:disease_trait": [disease_trait],
 
-                        "gwas:initial_sample_size": [initial_sample_size],
-                        "gwas:replication_sample_size": [replication_sample_size],
-                        "gwas:region": [region],
-                        "gwas:chr_id": [chr_id],
-                        "gwas:chr_pos": [chr_pos],
-                        "gwas:reported_gene":
-                            reported_genes.to_string().split(",")
-                                .map(|s| s.trim())
-                                .collect::<Vec<&str>>(),
-                        "gwas:upstream_gene_distance": [upstream_gene_distance],
-                        "gwas:downstream_gene_distance": [downstream_gene_distance],
-                        "gwas:strongest_snp_risk_allele": [strongest_snp_risk_allele],
-                        "gwas:snps": [snps],
-                        "gwas:merged": [merged],
-                        "gwas:snp_id_current": [snp_id_current],
-                        "gwas:context": [context],
-                        "gwas:intergenic": [intergenic],
-                        "gwas:risk_allele_frequency": [risk_allele_frequency],
-                        "gwas:p_value": [p_value],
-                        "gwas:pvalue_mlog": [pvalue_mlog],
-                        "gwas:p_value_text": [p_value_text],
-                        "gwas:or_or_beta": [or_or_beta],
-                        "gwas:ci_text": [ci_text],
-                        "gwas:platform": [platform],
-                        "gwas:cnv": [cnv],
-                        "gwas:mapped_trait":[ normalise.reprefix(&String::from( mapped_trait_uri)) ],
-                        "gwas:mapped_trait_label": [mapped_trait],
-                        "gwas:genotyping_technology": [genotyping_technology]
-                    },
-                }],
+                            "gwas:initial_sample_size": [initial_sample_size],
+                            "gwas:replication_sample_size": [replication_sample_size],
+                            "gwas:region": [region],
+                            "gwas:chr_id": [chr_id],
+                            "gwas:chr_pos": [chr_pos],
+                            "gwas:reported_gene":
+                                reported_genes.to_string().split(",")
+                                    .map(|s| s.trim())
+                                    .collect::<Vec<&str>>(),
+                            "gwas:upstream_gene_distance": [upstream_gene_distance],
+                            "gwas:downstream_gene_distance": [downstream_gene_distance],
+                            "gwas:strongest_snp_risk_allele": [strongest_snp_risk_allele],
+                            "gwas:snps": [snps],
+                            "gwas:merged": [merged],
+                            "gwas:snp_id_current": [snp_id_current],
+                            "gwas:context": [context],
+                            "gwas:intergenic": [intergenic],
+                            "gwas:risk_allele_frequency": [risk_allele_frequency],
+                            "gwas:p_value": [p_value],
+                            "gwas:pvalue_mlog": [pvalue_mlog],
+                            "gwas:p_value_text": [p_value_text],
+                            "gwas:or_or_beta": [or_or_beta],
+                            "gwas:ci_text": [ci_text],
+                            "gwas:platform": [platform],
+                            "gwas:cnv": [cnv],
+                            "gwas:mapped_trait":[mapped_trait_uri],
+                            "gwas:mapped_trait_label": [mapped_trait],
+                            "gwas:genotyping_technology": [genotyping_technology]
+                        },
+                    })
+                }).collect())
+                
             })).unwrap().to_string().as_bytes()).unwrap();
 
             nodes_writer.write_all("}\n".as_bytes()).unwrap();
