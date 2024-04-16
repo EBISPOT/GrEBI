@@ -241,7 +241,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props
 
     } else {
 
-        panic!("unexpected kind: {:?}", prop.kind);
+        // panic!("unexpected kind: {:?}", prop.kind);
 
     }
 

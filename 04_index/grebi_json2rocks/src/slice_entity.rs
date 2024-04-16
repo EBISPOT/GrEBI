@@ -139,6 +139,10 @@ impl<'a> SlicedReified<'a> {
         // {
         parser.begin_object();
 
+            if parser.peek().kind == JsonTokenType::EndObject {
+                return None;
+            }
+        
             let k_value = parser.name(&buf);
             if k_value != "value".as_bytes() { return None; }
             value = Some(parser.value(&buf));

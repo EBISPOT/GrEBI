@@ -47,7 +47,7 @@ def main():
         '--in-metadata-json-path ' + shlex.quote(input_metadata_filename),
         '--out-nodes-csv-path ' + shlex.quote(out_nodes_path),
         '--out-edges-csv-path ' + shlex.quote(out_edges_path),
-        '--exclude ' + ','.join(config['exclude_edges'])
+        '--exclude ' + ','.join(config['exclude_edges']+config['equivalence_props'])
     ])
 
     if os.system('bash -c "' + cmd + '"') != 0:

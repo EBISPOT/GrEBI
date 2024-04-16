@@ -39,7 +39,7 @@
         },
         {
             "name": "UberGraph",
-            "enabled": false,
+            "enabled": true,
             "ingests": [
                 {
                     "ingest_files": ["./ubergraph.nq.gz"],
@@ -92,7 +92,7 @@
         },
         {
             "name": "OLS",
-            "enabled": false,
+            "enabled": true,
             "ingests": [
                 {
                     "ingest_files": ["/data/ontologies/ontologies.json.gz"],
