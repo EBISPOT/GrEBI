@@ -36,18 +36,11 @@ def main():
     print(get_time() + " --- Datasource: " + datasource_name, flush=True)
     print(get_time() + " --- Loading file: " + filename, flush=True)
 
-    nodes_jsonl_filename = datasource_file['artefacts']['nodes_jsonl']
-    sorted_nodes_jsonl_filename = datasource_file['artefacts']['sorted_nodes_jsonl']
-    sorted_nodes_jsonl_gz_filename = datasource_file['artefacts']['sorted_nodes_jsonl_gz']
+    nodes_jsonl_gz_filename = datasource_file['artefacts']['nodes_jsonl_gz']
     equivalences_tsv_filename = datasource_file['artefacts']['equivalences_tsv']
 
-    os.makedirs(os.path.dirname(nodes_jsonl_filename), exist_ok=True)
-    os.makedirs(os.path.dirname(sorted_nodes_jsonl_filename), exist_ok=True)
-    os.makedirs(os.path.dirname(sorted_nodes_jsonl_gz_filename), exist_ok=True)
+    os.makedirs(os.path.dirname(nodes_jsonl_gz_filename), exist_ok=True)
     os.makedirs(os.path.dirname(equivalences_tsv_filename), exist_ok=True)
-
-
-    # 1. Import from datasource to JSONL
 
     cmd = ''
     if filename.endswith('.xz'):
@@ -62,7 +55,8 @@ def main():
     for param in datasource_file['ingest']['ingest_args']:
         cmd = cmd + ' ' + param['name'] + ' ' + shlex.quote( param['value'] )
     cmd = cmd + ' | ./target/release/grebi_normalise_prefixes '
-    cmd = cmd + ' > ' + shlex.quote(  nodes_jsonl_filename )
+    cmd = cmd + ' | tee >(./target/release/grebi_extract_equivalences --equivalence-properties ' + ','.join(config['equivalence_props']) + ' > ' + shlex.quote(equivalences_tsv_filename) + ')'
+    cmd = cmd + ' | pigz --fast > ' + shlex.quote(nodes_jsonl_gz_filename)
 
     print(get_time() + " --- Running ingest script: " + cmd, flush=True)
     exitcode = os.system('bash -c "' + cmd + '"')
@@ -70,50 +64,11 @@ def main():
         print(get_time() + " --- ingest script failed with exit code " + str(exitcode), flush=True)
         exit(2)
 
-    # 2. Extract equivalences from nodes file
-    cmd = 'cat ' + shlex.quote(nodes_jsonl_filename) + ' | '
-    cmd = cmd + ' ./target/release/grebi_extract_equivalences --equivalence-properties ' + ','.join(config['equivalence_props']) + ' > ' + shlex.quote(equivalences_tsv_filename)
-    print(get_time() + " --- Running extract equivalences command: " + cmd, flush=True)
-    exitcode = os.system('bash -c "' + cmd + '"')
-    if exitcode != 0:
-        print(get_time() + " --- extract equivalences command failed with exit code " + str(exitcode), flush=True)
-        exit(2)
-
-    # 3. Sort nodes file
-    cmd = 'LC_ALL=C sort -o ' + shlex.quote(sorted_nodes_jsonl_filename) + ' ' + shlex.quote(nodes_jsonl_filename)
-    print(get_time() + " --- Running sort command: " + cmd, flush=True)
-    exitcode = os.system('bash -c "' + cmd + '"')
-    if exitcode != 0:
-        print(get_time() + " --- sort command failed with exit code " + str(exitcode), flush=True)
-        exit(2)
-
-    # 4. Remove unsorted nodes file
-    print(get_time() + " --- Removing unsorted file " + nodes_jsonl_filename, flush=True)
-    os.remove(nodes_jsonl_filename)
-
-    # 5. Gzip sorted nodes file
-    cmd = 'pigz --fast -f ' + shlex.quote(sorted_nodes_jsonl_filename)
-    print(get_time() + " --- Running gzip command: " + cmd, flush=True)
-    exitcode = os.system('bash -c "' + cmd + '"')
-    if exitcode != 0:
-        print(get_time() + " --- gzip command failed with exit code " + str(exitcode), flush=True)
-        exit(2)
-
     print(get_time() + " --- done", flush=True);
 
 
 def get_time():
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-
-def create_rdf2json_command(filename, jsonl_filename):
-
-    global config
-    
-
-    cmd = cmd + ' && rm -f ' + shlex.quote(jsonl_filename)
-
-    return cmd
-
 
 if __name__=="__main__":
    main()

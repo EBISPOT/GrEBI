@@ -30,8 +30,6 @@ def main():
 
     datasource_file = json.loads(datasource_files[int(task_id)].strip())
 
-    filename = datasource_file['filename']
-
     with open(datasource_file['config'], 'r') as f:
         config = json.load(f)
 
@@ -41,7 +39,7 @@ def main():
     print(get_time() + " --- Config file: " + datasource_file['config'])
     print(get_time() + " --- Datasource: " + datasource_name, flush=True)
 
-    sorted_nodes_jsonl_gz_filename = datasource_file['artefacts']['sorted_nodes_jsonl_gz']
+    nodes_jsonl_gz_filename = datasource_file['artefacts']['nodes_jsonl_gz']
     expanded_subjects_jsonl_filename = datasource_file['artefacts']['expanded_subjects_jsonl']
     sorted_expanded_subjects_jsonl_filename = datasource_file['artefacts']['sorted_expanded_subjects_jsonl']
     sorted_expanded_subjects_jsonl_gz_filename = datasource_file['artefacts']['sorted_expanded_subjects_jsonl_gz']
@@ -50,14 +48,14 @@ def main():
     os.makedirs(os.path.dirname(sorted_expanded_subjects_jsonl_filename), exist_ok=True)
     os.makedirs(os.path.dirname(sorted_expanded_subjects_jsonl_gz_filename), exist_ok=True)
 
-    print(get_time() + " --- Loading file: " + sorted_nodes_jsonl_gz_filename, flush=True)
+    print(get_time() + " --- Loading file: " + nodes_jsonl_gz_filename, flush=True)
     print(get_time() + " --- Writing uncompressed to file: " + expanded_subjects_jsonl_filename, flush=True)
     print(get_time() + " --- Then compressed to file: " + sorted_expanded_subjects_jsonl_gz_filename, flush=True)
     print(get_time() + " --- Using equivalences db: " + equivalences_db_path, flush=True)
 
 
     cmd = ' '.join([
-        'gzip -d --to-stdout ' + shlex.quote(sorted_nodes_jsonl_gz_filename),
+        'zcat ' + shlex.quote(nodes_jsonl_gz_filename),
         '| ./target/release/grebi_expand_subjects', shlex.quote(equivalences_db_path),
         '>', shlex.quote(expanded_subjects_jsonl_filename)
     ])
@@ -88,23 +86,11 @@ def main():
         print(get_time() + " --- gzip command failed with exit code " + str(exitcode), flush=True)
         exit(2)
 
-
-    # print elasped time from beginning of script
     print(get_time() + " --- done", flush=True);
 
 
 def get_time():
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-
-def create_rdf2json_command(filename, jsonl_filename):
-
-    global config
-    
-
-    cmd = cmd + ' && rm -f ' + shlex.quote(jsonl_filename)
-
-    return cmd
-
 
 if __name__=="__main__":
    main()

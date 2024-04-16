@@ -30,9 +30,7 @@ def main():
                     for file in files:
                         filename = os.path.abspath(file)
                         basename = os.path.splitext(os.path.basename(filename))[0]
-                        nodes_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename + '.jsonl' ))
-                        sorted_nodes_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename + '.sorted.jsonl' ))
-                        sorted_nodes_jsonl_gz_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename + '.sorted.jsonl.gz' ))
+                        nodes_jsonl_gz_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename + '.jsonl.gz' ))
                         equivalences_tsv_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename  + '.equivalences.tsv'  ))
                         expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.expanded.jsonl' ))
                         sorted_expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl' ))
@@ -43,9 +41,7 @@ def main():
                             'ingest': ingest,
                             'filename': filename,
                             'artefacts': {
-                                'nodes_jsonl': nodes_jsonl_filename,
-                                'sorted_nodes_jsonl': sorted_nodes_jsonl_filename,
-                                'sorted_nodes_jsonl_gz': sorted_nodes_jsonl_gz_filename,
+                                'nodes_jsonl_gz': nodes_jsonl_gz_filename,
                                 'equivalences_tsv': equivalences_tsv_filename,
                                 'expanded_subjects_jsonl': expanded_subjects_jsonl_filename,
                                 'sorted_expanded_subjects_jsonl': sorted_expanded_subjects_jsonl_filename,
