@@ -19,6 +19,15 @@ struct Args {
 
     #[arg(long)]
     filename: String,
+
+    #[arg(long)]
+    csv_subject_field:String
+
+    #[arg(long)]
+    csv_inject_type:String
+
+    #[arg(long)]
+    csv_inject_prefix:String
 }
 
 fn main() {
@@ -26,7 +35,6 @@ fn main() {
     let args = Args::parse();
 
     let stdin = io::stdin().lock();
-    let mut reader = BufReader::new(stdin);
 
     let datasource_name = args.datasource_name.as_str();
 
@@ -42,49 +50,14 @@ fn main() {
         builder.build()
     };
 
-    let mut yaml_header_lines:Vec<String> = Vec::new();
-
-    loop {
-        let buf = reader.fill_buf().unwrap();
-        if buf.len() == 0 {
-            break;
-        }
-        if buf.starts_with(b"#") {
-            let mut header_line = String::new();
-            reader.read_line(&mut header_line).unwrap();
-            yaml_header_lines.push(header_line);
-        } else {
-            break;
-        }
-    } 
-
-    let yaml = yaml_header_lines.iter().map(|line| {
-        return line.trim_start_matches("#").to_string();
-    }).collect::<Vec<String>>().join("\n");
-
-    let yaml_header:serde_yaml::Value = serde_yaml::from_str::<serde_yaml::Value>(yaml.as_str()).unwrap();
-
-    let yaml_header_curie_map = yaml_header.get("curie_map").unwrap().as_mapping().unwrap();
-
-    let expand:PrefixMap = {
-        let mut builder = PrefixMapBuilder::new();
-        for (k, v) in yaml_header_curie_map {
-            builder.add_mapping(k.as_str().unwrap().to_string() + ":", v.as_str().unwrap().to_string());
-        }
-        builder.build()
-    };
-
     let mut csv_reader =
         csv::ReaderBuilder::new()
         .delimiter(b'\t')
         .has_headers(true)
         .flexible(true)
-        .from_reader(reader); // TODO not supposed to do this on a buffered reader... but I did
+        .from_reader(stdin); 
 
     let headers = csv_reader.headers().unwrap().clone();
-    let subj_idx = headers.iter().position(|h| h.eq("subject_id")).unwrap();
-    let pred_idx = headers.iter().position(|h| h.eq("predicate_id")).unwrap();
-    let obj_idx = headers.iter().position(|h| h.eq("object_id")).unwrap();
 
     for record in csv_reader.records() {
 

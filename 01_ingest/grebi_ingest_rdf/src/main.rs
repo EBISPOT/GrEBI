@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{self, BufReader, BufWriter};
+use std::io::{self, BufReader, BufWriter, StdoutLock};
 use std::rc::Rc;
 use sophia::graph::Graph;
 use sophia::graph::inmem::{SpoWrapper, GenericGraph, GraphWrapper};
@@ -45,12 +45,6 @@ struct Args {
     
     #[arg(short, long, num_args(0..))]
     rdf_graph:Vec<String>, // named graphs to load, if we are loading quads
-
-    #[arg(short, long)]
-    output_nodes:String,
-
-    #[arg(short, long)]
-    output_equivalences:String
 }
 
 fn main() -> std::io::Result<()> {
@@ -77,13 +71,8 @@ fn main() -> std::io::Result<()> {
     let handle = stdin.lock();
     let reader = BufReader::new(handle);
 
-    let mut output_nodes = BufWriter::new(
-        File::create(args.output_nodes.as_str()).unwrap());
-
-    let mut output_equivalences = BufWriter::new(
-         File::create(args.output_equivalences.as_str()).unwrap()
-    );
-    // output_equivalences.write_all(b"subject_id\tobject_id\n").unwrap();
+    let stdout = io::stdout().lock();
+    let mut output_nodes = BufWriter::new(stdout);
 
         
     let gr:CustomGraph = match args.rdf_type.as_str() {
@@ -121,7 +110,7 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("Loading graph took {} seconds", start_time.elapsed().as_secs());
 
-    write_subjects(ds, &mut output_nodes, &mut output_equivalences, &args, &normalise);
+    write_subjects(ds, &mut output_nodes, &args, &normalise);
 
     eprintln!("Total time elapsed: {} seconds", start_time.elapsed().as_secs());
 
@@ -129,7 +118,7 @@ fn main() -> std::io::Result<()> {
 }
 
 
-fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<File>, equivalences_writer:&mut BufWriter<File>, args:&Args, normalise: &PrefixMap) {
+fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<StdoutLock>, args:&Args, normalise: &PrefixMap) {
 
     let start_time2 = std::time::Instant::now();
 
@@ -145,24 +134,14 @@ fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<File>, equivalenc
         nodes_writer.write_all(r#"{"subject":""#.as_bytes()).unwrap();
         nodes_writer.write_all( normalise.reprefix(& s.value().to_string() ).as_bytes()).unwrap();
         nodes_writer.write_all(&middle_json_fragment).unwrap();
-        nodes_writer.write_all( term_to_json(s, ds, &normalise, equivalences_writer).to_string().as_bytes()).unwrap();
+        nodes_writer.write_all( term_to_json(s, ds, &normalise).to_string().as_bytes()).unwrap();
         nodes_writer.write_all("}\n".as_bytes()).unwrap();
     }
 
     eprintln!("Writing JSONL took {} seconds", start_time2.elapsed().as_secs());
 }
 
-const EQUIV_PREDICATES :[&str;3]= [
-    "http://www.w3.org/2002/07/owl#equivalentClass",
-    "http://www.w3.org/2002/07/owl#equivalentProperty",
-    "http://www.w3.org/2002/07/owl#sameAs",
-    // "http://www.w3.org/2004/02/skos/core#exactMatch",
-    // "http://www.geneontology.org/formats/oboInOwl#hasAlternativeId",
-    // "http://purl.uniprot.org/uniprot/replaces",
-    // "http://purl.obolibrary.org/obo/IAO_0100001" // -> replacement term
-];
-
-fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap, equivalences_writer:&mut BufWriter<File>) -> Value {
+fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap) -> Value {
 
     let triples = ds.triples_matching(term, &ANY, &ANY);
 
@@ -184,21 +163,10 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, normalise:&PrefixMap, equi
             //Iri => json!({ "type": "iri", "value": o.value().to_string() }),
             Iri|Literal => {
                 let o_compact = normalise.reprefix(&o.value().to_string());
-                if EQUIV_PREDICATES.contains(&p_iri.as_str()) {
-
-                        let s_compacted = normalise.reprefix(&tu.s().value().to_string());
-                        let equiv_left = s_compacted.as_bytes();
-
-                        let equiv = serialize_equivalence(equiv_left, o_compact.as_bytes());
-
-                        if equiv.is_some() {
-                            equivalences_writer.write_all(equiv.unwrap().as_slice()).unwrap();
-                        }
-                }
                 Value::String( o_compact )
             }
             // Literal => json!({ "type": "literal", "value": o.value().to_string() }),
-            BlankNode => term_to_json(o, ds, normalise, equivalences_writer),
+            BlankNode => term_to_json(o, ds, normalise),
             Variable => todo!(),
         };
 

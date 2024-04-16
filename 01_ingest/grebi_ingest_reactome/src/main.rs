@@ -19,12 +19,6 @@ struct Args {
 
     #[arg(long)]
     filename: String,
-
-    #[arg(long)]
-    output_nodes:String,
-
-    #[arg(long)]
-    output_equivalences:String
 }
 
 fn main() {
@@ -36,11 +30,8 @@ fn main() {
 
     let datasource_name = args.datasource_name.as_str();
 
-    let mut output_nodes = BufWriter::new(
-        File::create(args.output_nodes.as_str()).unwrap());
-
-    let mut output_equivalences = BufWriter::new(
-         File::create(args.output_equivalences.as_str()).unwrap());
+    let stdout = io::stdout().lock();
+    let mut output_nodes = BufWriter::new(stdout);
 
     let normalise:PrefixMap = {
         let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
@@ -75,15 +66,8 @@ fn main() {
             let mut out_props = properties.clone();
             out_props.insert("grebi:type".to_string(), Value::Array(labels.iter().map(|v| Value::String("reactome:".to_owned() + v.as_str().unwrap())).collect::<Vec<Value>>()));
 
-            output_nodes.write_all(serde_json::to_string(&normalise_ids(json!({
-                "subject": id,
-                "datasource": datasource_name,
-                "properties": arrayify( Value::Object(out_props) ) 
-            }), &normalise)).unwrap().as_bytes()).unwrap();
-            output_nodes.write_all("\n".as_bytes()).unwrap();
+            let mut equivalences:Vec<Value> = Vec::new();
 
-            // Equivalences
-            // 
             let p_url = properties.get("url");
             if p_url.is_some() {
                 let url = p_url.unwrap().as_str().unwrap();
@@ -91,7 +75,7 @@ fn main() {
                 // if we can compact the url with bioregistry then we have a curie which we can use as the ID
                 let reprefixed = normalise.maybe_reprefix(&url.to_string());
                 if reprefixed.is_some() {
-                    output_equivalences.write_all(&serialize_equivalence(id.as_bytes(), reprefixed.unwrap().as_bytes()).unwrap()).unwrap();
+                    equivalences.push(Value::String(reprefixed.unwrap()));
                 }
             }
 
@@ -100,7 +84,7 @@ fn main() {
             if p_id.is_some() {
                 let reprefixed = normalise.maybe_reprefix(&p_id.unwrap().as_str().unwrap().to_owned());
                 if reprefixed.is_some() {
-                    output_equivalences.write_all(&serialize_equivalence(id.as_bytes(), reprefixed.unwrap().as_bytes()).unwrap()).unwrap();
+                    equivalences.push(Value::String(reprefixed.unwrap()));
                 }
             } else {
                 // try mashing the databaseName and identifier together as a curie and see if it works with bioregistry
@@ -109,10 +93,22 @@ fn main() {
                     let curie = p_dbname.unwrap().as_str().unwrap().to_owned() + ":" + p_id.unwrap().as_str().unwrap();
                     let reprefixed = normalise.maybe_reprefix(&curie);
                     if reprefixed.is_some() {
-                        output_equivalences.write_all(&serialize_equivalence(id.as_bytes(), reprefixed.unwrap().as_bytes()).unwrap()).unwrap();
+                        equivalences.push(Value::String(reprefixed.unwrap()));
                     }
                 }
             }
+
+            if equivalences.len() > 0 {
+                out_props.insert("grebi:equivalentTo".to_string(), Value::Array( equivalences));
+            }
+
+            output_nodes.write_all(serde_json::to_string(&normalise_ids(json!({
+                "subject": id,
+                "datasource": datasource_name,
+                "properties": arrayify( Value::Object(out_props) ) 
+            }), &normalise)).unwrap().as_bytes()).unwrap();
+            output_nodes.write_all("\n".as_bytes()).unwrap();
+
 
         } else if obj_type.eq("relationship") {
 
@@ -142,7 +138,6 @@ fn main() {
     }
 
     output_nodes.flush().unwrap();
-    output_equivalences.flush().unwrap();
 
 }
 

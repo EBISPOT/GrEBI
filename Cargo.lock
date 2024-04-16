@@ -422,6 +422,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_extract_equivalences"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "csv",
+ "fasthash",
+ "grebi_shared",
+ "jemallocator",
+ "lmdb-zero",
+ "rocksdb",
+ "serde_json",
+]
+
+[[package]]
 name = "grebi_groups2rocks"
 version = "0.1.0"
 dependencies = [

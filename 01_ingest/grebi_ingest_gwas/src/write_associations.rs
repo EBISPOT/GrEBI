@@ -11,7 +11,7 @@ use serde_json::{json, Value};
 use crate::check_headers::check_headers;
 use crate::remove_empty_fields::remove_empty_fields;
 
-pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<File>, equivalences_writer:&mut BufWriter<File>, datasource_name: &str, normalise: &PrefixMap) {
+pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>, datasource_name: &str, normalise: &PrefixMap) {
     {
         let headers = csv_reader.headers().unwrap();
 
@@ -111,7 +111,7 @@ pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nod
 
             nodes_writer.write_all(remove_empty_fields(& json!(
                 {
-                "grebi:type": ["SNP"],
+                "grebi:type": ["gwas:SNP"],
                 "rdf:type": ["so:0000694"], // SNP
                 "gwas:mapped_gene": [mapped_gene],
                 "gwas:upstream_gene_id": [upstream_gene_id],

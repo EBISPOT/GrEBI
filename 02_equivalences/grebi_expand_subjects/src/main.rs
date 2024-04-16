@@ -183,6 +183,8 @@ fn main() {
                     let string_locations_in_value = find_strings(&value);
 
                     if string_locations_in_value.len() == 0 {
+                        // no strings in the value, just write it as is
+                        writer.write_all(value).unwrap();
                         continue;
                     }
 

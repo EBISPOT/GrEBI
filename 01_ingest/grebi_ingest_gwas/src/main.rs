@@ -26,12 +26,6 @@ struct Args {
 
     #[arg(long)]
     filename: String,
-
-    #[arg(long)]
-    output_nodes:String,
-
-    #[arg(long)]
-    output_equivalences:String
 }
 
 fn main() {
@@ -41,15 +35,8 @@ fn main() {
     let stdin = io::stdin().lock();
     let reader = BufReader::new(stdin);
 
-
-    let mut output_nodes = BufWriter::new(
-        File::create(args.output_nodes.as_str()).unwrap());
-
-    let mut output_equivalences = BufWriter::new(
-         File::create(args.output_equivalences.as_str()).unwrap());
-    // output_equivalences.write_all(b"subject_id\tobject_id\n").unwrap();
-
-
+    let stdout = io::stdout().lock();
+    let mut output_nodes = BufWriter::new(stdout);
 
     let normalise = {
         let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
@@ -70,10 +57,10 @@ fn main() {
 
     if args.filename.starts_with("gwas-catalog-associations") {
         eprintln!("GWAS ingest: writing associations");
-        write_associations(&mut csv_reader, &mut output_nodes, &mut output_equivalences, &args.datasource_name, &normalise);
+        write_associations(&mut csv_reader, &mut output_nodes, &args.datasource_name, &normalise);
     } else if args.filename.starts_with("gwas-catalog-studies") {
         eprintln!("GWAS ingest: writing studies");
-        write_studies(&mut csv_reader, &mut output_nodes, &mut output_equivalences, &args.datasource_name, &normalise);
+        write_studies(&mut csv_reader, &mut output_nodes, &args.datasource_name, &normalise);
     } else {
         panic!("GWAS ingest: Unknown filename: {}", args.filename);
     }

@@ -11,7 +11,7 @@ use serde_json::json;
 use crate::check_headers::check_headers;
 use crate::remove_empty_fields::remove_empty_fields;
 
-pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<File>, equivalences_writer:&mut BufWriter<File>, datasource_name: &str, normalise: &PrefixMap) {
+pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>, datasource_name: &str, normalise: &PrefixMap) {
 
     {
         let headers = csv_reader.headers().unwrap();
@@ -74,7 +74,7 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
             nodes_writer.write_all(&middle_json_fragment).unwrap();
 
             nodes_writer.write_all(remove_empty_fields(&json!({
-                "grebi:type": ["GWAS"],
+                "grebi:type": ["gwas:Study"],
                 "rdf:type": [normalise.reprefix(&String::from("http://edamontology.org/topic_3517"))], // gwas study
 
                 "dcterms:created": [date_added_to_catalog],

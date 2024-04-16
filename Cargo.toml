@@ -9,6 +9,7 @@ members = [
 	"01_ingest/grebi_ingest_gwas",
 	"01_ingest/grebi_ingest_json",
 	"01_ingest/grebi_ingest_reactome",
+	"02_equivalences/grebi_extract_equivalences",
 	"02_equivalences/grebi_equivalences2groups",
 	"02_equivalences/grebi_groups2rocks",
 	"02_equivalences/grebi_expand_subjects",

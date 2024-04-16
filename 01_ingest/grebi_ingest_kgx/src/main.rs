@@ -20,12 +20,6 @@ struct Args {
 
     #[arg(long)]
     filename: String,
-
-    #[arg(long)]
-    output_nodes:String,
-
-    #[arg(long)]
-    output_equivalences:String
 }
 
 fn main() {
@@ -38,13 +32,6 @@ fn main() {
     let reader = BufReader::new(stdin);
 
     let datasource_name = args.datasource_name.as_str();
-
-    let mut output_nodes = BufWriter::new(
-        File::create(args.output_nodes.as_str()).unwrap());
-
-    let mut output_equivalences = BufWriter::new(
-         File::create(args.output_equivalences.as_str()).unwrap());
-    // output_equivalences.write_all(b"subject_id\tobject_id\n").unwrap();
 
     let normalise = {
         let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );

@@ -26,7 +26,7 @@ pub struct JsonToken {
     pub index: usize,
 }
 
-pub fn lex(buf: &Vec<u8>) -> Vec<JsonToken> {
+pub fn lex(buf: &[u8]) -> Vec<JsonToken> {
 
     let mut tokens: Vec<JsonToken> = Vec::new();
 

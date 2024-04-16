@@ -1,5 +1,6 @@
 
-use std::collections::HashMap;
+use std::collections::btree_map::IntoKeys;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufWriter, self, BufReader, StdinLock, StdoutLock, Write,BufRead};
 use std::ptr::eq;
@@ -24,19 +25,16 @@ struct Args {
     filename: String,
 
     #[arg(long)]
-    output_nodes:String,
-
-    #[arg(long)]
-    output_equivalences:String,
-
-    #[arg(long)]
     json_subject_field:String,
 
     #[arg(long, default_value_t = String::from(""))]
     json_inject_type:String,
 
     #[arg(long, default_value_t = String::from(""))]
-    json_inject_key_prefix:String
+    json_inject_key_prefix:String,
+
+    #[arg(long)]
+    json_inject_value_prefix:Option<Vec<String>>,
 }
 
 fn main() {
@@ -46,13 +44,8 @@ fn main() {
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
 
-
-    let mut output_nodes = BufWriter::new(
-        File::create(args.output_nodes.as_str()).unwrap());
-
-    let mut output_equivalences = BufWriter::new(
-         File::create(args.output_equivalences.as_str()).unwrap());
-    // output_equivalences.write_all(b"subject_id\tobject_id\n").unwrap();
+    let stdout = io::stdout().lock();
+    let mut output_nodes = BufWriter::new(stdout);
 
     let normalise = {
         let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
@@ -68,6 +61,15 @@ fn main() {
     let middle_json_fragment
          = [r#","datasource":""#.as_bytes(), args.datasource_name.as_bytes(), r#"""#.as_bytes() ].concat();
 
+    let mut value_prefixes:HashMap<Vec<u8>, Vec<u8>> = HashMap::new();
+
+    if args.json_inject_value_prefix.is_some() {
+        for arg in args.json_inject_value_prefix.unwrap() {
+            let delim = arg.find(':').unwrap();
+            let (column,prefix)=(arg[0..delim].to_string(), arg[delim+1..].to_string());
+            value_prefixes.insert(column.as_bytes().to_vec(), prefix.as_bytes().to_vec());
+        }
+    }
 
     loop {
 
@@ -87,7 +89,8 @@ fn main() {
             while json.peek().kind != JsonTokenType::EndObject {
                 let k = json.name(&line);
                 if k == subj_field {
-                    write_from_parser(&mut json, &line, &mut output_nodes, &normalise);
+                    let inject_prefix = value_prefixes.get(k);
+                    write_from_parser(&mut json, &line, &mut output_nodes, &normalise, inject_prefix);
                     break 'write_subject;
                 } else {
                     json.value(&line); // skip
@@ -128,15 +131,27 @@ fn main() {
                 output_nodes.write_all(k).unwrap();
                 output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
 
+                let inject_prefix = value_prefixes.get(k);
+
                 let tok = json.peek();
+                output_nodes.write_all(r#"["#.as_bytes()).unwrap();
                 // all prop values must be arrays
                 if tok.kind == JsonTokenType::StartArray {
-                    write_from_parser(&mut json, &line, &mut output_nodes, &normalise)
+                    let mut is_first2 = true;
+                    json.begin_array();
+                    while json.peek().kind != JsonTokenType::EndArray {
+                        if is_first2 {
+                            is_first2 = false;
+                        } else {
+                            output_nodes.write_all(b",").unwrap();
+                        }
+                        write_from_parser(&mut json, &line, &mut output_nodes, &normalise,inject_prefix);
+                    }
+                    json.end_array();
                 } else {
-                    output_nodes.write_all(r#"["#.as_bytes()).unwrap();
-                    write_from_parser(&mut json, &line, &mut output_nodes, &normalise);
-                    output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
+                    write_from_parser(&mut json, &line, &mut output_nodes, &normalise, inject_prefix);
                 }
+                output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
             }
         }
         json.end_object();
@@ -145,10 +160,9 @@ fn main() {
     }
 
     output_nodes.flush().unwrap();
-    output_equivalences.flush().unwrap();
 }
 
-fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&mut BufWriter<File>, normalise:&PrefixMap) {
+fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&mut BufWriter<StdoutLock>, normalise:&PrefixMap, inject_prefix:Option<&Vec<u8>>) {
 
     match json.peek().kind {
         JsonTokenType::StartObject => {
@@ -165,7 +179,7 @@ fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&m
                 output.write_all(r#"""#.as_bytes()).unwrap();
                 output.write_all(k).unwrap();
                 output.write_all(r#"":"#.as_bytes()).unwrap();
-                write_from_parser(json, line, output, normalise);
+                write_from_parser(json, line, output, normalise, None);
             }
             json.end_object();
             output.write_all(r#"}"#.as_bytes()).unwrap();
@@ -180,25 +194,51 @@ fn write_from_parser(json:&mut json_parser::JsonParser, line:&Vec<u8>, output:&m
                 } else {
                     output.write_all(b",").unwrap();
                 }
-                write_from_parser(json, line, output, normalise);
+                write_from_parser(json, line, output, normalise,None);
             }
             json.end_array();
             output.write_all(r#"]"#.as_bytes()).unwrap();
         }
         JsonTokenType::StartString => {
-            let str = json.string(&line);
-            let reprefixed = normalise.reprefix_bytes(str);
-            output.write_all(r#"""#.as_bytes()).unwrap();
-            if reprefixed.is_some() {
-                output.write_all(&reprefixed.unwrap()).unwrap();
+            if inject_prefix.is_some() {
+                let mut str = inject_prefix.unwrap().to_vec();
+                str.extend(json.string(&line));
+                let reprefixed = normalise.reprefix_bytes(&str);
+                output.write_all(r#"""#.as_bytes()).unwrap();
+                if reprefixed.is_some() {
+                    output.write_all(&reprefixed.unwrap()).unwrap();
+                } else {
+                    output.write_all(&str).unwrap();
+                }
+                output.write_all(r#"""#.as_bytes()).unwrap();
             } else {
-                output.write_all(&str).unwrap();
+                let str = json.string(&line);
+                let reprefixed = normalise.reprefix_bytes(str);
+                output.write_all(r#"""#.as_bytes()).unwrap();
+                if reprefixed.is_some() {
+                    output.write_all(&reprefixed.unwrap()).unwrap();
+                } else {
+                    output.write_all(&str).unwrap();
+                }
+                output.write_all(r#"""#.as_bytes()).unwrap();
             }
-            output.write_all(r#"""#.as_bytes()).unwrap();
         }
         _ => {
-            let v = json.value(&line);
-            output.write_all(&v).unwrap();
+            if inject_prefix.is_some() {
+                let mut str = inject_prefix.unwrap().to_vec();
+                str.extend(json.value(&line));
+                let reprefixed = normalise.reprefix_bytes(&str);
+                output.write_all(r#"""#.as_bytes()).unwrap();
+                if reprefixed.is_some() {
+                    output.write_all(&reprefixed.unwrap()).unwrap();
+                } else {
+                    output.write_all(&str).unwrap();
+                }
+                output.write_all(r#"""#.as_bytes()).unwrap();
+            } else {
+                let v = json.value(&line);
+                output.write_all(&v).unwrap();
+            }
         }
     }
 }

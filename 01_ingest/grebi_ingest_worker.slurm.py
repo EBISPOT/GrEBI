@@ -59,10 +59,9 @@ def main():
     cmd = cmd + ' | ' + shlex.quote(datasource_file['ingest']['ingest_script'])
     cmd = cmd + ' --datasource-name ' + shlex.quote( os.path.basename( datasource_file['datasource']['name'] ))
     cmd = cmd + ' --filename ' + shlex.quote( os.path.basename( filename ))
-    cmd = cmd + ' --output-nodes ' + shlex.quote(  nodes_jsonl_filename )
-    cmd = cmd + ' --output-equivalences ' + shlex.quote(  equivalences_tsv_filename )
     for param in datasource_file['ingest']['ingest_args']:
         cmd = cmd + ' ' + param['name'] + ' ' + shlex.quote( param['value'] )
+    cmd = cmd + ' > ' + shlex.quote(  nodes_jsonl_filename )
 
     print(get_time() + " --- Running ingest script: " + cmd, flush=True)
     exitcode = os.system('bash -c "' + cmd + '"')
@@ -70,7 +69,16 @@ def main():
         print(get_time() + " --- ingest script failed with exit code " + str(exitcode), flush=True)
         exit(2)
 
-    # 2. Sort JSONL nodes file
+    # 2. Extract equivalences from nodes file
+    cmd = 'cat ' + shlex.quote(nodes_jsonl_filename) + ' | '
+    cmd = cmd + ' ./target/release/grebi_extract_equivalences --equivalence-properties ' + ','.join(config['equivalence_props']) + ' > ' + shlex.quote(equivalences_tsv_filename)
+    print(get_time() + " --- Running extract equivalences command: " + cmd, flush=True)
+    exitcode = os.system('bash -c "' + cmd + '"')
+    if exitcode != 0:
+        print(get_time() + " --- extract equivalences command failed with exit code " + str(exitcode), flush=True)
+        exit(2)
+
+    # 3. Sort nodes file
     cmd = 'LC_ALL=C sort -o ' + shlex.quote(sorted_nodes_jsonl_filename) + ' ' + shlex.quote(nodes_jsonl_filename)
     print(get_time() + " --- Running sort command: " + cmd, flush=True)
     exitcode = os.system('bash -c "' + cmd + '"')
@@ -78,11 +86,11 @@ def main():
         print(get_time() + " --- sort command failed with exit code " + str(exitcode), flush=True)
         exit(2)
 
-    # 3. Remove unsorted nodes file
+    # 4. Remove unsorted nodes file
     print(get_time() + " --- Removing unsorted file " + nodes_jsonl_filename, flush=True)
     os.remove(nodes_jsonl_filename)
 
-    # 4. Gzip sorted nodes file
+    # 5. Gzip sorted nodes file
     cmd = 'pigz --fast -f ' + shlex.quote(sorted_nodes_jsonl_filename)
     print(get_time() + " --- Running gzip command: " + cmd, flush=True)
     exitcode = os.system('bash -c "' + cmd + '"')
@@ -90,8 +98,6 @@ def main():
         print(get_time() + " --- gzip command failed with exit code " + str(exitcode), flush=True)
         exit(2)
 
-
-    # print elasped time from beginning of script
     print(get_time() + " --- done", flush=True);
 
 

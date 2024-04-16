@@ -53,7 +53,7 @@ impl JsonParser {
         return token;
     }
 
-    pub fn name<'a>(&mut self, buf:&'a Vec<u8>) -> &'a [u8] {
+    pub fn name<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
         self.skip_comma_if_present();
         if self.stack[self.stack.len() - 1] != NestItem::Object {
             panic!();
@@ -73,7 +73,7 @@ impl JsonParser {
         return &buf[start_token.index + 1..end_token.index];
     }
 
-    pub fn string<'a>(&mut self, buf:&'a Vec<u8>) -> &'a [u8] {
+    pub fn string<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
         let start_token = self.next();
         if start_token.kind != JsonTokenType::StartString {
             panic!("Expected StartString, found {:?}", start_token.kind);
@@ -86,7 +86,7 @@ impl JsonParser {
         return &buf[start_token.index + 1..end_token.index];
     }
 
-    pub fn quoted_string<'a>(&mut self, buf:&'a Vec<u8>) -> &'a [u8] {
+    pub fn quoted_string<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
         let start_token = self.next();
         if start_token.kind != JsonTokenType::StartString {
             panic!();
@@ -99,7 +99,7 @@ impl JsonParser {
         return &buf[start_token.index..end_token.index+1];
     }
 
-    pub fn number<'a>(&mut self, buf:&'a Vec<u8>) -> &'a [u8] {
+    pub fn number<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
         let start_token = self.next();
         if start_token.kind != JsonTokenType::StartNumber {
             panic!();
@@ -134,7 +134,7 @@ impl JsonParser {
         return token;
     }
 
-    pub fn value<'a>(&mut self, buf:&'a Vec<u8>) -> &'a [u8] {
+    pub fn value<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
 
         let token = self.peek();
 

@@ -72,10 +72,30 @@
             "ingests": [
                 {
                     "ingest_files": [
-                        "./mphp.sssom.tsv"
+                        "./00_fetch_data/sssom/mphp.sssom.tsv"
                     ],
                     "ingest_script": "./target/release/grebi_ingest_sssom",
                     "ingest_args": []
+                }
+            ]
+        },
+        {
+            "name": "HGNC",
+            "enabled": true,
+            "ingests": [
+                {
+                    "ingest_files": [
+                        "./00_fetch_data/hgnc/hgnc.json"
+                    ],
+                    "ingest_script": "./target/release/grebi_ingest_json",
+                    "ingest_args": [
+                        { "name": "--json-subject-field", "value": "hgnc_id" },
+                        { "name": "--json-inject-type", "value": "hgnc:Gene" },
+                        { "name": "--json-inject-key-prefix", "value": "hgnc:" },
+                        { "name": "--json-inject-value-prefix", "value": "uniprot_ids:uniprot:" },
+                        { "name": "--json-inject-value-prefix", "value": "omim_id:omim:" },
+                        { "name": "--json-inject-value-prefix", "value": "pubmed_id:pmid:" }
+                    ]
                 }
             ]
         },
@@ -98,7 +118,7 @@
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
                         { "name": "--json-subject-field", "value": "observationId" },
-                        { "name": "--json-inject-type", "value": "CategoricalObservation" },
+                        { "name": "--json-inject-type", "value": "impc:CategoricalObservation" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
                 },
@@ -227,6 +247,15 @@
                         { "name": "--json-inject-type", "value": "impc:StatisticalResult" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
+                },
+                {
+                    "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/human_gene_json/*.json.gz"],
+                    "ingest_script": "./target/release/grebi_ingest_json",
+                    "ingest_args": [
+                        { "name": "--json-subject-field", "value": "humanGeneId" },
+                        { "name": "--json-inject-type", "value": "impc:HumanGene" },
+                        { "name": "--json-inject-key-prefix", "value": "impc:" }
+                    ]
                 }
             ]
         },
@@ -247,5 +276,16 @@
         "ols:iri",
         "ols:curie",
         "oboinowl:id"
+    ],
+    "equivalence_props": [
+        "owl:equivalentClass",
+        "owl:equivalentProperty",
+        "owl:sameAs",
+        "grebi:equivalentTo",
+        "ols:iri",
+        "hgnc:ensembl_gene_id",
+        "obo:chebi/inchi",
+        "obo:chebi/inchikey",
+        "obo:chebi/smiles"
     ]
 }
