@@ -72,6 +72,10 @@ fn main() {
         }
         json.rewind();
 
+        if id.is_none() {
+            panic!("Missing id field in JSON: {}", String::from_utf8(line).unwrap());
+        }
+
         while json.peek().kind != JsonTokenType::EndObject {
 
             let k = json.name(&line);
