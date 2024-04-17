@@ -98,14 +98,14 @@ fn main() {
             }
 
             output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-            if args.json_inject_key_prefix.len() > 0 {
-                output_nodes.write_all(args.json_inject_key_prefix.as_bytes()).unwrap();
-            }
 
             let alias = renames.get(k);
             if alias.is_some() {
                 output_nodes.write_all(alias.unwrap()).unwrap();
             } else {
+                if args.json_inject_key_prefix.len() > 0 {
+                    output_nodes.write_all(args.json_inject_key_prefix.as_bytes()).unwrap();
+                }
                 output_nodes.write_all(k).unwrap();
             }
             output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
