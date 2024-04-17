@@ -39,9 +39,6 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
         ]);
     }
 
-    let middle_json_fragment
-         = [r#"","datasource":""#.as_bytes(), datasource_name.as_bytes(), r#"","properties":"#.as_bytes() ].concat();
-
     {
         for record in csv_reader.records() {
 
@@ -67,13 +64,8 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
             let full_summary_statistics = record.get(17).unwrap();
             let summary_stats_location = record.get(18).unwrap();
 
-            // nodes_writer.write_all(r#"{"subject":"pubmed:"#.as_bytes()).unwrap();
-            // nodes_writer.write_all(pubmedid.as_bytes()).unwrap();
-            nodes_writer.write_all(r#"{"subject":""#.as_bytes()).unwrap();
-            nodes_writer.write_all(study_accession.as_bytes()).unwrap();
-            nodes_writer.write_all(&middle_json_fragment).unwrap();
-
             nodes_writer.write_all(remove_empty_fields(&json!({
+                "id": study_accession,
                 "grebi:type": ["gwas:Study"],
                 "rdf:type": ["http://edamontology.org/topic_3517"], // gwas study
 
@@ -103,7 +95,7 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
 
             })).unwrap().to_string().as_bytes()).unwrap();
 
-            nodes_writer.write_all("}\n".as_bytes()).unwrap();
+            nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
             // let equiv = serialize_equivalence(("pubmed:".to_owned()+pubmedid).as_bytes(), study_accession.as_bytes());

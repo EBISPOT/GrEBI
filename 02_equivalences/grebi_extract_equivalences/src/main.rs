@@ -10,10 +10,10 @@ use std::io::{Write, BufWriter};
 
 use grebi_shared::{get_subject, find_strings, serialize_equivalence, json_parser, json_lexer};
 
-mod slice_entity;
-use slice_entity::SlicedEntity;
-use slice_entity::SlicedProperty;
 use clap::Parser;
+
+use grebi_shared::json_lexer::{lex, JsonTokenType};
+use grebi_shared::json_parser::JsonParser;
 
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
@@ -53,26 +53,40 @@ fn main() {
         if line.len() == 0 {
             break;
         }
-        
-        // eprintln!("line: {}", String::from_utf8(line.clone()).unwrap());
 
-        let sliced = SlicedEntity::from_json(&line);
+        let mut json = JsonParser::from_lexed(lex(&line));
 
-        let subject:&[u8] = sliced.subject;
+        json.begin_object();
 
-        for prop in sliced.props.iter() {
-            if equiv_props.contains(prop.key) {
-                for v in prop.values.iter() {
+        while json.peek().kind != JsonTokenType::EndObject {
 
-                    let mut json = json_parser::JsonParser::from_lexed(json_lexer::lex(v));
-                    if json.peek().kind == json_lexer::JsonTokenType::StartString {
-                        let serialized = serialize_equivalence(subject, json.string(v));
+            let k = json.name(&line);
+
+            if !equiv_props.contains(k) {
+                json.value(&line); // skip
+                continue;
+            }
+
+            if json.peek().kind == JsonTokenType::StartArray {
+                json.begin_array();
+                while json.peek().kind != JsonTokenType::EndArray {
+                    if json.peek().kind == JsonTokenType::StartString {
+                        let serialized = serialize_equivalence(k, json.string(&line));
                         if serialized.is_some() {
                             writer.write_all(&serialized.unwrap()).unwrap();
                         }
+                    } else {
+                        json.value(&line); // skip
                     }
-
                 }
+                json.end_array();
+            } else if json.peek().kind == JsonTokenType::StartString {
+                let serialized = serialize_equivalence(k, json.string(&line));
+                if serialized.is_some() {
+                    writer.write_all(&serialized.unwrap()).unwrap();
+                }
+            } else {
+                json.value(&line); // skip
             }
         }
 

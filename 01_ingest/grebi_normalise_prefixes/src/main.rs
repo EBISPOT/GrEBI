@@ -11,10 +11,6 @@ use grebi_shared::{get_subject, find_strings, serialize_equivalence, json_parser
 use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
 
-mod slice_entity;
-use slice_entity::SlicedEntity;
-use slice_entity::SlicedProperty;
-
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 

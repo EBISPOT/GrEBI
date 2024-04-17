@@ -85,16 +85,14 @@ fn main() {
         let pred = remap_subject(&record.get(pred_idx).unwrap().to_string(), &expand);
         let obj = remap_subject(&record.get(obj_idx).unwrap().to_string(), &expand);
 
-        output_nodes.write_all(r#"{"subject":""#.as_bytes()).unwrap();
+        output_nodes.write_all(r#"{"id":""#.as_bytes()).unwrap();
         output_nodes.write_all(subj.as_bytes()).unwrap();
-        output_nodes.write_all(r#"","datasource":""#.as_bytes()).unwrap();
-        output_nodes.write_all(datasource_name.as_bytes()).unwrap();
-        output_nodes.write_all(r#"","properties":{""#.as_bytes()).unwrap();
+        output_nodes.write_all(r#"",""#.as_bytes()).unwrap();
         output_nodes.write_all(pred.as_bytes()).unwrap();
             output_nodes.write_all(r#"":[{"#.as_bytes()).unwrap();
-            output_nodes.write_all(r#""value":""#.as_bytes()).unwrap();
+            output_nodes.write_all(r#""grebi:value":""#.as_bytes()).unwrap();
             output_nodes.write_all(obj.as_bytes()).unwrap();
-            output_nodes.write_all(r#"","properties":{"#.as_bytes()).unwrap();
+            output_nodes.write_all(r#"","grebi:properties":{"#.as_bytes()).unwrap();
                 let mut n = 0;
                 let mut is_first = true;
                 for column_title in headers.iter() {
@@ -115,10 +113,9 @@ fn main() {
                     }
                     n = n + 1;
                 }
-                output_nodes.write_all(r#"}"#.as_bytes()).unwrap(); // sssom
+                output_nodes.write_all(r#"}"#.as_bytes()).unwrap(); // reified props
             output_nodes.write_all(r#"}]"#.as_bytes()).unwrap(); // value
-        output_nodes.write_all(r#"}"#.as_bytes()).unwrap(); // properties
-        output_nodes.write_all(r#"}"#.as_bytes()).unwrap(); // entity
+        output_nodes.write_all(r#"}"#.as_bytes()).unwrap();
         output_nodes.write_all("\n".as_bytes()).unwrap();
     }
 

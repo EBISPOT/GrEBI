@@ -111,20 +111,14 @@ fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<StdoutLock>, args
 
     let start_time2 = std::time::Instant::now();
 
-    let middle_json_fragment
-         = [r#"","datasource":""#.as_bytes(), args.datasource_name.as_bytes(), r#"","properties":"#.as_bytes() ].concat();
-
     for s in &ds.gw_subjects().unwrap() {
 
         if s.kind() != Iri {
             continue; 
         }
 
-        nodes_writer.write_all(r#"{"subject":""#.as_bytes()).unwrap();
-        nodes_writer.write_all( & s.value().to_string().as_bytes()).unwrap();
-        nodes_writer.write_all(&middle_json_fragment).unwrap();
         nodes_writer.write_all( term_to_json(s, ds).to_string().as_bytes()).unwrap();
-        nodes_writer.write_all("}\n".as_bytes()).unwrap();
+        nodes_writer.write_all("\n".as_bytes()).unwrap();
     }
 
     eprintln!("Writing JSONL took {} seconds", start_time2.elapsed().as_secs());
@@ -135,8 +129,7 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph) -> Value {
     let triples = ds.triples_matching(term, &ANY, &ANY);
 
     let mut json:Map<String,Value> = Map::new();
-
-
+    json.insert("id".to_string(), Value::String(term.value().to_string()));
 
     for t in triples {
 

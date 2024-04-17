@@ -25,7 +25,7 @@ struct Args {
     filename: String,
 
     #[arg(long)]
-    json_subject_field:String,
+    json_rename_field:Option<Vec<String>>,
 
     #[arg(long, default_value_t = String::from(""))]
     json_inject_type:String,
@@ -47,10 +47,16 @@ fn main() {
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
-    let subj_field:&[u8] = args.json_subject_field.as_bytes();
 
-    let middle_json_fragment
-         = [r#","datasource":""#.as_bytes(), args.datasource_name.as_bytes(), r#"""#.as_bytes() ].concat();
+    let mut renames:HashMap<Vec<u8>, Vec<u8>> = HashMap::new();
+
+    if args.json_rename_field.is_some() {
+        for arg in args.json_rename_field.unwrap() {
+            let delim = arg.find(':').unwrap();
+            let (column,rename)=(arg[0..delim].to_string(), arg[delim+1..].to_string());
+            renames.insert(column.as_bytes().to_vec(), rename.as_bytes().to_vec());
+        }
+    }
 
     let mut value_prefixes:HashMap<Vec<u8>, Vec<u8>> = HashMap::new();
 
@@ -73,81 +79,62 @@ fn main() {
 
         let mut json = json_parser::JsonParser::from_lexed(json_lexer::lex(&line));
 
-        output_nodes.write_all(r#"{"subject":"#.as_bytes()).unwrap();
-        json.mark();
-        json.begin_object();
-        'write_subject: {
-            while json.peek().kind != JsonTokenType::EndObject {
-                let k = json.name(&line);
-                if k == subj_field {
-                    let inject_prefix = value_prefixes.get(k);
-                    write_from_parser(&mut json, &line, &mut output_nodes, inject_prefix);
-                    break 'write_subject;
-                } else {
-                    json.value(&line); // skip
-                }
-            }
-            panic!("Subject field {} not found", args.json_subject_field);
-        }
-        json.rewind();
-
-        output_nodes.write_all(&middle_json_fragment).unwrap();
-
-        output_nodes.write_all(&",\"properties\":{".as_bytes()).unwrap();
+        output_nodes.write_all(r#"{"#.as_bytes()).unwrap();
 
         json.begin_object();
         let mut is_first = true;
         while json.peek().kind != JsonTokenType::EndObject {
             let k = json.name(&line);
 
-            if k == subj_field {
-                json.value(&line); // skip
-                continue;
+            if is_first {
+                if args.json_inject_type.len() > 0 {
+                    output_nodes.write_all(r#""grebi:type":[""#.as_bytes()).unwrap();
+                    output_nodes.write_all(args.json_inject_type.as_bytes()).unwrap();
+                    output_nodes.write_all(r#""],"#.as_bytes()).unwrap();
+                }
+                is_first = false;
             } else {
-                if is_first {
-                    if args.json_inject_type.len() > 0 {
-                        output_nodes.write_all(r#""grebi:type":[""#.as_bytes()).unwrap();
-                        output_nodes.write_all(args.json_inject_type.as_bytes()).unwrap();
-                        output_nodes.write_all(r#""],"#.as_bytes()).unwrap();
-                    }
-                    is_first = false;
-                } else {
-                    output_nodes.write_all(r#","#.as_bytes()).unwrap();
-                }
+                output_nodes.write_all(r#","#.as_bytes()).unwrap();
+            }
 
-                output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-                if args.json_inject_key_prefix.len() > 0 {
-                    output_nodes.write_all(args.json_inject_key_prefix.as_bytes()).unwrap();
-                }
+            output_nodes.write_all(r#"""#.as_bytes()).unwrap();
+            if args.json_inject_key_prefix.len() > 0 {
+                output_nodes.write_all(args.json_inject_key_prefix.as_bytes()).unwrap();
+            }
+
+            let alias = renames.get(k);
+            if alias.is_some() {
+                output_nodes.write_all(alias.unwrap()).unwrap();
+            } else {
                 output_nodes.write_all(k).unwrap();
-                output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
+            }
+            output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
 
-                let inject_prefix = value_prefixes.get(k);
+            let inject_prefix = value_prefixes.get(k);
 
-                let tok = json.peek();
-                output_nodes.write_all(r#"["#.as_bytes()).unwrap();
-                // all prop values must be arrays
-                if tok.kind == JsonTokenType::StartArray {
-                    let mut is_first2 = true;
-                    json.begin_array();
-                    while json.peek().kind != JsonTokenType::EndArray {
-                        if is_first2 {
-                            is_first2 = false;
-                        } else {
-                            output_nodes.write_all(b",").unwrap();
-                        }
-                        write_from_parser(&mut json, &line, &mut output_nodes, inject_prefix);
+            let tok = json.peek();
+            output_nodes.write_all(r#"["#.as_bytes()).unwrap();
+            // all prop values must be arrays
+            if tok.kind == JsonTokenType::StartArray {
+                let mut is_first2 = true;
+                json.begin_array();
+                while json.peek().kind != JsonTokenType::EndArray {
+                    if is_first2 {
+                        is_first2 = false;
+                    } else {
+                        output_nodes.write_all(b",").unwrap();
                     }
-                    json.end_array();
-                } else {
                     write_from_parser(&mut json, &line, &mut output_nodes, inject_prefix);
                 }
-                output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
+                json.end_array();
+            } else {
+                write_from_parser(&mut json, &line, &mut output_nodes, inject_prefix);
             }
+            output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
         }
         json.end_object();
 
-        output_nodes.write_all(b"}}\n").unwrap();
+        output_nodes.write_all(b"}\n").unwrap();
     }
 
     output_nodes.flush().unwrap();

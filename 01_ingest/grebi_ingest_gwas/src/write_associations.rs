@@ -57,14 +57,10 @@ pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nod
         ]);
     }
 
-    let middle_json_fragment
-         = [r#"","datasource":""#.as_bytes(), datasource_name.as_bytes(), r#"","properties":"#.as_bytes() ].concat();
-
     {
         for record in csv_reader.records() {
 
             let record = record.unwrap();
-
 
             let date_added_to_catalog = record.get(0).unwrap();
             let pubmedid = record.get(1).unwrap();
@@ -105,12 +101,9 @@ pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nod
             let study_accession = record.get(36).unwrap();
             let genotyping_technology = record.get(37).unwrap();
 
-            nodes_writer.write_all(r#"{"subject":""#.as_bytes()).unwrap();
-            nodes_writer.write_all(snps.as_bytes()).unwrap();
-            nodes_writer.write_all(&middle_json_fragment).unwrap();
-
             nodes_writer.write_all(remove_empty_fields(& json!(
                 {
+                "id": snps,
                 "grebi:type": ["gwas:SNP"],
                 "rdf:type": ["so:0000694"], // SNP
                 "gwas:mapped_gene": [mapped_gene],
@@ -119,8 +112,8 @@ pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nod
                 "gwas:snp_gene_ids": [snp_gene_ids],
                 "gwas:associated_with": Value::Array(mapped_trait_uri.split(", ").map(|tr| {
                     return json!({
-                        "value": tr,
-                        "properties": {
+                        "grebi:value": tr,
+                        "grebi:properties": {
                             "gwas:study": [ study_accession ],
 
                             "gwas:disease_trait": [disease_trait],
@@ -159,7 +152,7 @@ pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nod
                 
             })).unwrap().to_string().as_bytes()).unwrap();
 
-            nodes_writer.write_all("}\n".as_bytes()).unwrap();
+            nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
             // let equiv = serialize_equivalence(("pubmed:".to_owned()+pubmedid).as_bytes(), study_accession.as_bytes());

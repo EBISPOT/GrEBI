@@ -2,15 +2,16 @@
 pub mod json_lexer;
 pub mod json_parser;
 pub mod prefix_map;
+pub mod slice_merged_entity;
 
 // get the id without parsing json
 pub fn get_id<'a>(json:&'a [u8])->&'a [u8] {
 
-    if !json.starts_with("{\"id\":\"".as_bytes()) {
+    if !json.starts_with("{\"grebi:nodeId\":\"".as_bytes()) {
         panic!("could not do quick id extraction from: {} length {}", String::from_utf8(json.to_vec()).unwrap(), json.len());
     }
 
-    let start = "{\"id\":\"".as_bytes().len();
+    let start = "{\"grebi:nodeId\":\"".as_bytes().len();
     let mut end = start;
 
     while json[end] != b'"' {

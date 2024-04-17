@@ -28,8 +28,6 @@ fn main() {
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
 
-    let datasource_name = args.datasource_name.as_str();
-
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
@@ -102,13 +100,10 @@ fn main() {
                 out_props.insert("grebi:equivalentTo".to_string(), Value::Array( equivalences));
             }
 
-            output_nodes.write_all(serde_json::to_string(&json!({
-                "subject": id,
-                "datasource": datasource_name,
-                "properties": arrayify( Value::Object(out_props) ) 
-            })).unwrap().as_bytes()).unwrap();
-            output_nodes.write_all("\n".as_bytes()).unwrap();
+            out_props.insert("id".to_string(), Value::String(id));
 
+            output_nodes.write_all(serde_json::to_string(&out_props).unwrap().as_bytes()).unwrap();
+            output_nodes.write_all("\n".as_bytes()).unwrap();
 
         } else if obj_type.eq("relationship") {
 
@@ -117,17 +112,14 @@ fn main() {
             let end_id = obj.get("end").unwrap().as_object().unwrap().get("id").unwrap().as_str().unwrap();
 
             let mut out_props = serde_json::Map::new();
+            out_props.insert("id".to_string(), Value::String("reactome_".to_owned() + start_id));
+
             out_props.insert("reactome:".to_owned() + label, json!([{
-                "value": Value::String("reactome_".to_owned() + end_id),
-                "properties": arrayify( obj.get("properties").unwrap().clone() )
+                "grebi:value": Value::String("reactome_".to_owned() + end_id),
+                "grebi:properties": arrayify( obj.get("properties").unwrap().clone() )
             }]));
 
-            output_nodes.write_all(serde_json::to_string(&json!({
-                "subject": "reactome_".to_owned() + start_id,
-                "datasource": datasource_name,
-                "properties": out_props
-            })).unwrap().as_bytes()).unwrap();
-
+            output_nodes.write_all(serde_json::to_string(&out_props).unwrap().as_bytes()).unwrap();
             output_nodes.write_all("\n".as_bytes()).unwrap();
 
         } else {

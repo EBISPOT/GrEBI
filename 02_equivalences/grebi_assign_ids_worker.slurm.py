@@ -12,7 +12,7 @@ def main():
     global config
 
     if len(sys.argv) < 3:
-        print("Usage: grebi_expand_subjects_worker.slurm.py <datasources.jsonl> <equivalences_db>")
+        print("Usage: grebi_assign_ids_worker.slurm.py <datasources.jsonl> <equivalences_db>")
         exit(1)
 
     task_id = os.getenv('SLURM_ARRAY_TASK_ID')
@@ -56,14 +56,14 @@ def main():
 
     cmd = ' '.join([
         'zcat ' + shlex.quote(nodes_jsonl_gz_filename),
-        '| ./target/release/grebi_expand_subjects', shlex.quote(equivalences_db_path),
+        '| ./target/release/grebi_assign_ids', shlex.quote(equivalences_db_path),
         '>', shlex.quote(expanded_subjects_jsonl_filename)
     ])
 
-    print(get_time() + " --- Running expand script: " + cmd, flush=True)
+    print(get_time() + " --- Running assign IDs script: " + cmd, flush=True)
     exitcode = os.system('bash -c "' + cmd + '"')
     if exitcode != 0:
-        print(get_time() + " --- expand script failed with exit code " + str(exitcode), flush=True)
+        print(get_time() + " --- assign IDs script failed with exit code " + str(exitcode), flush=True)
         exit(2)
 
     # 2. Sort expanded JSONL nodes file

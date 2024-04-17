@@ -4,13 +4,13 @@
     "use_slurm":true,
     "slurm_max_workers": {
         "ingest": 100,
-        "expand_subjects": 100,
+        "assign_ids": 100,
         "extract": 100
     },
     "slurm_max_memory": {
         "ingest": "32G",
         "build_equiv_db": "64G",
-        "expand_subjects": "64G",
+        "assign_ids": "64G",
         "merge": "16G",
         "index": "64G",
         "extract": "8G"
@@ -18,7 +18,7 @@
     "slurm_max_time": {
         "ingest": "8:0:0",
         "build_equiv_db": "23:0:0",
-        "expand_subjects": "23:0:0",
+        "assign_ids": "23:0:0",
         "merge": "23:0:0",
         "index": "23:0:0",
         "extract": "23:0:0"
@@ -47,7 +47,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/ols4/prod/slurm_pipeline/ontologies.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_ols",
                     "ingest_args": [
-                        { "name": "--ontologies", "value": "efo,mp,hp,go,ro,iao,uberon,pato" }
+                        { "name": "--ontologies", "value": "efo,mp,hp,go,ro,iao,uberon,pato,oba" }
                     ]
                 }
             ]
@@ -89,7 +89,7 @@
                     ],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "hgnc_id" },
+                        { "name": "--json-rename-field", "value": "hgnc_id:id" },
                         { "name": "--json-inject-type", "value": "hgnc:Gene" },
                         { "name": "--json-inject-key-prefix", "value": "hgnc:" },
                         { "name": "--json-inject-value-prefix", "value": "uniprot_ids:uniprot:" },
@@ -107,7 +107,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/mouse_gene_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "mgiGeneAccessionId" },
+                        { "name": "--json-rename-field", "value": "mgiGeneAccessionId:id" },
                         { "name": "--json-inject-type", "value": "impc:Gene" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -117,7 +117,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/categorical_observation_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "observationId" },
+                        { "name": "--json-rename-field", "value": "observationId:id" },
                         { "name": "--json-inject-type", "value": "impc:CategoricalObservation" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -126,7 +126,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/embryo_specimen_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "specimenId" },
+                        { "name": "--json-rename-field", "value": "specimenId:id" },
                         { "name": "--json-inject-type", "value": "impc:EmbryoSpecimen" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -135,7 +135,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/gene_phenotype_association_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "genePhenotypeAssociationId" },
+                        { "name": "--json-rename-field", "value": "genePhenotypeAssociationId:id" },
                         { "name": "--json-inject-type", "value": "impc:GenePhenotypeAssociation" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -144,7 +144,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/image_record_observation_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "observationId" },
+                        { "name": "--json-rename-field", "value": "observationId:id" },
                         { "name": "--json-inject-type", "value": "impc:ImageRecordObservation" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -153,7 +153,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/line_experiment_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "experimentId" },
+                        { "name": "--json-rename-field", "value": "experimentId:id" },
                         { "name": "--json-inject-type", "value": "impc:LineExperiment" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -162,7 +162,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/mouse_specimen_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "specimenId" },
+                        { "name": "--json-rename-field", "value": "specimenId:id" },
                         { "name": "--json-inject-type", "value": "impc:MouseSpecimen" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -171,7 +171,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/ontological_observation_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "observationId" },
+                        { "name": "--json-rename-field", "value": "observationId:id" },
                         { "name": "--json-inject-type", "value": "impc:OntologicalObservation" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -180,7 +180,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/parameter_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "parameterId" },
+                        { "name": "--json-rename-field", "value": "parameterId:id" },
                         { "name": "--json-inject-type", "value": "impc:Parameter" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -189,7 +189,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/pipeline_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "pipelineId" },
+                        { "name": "--json-rename-field", "value": "pipelineId:id" },
                         { "name": "--json-inject-type", "value": "impc:Pipeline" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -198,7 +198,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/procedure_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "procedureId" },
+                        { "name": "--json-rename-field", "value": "procedureId:id" },
                         { "name": "--json-inject-type", "value": "impc:Procedure" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -207,7 +207,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/specimen_experiment_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "experimentId" },
+                        { "name": "--json-rename-field", "value": "experimentId:id" },
                         { "name": "--json-inject-type", "value": "impc:SpecimenExperiment" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -216,7 +216,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/text_observation_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "observationId" },
+                        { "name": "--json-rename-field", "value": "observationId:id" },
                         { "name": "--json-inject-type", "value": "impc:TextObservation" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -225,7 +225,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/time_series_observation_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "observationId" },
+                        { "name": "--json-rename-field", "value": "observationId:id" },
                         { "name": "--json-inject-type", "value": "impc:TimeSeriesObservation" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -234,7 +234,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/unidimensional_observation_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "observationId" },
+                        { "name": "--json-rename-field", "value": "observationId:id" },
                         { "name": "--json-inject-type", "value": "impc:UnidimensionalObservation" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -243,7 +243,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/statistical_result_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "statisticalResultId" },
+                        { "name": "--json-rename-field", "value": "statisticalResultId:id" },
                         { "name": "--json-inject-type", "value": "impc:StatisticalResult" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]
@@ -252,7 +252,7 @@
                     "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/human_gene_json/*.json.gz"],
                     "ingest_script": "./target/release/grebi_ingest_json",
                     "ingest_args": [
-                        { "name": "--json-subject-field", "value": "humanGeneId" },
+                        { "name": "--json-rename-field", "value": "humanGeneId:id" },
                         { "name": "--json-inject-type", "value": "impc:HumanGene" },
                         { "name": "--json-inject-key-prefix", "value": "impc:" }
                     ]

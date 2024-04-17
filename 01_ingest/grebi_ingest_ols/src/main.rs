@@ -95,11 +95,11 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
     let ontology_iri = metadata.get("iri");
     let datasource = datasource_name.to_string() + "." + ontology_id.as_str();
 
-    output_nodes.write_all(r#"{"subject":""#.as_bytes()).unwrap();
+    output_nodes.write_all(r#"{"id":""#.as_bytes()).unwrap();
     output_nodes.write_all(ontology_id.as_bytes()).unwrap();
-    output_nodes.write_all(r#"","datasource":""#.as_bytes()).unwrap();
+    output_nodes.write_all(r#"","grebi:datasource":""#.as_bytes()).unwrap();
     output_nodes.write_all(datasource.as_bytes()).unwrap();
-    output_nodes.write_all(r#"","properties":{"grebi:type":["ols:Ontology"]"#.as_bytes()).unwrap();
+    output_nodes.write_all(r#"","grebi:type":["ols:Ontology"]"#.as_bytes()).unwrap();
 
     for k in metadata.keys() {
 
@@ -119,7 +119,7 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
         }
     }
-    output_nodes.write_all(r#"}}"#.as_bytes()).unwrap();
+    output_nodes.write_all(r#"}"#.as_bytes()).unwrap();
     output_nodes.write_all("\n".as_bytes()).unwrap();
 
     loop {
@@ -163,11 +163,11 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
         let curie = & obj.get("ols:iri").unwrap().as_str().unwrap().to_string();
 
-        output_nodes.write_all(r#"{"subject":""#.as_bytes()).unwrap();
+        output_nodes.write_all(r#"{"id":""#.as_bytes()).unwrap();
         output_nodes.write_all(curie.as_bytes()).unwrap();
-        output_nodes.write_all(r#"","datasource":""#.as_bytes()).unwrap();
+        output_nodes.write_all(r#"","grebi:datasource":""#.as_bytes()).unwrap();
         output_nodes.write_all(datasource.as_bytes()).unwrap();
-        output_nodes.write_all(r#"","properties":{"grebi:type":[""#.as_bytes()).unwrap();
+        output_nodes.write_all(r#"","grebi:type":[""#.as_bytes()).unwrap();
         output_nodes.write_all(grebitype.as_bytes()).unwrap();
         output_nodes.write_all(r#""]"#.as_bytes()).unwrap();
 
@@ -201,7 +201,7 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
 
         }
-        output_nodes.write_all(r#"}}"#.as_bytes()).unwrap();
+        output_nodes.write_all(r#"}"#.as_bytes()).unwrap();
         output_nodes.write_all("\n".as_bytes()).unwrap();
     }
     json.end_array().unwrap();
@@ -234,9 +234,9 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
                 for axiom_set in axiom_sets {
                     let reified_props = axiom_set.as_object().unwrap();
 
-                    output_nodes.write_all(r#"{"value":"#.as_bytes()).unwrap();
+                    output_nodes.write_all(r#"{"grebi:value":"#.as_bytes()).unwrap();
                     write_value(reified_value, output_nodes);
-                    output_nodes.write_all(r#","properties":{"#.as_bytes()).unwrap();
+                    output_nodes.write_all(r#","grebi:properties":{"#.as_bytes()).unwrap();
                         let mut is_first = true;
                         for k in reified_props.keys() {
                             if is_first {

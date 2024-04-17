@@ -1,5 +1,5 @@
 [package]
-name = "grebi_expand_subjects"
+name = "grebi_assign_ids"
 version = "0.1.0"
 edition = "2021"
 

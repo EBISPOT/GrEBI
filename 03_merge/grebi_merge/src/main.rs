@@ -8,12 +8,23 @@ use std::{env, io};
 
 use grebi_shared::get_id;
 
-mod slice_entity;
-use crate::slice_entity::SlicedEntity;
-use crate::slice_entity::SlicedProperty;
+mod parse_entity;
+use crate::parse_entity::ParsedEntity;
+use crate::parse_entity::ParsedProperty;
 
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
+struct Input {
+    datasource:Vec<u8>,
+    filename:String,
+    reader:BufReader<GzDecoder<File>>
+}
+
+struct BufferedLine {
+    input_index:usize,
+    line:Vec<u8>
+}
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -25,13 +36,20 @@ fn main() -> std::io::Result<()> {
     input_filenames.sort();
     input_filenames.dedup();
 
-    let mut inputs: Vec<(String, BufReader<GzDecoder<File>>)> = input_filenames
+    let mut inputs: Vec<Input> = input_filenames
         .iter()
         .map(|file| {
-            return (
-                file.to_string(),
-                BufReader::with_capacity(1024*1024*32,GzDecoder::new(File::open(file).unwrap())),
-            );
+            let tokens = file.split(':').collect::<Vec<&str>>();
+            if tokens.len() != 2 {
+                panic!("Inputs file must be of the form <datasource>:<filename>");
+            }
+            let datasource = tokens[0].to_string();
+            let filename = tokens[1].to_string();
+            return Input {
+                datasource: datasource.as_bytes().to_vec(),
+                filename: filename.clone(),
+                reader: BufReader::with_capacity(1024*1024*32,GzDecoder::new(File::open(filename).unwrap())),
+            };
         })
         .collect();
 
@@ -39,11 +57,11 @@ fn main() -> std::io::Result<()> {
         panic!("No input files");
     }
 
-    let mut lines_to_write: Vec<Vec<u8>> = Vec::new();
     let mut cur_id: Vec<u8> = Vec::new();
 
     // Get the first line from each file
-    let mut cur_lines: VecDeque<(usize /* input index */, Vec<u8>)> = VecDeque::new();
+    let mut cur_lines: VecDeque<BufferedLine> = VecDeque::new();
+    let mut lines_to_write: Vec<BufferedLine> = Vec::new();
 
     let mut n = 0;
     loop {
@@ -51,13 +69,13 @@ fn main() -> std::io::Result<()> {
             break;
         }
         let mut line: Vec<u8> = Vec::new();
-        inputs[n].1.read_until(b'\n', &mut line).unwrap();
+        inputs[n].reader.read_until(b'\n', &mut line).unwrap();
         if line.len() == 0 {
-            eprintln!("File appears empty so will not be read: {}", inputs[n].0);
+            eprintln!("File appears empty so will not be read: {}", inputs[n].filename);
             inputs.remove(n);
             continue;
         }
-        cur_lines.push_back((n, line));
+        cur_lines.push_back(BufferedLine { input_index: n, line });
         n = n + 1;
     }
 
@@ -67,64 +85,67 @@ fn main() -> std::io::Result<()> {
 
     cur_lines.make_contiguous()
         .sort_by(|a, b| {
-            return get_id(&a.1).cmp(&get_id(&b.1)); });
+            return get_id(&a.line).cmp(&get_id(&b.line)); });
 
     loop {
 
         // Get the ID from the lowest sorted line
-        let id = get_id( &cur_lines[0].1 );
+        let id = get_id( &cur_lines[0].line );
 
         if !id.eq(&cur_id) {
             // this is a new subject; we have finished the old one (if present)
             if cur_id.len() > 0 {
-                write_merged_entity(&lines_to_write, &mut writer);
+                write_merged_entity(&lines_to_write, &mut writer, &inputs);
                 lines_to_write.clear();
             }
             cur_id = id.to_vec();
         }
 
         let line = cur_lines.pop_front().unwrap();
-        lines_to_write.push(line.1); // TODO: is this a copy? bc line.1 will never be used again
+        let input_index = line.input_index;
+        lines_to_write.push(line);
 
 
         // The file that provided the current lowest line is now gone from cur_lines
         // So read the next line from it and insert it into the correct sorted place in cur_lines
 
         let mut line_buf: Vec<u8> = Vec::new();
-        inputs[line.0].1.read_until(b'\n', &mut line_buf).unwrap();
+        inputs[input_index].reader.read_until(b'\n', &mut line_buf).unwrap();
 
         if line_buf.len() == 0 {
-            eprintln!("Finished reading {}", inputs[line.0].0);
+            eprintln!("Finished reading {}", inputs[input_index].filename);
             if cur_lines.len() == 0 {
                 break;
             }
         } else {
             let new_id = get_id(&line_buf);
 
-            match cur_lines.binary_search_by(|probe| { return get_id(&probe.1).cmp(&new_id); }) {
-                Ok(pos) => cur_lines.insert(pos, (line.0, line_buf)),
-                Err(pos) => cur_lines.insert(pos, (line.0, line_buf)),
+            match cur_lines.binary_search_by(|probe| { return get_id(&probe.line).cmp(&new_id); }) {
+                Ok(pos) => cur_lines.insert(pos, BufferedLine { input_index, line: line_buf }),
+                Err(pos) => cur_lines.insert(pos, BufferedLine { input_index, line: line_buf })
             }
         }
     }
 
     if cur_id.len() > 0 {
-        write_merged_entity(&lines_to_write, &mut writer);
+        write_merged_entity(&lines_to_write, &mut writer, &inputs);
         lines_to_write.clear();
     }
+
+    writer.flush().unwrap();
 
     Ok(())
 }
 
-
 #[inline(always)]
-fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std::io::StdoutLock>) {
+fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWriter<std::io::StdoutLock>, inputs: &Vec<Input>) {
+
     if lines_to_write.len() == 0 {
         panic!();
     }
 
-    let jsons:Vec<SlicedEntity> = lines_to_write.iter().map(|line| {
-        return SlicedEntity::from_json(line);
+    let jsons:Vec<ParsedEntity> = lines_to_write.iter().map(|line| {
+        return ParsedEntity::from_json(&line.line, &inputs[line.input_index].datasource );
     }).collect();
 
     let mut has_any_type:bool = false;
@@ -132,10 +153,8 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
     let mut datasources: Vec<&[u8]> = jsons
         .iter()
         .map(|json| {
-            for prop in &json.props {
-                if prop.key == b"grebi:type" {
-                    has_any_type = true;
-                }
+            if json.has_type {
+                has_any_type = true;
             }
             return json.datasource;
         })
@@ -151,12 +170,9 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
     datasources.sort();
     datasources.dedup();
 
-    stdout.write_all(r#"{"id":""#.as_bytes()).unwrap();
+    stdout.write_all(r#"{"grebi:nodeId":""#.as_bytes()).unwrap();
     stdout.write_all(jsons[0].id).unwrap();
-    stdout.write_all(r#"","#.as_bytes()).unwrap();
-    stdout.write_all(r#""subjects":"#.as_bytes()).unwrap();
-    stdout.write_all(jsons[0].subjects_block).unwrap();
-    stdout.write_all(r#","datasources":["#.as_bytes()).unwrap();
+    stdout.write_all(r#"","grebi:datasources":["#.as_bytes()).unwrap();
     let mut is_first = true;
     for datasource in datasources {
         if !is_first {
@@ -168,8 +184,7 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
         stdout.write_all(datasource).unwrap();
         stdout.write_all(r#"""#.as_bytes()).unwrap();
     }
-    stdout.write_all(r#"],"properties":{"#.as_bytes()).unwrap();
-
+    stdout.write_all(r#"]"#.as_bytes()).unwrap();
 
 
     // merge all the {prop_key, prop_value, datasource} into a single list for sorting
@@ -177,7 +192,7 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
     for json in &jsons {
         n_props_total += json.props.len();
     }
-    let mut merged_props = Vec::<(&[u8] /* datasource */, SlicedProperty)>::with_capacity(n_props_total);
+    let mut merged_props = Vec::<(&[u8] /* datasource */, ParsedProperty)>::with_capacity(n_props_total);
     for json in &jsons {
         for prop in json.props.iter() {
             merged_props.push(( json.datasource, prop.clone()));
@@ -210,18 +225,11 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
         return a.1.key == b.1.key && a.1.value == b.1.value && a.0 == b.0;
     });
 
-    let mut is_first = true;
-
     let mut index = 0;
 
     // for each of all the properties (key) that apply to this entity
     while index < merged_props.len() {
-        if !is_first {
-            stdout.write_all(r#","#.as_bytes()).unwrap();
-        } else {
-            is_first = false;
-        }
-        stdout.write_all(r#"""#.as_bytes()).unwrap();
+        stdout.write_all(r#",""#.as_bytes()).unwrap();
         stdout.write_all(merged_props[index].1.key).unwrap();
         stdout.write_all(r#"":["#.as_bytes()).unwrap();
 
@@ -236,7 +244,7 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
             }
 
             let start_value_index = index;
-            stdout.write_all(r#"{"datasources":["#.as_bytes()).unwrap();
+            stdout.write_all(r#"{"grebi:datasources":["#.as_bytes()).unwrap();
 
             let mut is_first3:bool = true;
             loop {
@@ -267,7 +275,7 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
             }
 
             // now write the value itself (from start_value_index; index should already be at the next value)
-            stdout.write_all(r#"],"value":"#.as_bytes()).unwrap();
+            stdout.write_all(r#"],"grebi:value":"#.as_bytes()).unwrap();
             stdout.write_all(merged_props[start_value_index].1.value).unwrap();
             stdout.write_all(r#"}"#.as_bytes()).unwrap();
 
@@ -284,9 +292,8 @@ fn write_merged_entity(lines_to_write: &Vec<Vec<u8>>, stdout: &mut BufWriter<std
         stdout.write_all(r#"]"#.as_bytes()).unwrap(); // close properties array
     }
 
-
     stdout.write_all(
-            r#"}}
+            r#"}
 "#
             .as_bytes(),
         ).unwrap(); // close the lline

@@ -14,11 +14,9 @@ use clap::Parser;
 use rocksdb::DB;
 use rocksdb::Options;
 
-mod slice_entity;
-
-use slice_entity::SlicedEntity;
-use slice_entity::SlicedReified;
-use slice_entity::SlicedProperty;
+use grebi_shared::slice_merged_entity::SlicedEntity;
+use grebi_shared::slice_merged_entity::SlicedReified;
+use grebi_shared::slice_merged_entity::SlicedProperty;
 use grebi_shared::json_lexer::{JsonTokenType};
 use serde_json::json;
 
@@ -69,7 +67,7 @@ fn main() {
 
 
 
-        let sliced = slice_entity::SlicedEntity::from_json(&line);
+        let sliced = SlicedEntity::from_json(&line);
 
         sliced.props.iter().for_each(|prop| {
 
@@ -82,7 +80,7 @@ fn main() {
 
                 let prop_val = prop.value.to_vec();
 
-                let reified = slice_entity::SlicedReified::from_json(&prop_val);
+                let reified = SlicedReified::from_json(&prop_val);
 
                 if reified.is_some() {
                     reified.unwrap().props.iter().for_each(|prop| {

@@ -88,7 +88,7 @@ def main():
     os.sync()
 
     ###
-    ### 2. Expand subjects with equivalences; this step also assigns IDs to cliques
+    ### 2. Assign IDs to nodes (merging cliques)
     ###
     dir_to_search_for_equiv_files = os.path.abspath(os.path.join(config['worker_output_dir'], '01_ingest'))
     equiv_rocksdb_path = os.path.abspath(os.path.join(config['worker_output_dir'], '02_equivalences', 'equivalences_db'))
@@ -120,17 +120,17 @@ def main():
             exit(1)
     os.sync()
 
-    # 2.2. Expand subjects using the equivalences db
+    # 2.2. Assign IDs using the equivalences db
     if config['use_slurm'] == True:
-        print("Expanding subjects on slurm (use_slurm = true)")
+        print("Assigning IDs on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'sbatch',
             '--wait',
-            '-o ' + os.path.abspath(os.path.join(config['persistent_output_dir'], '02_equivalences', 'expand_subjects_%a.log')),
-            '--array=0-' + str(len(datasource_files)-1) + '%' + str(config['slurm_max_workers']['expand_subjects']),
-            '--time=' + config['slurm_max_time']['expand_subjects'],
-            '--mem=' + config['slurm_max_memory']['expand_subjects'],
-            './02_equivalences/grebi_expand_subjects_worker.slurm.sh',
+            '-o ' + os.path.abspath(os.path.join(config['persistent_output_dir'], '02_equivalences', 'assign_ids_%a.log')),
+            '--array=0-' + str(len(datasource_files)-1) + '%' + str(config['slurm_max_workers']['assign_ids']),
+            '--time=' + config['slurm_max_time']['assign_ids'],
+            '--mem=' + config['slurm_max_memory']['assign_ids'],
+            './02_equivalences/grebi_assign_ids_worker.slurm.sh',
             datasource_files_listing,
             equiv_rocksdb_path
         ])
@@ -139,12 +139,12 @@ def main():
             exit(1)
         os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '02_equivalences', '*.log')))
     else:
-        print("Expanding subjects locally (use_slurm = false)")
+        print("Assigning IDs locally (use_slurm = false)")
         for n in range(len(datasource_files)):
             print("Running " + str(n) + " of " + str(len(datasource_files)))
             cmd = ' '.join([
                 'SLURM_ARRAY_TASK_ID=' + str(n),
-                './02_equivalences/grebi_expand_subjects_worker.slurm.sh',
+                './02_equivalences/grebi_assign_ids_worker.slurm.sh',
                 datasource_files_listing,
                 equiv_rocksdb_path
             ])

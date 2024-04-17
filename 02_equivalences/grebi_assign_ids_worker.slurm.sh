@@ -7,4 +7,4 @@ fi
 
 export PYTHONUNBUFFERED=TRUE
 
-python3 ./02_equivalences/grebi_expand_subjects_worker.slurm.py $1 $2
+python3 ./02_equivalences/grebi_assign_ids_worker.slurm.py $1 $2

@@ -27,11 +27,11 @@ def main():
     datasource_files = map(lambda x: json.loads(x.strip()), datasource_files)
 
     result_filenames = map(
-        lambda x: x['artefacts']['sorted_expanded_subjects_jsonl_gz'],
+        lambda x: x['datasource']['name'] + ':' + x['artefacts']['sorted_expanded_subjects_jsonl_gz'],
         datasource_files)
 
     # filter result_filenames for files that exist only
-    result_filenames = list(filter(lambda x: exists(x), result_filenames))
+    result_filenames = list(filter(lambda x: exists(x.split(':')[1]), result_filenames))
 
 
     out_path = os.path.join(config['worker_output_dir'], "03_merge", "merged.jsonl.")

@@ -21,12 +21,10 @@ use rocksdb::DB;
 use rocksdb::IteratorMode;
 use rocksdb::Options;
 
-mod slice_entity;
 use serde_json::Value;
-use slice_entity::SlicedEntity;
-use slice_entity::SlicedProperty;
-
-use crate::slice_entity::SlicedReified;
+use grebi_shared::slice_merged_entity::SlicedEntity;
+use grebi_shared::slice_merged_entity::SlicedProperty;
+use grebi_shared::slice_merged_entity::SlicedReified;
 
 use grebi_shared::json_lexer::{lex, JsonToken };
 use grebi_shared::json_parser::JsonParser;
@@ -52,7 +50,7 @@ struct Args {
 }
 
 // Given (a) JSONL stream of entities on stdin
-// (b) RocksDB key->value store with merged id -> {subjects, datasources, properties}
+// (b) RocksDB key->value store with merged id -> entities
 // and (c) metadata json to tell us all possible node and edge properties
 //
 // This program makes gzipped NODES and EDGES csv files to import into neo4j.

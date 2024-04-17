@@ -13,7 +13,7 @@ members = [
 	"02_equivalences/grebi_extract_equivalences",
 	"02_equivalences/grebi_equivalences2groups",
 	"02_equivalences/grebi_groups2rocks",
-	"02_equivalences/grebi_expand_subjects",
+	"02_equivalences/grebi_assign_ids",
 	"03_merge/grebi_merge",
 	"04_index/grebi_json2rocks",
 	"05_materialize_edges/grebi_rocks2neo",
