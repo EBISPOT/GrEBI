@@ -56,7 +56,21 @@ fn main() {
 
         let mut json = JsonParser::from_lexed(lex(&line));
 
+
+        let mut id:Option<&[u8]> = None;
         json.begin_object();
+        json.mark();
+
+        while json.peek().kind != JsonTokenType::EndObject {
+            let name = json.name(&line);
+            if name.eq("id".as_bytes()) {
+                id = Some(json.string(&line));
+                break;
+            } else {
+                json.value(&line); // skip
+            }
+        }
+        json.rewind();
 
         while json.peek().kind != JsonTokenType::EndObject {
 
@@ -71,7 +85,7 @@ fn main() {
                 json.begin_array();
                 while json.peek().kind != JsonTokenType::EndArray {
                     if json.peek().kind == JsonTokenType::StartString {
-                        let serialized = serialize_equivalence(k, json.string(&line));
+                        let serialized = serialize_equivalence(id.unwrap(), json.string(&line));
                         if serialized.is_some() {
                             writer.write_all(&serialized.unwrap()).unwrap();
                         }
@@ -81,7 +95,7 @@ fn main() {
                 }
                 json.end_array();
             } else if json.peek().kind == JsonTokenType::StartString {
-                let serialized = serialize_equivalence(k, json.string(&line));
+                let serialized = serialize_equivalence(id.unwrap(), json.string(&line));
                 if serialized.is_some() {
                     writer.write_all(&serialized.unwrap()).unwrap();
                 }

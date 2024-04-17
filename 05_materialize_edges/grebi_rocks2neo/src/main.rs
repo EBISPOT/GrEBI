@@ -94,7 +94,7 @@ fn main() -> std::io::Result<()> {
             // Compression::fast())
         );
 
-    nodes_writer.write_all("id:ID,:LABEL".as_bytes()).unwrap();
+    nodes_writer.write_all("id:ID,:LABEL,grebi:datasources:string[]".as_bytes()).unwrap();
     for prop in &all_entity_props {
         nodes_writer.write_all(b",").unwrap();
         nodes_writer.write_all(prop.as_bytes()).unwrap();
@@ -103,7 +103,7 @@ fn main() -> std::io::Result<()> {
     nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
-    edges_writer.write_all(":START_ID,:TYPE,:END_ID".as_bytes()).unwrap();
+    edges_writer.write_all(":START_ID,:TYPE,:END_ID,grebi:datasources:string[]".as_bytes()).unwrap();
     for prop in &all_edge_props {
         edges_writer.write_all(b",").unwrap();
         edges_writer.write_all(prop.as_bytes()).unwrap();
@@ -132,7 +132,7 @@ fn main() -> std::io::Result<()> {
         }
 
         sliced.props.iter().for_each(|prop| {
-            maybe_write_edge(sliced.id, prop, &db, &all_edge_props, &mut edges_writer, &exclude);
+            maybe_write_edge(sliced.id, prop, &db, &all_edge_props, &mut edges_writer, &exclude, &prop.datasources);
         });
     }
 
@@ -161,6 +161,19 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
             }
             parse_json_and_write(prop.value, nodes_writer);
         }
+    });
+
+    nodes_writer.write_all(b"\",\"").unwrap();
+
+    // grebi:datasources
+    is_first = true;
+    entity.datasources.iter().for_each(|ds| {
+        if is_first {
+            is_first = false;
+        } else {
+            nodes_writer.write_all(b";").unwrap();
+        }
+        nodes_writer.write_all(ds).unwrap();
     });
 
     nodes_writer.write_all(b"\"").unwrap();
@@ -197,7 +210,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
 
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&HashSet<Vec<u8>>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&HashSet<Vec<u8>>, datasources:&Vec<&[u8]>) {
 
     if exclude.contains(prop.key) {
         return;
@@ -216,7 +229,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props
                 let str = JsonParser::from_lexed(lex(&buf)).string(buf);
                 let exists = db.get_pinned(str).unwrap().is_some();
                 if exists {
-                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), &all_edge_props, db, edges_writer);
+                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), &all_edge_props, db, edges_writer, &datasources);
                 }
             } else {
                 // panic!("unexpected kind: {:?}", reified_u.value_kind);
@@ -230,7 +243,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props
         let exists = db.get_pinned(str).unwrap().is_some();
 
         if exists {
-            write_edge(from_id, str, prop.key, None, &all_edge_props, db, edges_writer);
+            write_edge(from_id, str, prop.key, None, &all_edge_props, db, edges_writer, &datasources);
         }
 
     } else if prop.kind == JsonTokenType::StartArray {
@@ -245,7 +258,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, db:&DB, edges_writer: &mut BufWriter<File>) {
+fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, db:&DB, edges_writer: &mut BufWriter<File>, datasources:&Vec<&[u8]>) {
 
     edges_writer.write_all(b"\"").unwrap();
     write_escaped_value(from_id, edges_writer);
@@ -253,7 +266,20 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
     write_escaped_value(edge, edges_writer);
     edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(to_id, edges_writer);
+    edges_writer.write_all(b"\",\"").unwrap();
+
+    // grebi:datasources
+    let mut is_first_ds = true;
+    datasources.iter().for_each(|ds| {
+        if is_first_ds {
+            is_first_ds = false;
+        } else {
+            edges_writer.write_all(b";").unwrap();
+        }
+        edges_writer.write_all(ds).unwrap();
+    });
     edges_writer.write_all(b"\"").unwrap();
+
 
     for header_prop in all_edge_props {
         edges_writer.write_all(b",").unwrap();

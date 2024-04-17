@@ -14,6 +14,7 @@ pub struct SlicedProperty<'a> {
 #[derive(Clone)]
 pub struct SlicedEntity<'a> {
     pub id:&'a [u8],
+    pub datasources:Vec<&'a [u8]>,
     pub props:Vec<SlicedProperty<'a>>
 }
 
@@ -25,16 +26,25 @@ impl<'a> SlicedEntity<'a> {
 
         let mut parser = JsonParser::from_lexed(lexed);
 
-        let mut id:Option<&[u8]> = None;
         let mut props:Vec<SlicedProperty> = Vec::new();
-
+        let mut entity_datasources:Vec<&[u8]> = Vec::new();
+        
         // {
         parser.begin_object();
 
-        // "id": ...
+        // "grebi:nodeId": ...
         let k_id = parser.name(&buf);
-        if k_id != "id".as_bytes() { panic!("expected id as key, got {}", String::from_utf8( k_id.to_vec() ).unwrap()); }
-        id = Some(parser.string(&buf));
+        if k_id != "grebi:nodeId".as_bytes() { panic!("expected grebi:nodeId as key, got {}", String::from_utf8( k_id.to_vec() ).unwrap()); }
+        let id = parser.string(&buf);
+
+        // "grebi:datasources": ...
+        let k_value_datasources = parser.name(&buf);
+        if k_value_datasources != "grebi:datasources".as_bytes() { panic!(); }
+        parser.begin_array();
+            while parser.peek().kind != JsonTokenType::EndArray {
+                entity_datasources.push(parser.string(&buf));
+            }
+        parser.end_array();
 
         while parser.peek().kind != JsonTokenType::EndObject {
 
@@ -51,7 +61,6 @@ impl<'a> SlicedEntity<'a> {
                         // "grebi:datasources": ...
                         let k_value_datasources = parser.name(&buf);
                         if k_value_datasources != "grebi:datasources".as_bytes() { panic!(); }
-
                         parser.begin_array();
                             while parser.peek().kind != JsonTokenType::EndArray {
                                 value_datasources.push(parser.string(&buf));
@@ -76,7 +85,7 @@ impl<'a> SlicedEntity<'a> {
 
 
 
-        return SlicedEntity { id: id.unwrap(), props };
+        return SlicedEntity { id, datasources: entity_datasources, props };
 
     }
 
