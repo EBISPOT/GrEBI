@@ -54,7 +54,7 @@ fn main() {
             break;
         }
 
-        let mut json = JsonParser::from_lexed(lex(&line));
+        let mut json = JsonParser::parse(&line);
 
 
         let mut id:Option<&[u8]> = None;
@@ -62,12 +62,12 @@ fn main() {
         json.mark();
 
         while json.peek().kind != JsonTokenType::EndObject {
-            let name = json.name(&line);
+            let name = json.name();
             if name.eq("id".as_bytes()) {
-                id = Some(json.string(&line));
+                id = Some(json.string());
                 break;
             } else {
-                json.value(&line); // skip
+                json.value(); // skip
             }
         }
         json.rewind();
@@ -78,10 +78,10 @@ fn main() {
 
         while json.peek().kind != JsonTokenType::EndObject {
 
-            let k = json.name(&line);
+            let k = json.name();
 
             if !equiv_props.contains(k) {
-                json.value(&line); // skip
+                json.value(); // skip
                 continue;
             }
 
@@ -89,29 +89,29 @@ fn main() {
                 json.begin_array();
                 while json.peek().kind != JsonTokenType::EndArray {
                     if json.peek().kind == JsonTokenType::StartString {
-                        let serialized = serialize_equivalence(id.unwrap(), json.string(&line));
+                        let serialized = serialize_equivalence(id.unwrap(), json.string());
                         if serialized.is_some() {
                             writer.write_all(&serialized.unwrap()).unwrap();
                         }
                     } else {
-                        json.value(&line); // skip
+                        json.value(); // skip
                     }
                 }
                 json.end_array();
             } else if json.peek().kind == JsonTokenType::StartString {
-                let serialized = serialize_equivalence(id.unwrap(), json.string(&line));
+                let serialized = serialize_equivalence(id.unwrap(), json.string());
                 if serialized.is_some() {
                     writer.write_all(&serialized.unwrap()).unwrap();
                 }
             } else {
-                json.value(&line); // skip
+                json.value(); // skip
             }
         }
 
         n_total = n_total + 1;
 
         if n_total % 1000000 == 0 {
-            eprintln!("scanned {} subjects in {} seconds", n_total, start_time.elapsed().as_secs());
+            eprintln!("processed {} objects in {} seconds", n_total, start_time.elapsed().as_secs());
         }
     }
 

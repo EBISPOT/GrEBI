@@ -226,7 +226,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props
             let reified_u = reified.unwrap();
             if reified_u.value_kind == JsonTokenType::StartString {
                 let buf = &reified_u.value.to_vec();
-                let str = JsonParser::from_lexed(lex(&buf)).string(buf);
+                let str = JsonParser::parse(&buf).string();
                 let exists = db.get_pinned(str).unwrap().is_some();
                 if exists {
                     write_edge(from_id, str, prop.key,  Some(&reified_u.props), &all_edge_props, db, edges_writer, &datasources);
@@ -239,7 +239,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props
     } else if prop.kind == JsonTokenType::StartString {
 
         let buf = &prop.value.to_vec();
-        let str = JsonParser::from_lexed(lex(&buf)).string(buf);
+        let str = JsonParser::parse(&buf).string();
         let exists = db.get_pinned(str).unwrap().is_some();
 
         if exists {
@@ -324,11 +324,11 @@ fn write_escaped_value(buf:&[u8], writer:&mut BufWriter<File>) {
 fn parse_json_and_write(buf:&[u8], writer:&mut BufWriter<File>) {
 
     let v = buf.to_vec(); // TODO fix lex to accept a slice
-    let mut json = JsonParser::from_lexed(lex(&v));
+    let mut json = JsonParser::parse(&v);
 
     match json.peek().kind {
         JsonTokenType::StartString => {
-            write_escaped_value(json.string(&v), writer);
+            write_escaped_value(json.string(), writer);
         },
         _ => {
             write_escaped_value(&buf, writer)

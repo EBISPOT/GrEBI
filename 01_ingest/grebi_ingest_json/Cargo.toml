@@ -8,4 +8,5 @@ clap = { version = "4.4.11", features = ["derive"] }
 grebi_shared = { path = "../../grebi_shared" }
 serde_json = { version = "1.0.108", features=["preserve_order"] }
 struson = "0.3.0"
+jemallocator = "0.5.4"
 

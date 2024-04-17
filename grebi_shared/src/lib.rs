@@ -1,6 +1,6 @@
 
-pub mod json_lexer;
 pub mod json_parser;
+pub mod json_lexer;
 pub mod prefix_map;
 pub mod slice_merged_entity;
 
@@ -16,7 +16,7 @@ pub fn get_id<'a>(json:&'a [u8])->&'a [u8] {
 
     while json[end] != b'"' {
         if json[end] == b'\\' {
-            todo!();
+            todo!("Found escape sequence in ID in {}", String::from_utf8(json.to_vec()).unwrap());
         }
         end += 1;
     }

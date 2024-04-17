@@ -135,7 +135,7 @@ def main():
             equiv_rocksdb_path
         ])
         if os.system(slurm_cmd) != 0:
-            print("Failed to expand subjects")
+            print("Failed to assign IDs")
             exit(1)
         os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '02_equivalences', '*.log')))
     else:
@@ -150,7 +150,7 @@ def main():
             ])
             print(cmd)
             if os.system(cmd) != 0:
-                print("Failed to expand subjects")
+                print("Failed to assign IDs")
                 exit(1)
     os.sync()
 

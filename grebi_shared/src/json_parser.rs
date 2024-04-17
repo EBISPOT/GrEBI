@@ -1,5 +1,5 @@
-use crate::json_lexer::{JsonToken, JsonTokenType};
-
+use crate::json_lexer::{JsonToken, JsonTokenType, lex};
+use serde_json::{self, Value};
 
 
 #[derive(PartialEq)]
@@ -9,7 +9,8 @@ enum NestItem {
     Array
 }
 
-pub struct JsonParser {
+pub struct JsonParser<'a> {
+    slice:&'a [u8],
     tokens:Vec<JsonToken>,
     stack:Vec<NestItem>,
     index:usize,
@@ -17,10 +18,10 @@ pub struct JsonParser {
     saved_stack:Vec<NestItem>
 }
 
-impl JsonParser {
+impl<'a> JsonParser<'a> {
 
-    pub fn from_lexed(tokens:Vec<JsonToken>) -> JsonParser {
-        return JsonParser { tokens, stack:Vec::new(), index: 0, saved_index: 0, saved_stack:Vec::new() };
+    pub fn parse(slice:&'a [u8]) -> JsonParser<'a> {
+        return JsonParser { slice, tokens: lex(slice), stack:Vec::new(), index: 0, saved_index: 0, saved_stack:Vec::new() };
     }
 
     // hack
@@ -53,14 +54,14 @@ impl JsonParser {
         return token;
     }
 
-    pub fn name<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
+    pub fn name(&mut self) -> &'a [u8] {
         self.skip_comma_if_present();
         if self.stack[self.stack.len() - 1] != NestItem::Object {
             panic!();
         }
         let start_token = self.next();
         if start_token.kind != JsonTokenType::StartString {
-            panic!("Expected StartString for object entry name, found {:?} in {}", start_token.kind, String::from_utf8(buf.to_vec()).unwrap());
+            panic!("Expected StartString for object entry name, found {:?} in {}", start_token.kind, String::from_utf8(self.slice.to_vec()).unwrap());
         }
         let end_token = self.next();
         if end_token.kind != JsonTokenType::EndString {
@@ -70,23 +71,42 @@ impl JsonParser {
         if colon.kind != JsonTokenType::Colon {
             panic!("Expected Colon, found {:?}", colon.kind);
         }
-        return &buf[start_token.index + 1..end_token.index];
+        return &self.slice[start_token.index + 1..end_token.index];
     }
-
-    pub fn string<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
+    pub fn quoted_name(&mut self) -> &'a [u8] {
+        self.skip_comma_if_present();
+        if self.stack[self.stack.len() - 1] != NestItem::Object {
+            panic!();
+        }
         let start_token = self.next();
         if start_token.kind != JsonTokenType::StartString {
-            panic!("Expected StartString, found {:?}", start_token.kind);
+            panic!("Expected StartString for object entry name, found {:?} in {}", start_token.kind, String::from_utf8(self.slice.to_vec()).unwrap());
         }
         let end_token = self.next();
         if end_token.kind != JsonTokenType::EndString {
-            panic!("Expected EndString, found {:?}", end_token.kind);
+            panic!("Expected EndString for object entry name, found {:?} in {}", end_token.kind, String::from_utf8(self.slice.to_vec()).unwrap());
         }
-        self.skip_comma_if_present();
-        return &buf[start_token.index + 1..end_token.index];
+        let colon = self.next();
+        if colon.kind != JsonTokenType::Colon {
+            panic!("Expected Colon, found {:?}", colon.kind);
+        }
+        return &self.slice[start_token.index..end_token.index+1];
     }
 
-    pub fn quoted_string<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
+    pub fn string(&mut self) -> &'a [u8] {
+        let start_token = self.next();
+        if start_token.kind != JsonTokenType::StartString {
+            panic!("Expected StartString, found {:?} in {}", start_token.kind, String::from_utf8(self.slice.to_vec()).unwrap());
+        }
+        let end_token = self.next();
+        if end_token.kind != JsonTokenType::EndString {
+            panic!("Expected EndString, found {:?} in {}", end_token.kind, String::from_utf8(self.slice.to_vec()).unwrap());
+        }
+        self.skip_comma_if_present();
+        return &self.slice[start_token.index + 1..end_token.index];
+    }
+
+    pub fn quoted_string(&mut self) -> &'a [u8] {
         let start_token = self.next();
         if start_token.kind != JsonTokenType::StartString {
             panic!();
@@ -96,10 +116,10 @@ impl JsonParser {
             panic!();
         }
         self.skip_comma_if_present();
-        return &buf[start_token.index..end_token.index+1];
+        return &self.slice[start_token.index..end_token.index+1];
     }
 
-    pub fn number<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
+    pub fn number(&mut self) -> &'a [u8] {
         let start_token = self.next();
         if start_token.kind != JsonTokenType::StartNumber {
             panic!();
@@ -109,13 +129,13 @@ impl JsonParser {
             panic!();
         }
         self.skip_comma_if_present();
-        return &buf[start_token.index..end_token.index+1];
+        return &self.slice[start_token.index..end_token.index+1];
     }
 
     pub fn begin_array(&mut self) -> JsonToken {
         let token = self.next();
         if token.kind != JsonTokenType::StartArray {
-            panic!("Expected StartArray, found {:?}", token.kind);
+            panic!("Expected StartArray, found {:?} in {}", token.kind, String::from_utf8(self.slice.to_vec()).unwrap());
         }
         self.stack.push(NestItem::Array);
         return token;
@@ -124,7 +144,7 @@ impl JsonParser {
     pub fn end_array(&mut self) -> JsonToken {
         let token = self.next();
         if token.kind != JsonTokenType::EndArray {
-            panic!("Expected EndArray, found {:?}", token.kind);
+            panic!("Expected EndArray, found {:?} in {}", token.kind, String::from_utf8(self.slice.to_vec()).unwrap());
         }
         if self.stack[self.stack.len() - 1] != NestItem::Array {
             panic!("EndArray called outside of an array");
@@ -134,7 +154,7 @@ impl JsonParser {
         return token;
     }
 
-    pub fn value<'a>(&mut self, buf:&'a [u8]) -> &'a [u8] {
+    pub fn value(&mut self) -> &'a [u8] {
 
         let token = self.peek();
 
@@ -142,25 +162,25 @@ impl JsonParser {
             JsonTokenType::StartObject => {
                 let begin_tok = self.begin_object();
                 while self.peek().kind != JsonTokenType::EndObject {
-                    self.name(&buf);
-                    self.value(&buf);
+                    self.name();
+                    self.value();
                 }
                 let end_tok = self.end_object();
-                return &buf[begin_tok.index..end_tok.index+1];
+                return &self.slice[begin_tok.index..end_tok.index+1];
             },
             JsonTokenType::StartArray => {
                 let begin_tok = self.begin_array();
                 while self.peek().kind != JsonTokenType::EndArray {
-                    self.value(&buf);
+                    self.value();
                 }
                 let end_tok = self.end_array();
-                return &buf[begin_tok.index..end_tok.index+1];
+                return &self.slice[begin_tok.index..end_tok.index+1];
             },
             JsonTokenType::StartString => {
-                return self.quoted_string(&buf);
+                return self.quoted_string();
             },
             JsonTokenType::StartNumber => {
-                return self.number(buf);
+                return self.number();
             },
             JsonTokenType::True => {
                 let _ = self.next();

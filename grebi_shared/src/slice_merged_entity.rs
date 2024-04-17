@@ -22,9 +22,7 @@ impl<'a> SlicedEntity<'a> {
 
      pub fn from_json(buf:&'a Vec<u8>) -> SlicedEntity<'a> {
 
-        let lexed = lex(&buf);
-
-        let mut parser = JsonParser::from_lexed(lexed);
+        let mut parser = JsonParser::parse(&buf);
 
         let mut props:Vec<SlicedProperty> = Vec::new();
         let mut entity_datasources:Vec<&[u8]> = Vec::new();
@@ -33,22 +31,22 @@ impl<'a> SlicedEntity<'a> {
         parser.begin_object();
 
         // "grebi:nodeId": ...
-        let k_id = parser.name(&buf);
+        let k_id = parser.name();
         if k_id != "grebi:nodeId".as_bytes() { panic!("expected grebi:nodeId as key, got {}", String::from_utf8( k_id.to_vec() ).unwrap()); }
-        let id = parser.string(&buf);
+        let id = parser.string();
 
         // "grebi:datasources": ...
-        let k_value_datasources = parser.name(&buf);
+        let k_value_datasources = parser.name();
         if k_value_datasources != "grebi:datasources".as_bytes() { panic!(); }
         parser.begin_array();
             while parser.peek().kind != JsonTokenType::EndArray {
-                entity_datasources.push(parser.string(&buf));
+                entity_datasources.push(parser.string());
             }
         parser.end_array();
 
         while parser.peek().kind != JsonTokenType::EndObject {
 
-            let prop_key = parser.name(&buf);
+            let prop_key = parser.name();
 
             parser.begin_array();
 
@@ -59,20 +57,20 @@ impl<'a> SlicedEntity<'a> {
                         let mut value_datasources:Vec<&[u8]> = Vec::new();
 
                         // "grebi:datasources": ...
-                        let k_value_datasources = parser.name(&buf);
+                        let k_value_datasources = parser.name();
                         if k_value_datasources != "grebi:datasources".as_bytes() { panic!(); }
                         parser.begin_array();
                             while parser.peek().kind != JsonTokenType::EndArray {
-                                value_datasources.push(parser.string(&buf));
+                                value_datasources.push(parser.string());
                             }
                         parser.end_array();
 
                         // "grebi:value": ...
-                        let k_value_value = parser.name(&buf);
+                        let k_value_value = parser.name();
                         if k_value_value != "grebi:value".as_bytes() { panic!(); }
 
                         let prop_value_kind = parser.peek().kind;
-                        let prop_value = parser.value(&buf);
+                        let prop_value = parser.value();
 
                         props.push(SlicedProperty { kind: prop_value_kind, key: prop_key, datasources: value_datasources, value: prop_value });
 
@@ -103,8 +101,7 @@ impl<'a> SlicedReified<'a> {
 
      pub fn from_json(buf:&'a Vec<u8>) -> Option<SlicedReified<'a>> {
 
-        let lexed = lex(&buf);
-        let mut parser = JsonParser::from_lexed(lexed);
+        let mut parser = JsonParser::parse(&buf);
 
         let mut props:Vec<SlicedProperty> = Vec::new();
 
@@ -112,27 +109,27 @@ impl<'a> SlicedReified<'a> {
         parser.begin_object();
 
             // "grebi:value": ...
-            let k_value = parser.name(&buf);
+            let k_value = parser.name();
             if k_value != "grebi:value".as_bytes() { return None; }
 
             let value_kind = parser.peek().kind;
-            let value = parser.value(&buf);
+            let value = parser.value();
 
             // "grebi:properties": ...
-            let k_properties = parser.name(&buf);
+            let k_properties = parser.name();
             if k_properties != "grebi:properties".as_bytes() { return None; }
 
             parser.begin_object();
             while parser.peek().kind != JsonTokenType::EndObject {
 
-                let prop_key = parser.name(&buf);
+                let prop_key = parser.name();
 
                 parser.begin_array();
 
                     while parser.peek().kind != JsonTokenType::EndArray {
 
                         let kind = parser.peek().kind;
-                        let prop_value = parser.value(&buf);
+                        let prop_value = parser.value();
 
                         props.push(SlicedProperty { kind, key: prop_key, value: prop_value, datasources: Vec::new() });
 

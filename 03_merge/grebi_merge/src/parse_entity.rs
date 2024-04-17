@@ -21,9 +21,7 @@ impl<'a> ParsedEntity<'a> {
 
      pub fn from_json(buf:&'a Vec<u8>, datasource:&'a [u8]) -> ParsedEntity<'a> {
 
-        let lexed = lex(&buf);
-
-        let mut parser = JsonParser::from_lexed(lexed);
+        let mut parser = JsonParser::parse(&buf);
 
         let mut subjects:Vec<&[u8]> = Vec::new();
         let mut props:Vec<ParsedProperty> = Vec::new();

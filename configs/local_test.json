@@ -65,7 +65,7 @@
         },
         {
             "name": "GWAS",
-            "enabled": true,
+            "enabled": false,
             "ingests": [
                 {
                     "ingest_files": [
@@ -79,7 +79,7 @@
         },
         {
             "name": "MP_HP",
-            "enabled": true,
+            "enabled": false,
             "ingests": [
                 {
                     "ingest_files": [
@@ -92,7 +92,7 @@
         },
         {
             "name": "OLS",
-            "enabled": true,
+            "enabled": false,
             "ingests": [
                 {
                     "ingest_files": ["/data/ontologies/ontologies.json.gz"],
@@ -105,11 +105,23 @@
         },
         {
             "name": "MONARCH",
-            "enabled": false,
+            "enabled": true,
             "ingests": [
                 {
                     "ingest_files": ["monarch-kg_edges.jsonl.gz"],
-                    "ingest_script": "./target/release/grebi_ingest_kgx"
+                    "ingest_script": "./target/release/grebi_ingest_kgx_edges",
+                    "ingest_args": [
+                        { "name": "--kgx-rename-field", "value": "category:grebi:type" },
+                        { "name": "--kgx-inject-key-prefix", "value": "monarch:" }
+                    ]
+                },
+                {
+                    "ingest_files": ["monarch-kg_nodes.jsonl.gz"],
+                    "ingest_script": "./target/release/grebi_ingest_json",
+                    "ingest_args": [
+                        { "name": "--json-rename-field", "value": "category:grebi:type" },
+                        { "name": "--json-inject-key-prefix", "value": "monarch:" }
+                     ]
                 }
             ]
         }

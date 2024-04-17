@@ -465,6 +465,18 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "grebi_shared",
+ "jemallocator",
+ "serde_json",
+ "struson",
+]
+
+[[package]]
+name = "grebi_ingest_kgx_edges"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "grebi_shared",
+ "jemallocator",
  "serde_json",
  "struson",
 ]
@@ -563,6 +575,7 @@ name = "grebi_shared"
 version = "0.1.0"
 dependencies = [
  "cc",
+ "serde_json",
 ]
 
 [[package]]

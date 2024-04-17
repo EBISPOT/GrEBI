@@ -69,18 +69,18 @@ fn main() {
             break;
         }
         
-        let mut json = JsonParser::from_lexed(lex(&line));
+        let mut json = JsonParser::parse(&line);
 
         let mut id:Option<&[u8]> = None;
 
         let begin_obj = json.begin_object();
         while json.peek().kind != JsonTokenType::EndObject {
-            let prop_key = json.name(&line);
+            let prop_key = json.name();
 
             if prop_key == b"id" {
-                id = Some(json.string(&line));
+                id = Some(json.string());
             } else {
-                json.value(&line); // skip
+                json.value(); // skip
             }
         }
         let end_obj = json.end_object();

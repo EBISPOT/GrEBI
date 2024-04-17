@@ -22,6 +22,8 @@ struct Args {
     kgx_inject_key_prefix:String,
 }
 
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 fn main() {
 
     let args = Args::parse();
@@ -53,13 +55,25 @@ fn main() {
 
         let json:serde_json::Map<String,Value> = serde_json::from_slice(&line).unwrap();
 
-        let subject = json.get("subject").unwrap().as_str().unwrap().to_string();
-        let predicate = json.get("predicate").unwrap().as_str().unwrap().to_string();
-        let object = json.get("object").unwrap().as_str().unwrap().to_string();
+        let s = json.get("subject");
+        let p = json.get("predicate");
+        let o = json.get("object");
+
+        if s.is_none() || p.is_none() || o.is_none() {
+            eprintln!("warning: missing subject, predicate, or object in kgx edge: {:?}", line);
+            continue;
+        }
+
+        let subject = s.unwrap().as_str().unwrap().to_string();
+        let predicate = p.unwrap().as_str().unwrap().to_string();
+        let object = o.unwrap().as_str().unwrap().to_string();
 
         let mut out_props = serde_json::Map::new();
         for (k,v) in json.iter() {
             if k.eq("subject") || k.eq("predicate") || k.eq("object") {
+                continue;
+            }
+            if v.is_null() {
                 continue;
             }
             let new_k = {

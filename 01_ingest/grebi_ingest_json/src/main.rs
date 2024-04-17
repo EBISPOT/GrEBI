@@ -29,6 +29,8 @@ struct Args {
     json_inject_value_prefix:Option<Vec<String>>,
 }
 
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 fn main() {
 
     let args = Args::parse();
@@ -79,6 +81,10 @@ fn main() {
 
             if k.eq("id") {
                 out_json.insert(k.clone(), v.clone());
+                continue;
+            }
+
+            if v.is_null() {
                 continue;
             }
 
