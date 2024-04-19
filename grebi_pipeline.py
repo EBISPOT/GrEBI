@@ -79,7 +79,7 @@ def main():
         if res != 0:
             print("Ingest failed")
             exit(1)
-        
+    else:
         print("Running ingest locally (use_slurm = false)")
         for n in range(len(datasource_files)):
             print("Running " + str(n) + " of " + str(len(datasource_files)))
