@@ -18,9 +18,10 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
+    datasources = map(lambda x: json.load(open(x, 'r')), config['datasource_configs'])
     datasource_files = []
 
-    for datasource in config['datasources']:
+    for datasource in datasources:
         if datasource['enabled'] != True:
             print("Skipping disabled datasource: " + datasource['name'])
         else:

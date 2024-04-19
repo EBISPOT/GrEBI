@@ -1,0 +1,12 @@
+{
+    "name": "Reactome",
+    "enabled": true,
+    "ingests": [
+        {
+            "ingest_files": ["./01_ingest/grebi_ingest_reactome/export/reactome.json"],
+            "ingest_script": "./target/release/grebi_ingest_reactome",
+            "ingest_args": [
+            ]
+        }
+    ]
+}

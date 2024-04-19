@@ -1,0 +1,20 @@
+{
+    "name": "HGNC",
+    "enabled": true,
+    "ingests": [
+        {
+            "ingest_files": [
+                "./00_fetch_data/hgnc/hgnc.json"
+            ],
+            "ingest_script": "./target/release/grebi_ingest_json",
+            "ingest_args": [
+                { "name": "--json-rename-field", "value": "hgnc_id:id" },
+                { "name": "--json-inject-type", "value": "hgnc:Gene" },
+                { "name": "--json-inject-key-prefix", "value": "hgnc:" },
+                { "name": "--json-inject-value-prefix", "value": "uniprot_ids:uniprot:" },
+                { "name": "--json-inject-value-prefix", "value": "omim_id:omim:" },
+                { "name": "--json-inject-value-prefix", "value": "pubmed_id:pmid:" }
+            ]
+        }
+    ]
+}

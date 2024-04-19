@@ -1,0 +1,14 @@
+{
+    "name": "UberGraph",
+    "enabled": true,
+    "ingests": [
+        {
+            "ingest_files": ["./ubergraph.nq.gz"],
+            "ingest_script": "./target/release/grebi_ingest_rdf",
+            "ingest_args": [
+                { "name": "--rdf-type", "value": "rdf_quads_nq" },
+                { "name": "--rdf-graph", "value": "http://reasoner.renci.org/redundant" }
+            ]
+        }
+    ]
+}

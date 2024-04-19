@@ -1,0 +1,25 @@
+{
+    "persistent_output_dir": "./tmp",
+    "worker_output_dir": "./tmp",
+    "use_slurm": false,
+    "bytes_per_merged_file": 104857600,
+    "equivalence_props": [
+        "owl:equivalentClass",
+        "owl:equivalentProperty",
+        "owl:sameAs",
+        "grebi:equivalentTo",
+        "ols:iri",
+        "hgnc:ensembl_gene_id",
+        "obo:chebi/inchi",
+        "obo:chebi/inchikey",
+        "obo:chebi/smiles"
+    ],
+    "exclude_edges": [
+        "ols:iri",
+        "ols:curie",
+        "oboinowl:id"
+    ],
+    "datasource_configs": [
+        "./configs/datasource_configs/hgnc.json"
+    ]
+}

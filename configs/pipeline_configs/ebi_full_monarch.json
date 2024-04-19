@@ -1,0 +1,53 @@
+{
+    "persistent_output_dir": "/nfs/production/parkinso/spot/grebi/tmp/gwas",
+    "worker_output_dir": "/hps/nobackup/parkinso/spot/grebi/tmp/gwas",
+    "use_slurm":true,
+    "slurm_max_workers": {
+        "ingest": 100,
+        "assign_ids": 100,
+        "extract": 100
+    },
+    "slurm_max_memory": {
+        "ingest": "32G",
+        "build_equiv_db": "64G",
+        "assign_ids": "64G",
+        "merge": "16G",
+        "index": "64G",
+        "extract": "8G"
+    },
+    "slurm_max_time": {
+        "ingest": "8:0:0",
+        "build_equiv_db": "23:0:0",
+        "assign_ids": "23:0:0",
+        "merge": "23:0:0",
+        "index": "23:0:0",
+        "extract": "23:0:0"
+    },
+    "bytes_per_merged_file": 104857600,
+    "equivalence_props": [
+        "owl:equivalentClass",
+        "owl:equivalentProperty",
+        "owl:sameAs",
+        "grebi:equivalentTo",
+        "ols:iri",
+        "hgnc:ensembl_gene_id",
+        "obo:chebi/inchi",
+        "obo:chebi/inchikey",
+        "obo:chebi/smiles"
+    ],
+    "exclude_edges": [
+        "ols:iri",
+        "ols:curie",
+        "oboinowl:id"
+    ],
+    "datasources": [
+        "./configs/datasource_configs/gwas.json",
+        "./configs/datasource_configs/hgnc.json",
+        "./configs/datasource_configs/impc.json",
+        "./configs/datasource_configs/mp_hp.json",
+        "./configs/datasource_configs/ols.json",
+        "./configs/datasource_configs/reactome.json",
+        "./configs/datasource_configs/ubergraph.json",
+        "./configs/datasource_configs/monarch.json"
+    ]
+}
