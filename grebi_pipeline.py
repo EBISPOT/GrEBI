@@ -74,11 +74,12 @@ def main():
             './01_ingest/grebi_ingest_worker.slurm.sh',
             datasource_files_listing
         ])
-        if os.system(slurm_cmd) != 0:
+        res = os.system(slurm_cmd)
+        os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '01_ingest', '*.log')))
+        if res != 0:
             print("Ingest failed")
             exit(1)
-        os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '01_ingest', '*.log')))
-    else:
+        
         print("Running ingest locally (use_slurm = false)")
         for n in range(len(datasource_files)):
             print("Running " + str(n) + " of " + str(len(datasource_files)))
@@ -134,10 +135,11 @@ def main():
             datasource_files_listing,
             equiv_rocksdb_path
         ])
-        if os.system(slurm_cmd) != 0:
+        res = os.system(slurm_cmd)
+        os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '02_equivalences', '*.log')))
+        if res != 0:
             print("Failed to assign IDs")
             exit(1)
-        os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '02_equivalences', '*.log')))
     else:
         print("Assigning IDs locally (use_slurm = false)")
         for n in range(len(datasource_files)):

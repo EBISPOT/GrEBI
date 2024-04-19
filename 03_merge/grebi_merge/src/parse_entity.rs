@@ -32,18 +32,18 @@ impl<'a> ParsedEntity<'a> {
         parser.begin_object();
 
             // "id": ...
-            let k_id = parser.name(&buf);
+            let k_id = parser.name();
             if k_id != "grebi:nodeId".as_bytes() { panic!(); }
-            let id = parser.string(&buf);
+            let id = parser.string();
 
             while parser.peek().kind != JsonTokenType::EndObject {
 
-                let prop_key = parser.name(&buf);
+                let prop_key = parser.name();
 
                 if prop_key == "grebi:type".as_bytes() {
                     has_type = true;
                 } else if prop_key == "grebi:datasource".as_bytes() {
-                    let prop_value = parser.string(&buf);
+                    let prop_value = parser.string();
                     ds = prop_value;
                     continue;
                 }
@@ -55,12 +55,12 @@ impl<'a> ParsedEntity<'a> {
                 if parser.peek().kind == JsonTokenType::StartArray {
                     parser.begin_array();
                     while parser.peek().kind != JsonTokenType::EndArray {
-                        let prop_value = parser.value(&buf);
+                        let prop_value = parser.value();
                         props.push(ParsedProperty { key: prop_key, value: prop_value });
                     }
                     parser.end_array();
                 } else {
-                    let prop_value = parser.value(&buf);
+                    let prop_value = parser.value();
                     props.push(ParsedProperty { key: prop_key, value: prop_value });
                 }
             }
