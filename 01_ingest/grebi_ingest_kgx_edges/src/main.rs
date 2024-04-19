@@ -59,8 +59,9 @@ fn main() {
         let p = json.get("predicate");
         let o = json.get("object");
 
-        if s.is_none() || p.is_none() || o.is_none() {
-            eprintln!("warning: missing subject, predicate, or object in kgx edge: {:?}", line);
+        if s.is_none() || p.is_none() || o.is_none()
+                || !s.unwrap().is_string() || !p.unwrap().is_string() || !o.unwrap().is_string() {
+            eprintln!("warning: missing or non-string subject, predicate, or object in kgx edge: {:?}", line);
             continue;
         }
 
