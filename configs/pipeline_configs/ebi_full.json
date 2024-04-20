@@ -1,6 +1,6 @@
 {
-    "persistent_output_dir": "/nfs/production/parkinso/spot/grebi/tmp/gwas",
-    "worker_output_dir": "/hps/nobackup/parkinso/spot/grebi/tmp/gwas",
+    "persistent_output_dir": "/nfs/production/parkinso/spot/grebi/tmp/ebi_full",
+    "worker_output_dir": "/hps/nobackup/parkinso/spot/grebi/tmp/ebi_full",
     "use_slurm":true,
     "slurm_max_workers": {
         "ingest": 100,
