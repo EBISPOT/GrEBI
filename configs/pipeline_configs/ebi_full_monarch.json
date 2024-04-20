@@ -40,7 +40,7 @@
         "ols:curie",
         "oboinowl:id"
     ],
-    "datasources": [
+    "datasource_configs": [
         "./configs/datasource_configs/gwas.json",
         "./configs/datasource_configs/hgnc.json",
         "./configs/datasource_configs/impc.json",
