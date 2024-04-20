@@ -107,6 +107,8 @@ impl<'a> SlicedReified<'a> {
 
         // {
         parser.begin_object();
+            
+            if parser.peek().kind == JsonTokenType::EndObject { return None; }
 
             // "grebi:value": ...
             let k_value = parser.name();
