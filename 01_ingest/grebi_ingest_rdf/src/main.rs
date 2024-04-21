@@ -21,11 +21,11 @@ use sophia::parser::QuadParser;
 use std::io::Write;
 use clap::Parser;
 
-const RDF_TYPE:SimpleIri<'static> =
-    SimpleIri::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#", Some("type")).unwrap();
+// const RDF_TYPE:SimpleIri<'static> =
+//     SimpleIri::new("http://www.w3.org/1999/02/22-rdf-syntax-ns#", Some("type")).unwrap();
 
-const OWL_AXIOM:SimpleIri<'static> = 
-    SimpleIri::new("http://www.w3.org/2002/07/owl#", Some("Axiom")).unwrap();
+// const OWL_AXIOM:SimpleIri<'static> = 
+//     SimpleIri::new("http://www.w3.org/2002/07/owl#", Some("Axiom")).unwrap();
 
 
 use grebi_shared::prefix_map::PrefixMap;
@@ -106,9 +106,9 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("Loading graph took {} seconds", start_time.elapsed().as_secs());
 
-    for reif in ds.gw_triples_with_po(&RDF_TYPE, &OWL_AXIOM) {
-        let reif_u = reif.unwrap();
-    }
+    // for reif in ds.gw_triples_with_po(&RDF_TYPE, &OWL_AXIOM) {
+    //     let reif_u = reif.unwrap();
+    // }
 
     write_subjects(ds, &mut output_nodes, &args);
 
