@@ -94,7 +94,7 @@ fn main() -> std::io::Result<()> {
             // Compression::fast())
         );
 
-    nodes_writer.write_all("id:ID,:LABEL,grebi:datasources:string[]".as_bytes()).unwrap();
+    nodes_writer.write_all("grebi:id:ID,:LABEL,grebi:datasources:string[]".as_bytes()).unwrap();
     for prop in &all_entity_props {
         nodes_writer.write_all(b",").unwrap();
         nodes_writer.write_all(prop.as_bytes()).unwrap();
@@ -146,6 +146,7 @@ fn main() -> std::io::Result<()> {
 
 fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&mut BufWriter<File>) {
 
+    // grebi:id
     nodes_writer.write_all(b"\"").unwrap();
     write_escaped_value(entity.id, nodes_writer);
     nodes_writer.write_all(b"\",\"").unwrap();
@@ -182,6 +183,12 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
             nodes_writer.write_all(b",").unwrap();
             let mut wrote_any = false;
             for row_prop in entity.props.iter() {
+                if row_prop.key == "grebi:id".as_bytes() {
+                    continue; // already put in first column
+                }
+                if row_prop.key == "grebi:type".as_bytes() {
+                    continue; // already put in :LABEL column
+                }
                 if header_prop.as_bytes() == row_prop.key {
                     if !wrote_any {
                         nodes_writer.write_all(b"\"").unwrap();
