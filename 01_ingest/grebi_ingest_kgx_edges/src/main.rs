@@ -61,7 +61,7 @@ fn main() {
 
         if s.is_none() || p.is_none() || o.is_none()
                 || !s.unwrap().is_string() || !p.unwrap().is_string() || !o.unwrap().is_string() {
-            eprintln!("warning: missing or non-string subject, predicate, or object in kgx edge: {:?}", line);
+            eprintln!("warning: missing or non-string subject, predicate, or object in kgx edge: {:?}", String::from_utf8(line));
             continue;
         }
 
@@ -89,7 +89,11 @@ fn main() {
                     }
                 }
             };
-            out_props.insert(new_k, v.clone());
+            if v.is_array() {
+                out_props.insert(new_k, v.clone());
+            } else {
+                out_props.insert(new_k, json!([v]));
+            }
         }
 
         let mut out_json = serde_json::Map::new();
