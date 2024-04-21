@@ -1,0 +1,15 @@
+{
+    "name": "OpenTargets",
+    "enabled": true,
+    "ingests": [
+        {
+            "ingest_files": ["./00_fetch_data/otar/evidence.jsonl.gz"],
+            "ingest_script": "./target/release/grebi_ingest_json",
+            "ingest_args": [
+                { "name": "--json-inject-type", "value": "otar:Evidence" },
+                { "name": "--json-inject-key-prefix", "value": "otar:" },
+                { "name": "--json-inject-value-prefix", "value": "literature:pmid:" }
+            ]
+        }
+    ]
+}

@@ -9,6 +9,7 @@
         "owl:sameAs",
         "grebi:equivalentTo",
         "ols:iri",
+        "ols:shortForm",
         "hgnc:ensembl_gene_id",
         "obo:chebi/inchi",
         "obo:chebi/inchikey",
@@ -17,9 +18,10 @@
     "exclude_edges": [
         "ols:iri",
         "ols:curie",
+        "ols:shortForm",
         "oboinowl:id"
     ],
     "datasource_configs": [
-        "./configs/datasource_configs/hgnc.json"
+        "./configs/datasource_configs/otar.json"
     ]
 }

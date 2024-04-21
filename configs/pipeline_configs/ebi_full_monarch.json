@@ -30,6 +30,7 @@
         "owl:sameAs",
         "grebi:equivalentTo",
         "ols:iri",
+        "ols:shortForm",
         "hgnc:ensembl_gene_id",
         "obo:chebi/inchi",
         "obo:chebi/inchikey",
@@ -48,6 +49,7 @@
         "./configs/datasource_configs/ols.json",
         "./configs/datasource_configs/reactome.json",
         "./configs/datasource_configs/ubergraph.json",
+        "./configs/datasource_configs/otar.json",
         "./configs/datasource_configs/monarch.json"
     ]
 }
