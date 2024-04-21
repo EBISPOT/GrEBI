@@ -32,7 +32,7 @@ fn main() {
     let mut output_nodes = BufWriter::new(stdout);
 
     let normalise:PrefixMap = {
-        let rdr = BufReader::new( std::fs::File::open("prefix_map_normalise.json").unwrap() );
+        let rdr = BufReader::new( std::fs::File::open("./prefix_maps/prefix_map_normalise.json").unwrap() );
         let mut builder = PrefixMapBuilder::new();
         serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
             builder.add_mapping(k, v);
