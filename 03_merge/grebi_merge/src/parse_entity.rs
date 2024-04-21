@@ -23,7 +23,6 @@ impl<'a> ParsedEntity<'a> {
 
         let mut parser = JsonParser::parse(&buf);
 
-        let mut subjects:Vec<&[u8]> = Vec::new();
         let mut props:Vec<ParsedProperty> = Vec::new();
         let mut has_type = false;
         let mut ds:&[u8] = datasource;

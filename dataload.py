@@ -10,7 +10,7 @@ import re
 def main():
 
     if len(sys.argv) < 2:
-        print("Usage: grebi_pipeline.py <grebi_config.json>")
+        print("Usage: dataload.py <grebi_config.json>")
         exit(1)
 
     config_filename = os.path.abspath(sys.argv[1])
