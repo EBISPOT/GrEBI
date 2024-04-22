@@ -9,7 +9,7 @@
     },
     "slurm_max_memory": {
         "ingest": "32G",
-        "build_equiv_db": "64G",
+        "build_equiv_groups": "64G",
         "assign_ids": "64G",
         "merge": "16G",
         "index": "64G",
@@ -17,7 +17,7 @@
     },
     "slurm_max_time": {
         "ingest": "8:0:0",
-        "build_equiv_db": "23:0:0",
+        "build_equiv_groups": "23:0:0",
         "assign_ids": "23:0:0",
         "merge": "23:0:0",
         "index": "23:0:0",
@@ -33,7 +33,8 @@
         "hgnc:ensembl_gene_id",
         "obo:chebi/inchi",
         "obo:chebi/inchikey",
-        "obo:chebi/smiles"
+        "obo:chebi/smiles",
+        "impc:pmId"
     ],
     "exclude_edges": [
         "ols:iri",

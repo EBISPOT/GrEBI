@@ -12,4 +12,5 @@ rocksdb = { git = "https://github.com/rust-rocksdb/rust-rocksdb", branch = "mast
 rusqlite = "0.30.0"
 lmdb-zero = "0.4.4"
 bloomfilter = "1.0.13"
+clap = { version = "4.4.11", features = ["derive"] }
 

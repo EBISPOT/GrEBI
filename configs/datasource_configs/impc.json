@@ -11,7 +11,6 @@
                 { "name": "--json-inject-key-prefix", "value": "impc:" }
             ]
         },
-
         {
             "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/categorical_observation_json/*.json.gz"],
             "ingest_script": "./target/release/grebi_ingest_json",
@@ -154,6 +153,16 @@
                 { "name": "--json-rename-field", "value": "humanGeneId:id" },
                 { "name": "--json-inject-type", "value": "impc:HumanGene" },
                 { "name": "--json-inject-key-prefix", "value": "impc:" }
+            ]
+        },
+        {
+            "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/publications_json/*.json.gz"],
+            "ingest_script": "./target/release/grebi_ingest_json",
+            "ingest_args": [
+                { "name": "--json-rename-field", "value": "publication_id:id" },
+                { "name": "--json-inject-type", "value": "impc:Publication" },
+                { "name": "--json-inject-key-prefix", "value": "impc:" },
+                { "name": "--json-inject-value-prefix", "value": "pmId:pmid:" }
             ]
         }
     ]

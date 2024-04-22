@@ -161,11 +161,31 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
         // eprintln!("obj: {:?}", obj);
 
-        let curie = & obj.get("ols:iri").unwrap().as_str().unwrap().to_string();
 
-        output_nodes.write_all(r#"{"id":""#.as_bytes()).unwrap();
-        output_nodes.write_all(curie.as_bytes()).unwrap();
-        output_nodes.write_all(r#"","grebi:datasource":""#.as_bytes()).unwrap();
+        if grebitype.eq("ols:Property") { 
+
+            let qualified_safe_label = {
+                let curie = get_string_values(obj.get("ols:curie").unwrap()).iter().next().unwrap().to_string();
+                let pref_prefix = get_string_values(obj.get("ols:ontologyPreferredPrefix").unwrap()).iter().next().unwrap().to_string();
+                let label = get_string_values(obj.get("ols:label").unwrap()).iter().next().unwrap().to_string();
+
+                // this might not be a real label, in which case just return the curie
+                if label.starts_with(&(pref_prefix.to_string() + ":")) || label.starts_with(&(pref_prefix.to_string() + "_")) {
+                    curie.to_string()
+                } else {
+                    pref_prefix.to_string() + ":" + &label.to_string().to_lowercase().replace(" ", "_")
+                }
+            };
+
+            output_nodes.write_all(r#"{"id":"#.as_bytes()).unwrap();
+            output_nodes.write_all(Value::String(qualified_safe_label).to_string().as_bytes()).unwrap();
+        } else {
+            output_nodes.write_all(r#"{"id":"#.as_bytes()).unwrap();
+            let curie = get_string_values(obj.get("ols:curie").unwrap()).iter().next().unwrap().to_string();
+            output_nodes.write_all(Value::String(curie).to_string().as_bytes()).unwrap();
+        }
+
+        output_nodes.write_all(r#","grebi:datasource":""#.as_bytes()).unwrap();
         output_nodes.write_all(datasource.as_bytes()).unwrap();
         output_nodes.write_all(r#"","grebi:type":[""#.as_bytes()).unwrap();
         output_nodes.write_all(grebitype.as_bytes()).unwrap();

@@ -93,18 +93,18 @@ def main():
     ### 2. Assign IDs to nodes (merging cliques)
     ###
     dir_to_search_for_equiv_files = os.path.abspath(os.path.join(config['worker_output_dir'], '01_ingest'))
-    equiv_rocksdb_path = os.path.abspath(os.path.join(config['worker_output_dir'], '02_equivalences', 'equivalences_db'))
+    equiv_groups_txt = os.path.abspath(os.path.join(config['worker_output_dir'], '02_equivalences', 'groups.txt'))
 
     # 2.1. Build database of equivalence cliques
     if config['use_slurm'] == True:
         print("Building equivalence db on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'srun',
-            '--time=' + config['slurm_max_time']['build_equiv_db'],
-            '--mem=' + config['slurm_max_memory']['build_equiv_db'],
-            './02_equivalences/grebi_build_equiv_db.slurm.sh',
-            equiv_rocksdb_path,
-            dir_to_search_for_equiv_files
+            '--time=' + config['slurm_max_time']['build_equiv_groups'],
+            '--mem=' + config['slurm_max_memory']['build_equiv_groups'],
+            './02_equivalences/grebi_build_equiv_groups.slurm.sh',
+            dir_to_search_for_equiv_files,
+            equiv_groups_txt
         ])
         if os.system(slurm_cmd) != 0:
             print("Failed to build equivalence db")
@@ -112,9 +112,9 @@ def main():
     else:
         print("Building equivalence db locally (use_slurm = false)")
         cmd = ' '.join([
-            './02_equivalences/grebi_build_equiv_db.slurm.sh',
-            equiv_rocksdb_path,
-            dir_to_search_for_equiv_files
+            './02_equivalences/grebi_build_equiv_groups.slurm.sh',
+            dir_to_search_for_equiv_files,
+            equiv_groups_txt
         ])
         print(cmd)
         if os.system(cmd) != 0:
@@ -134,7 +134,7 @@ def main():
             '--mem=' + config['slurm_max_memory']['assign_ids'],
             './02_equivalences/grebi_assign_ids_worker.slurm.sh',
             datasource_files_listing,
-            equiv_rocksdb_path
+            equiv_groups_txt
         ])
         res = os.system(slurm_cmd)
         os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '02_equivalences', '*.log')))
@@ -149,7 +149,7 @@ def main():
                 'SLURM_ARRAY_TASK_ID=' + str(n),
                 './02_equivalences/grebi_assign_ids_worker.slurm.sh',
                 datasource_files_listing,
-                equiv_rocksdb_path
+                equiv_groups_txt
             ])
             print(cmd)
             if os.system(cmd) != 0:

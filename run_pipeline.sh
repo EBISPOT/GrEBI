@@ -23,7 +23,9 @@ echo $(date): Compressing neo4j data
 srun -t 2:0:0 --mem=2G tar -cf  \
     /nfs/production/parkinso/spot/grebi/tmp/$CONFIG_NAME.tgz \
     --use-compress-program="pigz --fast" \
-    /hps/nobackup/parkinso/spot/grebi/tmp/$CONFIG_NAME/06_create_db/neo4j/data/
+    -C /hps/nobackup/parkinso/spot/grebi/tmp/$CONFIG_NAME/06_create_db/neo4j \
+    data
+    
 
 echo $(date): Copying to FTP
 
@@ -31,3 +33,5 @@ srun --partition=datamover -t 1:30:00 --mem=5G \
     cp -f /nfs/production/parkinso/spot/grebi/tmp/$CONFIG_NAME.tgz /nfs/ftp/public/databases/spot/kg/
 
 echo $(date): Done
+
+

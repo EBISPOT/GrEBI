@@ -397,6 +397,7 @@ name = "grebi_assign_ids"
 version = "0.1.0"
 dependencies = [
  "bloomfilter",
+ "clap",
  "csv",
  "fasthash",
  "grebi_shared",
@@ -412,6 +413,7 @@ name = "grebi_equivalences2groups"
 version = "0.1.0"
 dependencies = [
  "bloomfilter",
+ "clap",
  "csv",
  "fasthash",
  "grebi_shared",
@@ -432,20 +434,6 @@ dependencies = [
  "jemallocator",
  "lmdb-zero",
  "rocksdb",
- "serde_json",
-]
-
-[[package]]
-name = "grebi_groups2rocks"
-version = "0.1.0"
-dependencies = [
- "bloomfilter",
- "csv",
- "fasthash",
- "grebi_shared",
- "lmdb-zero",
- "rocksdb",
- "rusqlite",
  "serde_json",
 ]
 

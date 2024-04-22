@@ -13,4 +13,4 @@ rusqlite = "0.30.0"
 lmdb-zero = "0.4.4"
 bloomfilter = "1.0.13"
 jemallocator = "0.5.4"
-
+clap = { version = "4.4.11", features = ["derive"] }

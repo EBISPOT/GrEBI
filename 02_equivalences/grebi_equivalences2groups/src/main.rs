@@ -51,15 +51,15 @@ fn main() {
             continue;
         }
 
-        let groupA:Option<u64> = entity_to_group.get(&subject).cloned();
-        let groupB:Option<u64> = entity_to_group.get(&object).cloned();
+        let group_a:Option<u64> = entity_to_group.get(&subject).cloned();
+        let group_b:Option<u64> = entity_to_group.get(&object).cloned();
 
-        if groupA.is_some() {
+        if group_a.is_some() {
             // A has a group
-            let gA = groupA.unwrap();
-            if groupB.is_some() {
+            let gA = group_a.unwrap();
+            if group_b.is_some() {
                 // B has a group
-                let gB = groupB.unwrap();
+                let gB = group_b.unwrap();
                 if gA == gB {
                     // already in the same group, nothing to do
                     continue
@@ -81,8 +81,8 @@ fn main() {
             }
         } else {
             // A does not have a group
-            if groupB.is_some() {
-                let gB = groupB.unwrap();
+            if group_b.is_some() {
+                let gB = group_b.unwrap();
                 // B has a group but A does not
                 // Put A in B's group
                 entity_to_group.insert(subject.clone(), gB);
@@ -111,13 +111,16 @@ fn main() {
 
         n2 = n2 + 1;
 
-        writer.write_all("group_".as_bytes()).unwrap();
-        writer.write_all(group.0.to_string().as_bytes()).unwrap();
-        writer.write_all("\t".as_bytes()).unwrap();
+        // writer.write_all("group_".as_bytes()).unwrap();
+        // writer.write_all(group.0.to_string().as_bytes()).unwrap();
+        // writer.write_all("\t".as_bytes()).unwrap();
+
+        let mut sorted_ids:Vec<&Vec<u8>> = group.1.iter().collect();
+        sorted_ids.sort_unstable_by(|a, b| id_score(a).cmp(&id_score(b)));
 
         let mut is_first_value = true;
 
-        for entity in group.1 {
+        for entity in sorted_ids {
             if is_first_value {
                 is_first_value = false;
             } else {
@@ -132,3 +135,28 @@ fn main() {
     eprintln!("Wrote {} groups in {} seconds", n2, start_time2.elapsed().as_secs());
 
 }
+
+
+// From the equivalence group, try to pick an ID which will be obvious in Neo4j.
+// Prefer:
+//      - CURIEs
+//      - textual (readable) IDs rather than numeric
+// lower score is better
+//
+fn id_score(id:&[u8]) -> i32 {
+
+    let mut score = 0;
+
+    if id.contains(&b':') && !id.starts_with(b"http") {
+        score = score - 1000;
+    }
+
+    for c in id {
+        if c.is_ascii_alphabetic() {
+            score = score - 1;
+        }
+    }
+
+    return score;
+}
+

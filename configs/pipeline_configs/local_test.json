@@ -13,7 +13,8 @@
         "hgnc:ensembl_gene_id",
         "obo:chebi/inchi",
         "obo:chebi/inchikey",
-        "obo:chebi/smiles"
+        "obo:chebi/smiles",
+        "impc:pmId"
     ],
     "exclude_edges": [
         "ols:iri",
@@ -22,6 +23,6 @@
         "oboinowl:id"
     ],
     "datasource_configs": [
-        "./configs/datasource_configs/otar.json"
+        "./configs/datasource_configs/ols.json"
     ]
 }

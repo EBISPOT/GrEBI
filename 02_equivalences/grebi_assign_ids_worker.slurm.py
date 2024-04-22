@@ -12,7 +12,7 @@ def main():
     global config
 
     if len(sys.argv) < 3:
-        print("Usage: grebi_assign_ids_worker.slurm.py <datasources.jsonl> <equivalences_db>")
+        print("Usage: grebi_assign_ids_worker.slurm.py <datasources.jsonl> <groups.txt>")
         exit(1)
 
     task_id = os.getenv('SLURM_ARRAY_TASK_ID')
@@ -26,7 +26,7 @@ def main():
     with open(sys.argv[1], 'r') as f:
         datasource_files = f.readlines()
 
-    equivalences_db_path = sys.argv[2]
+    groups_txt_path = sys.argv[2]
 
     datasource_file = json.loads(datasource_files[int(task_id)].strip())
 
@@ -51,12 +51,12 @@ def main():
     print(get_time() + " --- Loading file: " + nodes_jsonl_gz_filename, flush=True)
     print(get_time() + " --- Writing uncompressed to file: " + expanded_subjects_jsonl_filename, flush=True)
     print(get_time() + " --- Then compressed to file: " + sorted_expanded_subjects_jsonl_gz_filename, flush=True)
-    print(get_time() + " --- Using equivalences db: " + equivalences_db_path, flush=True)
+    print(get_time() + " --- Using groups.txt: " + groups_txt_path, flush=True)
 
 
     cmd = ' '.join([
         'zcat ' + shlex.quote(nodes_jsonl_gz_filename),
-        '| ./target/release/grebi_assign_ids', shlex.quote(equivalences_db_path),
+        '| ./target/release/grebi_assign_ids --groups-txt ', shlex.quote(groups_txt_path),
         '>', shlex.quote(expanded_subjects_jsonl_filename)
     ])
 

@@ -20,6 +20,7 @@ use grebi_shared::slice_merged_entity::SlicedProperty;
 use grebi_shared::json_lexer::{JsonTokenType};
 use serde_json::json;
 
+
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -101,18 +102,50 @@ fn main() {
             eprintln!("{}", n);
         }
     }
-
     eprintln!("Building took {} seconds", start_time.elapsed().as_secs());
 
+
     let start_time2 = std::time::Instant::now();
-
     db.compact_range(None::<&[u8]>, None::<&[u8]>);
-
     eprintln!("Compacting took {} seconds", start_time2.elapsed().as_secs());
 
+
+
+    let start_time3 = std::time::Instant::now();
+
     println!("{}", serde_json::to_string_pretty(&json!({
-        "entity_props": entity_props_to_count.iter().map(|(k,v)| (String::from_utf8(k.to_vec()).unwrap(),v)).collect::<HashMap<String,&i64>>(),
-        "edge_props": edge_props_to_count.iter().map(|(k,v)| (String::from_utf8(k.to_vec()).unwrap(),v)).collect::<HashMap<String,&i64>>()
+        "entity_props": entity_props_to_count.iter().map(|(k,v)| {
+            let metadata = db.get(&k).unwrap();
+            if metadata.is_some() {
+                let metadata_obj:serde_json::Map<String,serde_json::Value> =
+                    serde_json::from_slice(&metadata.unwrap()).unwrap();
+                return (String::from_utf8(k.to_vec()).unwrap(), json!({
+                    "count": v,
+                    "definition": metadata_obj
+                }))
+            } else {
+                return (String::from_utf8(k.to_vec()).unwrap(), json!({
+                    "count": v
+                }))
+            }
+        }).collect::<HashMap<String,serde_json::Value>>(),
+        "edge_props": edge_props_to_count.iter().map(|(k,v)| {
+            let metadata = db.get(&k).unwrap();
+            if metadata.is_some() {
+                let metadata_obj:serde_json::Map<String,serde_json::Value> =
+                    serde_json::from_slice(&metadata.unwrap()).unwrap();
+                return (String::from_utf8(k.to_vec()).unwrap(), json!({
+                    "count": v,
+                    "definition": metadata_obj
+                }))
+            } else {
+                return (String::from_utf8(k.to_vec()).unwrap(), json!({
+                    "count": v
+                }))
+            }
+        }).collect::<HashMap<String,serde_json::Value>>()
     })).unwrap());
+    
+    eprintln!("Building metadata took {} seconds", start_time3.elapsed().as_secs());
 
 }

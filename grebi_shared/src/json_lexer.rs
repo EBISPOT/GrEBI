@@ -120,7 +120,7 @@ pub fn lex(buf: &[u8]) -> Vec<JsonToken> {
                     }
                 }
             },
-            _ => panic!("unknown character: {} ({}) at index {} in string {}", c as char, c as u8, index, String::from_utf8(buf.to_vec()).unwrap())
+            _ => panic!("unknown character: {} ({}) at index {} in JSON {}", c as char, c as u8, index, String::from_utf8(buf.to_vec()).unwrap())
         }
     }
 
