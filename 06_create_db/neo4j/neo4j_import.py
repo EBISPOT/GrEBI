@@ -9,12 +9,7 @@ import glob
 from subprocess import Popen, PIPE, STDOUT
 
 def main():
-
-    if len(sys.argv) < 2:
-        print("Usage: neo4j_import.py <grebi_config.json>")
-        exit(1)
-
-    config_filename = os.path.abspath(sys.argv[1])
+    config_filename = os.path.abspath(os.path.join('./configs/pipeline_configs/', os.environ['GREBI_CONFIG'] + '.json'))
     print(get_time() + " --- Config filename: " + config_filename, flush=True)
 
     with open(config_filename, 'r') as f:

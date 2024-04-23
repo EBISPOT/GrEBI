@@ -20,8 +20,8 @@ fi
 rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
 srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
 
-python3 ./scripts/dataload.py ./configs/pipeline_configs/$GREBI_CONFIG.json
-python3 06_create_db/neo4j/neo4j_import.py ./configs/pipeline_configs/$GREBI_CONFIG.json
+python3 ./scripts/dataload.py
+python3 06_create_db/neo4j/neo4j_import.py
 
 echo $(date): Compressing neo4j data
 

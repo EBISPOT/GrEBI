@@ -25,14 +25,14 @@ def main():
     max_file_num = max(list(map(lambda f: int(f.split('.')[-2]), all_files)))
     print(get_time() + " --- Max file num: " + str(max_file_num))
 
-    os.makedirs(os.path.join(os.environ['GREBI_NFS_TMP'], '05_materialize_edges'), exist_ok=True)
+    os.makedirs(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialize_edges'), exist_ok=True)
 
     if config['use_slurm'] == True:
         print("Running rocks2neo on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'sbatch',
             '--wait',
-            '-o ' + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], '05_materialize_edges', 'rocks2neo_%a.log')),
+            '-o ' + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialize_edges', 'rocks2neo_%a.log')),
             '--array=0-' + str(max_file_num) + '%' + str(config['slurm_max_workers']['extract']),
             '--time=' + config['slurm_max_time']['extract'],
             '--mem=' + config['slurm_max_memory']['extract'],
@@ -42,7 +42,7 @@ def main():
         if os.system(slurm_cmd) != 0:
             print("rocks2neo failed")
             exit(1)
-        os.system("tail -n +1 " + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], '05_materialize_edges', '*.log')))
+        os.system("tail -n +1 " + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialize_edges', '*.log')))
     else:
         for n in range(max_file_num+1):
             print("Running " + str(n) + " of " + str(max_file_num))
