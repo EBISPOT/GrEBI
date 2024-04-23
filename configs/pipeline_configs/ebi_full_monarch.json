@@ -3,7 +3,8 @@
     "slurm_max_workers": {
         "ingest": 100,
         "assign_ids": 100,
-        "extract": 100
+        "extract": 100,
+        "materialize_edges": 100
     },
     "slurm_max_memory": {
         "ingest": "32G",
@@ -12,7 +13,7 @@
         "merge": "16G",
         "index": "64G",
         "extract": "8G",
-        "materialize_edges": "64G"
+        "materialize_edges": "16G"
     },
     "slurm_max_time": {
         "ingest": "8:0:0",
@@ -21,9 +22,9 @@
         "merge": "23:0:0",
         "index": "23:0:0",
         "extract": "23:0:0",
-        "materialize_edges": "8:0:0"
+        "materialize_edges": "1:0:0"
     },
-    "bytes_per_merged_file": 104857600,
+    "bytes_per_merged_file": 1073741824,
     "equivalence_props": [
         "owl:equivalentClass",
         "owl:equivalentProperty",

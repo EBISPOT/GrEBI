@@ -28,7 +28,7 @@ echo $(date): Compressing neo4j data
 srun -t 2:0:0 --mem=2G tar -cf  \
     $GREBI_NFS_TMP/$GREBI_CONFIG.tgz \
     --use-compress-program="pigz --fast" \
-    -C $GREBI_HFS_TMP/$GREBI_CONFIG/06_create_db/neo4j data \
+    -C $GREBI_HPS_TMP/$GREBI_CONFIG/06_create_db/neo4j data \
     -C $GREBI_HPS_TMP/$GREBI_CONFIG/04_index metadata.json
     
 echo $(date): Copying to FTP

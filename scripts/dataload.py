@@ -227,9 +227,9 @@ def main():
             'sbatch',
             '--wait',
             '-o ' + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialize_edges', 'materialize_edges_%a.log')),
-            '--array=0-' + str(max_file_num) + '%' + str(config['slurm_max_workers']['extract']),
-            '--time=' + config['slurm_max_time']['extract'],
-            '--mem=' + config['slurm_max_memory']['extract'],
+            '--array=0-' + str(max_file_num) + '%' + str(config['slurm_max_workers']['materialize_edges']),
+            '--time=' + config['slurm_max_time']['materialize_edges'],
+            '--mem=' + config['slurm_max_memory']['materialize_edges'],
             './05_materialize_edges/grebi_materialize_edges.slurm.sh',
             config_filename
         ])

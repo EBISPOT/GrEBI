@@ -1,6 +1,6 @@
 {
     "use_slurm": false,
-    "bytes_per_merged_file": 104857600,
+    "bytes_per_merged_file": 1073741824,
     "equivalence_props": [
         "owl:equivalentClass",
         "owl:equivalentProperty",
