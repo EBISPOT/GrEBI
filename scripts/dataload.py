@@ -27,11 +27,11 @@ def main():
                     for file in files:
                         filename = os.path.abspath(file)
                         basename = os.path.splitext(os.path.basename(filename))[0]
-                        nodes_jsonl_gz_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename + '.jsonl.gz' ))
-                        equivalences_tsv_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename  + '.equivalences.tsv'  ))
-                        expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.expanded.jsonl' ))
-                        sorted_expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl' ))
-                        sorted_expanded_subjects_jsonl_gz_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl.gz' ))
+                        nodes_jsonl_gz_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '01_ingest', datasource['name'], basename + '.jsonl.gz' ))
+                        equivalences_tsv_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '01_ingest', datasource['name'], basename  + '.equivalences.tsv'  ))
+                        expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', datasource['name'], basename + '.expanded.jsonl' ))
+                        sorted_expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl' ))
+                        sorted_expanded_subjects_jsonl_gz_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl.gz' ))
                         datasource_files.append(json.dumps({
                             'config': config_filename,
                             'datasource': datasource,
@@ -88,8 +88,8 @@ def main():
     ###
     ### 2. Assign IDs to nodes (merging cliques)
     ###
-    dir_to_search_for_equiv_files = os.path.abspath(os.path.join(config['worker_output_dir'], '01_ingest'))
-    equiv_groups_txt = os.path.abspath(os.path.join(config['worker_output_dir'], '02_equivalences', 'groups.txt'))
+    dir_to_search_for_equiv_files = os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '01_ingest'))
+    equiv_groups_txt = os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', 'groups.txt'))
 
     # 2.1. Build database of equivalence cliques
     if config['use_slurm'] == True:
