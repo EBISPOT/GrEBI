@@ -7,7 +7,6 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
 use std::io::BufWriter;
-use std::io::BufWrite;
 use std::io::Write;
 use std::io;
 use std::iter::Map;
@@ -117,7 +116,7 @@ fn main() {
                     "count": v
                 }))
         }).collect::<HashMap<String,serde_json::Value>>()
-    })).unwrap().as_bytes());
+    })).unwrap().as_bytes()).unwrap();
     
     eprintln!("Building metadata took {} seconds", start_time3.elapsed().as_secs());
 

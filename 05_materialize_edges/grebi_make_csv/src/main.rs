@@ -60,7 +60,7 @@ fn main() -> std::io::Result<()> {
 
     let start_time = std::time::Instant::now();
 
-    let mut all_subjects:HashSet<Vec<u8>> = {
+    let all_subjects:HashSet<Vec<u8>> = {
         let start_time = std::time::Instant::now();
         let mut res:HashSet<Vec<u8>> = HashSet::new();
         let mut reader = BufReader::new(File::open(&args.in_subjects_txt).unwrap());
@@ -162,7 +162,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
     nodes_writer.write_all(b"\",\"").unwrap();
 
     // :LABEL
-    nodes_writer.write_all(b"GraphNode;").unwrap();
+    nodes_writer.write_all(b"GraphNode").unwrap();
     entity.props.iter().for_each(|prop| {
         if prop.key == "grebi:type".as_bytes() {
             nodes_writer.write_all(b";").unwrap();
