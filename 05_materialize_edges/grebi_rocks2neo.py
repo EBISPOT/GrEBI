@@ -19,7 +19,7 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], "03_merge", "merged.jsonl.0*")
+    input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.0*")
 
     all_files = glob.glob(input_merged_gz_filenames)
     max_file_num = max(list(map(lambda f: int(f.split('.')[-2]), all_files)))

@@ -18,9 +18,9 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], "03_merge", "merged.jsonl.*")
-    out_path = os.path.join(os.environ['GREBI_HPS_TMP'], "04_index", "rocksdb")
-    output_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], "04_index", "metadata.json")
+    input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.*")
+    out_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "rocksdb")
+    output_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.json")
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 

@@ -26,13 +26,13 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], "03_merge", "merged.jsonl.0*")
-    input_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], "04_index", "metadata.json")
-    input_rocksdb_path = os.path.join(os.environ['GREBI_HPS_TMP'], "04_index", "rocksdb")
-    # out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], "05_materialize_edges", "n4nodes_" + task_id + ".csv.gz")
-    # out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], "05_materialize_edges", "n4edges_" + task_id + ".csv.gz")
-    out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], "05_materialize_edges", "n4nodes_" + task_id + ".csv")
-    out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], "05_materialize_edges", "n4edges_" + task_id + ".csv")
+    input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.0*")
+    input_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.json")
+    input_rocksdb_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "rocksdb")
+    # out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4nodes_" + task_id + ".csv.gz")
+    # out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4edges_" + task_id + ".csv.gz")
+    out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4nodes_" + task_id + ".csv")
+    out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4edges_" + task_id + ".csv")
 
     os.makedirs(os.path.dirname(out_edges_path), exist_ok=True)
 
