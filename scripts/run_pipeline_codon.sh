@@ -20,18 +20,16 @@ fi
 rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
 srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
 
-python3 ./dataload.py ./configs/pipeline_configs/$GREBI_CONFIG.json
+python3 ./scripts/dataload.py ./configs/pipeline_configs/$GREBI_CONFIG.json
 python3 06_create_db/neo4j/neo4j_import.py ./configs/pipeline_configs/$GREBI_CONFIG.json
 
 echo $(date): Compressing neo4j data
 
-cp -f $GREBI_HPS_TMP/$GREBI_CONFIG/04_index/metadata.json $GREBI_HPS_TMP/$GREBI_CONFIG/06_create_db/neo4j/
-
 srun -t 2:0:0 --mem=2G tar -cf  \
     $GREBI_NFS_TMP/$GREBI_CONFIG.tgz \
     --use-compress-program="pigz --fast" \
-    -C $GREBI_HFS_TMP/$GREBI_CONFIG/06_create_db/neo4j \
-    data metadata.json
+    -C $GREBI_HFS_TMP/$GREBI_CONFIG/06_create_db/neo4j data \
+    -C $GREBI_HPS_TMP/$GREBI_CONFIG/04_index metadata.json
     
 echo $(date): Copying to FTP
 

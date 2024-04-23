@@ -17,8 +17,8 @@ if [[ -z "$GREBI_HPS_TMP" ]]; then
     exit 1
 fi
 
-python3 ./dataload.py ./configs/pipeline_configs/$CONFIG_NAME.json
-python3 06_create_db/neo4j/neo4j_import.py ./configs/pipeline_configs/$CONFIG_NAME.json
+python3 ./scripts/dataload.py ./configs/pipeline_configs/$GREBI_CONFIG.json
+python3 06_create_db/neo4j/neo4j_import.py ./configs/pipeline_configs/$GREBI_CONFIG.json
 
 cp -f $GREBI_HPS_TMP/$GREBI_CONFIG/04_index/metadata.json $GREBI_HPS_TMP/$GREBI_CONFIG/06_create_db/neo4j/
 

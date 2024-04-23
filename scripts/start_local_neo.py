@@ -20,7 +20,7 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    neo_data_path = os.path.join(config['worker_output_dir'], "06_create_db", "neo4j", "data")
+    neo_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], "06_create_db", "neo4j", "data")
 
     cmd = ' '.join([
         'docker run',

@@ -215,7 +215,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
 
 fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&HashSet<Vec<u8>>, datasources:&Vec<&[u8]>) {
 
-    if exclude.contains(prop.key) {
+    if prop.key.eq(b"id") || exclude.contains(prop.key) {
         return;
     }
 

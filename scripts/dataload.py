@@ -31,11 +31,11 @@ def main():
                     for file in files:
                         filename = os.path.abspath(file)
                         basename = os.path.splitext(os.path.basename(filename))[0]
-                        nodes_jsonl_gz_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename + '.jsonl.gz' ))
-                        equivalences_tsv_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '01_ingest', datasource['name'], basename  + '.equivalences.tsv'  ))
-                        expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.expanded.jsonl' ))
-                        sorted_expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl' ))
-                        sorted_expanded_subjects_jsonl_gz_filename = os.path.abspath( os.path.join(config['worker_output_dir'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl.gz' ))
+                        nodes_jsonl_gz_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], '01_ingest', datasource['name'], basename + '.jsonl.gz' ))
+                        equivalences_tsv_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], '01_ingest', datasource['name'], basename  + '.equivalences.tsv'  ))
+                        expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], '02_equivalences', datasource['name'], basename + '.expanded.jsonl' ))
+                        sorted_expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl' ))
+                        sorted_expanded_subjects_jsonl_gz_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], '02_equivalences', datasource['name'], basename + '.sorted_expanded.jsonl.gz' ))
                         datasource_files.append(json.dumps({
                             'config': config_filename,
                             'datasource': datasource,
@@ -55,7 +55,7 @@ def main():
     ###
     ### 1. Run ingest jobs
     ###
-    datasource_files_listing = os.path.abspath( os.path.join(config['persistent_output_dir'], '01_ingest', 'datasource_files.jsonl') )
+    datasource_files_listing = os.path.abspath( os.path.join(os.environ['GREBI_NFS_TMP'], '01_ingest', 'datasource_files.jsonl') )
     os.makedirs(os.path.dirname(datasource_files_listing), exist_ok=True)
 
     with open(datasource_files_listing, 'w') as f2:
@@ -68,7 +68,7 @@ def main():
         slurm_cmd = ' '.join([
             'sbatch',
             '--wait',
-            '-o ' + os.path.abspath(os.path.join(config['persistent_output_dir'], '01_ingest', 'ingest_%a.log')),
+            '-o ' + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], '01_ingest', 'ingest_%a.log')),
             '--array=0-' + str(len(datasource_files)-1) + '%' + str(config['slurm_max_workers']['ingest']),
             '--time=' + config['slurm_max_time']['ingest'],
             '--mem=' + config['slurm_max_memory']['ingest'],
@@ -76,7 +76,7 @@ def main():
             datasource_files_listing
         ])
         res = os.system(slurm_cmd)
-        os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '01_ingest', '*.log')))
+        os.system("tail -n +1 " + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], '01_ingest', '*.log')))
         if res != 0:
             print("Ingest failed")
             exit(1)
@@ -92,8 +92,8 @@ def main():
     ###
     ### 2. Assign IDs to nodes (merging cliques)
     ###
-    dir_to_search_for_equiv_files = os.path.abspath(os.path.join(config['worker_output_dir'], '01_ingest'))
-    equiv_groups_txt = os.path.abspath(os.path.join(config['worker_output_dir'], '02_equivalences', 'groups.txt'))
+    dir_to_search_for_equiv_files = os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], '01_ingest'))
+    equiv_groups_txt = os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], '02_equivalences', 'groups.txt'))
 
     # 2.1. Build database of equivalence cliques
     if config['use_slurm'] == True:
@@ -128,7 +128,7 @@ def main():
         slurm_cmd = ' '.join([
             'sbatch',
             '--wait',
-            '-o ' + os.path.abspath(os.path.join(config['persistent_output_dir'], '02_equivalences', 'assign_ids_%a.log')),
+            '-o ' + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], '02_equivalences', 'assign_ids_%a.log')),
             '--array=0-' + str(len(datasource_files)-1) + '%' + str(config['slurm_max_workers']['assign_ids']),
             '--time=' + config['slurm_max_time']['assign_ids'],
             '--mem=' + config['slurm_max_memory']['assign_ids'],
@@ -137,7 +137,7 @@ def main():
             equiv_groups_txt
         ])
         res = os.system(slurm_cmd)
-        os.system("tail -n +1 " + os.path.abspath(os.path.join(config['persistent_output_dir'], '02_equivalences', '*.log')))
+        os.system("tail -n +1 " + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], '02_equivalences', '*.log')))
         if res != 0:
             print("Failed to assign IDs")
             exit(1)

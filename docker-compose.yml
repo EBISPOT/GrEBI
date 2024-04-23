@@ -4,13 +4,9 @@ services:
         context: .
         dockerfile: Dockerfile.dataload
       environment:
-        - GREBI_NFS_TMP=./tmp
-        - GREBI_HPS_TMP=./tmp
+        - GREBI_NFS_TMP=/work/tmp
+        - GREBI_HPS_TMP=/work/tmp
         - GREBI_CONFIG=${GREBI_CONFIG:?}
-      volumes:
-        - grebi-neo4j-data:/work/tmp/${GREBI_CONFIG:?}/06_create_db/neo4j
-        - ./00_fetch_data:/work/00_fetch_data:ro
-        - ./configs:/work/configs:ro
       command: bash -c "cd /work && ./scripts/run_pipeline_local.sh"
     grebi-neo4j:
       image: neo4j:5.18.0

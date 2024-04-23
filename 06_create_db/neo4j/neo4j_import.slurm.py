@@ -19,11 +19,11 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    nodes = glob.glob(os.path.join(config['worker_output_dir'], "05_materialize_edges", "n4nodes_*"))
-    edges = glob.glob(os.path.join(config['worker_output_dir'], "05_materialize_edges", "n4edges_*"))
-    neo_path = os.path.join(config['worker_output_dir'], "06_create_db", "neo4j")
-    neo_data_path = os.path.join(config['worker_output_dir'], "06_create_db", "neo4j", "data")
-    neo_logs_path = os.path.join(config['worker_output_dir'], "06_create_db", "neo4j", "logs")
+    nodes = glob.glob(os.path.join(os.environ['GREBI_HPS_TMP'], "05_materialize_edges", "n4nodes_*"))
+    edges = glob.glob(os.path.join(os.environ['GREBI_HPS_TMP'], "05_materialize_edges", "n4edges_*"))
+    neo_path = os.path.join(os.environ['GREBI_HPS_TMP'], "06_create_db", "neo4j")
+    neo_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], "06_create_db", "neo4j", "data")
+    neo_logs_path = os.path.join(os.environ['GREBI_HPS_TMP'], "06_create_db", "neo4j", "logs")
 
     os.system('rm -rf ' + shlex.quote(neo_path))
     os.makedirs(neo_data_path, exist_ok=True)
@@ -43,7 +43,7 @@ def main():
         cmd = ' '.join([
             'JAVA_OPTS=\'-server -Xms50g -Xmx50g\'',
             'singularity run',
-            '--bind ' + os.path.abspath(os.path.join(config['worker_output_dir'], "05_materialize_edges")) + ':/mnt',
+            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], "05_materialize_edges")) + ':/mnt',
             '--bind ' + shlex.quote(neo_data_path) + ':/data',
             '--bind ' + shlex.quote(neo_logs_path) + ':/logs',
             '--writable-tmpfs',
@@ -52,7 +52,7 @@ def main():
     else:
         cmd = ' '.join([
             'docker run',
-            '-v ' + os.path.abspath(os.path.join(config['worker_output_dir'], "05_materialize_edges")) + ':/mnt',
+            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], "05_materialize_edges")) + ':/mnt',
             '-v ' + shlex.quote(neo_data_path) + ':/data',
             '-v ' + shlex.quote(neo_logs_path) + ':/logs',
             'neo4j:5.18.0'
