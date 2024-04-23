@@ -9,17 +9,6 @@ import glob
 from subprocess import Popen, PIPE, STDOUT
 
 def main():
-
-    if len(sys.argv) < 2:
-        print("Usage: start_neo.py <grebi_config.json>")
-        exit(1)
-
-    config_filename = os.path.abspath(sys.argv[1])
-    print(get_time() + " --- Config filename: " + config_filename, flush=True)
-
-    with open(config_filename, 'r') as f:
-        config = json.load(f)
-
     neo_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_create_db", "neo4j", "data")
 
     cmd = ' '.join([
@@ -32,7 +21,6 @@ def main():
     ])
 
     os.system(cmd)
-
 
 
 def get_time():
