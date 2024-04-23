@@ -6,6 +6,7 @@ foo.jsonl
 *.jsonl
 *.gz
 *.csv
+*.xml
 cargo_home
 testowls
 .~lock.*

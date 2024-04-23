@@ -1,5 +1,5 @@
 {
-    "use_slurm": true,
+    "use_slurm":true,
     "slurm_max_workers": {
         "ingest": 100,
         "assign_ids": 100,
@@ -30,7 +30,6 @@
         "owl:sameAs",
         "grebi:equivalentTo",
         "ols:iri",
-        "ols:shortForm",
         "hgnc:ensembl_gene_id",
         "obo:chebi/inchi",
         "obo:chebi/inchikey",
@@ -39,18 +38,11 @@
     ],
     "exclude_edges": [
         "ols:iri",
+        "ols:shortForm",
         "ols:curie",
         "oboinowl:id"
     ],
     "datasource_configs": [
-        "./configs/datasource_configs/gwas.json",
-        "./configs/datasource_configs/hgnc.json",
-        "./configs/datasource_configs/impc.json",
-        "./configs/datasource_configs/mp_hp.json",
-        "./configs/datasource_configs/ols.json",
-        "./configs/datasource_configs/reactome.json",
-        "./configs/datasource_configs/ubergraph.json",
-        "./configs/datasource_configs/otar.json",
-        "./configs/datasource_configs/monarch.json"
+        "./configs/datasource_configs/ols.json"
     ]
 }

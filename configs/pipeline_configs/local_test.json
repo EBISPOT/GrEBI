@@ -1,6 +1,4 @@
 {
-    "persistent_output_dir": "./tmp",
-    "worker_output_dir": "./tmp",
     "use_slurm": false,
     "bytes_per_merged_file": 104857600,
     "equivalence_props": [

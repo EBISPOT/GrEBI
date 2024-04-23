@@ -164,6 +164,16 @@
                 { "name": "--json-inject-key-prefix", "value": "impc:" },
                 { "name": "--json-inject-value-prefix", "value": "pmId:pmid:" }
             ]
+        },
+        {
+            "ingest_files": ["/nfs/production/parkinso/spot/jmcl/impc-kg/mouse_allele_json/*.json.gz"],
+            "ingest_script": "./target/release/grebi_ingest_json",
+            "ingest_args": [
+                { "name": "--json-rename-field", "value": "mouseAlleleId:id" },
+                { "name": "--json-inject-type", "value": "impc:Allele" },
+                { "name": "--json-inject-key-prefix", "value": "impc:" },
+                { "name": "--json-inject-value-prefix", "value": "ensemblAccId:ENSEMBL:" }
+            ]
         }
     ]
 }
