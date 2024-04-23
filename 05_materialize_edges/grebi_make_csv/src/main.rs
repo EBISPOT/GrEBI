@@ -1,7 +1,7 @@
 
 
 use std::ascii::escape_default;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::BufReader;
@@ -60,9 +60,9 @@ fn main() -> std::io::Result<()> {
 
     let start_time = std::time::Instant::now();
 
-    let all_subjects:HashSet<Vec<u8>> = {
+    let all_subjects:BTreeSet<Vec<u8>> = {
         let start_time = std::time::Instant::now();
-        let mut res:HashSet<Vec<u8>> = HashSet::new();
+        let mut res:BTreeSet<Vec<u8>> = BTreeSet::new();
         let mut reader = BufReader::new(File::open(&args.in_subjects_txt).unwrap());
         loop {
             let mut line: Vec<u8> = Vec::new();
@@ -84,7 +84,7 @@ fn main() -> std::io::Result<()> {
     let all_entity_props: Vec<String> = index_metadata["entity_props"].as_object().unwrap().keys().cloned().collect();
     let all_edge_props: Vec<String> = index_metadata["edge_props"].as_object().unwrap().keys().cloned().collect();
 
-    let exclude:HashSet<Vec<u8>> = args.exclude.split(",").map(|s| s.to_string().as_bytes().to_vec()).collect();
+    let exclude:BTreeSet<Vec<u8>> = args.exclude.split(",").map(|s| s.to_string().as_bytes().to_vec()).collect();
 
 
     let stdin = io::stdin().lock();
@@ -223,7 +223,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
 
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&HashSet<Vec<u8>>, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&HashSet<Vec<u8>>, datasources:&Vec<&[u8]>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&BTreeSet<Vec<u8>>, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, datasources:&Vec<&[u8]>) {
 
     if prop.key.eq(b"id") || exclude.contains(prop.key) {
         return;
@@ -271,7 +271,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&HashSet<
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, all_subjects:&HashSet<Vec<u8>>, edges_writer: &mut BufWriter<File>, datasources:&Vec<&[u8]>) {
+fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, all_subjects:&BTreeSet<Vec<u8>>, edges_writer: &mut BufWriter<File>, datasources:&Vec<&[u8]>) {
 
     edges_writer.write_all(b"\"").unwrap();
     write_escaped_value(from_id, edges_writer);
