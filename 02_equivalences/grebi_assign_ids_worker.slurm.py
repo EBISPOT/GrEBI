@@ -56,7 +56,7 @@ def main():
 
     cmd = ' '.join([
         'zcat ' + shlex.quote(nodes_jsonl_gz_filename),
-        '| ./target/release/grebi_assign_ids --groups-txt ', shlex.quote(groups_txt_path),
+        '| ./target/release/grebi_assign_ids --groups-txt', shlex.quote(groups_txt_path),
         '>', shlex.quote(expanded_subjects_jsonl_filename)
     ])
 

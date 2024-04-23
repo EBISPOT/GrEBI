@@ -152,14 +152,10 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
     nodes_writer.write_all(b"\",\"").unwrap();
 
     // :LABEL
-    let mut is_first = true;
+    nodes_writer.write_all(b"GraphNode;").unwrap();
     entity.props.iter().for_each(|prop| {
         if prop.key == "grebi:type".as_bytes() {
-            if is_first {
-                is_first = false;
-            } else {
-                nodes_writer.write_all(b";").unwrap();
-            }
+            nodes_writer.write_all(b";").unwrap();
             parse_json_and_write(prop.value, nodes_writer);
         }
     });
@@ -167,7 +163,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
     nodes_writer.write_all(b"\",\"").unwrap();
 
     // grebi:datasources
-    is_first = true;
+    let mut is_first = true;
     entity.datasources.iter().for_each(|ds| {
         if is_first {
             is_first = false;

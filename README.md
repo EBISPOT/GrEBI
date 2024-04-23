@@ -6,10 +6,12 @@ EBI Codon HPC pipeline for building integrated knowledge graphs from [EMBL-EBI r
 * [GWAS Catalog](https://www.ebi.ac.uk/gwas)
 * [OLS](https://www.ebi.ac.uk/ols4)
 * [Reactome](https://reactome.org/)
+* [OpenTargets](https://www.opentargets.org/)
 
 GrEBI also imports complementary datasets, so far:
 
-* The [MONARCH Initiative KG](https://monarch-initiative.github.io/monarch-ingest/Sources/)
+* [MONARCH Initiative KG](https://monarch-initiative.github.io/monarch-ingest/Sources/)
+* [Ubergraph](https://github.com/INCATools/ubergraph)
 
 The resulting graphs can be downloaded from https://ftp.ebi.ac.uk/pub/databases/spot/kg/
 
