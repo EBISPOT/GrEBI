@@ -1,14 +1,15 @@
-version: '3'
 services:
     grebi-dataload:
-      build: .
-      dockerfile: Dockerfile.dataload
+      build:
+        context: .
+        dockerfile: Dockerfile.dataload
       environment:
         - GREBI_NFS_TMP=./tmp
         - GREBI_HPS_TMP=./tmp
         - GREBI_CONFIG=${GREBI_CONFIG:?}
       volumes:
         - grebi-neo4j-data:/work/tmp/${GREBI_CONFIG:?}/06_create_db/neo4j
+        - ./00_fetch_data:/work/00_fetch_data:ro
         - ./configs:/work/configs:ro
       command: bash -c "cd /work && ./scripts/run_pipeline_local.sh"
     grebi-neo4j:
@@ -23,26 +24,26 @@ services:
       depends_on:
         grebi-dataload:
           condition: service_completed_successfully
-    grebi-api:
-      build: ./grebi_api
-      ports:
-        - 8080:8080
-      environment:
-        - GREBI_NEO4J_HOST=bolt://grebi-neo4j:7687
-      depends_on:
-        - grebi-neo4j    
-      links:
-        - grebi-neo4j 
-    grebi-ui:
-      build:
-        context: ./grebi_ui
-      env_file: ./grebi_ui/.env
-      ports:
-        - 8081:8080
-      depends_on:
-        - grebi-api
-      links:
-        - grebi-api
+    # grebi-api:
+    #   build: ./grebi_api
+    #   ports:
+    #     - 8080:8080
+    #   environment:
+    #     - GREBI_NEO4J_HOST=bolt://grebi-neo4j:7687
+    #   depends_on:
+    #     - grebi-neo4j    
+    #   links:
+    #     - grebi-neo4j 
+    # grebi-ui:
+    #   build:
+    #     context: ./grebi_ui
+    #   #env_file: ./grebi_ui/.env
+    #   ports:
+    #     - 8081:8080
+    #   depends_on:
+    #     - grebi-api
+    #   links:
+    #     - grebi-api
 volumes:
     grebi-neo4j-data:
 

@@ -40,7 +40,7 @@ public class GrebiApi {
                         ctx.contentType("application/json");
                         ctx.result(gson.toJson(md));
                     })
-                    .get("/{id}", ctx -> {
+                    /*.get("/{id}", ctx -> {
 
                         driver.executableQuery("MATCH (n) WHERE n. RETURN p.name AS name")
                                 .withParameters(Map.of("age", 42))
@@ -49,7 +49,7 @@ public class GrebiApi {
 
                         ctx.contentType("application/json");
                         ctx.result(gson.toJson(md));
-                    })
+                    })*/
                     .start(8080);
 
         }

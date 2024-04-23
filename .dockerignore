@@ -1,4 +1,10 @@
 tmp
+.git
+00_fetch_data
+*.gz
+*.tsv
+*.csv
+*.xml
 
 
 

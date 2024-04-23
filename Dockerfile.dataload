@@ -4,5 +4,8 @@ FROM rust:1.74-buster as builder
 
 RUN apt-get update && apt-get install -y cmake clang
 
-COPY . /work
+COPY 01* 02* 03* 04* 05* 06* prefix_maps scripts Cargo.* build.rs grebi_shared /work/
+
+# RUN cd /work && chmod +x ./scripts/*.sh
+# RUN cd /work && cargo build --release
 
