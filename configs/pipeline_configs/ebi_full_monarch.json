@@ -12,7 +12,7 @@
         "merge": "16G",
         "index": "64G",
         "extract": "8G",
-        "materialize_edges": "8:0:0"
+        "materialize_edges": "64G"
     },
     "slurm_max_time": {
         "ingest": "8:0:0",

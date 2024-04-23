@@ -15,8 +15,8 @@ members = [
 	"02_equivalences/grebi_equivalences2groups",
 	"02_equivalences/grebi_assign_ids",
 	"03_merge/grebi_merge",
-	"04_index/grebi_json2rocks",
-	"05_materialize_edges/grebi_rocks2neo",
+	"04_index/grebi_index",
+	"05_materialize_edges/grebi_make_csv",
 	"grebi_shared"
 ]
 

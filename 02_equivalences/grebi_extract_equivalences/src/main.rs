@@ -4,7 +4,6 @@
 use std::collections::{HashSet, HashMap};
 use std::ops::Deref;
 use std::{env, io};
-use rocksdb::{DB, Options, BlockBasedOptions};
 use std::io::{BufRead, BufReader };
 use std::io::{Write, BufWriter};
 

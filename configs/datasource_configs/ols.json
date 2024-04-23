@@ -3,7 +3,7 @@
     "enabled": true,
     "ingests": [
         {
-            "ingest_files": ["/nfs/production/parkinso/spot/ols4/prod/slurm_pipeline/ontologies.json.gz"],
+            "ingest_files": ["/data/ontologies/ontologies.json.gz"],
             "ingest_script": "./target/release/grebi_ingest_ols",
             "ingest_args": [
                 { "name": "--ontologies", "value": "efo,mp,hp,go,ro,iao,uberon,pato,oba,chebi,bspo,iao,obi,bfo,cob,cl" }

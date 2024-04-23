@@ -17,7 +17,7 @@ The resulting graphs can be downloaded from https://ftp.ebi.ac.uk/pub/databases/
 
 ## Implementation
 
-This is a implemented as a combination of Python scripts for orchestration and [Rust](https://www.rust-lang.org/) programs with simple CLIs for high performance data wrangling. It uses [RocksDB](https://github.com/facebook/rocksdb) as an intermediate database.
+This is a implemented as a combination of Python scripts for orchestration and [Rust](https://www.rust-lang.org/) programs with simple CLIs for high performance data wrangling.
 
 The pipeline makes property graphs (where both nodes and edges can have properties) for Neo4j, with "bruteforce" integration:
 

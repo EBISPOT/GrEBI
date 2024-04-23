@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE, STDOUT
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: grebi_rocks2neo.slurm.py <grebi_config.json>")
+        print("Usage: grebi_materialize_edges.slurm.py <grebi_config.json>")
         exit(1)
 
     config_filename = os.path.abspath(sys.argv[1])
@@ -28,7 +28,7 @@ def main():
 
     input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.0*")
     input_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.json")
-    input_rocksdb_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "rocksdb")
+    input_subjects_txt = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "subjects.txt")
     # out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4nodes_" + task_id + ".csv.gz")
     # out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4edges_" + task_id + ".csv.gz")
     out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4nodes_" + task_id + ".csv")
@@ -42,8 +42,8 @@ def main():
 
     cmd = ' '.join([
         'zcat ' + shlex.quote(our_file) + ' |',
-        './target/release/grebi_rocks2neo',
-        '--in-rocksdb-path ' + shlex.quote(input_rocksdb_path),
+        './target/release/grebi_make_csv',
+        '--in-subjects-txt ' + shlex.quote(input_subjects_txt),
         '--in-metadata-json-path ' + shlex.quote(input_metadata_filename),
         '--out-nodes-csv-path ' + shlex.quote(out_nodes_path),
         '--out-edges-csv-path ' + shlex.quote(out_edges_path),
@@ -51,7 +51,7 @@ def main():
     ])
 
     if os.system('bash -c "' + cmd + '"') != 0:
-        print("rocks2neo failed")
+        print("materialize_edges failed")
         exit(1)
 
 def get_time():

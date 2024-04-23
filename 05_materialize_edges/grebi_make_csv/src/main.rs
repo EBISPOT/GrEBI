@@ -16,10 +16,6 @@ use flate2::Compression;
 use grebi_shared::json_lexer::JsonTokenType;
 use grebi_shared::json_parser;
 use grebi_shared::prefix_map::PrefixMap;
-use rocksdb::DBCommon;
-use rocksdb::DB;
-use rocksdb::IteratorMode;
-use rocksdb::Options;
 
 use serde_json::Value;
 use grebi_shared::slice_merged_entity::SlicedEntity;
@@ -34,7 +30,7 @@ use grebi_shared::json_parser::JsonParser;
 struct Args {
 
     #[arg(long)]
-    in_rocksdb_path: String,
+    in_subjects_txt: String,
 
     #[arg(long)]
     in_metadata_json_path: String,
@@ -50,7 +46,7 @@ struct Args {
 }
 
 // Given (a) JSONL stream of entities on stdin
-// (b) RocksDB key->value store with merged id -> entities
+// (b) subjects.txt with all possible subjects
 // and (c) metadata json to tell us all possible node and edge properties
 //
 // This program makes gzipped NODES and EDGES csv files to import into neo4j.
@@ -64,10 +60,24 @@ fn main() -> std::io::Result<()> {
 
     let start_time = std::time::Instant::now();
 
-    let mut options = Options::default();
-    options.set_max_open_files(900); // codon limit is 1024 per process
-    let db = DB::open_for_read_only(&options, args.in_rocksdb_path, false).unwrap();
-
+    let mut all_subjects:HashSet<Vec<u8>> = {
+        let start_time = std::time::Instant::now();
+        let mut res:HashSet<Vec<u8>> = HashSet::new();
+        let mut reader = BufReader::new(File::open(&args.in_subjects_txt).unwrap());
+        loop {
+            let mut line: Vec<u8> = Vec::new();
+            reader.read_until(b'\n', &mut line).unwrap();
+            if line.len() == 0 {
+                break;
+            }
+            if line[line.len() - 1] == b'\n' {
+                line.pop();
+            }
+            res.insert(line);
+        }
+        eprintln!("loaded {} subjects in {} seconds", res.len(), start_time.elapsed().as_secs());
+        res
+    };
 
     let index_metadata:Value = serde_json::from_reader(File::open(args.in_metadata_json_path).unwrap()).unwrap();
 
@@ -132,14 +142,14 @@ fn main() -> std::io::Result<()> {
         }
 
         sliced.props.iter().for_each(|prop| {
-            maybe_write_edge(sliced.id, prop, &db, &all_edge_props, &mut edges_writer, &exclude, &prop.datasources);
+            maybe_write_edge(sliced.id, prop, &all_subjects, &all_edge_props, &mut edges_writer, &exclude, &prop.datasources);
         });
     }
 
     nodes_writer.flush().unwrap();
     edges_writer.flush().unwrap();
 
-    eprintln!("rocks2neo took {} seconds", start_time.elapsed().as_secs());
+    eprintln!("materialize_edges took {} seconds", start_time.elapsed().as_secs());
 
     Ok(())
 }
@@ -213,7 +223,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
 
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&HashSet<Vec<u8>>, datasources:&Vec<&[u8]>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&HashSet<Vec<u8>>, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&HashSet<Vec<u8>>, datasources:&Vec<&[u8]>) {
 
     if prop.key.eq(b"id") || exclude.contains(prop.key) {
         return;
@@ -230,9 +240,9 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props
             if reified_u.value_kind == JsonTokenType::StartString {
                 let buf = &reified_u.value.to_vec();
                 let str = JsonParser::parse(&buf).string();
-                let exists = db.get_pinned(str).unwrap().is_some();
+                let exists = all_subjects.contains(str);
                 if exists {
-                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), &all_edge_props, db, edges_writer, &datasources);
+                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), &all_edge_props, all_subjects, edges_writer, &datasources);
                 }
             } else {
                 // panic!("unexpected kind: {:?}", reified_u.value_kind);
@@ -243,10 +253,10 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props
 
         let buf = &prop.value.to_vec();
         let str = JsonParser::parse(&buf).string();
-        let exists = db.get_pinned(str).unwrap().is_some();
+        let exists = all_subjects.contains(str);
 
         if exists {
-            write_edge(from_id, str, prop.key, None, &all_edge_props, db, edges_writer, &datasources);
+            write_edge(from_id, str, prop.key, None, &all_edge_props, all_subjects, edges_writer, &datasources);
         }
 
     } else if prop.kind == JsonTokenType::StartArray {
@@ -261,7 +271,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, db:&DB, all_edge_props
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, db:&DB, edges_writer: &mut BufWriter<File>, datasources:&Vec<&[u8]>) {
+fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, all_subjects:&HashSet<Vec<u8>>, edges_writer: &mut BufWriter<File>, datasources:&Vec<&[u8]>) {
 
     edges_writer.write_all(b"\"").unwrap();
     write_escaped_value(from_id, edges_writer);

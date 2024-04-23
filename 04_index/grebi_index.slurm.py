@@ -19,15 +19,15 @@ def main():
         config = json.load(f)
 
     input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.*")
-    out_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "rocksdb")
+    out_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "subjects.txt")
     output_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.json")
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     cmd = 'zcat ' + input_merged_gz_filenames + ' | '
-    cmd = cmd + ' ./target/release/grebi_json2rocks '
-    cmd = cmd + ' --rocksdb-path ' + out_path
-    cmd = cmd + ' > ' + output_metadata_filename
+    cmd = cmd + ' ./target/release/grebi_index'
+    cmd = cmd + ' --out-subjects-txt-path ' + out_path
+    cmd = cmd + ' --out-metadata-json-path ' + output_metadata_filename
 
     print(get_time() + " --- Running index command: " + cmd, flush=True)
 
@@ -37,11 +37,7 @@ def main():
         exit(2)
 
     os.sync()
-
-    print(get_time() + " --- Calculating rocksdb size")
-    os.system('du -shl ' + out_path)
-    print(get_time() + " --- Calculating rocksdb size complete")
-
+    os.system('ls -hl' + out_path)
 
 
 def exists(x):

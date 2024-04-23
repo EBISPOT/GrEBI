@@ -222,26 +222,26 @@ def main():
     os.makedirs(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialize_edges'), exist_ok=True)
 
     if config['use_slurm'] == True:
-        print("Running rocks2neo on slurm (use_slurm = true)")
+        print("Running materialize_edges on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'sbatch',
             '--wait',
-            '-o ' + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialize_edges', 'rocks2neo_%a.log')),
+            '-o ' + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialize_edges', 'materialize_edges_%a.log')),
             '--array=0-' + str(max_file_num) + '%' + str(config['slurm_max_workers']['extract']),
             '--time=' + config['slurm_max_time']['extract'],
             '--mem=' + config['slurm_max_memory']['extract'],
-            './05_materialize_edges/grebi_rocks2neo.slurm.sh',
+            './05_materialize_edges/grebi_materialize_edges.slurm.sh',
             config_filename
         ])
         if os.system(slurm_cmd) != 0:
-            print("rocks2neo failed")
+            print("materialize_edges failed")
             exit(1)
         os.system("tail -n +1 " + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialize_edges', '*.log')))
     else:
         for n in range(max_file_num+1):
             print("Running " + str(n) + " of " + str(max_file_num))
-            if os.system('SLURM_ARRAY_TASK_ID=' + str(n) + ' ./05_materialize_edges/grebi_rocks2neo.slurm.sh ' + config_filename) != 0:
-                print("rocks2neo failed")
+            if os.system('SLURM_ARRAY_TASK_ID=' + str(n) + ' ./05_materialize_edges/grebi_materialize_edges.slurm.sh ' + config_filename) != 0:
+                print("materialize_edges failed")
                 exit(1)
 
 def get_time():
