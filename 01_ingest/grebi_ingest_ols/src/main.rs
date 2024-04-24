@@ -173,7 +173,13 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
                 if label.starts_with(&(pref_prefix.to_string() + ":")) || label.starts_with(&(pref_prefix.to_string() + "_")) {
                     curie.to_string()
                 } else {
-                    pref_prefix.to_string() + ":" + &label.to_string().to_lowercase().replace(" ", "_")
+                    pref_prefix.to_string() + ":" + &label.to_string().as_bytes().iter().map(|x| {
+                        if x.is_ascii_alphanumeric() {
+                            *x as char
+                        } else {
+                            '_'
+                        }
+                    }).collect::<String>()
                 }
             };
 
