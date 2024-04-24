@@ -36,12 +36,14 @@
         "obo:chebi/inchi",
         "obo:chebi/inchikey",
         "obo:chebi/smiles",
-        "impc:pmId"
+        "impc:pmId",
+        "impc:humanGeneAccId"
     ],
     "exclude_edges": [
         "ols:iri",
         "ols:curie",
-        "oboinowl:id"
+        "oboinowl:id",
+        "oboinowl:url"
     ],
     "datasource_configs": [
         "./configs/datasource_configs/gwas.json",

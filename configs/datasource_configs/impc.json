@@ -7,7 +7,7 @@
             "ingest_script": "./target/release/grebi_ingest_json",
             "ingest_args": [
                 { "name": "--json-rename-field", "value": "mgiGeneAccessionId:id" },
-                { "name": "--json-inject-type", "value": "impc:Gene" },
+                { "name": "--json-inject-type", "value": "impc:MouseGene" },
                 { "name": "--json-inject-key-prefix", "value": "impc:" }
             ]
         },
