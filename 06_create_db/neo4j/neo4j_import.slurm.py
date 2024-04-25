@@ -36,7 +36,8 @@ def main():
      '--array-delimiter=";"',
      '--threads=32',
      '--max-off-heap-memory=50G',
-     '--verbose'
+     '--verbose',
+     '--read-buffer-size=16m'
     ]
 
     if config['use_slurm'] == True:
