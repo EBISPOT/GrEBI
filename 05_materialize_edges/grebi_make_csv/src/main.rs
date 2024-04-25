@@ -207,11 +207,11 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
                         let reified = SlicedReified::from_json(&pv); // TODO make this accept a slice to avoid a copy
                         if reified.is_some() {
                             parse_json_and_write(reified.unwrap().value, nodes_writer);
-                            break;
+                            continue;
                         }
                     }
                     parse_json_and_write(row_prop.value, nodes_writer);
-                    break;
+                    continue;
                 }
             }
             if wrote_any {
