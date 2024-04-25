@@ -10,8 +10,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.text.ParseException;
 import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.EagerResult;
 import org.neo4j.driver.GraphDatabase;
 import org.apache.commons.cli.*;
+import org.neo4j.driver.QueryConfig;
 
 
 public class GrebiApi {
@@ -40,16 +42,15 @@ public class GrebiApi {
                         ctx.contentType("application/json");
                         ctx.result(gson.toJson(md));
                     })
-                    /*.get("/{id}", ctx -> {
+                    .post("/cypher", ctx -> {
 
-                        driver.executableQuery("MATCH (n) WHERE n. RETURN p.name AS name")
-                                .withParameters(Map.of("age", 42))
+                        EagerResult res = driver.executableQuery( ctx.body() )
                                 .withConfig(QueryConfig.builder().withDatabase("neo4j").build())
                                 .execute();
 
                         ctx.contentType("application/json");
-                        ctx.result(gson.toJson(md));
-                    })*/
+                        ctx.result(gson.toJson(res.records()));
+                    })
                     .start(8080);
 
         }

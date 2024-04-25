@@ -1,6 +1,15 @@
 import { Link } from "react-router-dom";
 import urlJoin from "url-join";
 import { Helmet } from 'react-helmet';
+import React, { Fragment } from "react";
+import HomeIcon from '@mui/icons-material/Home';
+import MediationIcon from '@mui/icons-material/Mediation';
+import { Stack } from "@mui/material";
+import JoinRightIcon from '@mui/icons-material/JoinRight';
+import HelpIcon from '@mui/icons-material/Help';
+import InfoIcon from '@mui/icons-material/Info';
+import DownloadIcon from '@mui/icons-material/Download';
+
 
 export default function Header({ section }: { section?: string }) {
 
@@ -8,10 +17,10 @@ export default function Header({ section }: { section?: string }) {
     <header
       className="bg-black bg-right bg-cover"
       style={{
-        backgroundImage:
-          "url('" +
-          urlJoin(process.env.PUBLIC_URL!, "/embl-ebi-background-4.jpg") +
-          "')",
+        // backgroundImage:
+        //   "url('" +
+        //   urlJoin(process.env.PUBLIC_URL!, "/embl-ebi-background-4.jpg") +
+        //   "')",
       }}
     >
         <Helmet>
@@ -23,7 +32,7 @@ export default function Header({ section }: { section?: string }) {
           <a href={urlJoin(process.env.PUBLIC_URL!, "/")}>
             <img
               alt="OLS logo"
-              className="h-24 inline-block"
+              className="h-8 inline-block"
               src={urlJoin(process.env.PUBLIC_URL!, "/logo.svg")}
             />
           </a>
@@ -44,10 +53,13 @@ export default function Header({ section }: { section?: string }) {
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
                 }`}
               >
-                Home
+                <Stack alignItems="center" direction="row" gap={1}>
+                  <HomeIcon />
+                  Home
+                </Stack>
               </li>
             </Link>
-            <Link to="/ontologies">
+            <Link to="/subgraphs">
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -56,7 +68,25 @@ export default function Header({ section }: { section?: string }) {
                     : "hover:bg-opacity-50 hover:bg-neutral-500 "
                 }`}
               >
-                Ontologies
+                <Stack alignItems="center" direction="row" gap={1}>
+                  <JoinRightIcon />
+                  Subgraphs
+                </Stack>
+              </li>
+            </Link>
+            <Link to="/datasources">
+              <li
+                role="menuitem"
+                className={`px-4 py-3 ${
+                  section === "ontologies"
+                    ? " bg-opacity-75 bg-neutral-500"
+                    : "hover:bg-opacity-50 hover:bg-neutral-500 "
+                }`}
+              >
+                <Stack alignItems="center" direction="row" gap={1}>
+                  <MediationIcon />
+                  Datasources
+                </Stack>
               </li>
             </Link>
             <Link to={`/help`}>
@@ -68,7 +98,10 @@ export default function Header({ section }: { section?: string }) {
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
                 }`}
               >
-                Help
+                <Stack alignItems="center" direction="row" gap={1}>
+                  <HelpIcon />
+                  Help
+                </Stack>
               </li>
             </Link>
             <Link to={`/about`}>
@@ -80,7 +113,10 @@ export default function Header({ section }: { section?: string }) {
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
                 }`}
               >
-                About
+                <Stack alignItems="center" direction="row" gap={1}>
+                  <InfoIcon />
+                  About
+                </Stack>
               </li>
             </Link>
             <Link to={`/downloads`}>
@@ -92,7 +128,10 @@ export default function Header({ section }: { section?: string }) {
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
                 }`}
               >
-                Downloads
+                <Stack alignItems="center" direction="row" gap={1}>
+                  <DownloadIcon />
+                  Downloads
+                </Stack>
               </li>
             </Link>
           </ul>

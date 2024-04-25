@@ -33,5 +33,6 @@ node
 
 dist/index.html
 dist/bundle.js
+dist/bundle.js.map
 dist/styles.css
 

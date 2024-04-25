@@ -91,9 +91,9 @@ module.exports = {
           black: "#292929",
         },
         link: {
-          default: "#00827c",
-          light: "#6eaba6",
-          dark: "#155552",
+            default: "#3B6FB6",
+            light: "#8BB8E8",
+            dark: "#193F90",
           hover: "#106462",
           visited: "#2185a9",
         },

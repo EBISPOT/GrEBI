@@ -1,4 +1,5 @@
 import { GitHub } from "@mui/icons-material";
+import React, { Fragment } from "react";
 
 export default function Footer() {
   return (
@@ -8,7 +9,7 @@ export default function Footer() {
           <div className="mb-2 text-xs uppercase font-bold">Follow us</div>
           <div className="flex gap-3">
             <a
-              href={process.env.REACT_APP_SPOT_OLS4_REPO}
+              href={process.env.REACT_APP_SPOT_GREBI_REPO}
               className="link-footer text-xs font-bold self-center"
               title="GitHub"
               rel="noopener noreferrer"
@@ -31,7 +32,7 @@ export default function Footer() {
       <div className="flex flex-row gap-4 h-6 items-center">
         <span>
           <i className="icon icon-common icon-copyright icon-spacer" />
-          EMBL-EBI&nbsp;2023
+          EMBL-EBI&nbsp;2024
         </span>
         <a
           href={process.env.REACT_APP_EBI_LICENSING}
