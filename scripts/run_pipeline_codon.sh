@@ -36,7 +36,7 @@ echo $(date): Copying to FTP
 export RELEASE_DATE=`date +%Y_%m_%d__%H_%M`
 export FILENAME=$GREBI_CONFIG-$RELEASE_DATE.tgz
 
-srun --partition=datamover -t -2:30:00 --mem=5G \
+srun --partition=datamover --time 2:30:00 --mem=5G \
     cp -f $GREBI_NFS_TMP/$GREBI_CONFIG.tgz /nfs/ftp/public/databases/spot/kg/$FILENAME
 
 echo $(date): Done
