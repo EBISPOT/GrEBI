@@ -4,20 +4,22 @@ cd /opt/solr
 
 cp -r /config /tmp/solr_config
 
+export SOLR_ENABLE_REMOTE_STREAMING=true
+export SOLR_SECURITY_MANAGER_ENABLED=false
+
 solr start -p 8999 -noprompt -force -m 50g -s /tmp/solr_config
 
 sleep 5
 
 ls -hl /data
 
-for filename in /data/*.gz; do
+for filename in /data/merged.*; do
     [ -e "$filename" ] || continue
 
     echo Uploading file: $filename
 
-    zcat $filename | \
-    curl --noproxy '*' -X POST -H 'Content-Type: application/json' --data-binary @- \
-        http://127.0.0.1:8999/solr/grebi_nodes/update/json/docs?commit=true
+    curl --noproxy '*' \
+        "http://localhost:8999/solr/grebi_nodes/update?stream.file=${filename}&stream.contentType=application/json;charset=utf-8&commit=true"
 
 done
 

@@ -38,7 +38,7 @@ def main():
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     cmd = './target/release/grebi_merge ' + ' '.join(result_filenames)
-    cmd = cmd + " | split -a 6 -d --filter='pigz --fast > \\$FILE.gz' -C " + str(config['bytes_per_merged_file']) + " - " + shlex.quote(out_path)
+    cmd = cmd + " | split -a 6 -d -C " + str(config['bytes_per_merged_file']) + " - " + shlex.quote(out_path)
 
     print("Running merge command: " + cmd, flush=True)
 

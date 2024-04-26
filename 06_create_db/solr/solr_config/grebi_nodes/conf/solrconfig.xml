@@ -652,12 +652,12 @@
          *** WARNING ***
          Before enabling remote streaming, you should make sure your
          system has authentication enabled.
+         -->
 
-    <requestParsers enableRemoteStreaming="false"
+    <requestParsers enableRemoteStreaming="true"
                     multipartUploadLimitInKB="-1"
                     formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
-      -->
 
     <!-- HTTP Caching
 
