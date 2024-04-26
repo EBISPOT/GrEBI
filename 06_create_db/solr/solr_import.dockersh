@@ -19,7 +19,7 @@ for filename in /data/merged.*; do
     echo Uploading file: $filename
 
     curl --noproxy '*' \
-        "http://localhost:8999/solr/grebi_nodes/update?stream.file=${filename}&stream.contentType=application/json;charset=utf-8&commit=true"
+        "http://localhost:8999/solr/grebi_nodes/update/json/docs?stream.file=${filename}&stream.contentType=application/json;charset=utf-8&commit=true"
 
 done
 
