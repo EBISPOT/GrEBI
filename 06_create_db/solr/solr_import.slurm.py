@@ -27,7 +27,6 @@ def main():
 
     if config['use_slurm'] == True:
         cmd = ' '.join([
-            'JAVA_OPTS=\'-server -Xms50g -Xmx50g\'',
             'singularity run',
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge")) + ':/data',
             '--bind ' + os.path.abspath('./06_create_db/solr/solr_config') + ':/config',

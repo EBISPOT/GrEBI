@@ -17,7 +17,7 @@ def main():
 
     if config['use_slurm'] == True:
         cmd = ' '.join([
-            'srun -t 5-0:0:0 --mem 64g',
+            'srun -t 5-0:0:0 --mem 64g -c 8',
             './06_create_db/solr/solr_import.slurm.sh',
             config_filename
         ])

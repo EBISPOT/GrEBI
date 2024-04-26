@@ -7,7 +7,7 @@ cp -r /config /tmp/solr_config
 export SOLR_ENABLE_REMOTE_STREAMING=true
 export SOLR_SECURITY_MANAGER_ENABLED=false
 
-solr start -p 8999 -noprompt -force -m 50g -s /tmp/solr_config
+solr start -m 50g -p 8999 -noprompt -force -m 50g -s /tmp/solr_config
 
 sleep 5
 
