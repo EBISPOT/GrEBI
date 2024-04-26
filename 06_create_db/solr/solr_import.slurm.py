@@ -34,6 +34,7 @@ def main():
             '--bind ' + shlex.quote(solr_path) + ':/var/solr',
             '--bind ' + os.path.abspath('./06_create_db/solr/solr_import.dockersh') + ':/import.sh',
             '--writable-tmpfs',
+            '--network=none',
             'docker://solr:9.5.0',
             'bash /import.sh'
         ])

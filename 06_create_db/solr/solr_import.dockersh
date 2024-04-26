@@ -16,7 +16,7 @@ for filename in /data/*.gz; do
     echo Uploading file: $filename
 
     zcat $filename | \
-    curl -X POST -H 'Content-Type: application/json' --data-binary @- \
+    curl --noproxy '*' -X POST -H 'Content-Type: application/json' --data-binary @- \
         http://127.0.0.1:8999/solr/grebi_nodes/update/json/docs?commit=true
 
 done
