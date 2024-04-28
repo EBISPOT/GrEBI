@@ -131,6 +131,7 @@ fn main() {
                 names_writer.write_all(b"\t").unwrap();
                 names_writer.write_all(&name.unwrap()).unwrap();
                 names_writer.write_all(b"\n").unwrap();
+                break;
             }
         }
 
