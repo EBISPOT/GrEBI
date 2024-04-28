@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function get_nodes {
-    for f in ~/grebi2/tmp/local_test/05_materialize_edges/n4nodes_*
+    for f in ~/grebi2/tmp/local_test/05_prepare_db_import/n4nodes_*
     do
         echo -n "--nodes=$f "
     done
@@ -9,7 +9,7 @@ function get_nodes {
 
 
 function get_edges {
-    for f in ~/grebi2/tmp/local_test/05_materialize_edges/n4edges_*
+    for f in ~/grebi2/tmp/local_test/05_prepare_db_import/n4edges_*
     do
         echo -n "--relationships=$f "
     done

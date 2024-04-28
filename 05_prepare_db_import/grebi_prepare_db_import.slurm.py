@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE, STDOUT
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: grebi_materialize_edges.slurm.py <grebi_config.json>")
+        print("Usage: grebi_prepare_db_import.slurm.py <grebi_config.json>")
         exit(1)
 
     config_filename = os.path.abspath(sys.argv[1])
@@ -29,10 +29,10 @@ def main():
     input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.0*")
     input_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.json")
     input_subjects_txt = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "subjects.txt")
-    # out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4nodes_" + task_id + ".csv.gz")
-    # out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4edges_" + task_id + ".csv.gz")
-    out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4nodes_" + task_id + ".csv")
-    out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4edges_" + task_id + ".csv")
+    # out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4nodes_" + task_id + ".csv.gz")
+    # out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4edges_" + task_id + ".csv.gz")
+    out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4nodes_" + task_id + ".csv")
+    out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4edges_" + task_id + ".csv")
 
     os.makedirs(os.path.dirname(out_edges_path), exist_ok=True)
 
@@ -51,7 +51,7 @@ def main():
     ])
 
     if os.system('bash -c "' + cmd + '"') != 0:
-        print("materialize_edges failed")
+        print("prepare_db_import failed")
         exit(1)
 
 def get_time():

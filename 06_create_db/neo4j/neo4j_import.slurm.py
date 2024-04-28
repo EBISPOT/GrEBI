@@ -31,7 +31,7 @@ def main():
         cmd = ' '.join([
             'JAVA_OPTS=\'-server -Xms50g -Xmx50g\'',
             'singularity run',
-            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges")) + ':/mnt',
+            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import")) + ':/mnt',
             '--bind ' + shlex.quote(neo_data_path) + ':/data',
             '--bind ' + shlex.quote(neo_logs_path) + ':/logs',
             '--bind ' + os.path.abspath('./06_create_db/neo4j/neo4j_import.dockersh') + ':/import.sh',
@@ -44,7 +44,7 @@ def main():
     else:
         cmd = ' '.join([
             'docker run',
-            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges")) + ':/mnt',
+            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import")) + ':/mnt',
             '-v ' + shlex.quote(neo_data_path) + ':/data',
             '-v ' + shlex.quote(neo_logs_path) + ':/logs',
             '-v ' + os.path.abspath('./06_create_db/neo4j/neo4j_import.dockersh') + ':/import.sh',

@@ -149,7 +149,7 @@ fn main() -> std::io::Result<()> {
     nodes_writer.flush().unwrap();
     edges_writer.flush().unwrap();
 
-    eprintln!("materialize_edges took {} seconds", start_time.elapsed().as_secs());
+    eprintln!("prepare_db_import took {} seconds", start_time.elapsed().as_secs());
 
     Ok(())
 }
