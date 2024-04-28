@@ -99,7 +99,7 @@ pub struct SlicedReified<'a> {
 
 impl<'a> SlicedReified<'a> {
 
-     pub fn from_json(buf:&'a Vec<u8>) -> Option<SlicedReified<'a>> {
+     pub fn from_json(buf:&'a &[u8]) -> Option<SlicedReified<'a>> {
 
         let mut parser = JsonParser::parse(&buf);
 

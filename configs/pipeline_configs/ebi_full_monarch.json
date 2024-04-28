@@ -45,6 +45,12 @@
         "oboinowl:id",
         "oboinowl:url"
     ],
+    "name_props": [
+        "ols:label",
+        "rdfs:label",
+        "monarch:name",
+        "impc:name"
+    ],
     "datasource_configs": [
         "./configs/datasource_configs/gwas.json",
         "./configs/datasource_configs/hgnc.json",

@@ -18,16 +18,19 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.*")
+    input_merged_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.*")
     out_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "subjects.txt")
+    out_names_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")
     output_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.json")
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
-    cmd = 'zcat ' + input_merged_gz_filenames + ' | '
+    cmd = 'cat ' + input_merged_filenames + ' | '
     cmd = cmd + ' ./target/release/grebi_index'
     cmd = cmd + ' --out-subjects-txt-path ' + out_path
+    cmd = cmd + ' --out-names-txt-path ' + out_names_path
     cmd = cmd + ' --out-metadata-json-path ' + output_metadata_filename
+    cmd = cmd + ' --name-fields ' + ','.join(config['name_props'])
 
     print(get_time() + " --- Running index command: " + cmd, flush=True)
 

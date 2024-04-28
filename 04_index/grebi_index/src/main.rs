@@ -28,7 +28,13 @@ struct Args {
     out_metadata_json_path: String,
 
     #[arg(long)]
-    out_subjects_txt_path: String
+    out_subjects_txt_path: String,
+
+    #[arg(long)]
+    out_names_txt_path: String,
+
+    #[arg(long)]
+    name_fields: String
 }
 
 fn main() {
@@ -43,8 +49,15 @@ fn main() {
     let mut entity_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut edge_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
 
+
+    let mut name_fields:Vec<Vec<u8>> = Vec::new();
+    for prop in args.name_fields.split(",") {
+        name_fields.push(prop.as_bytes().to_vec());
+    }
+
     let mut metadata_writer = BufWriter::new(File::create(&args.out_metadata_json_path).unwrap());
     let mut subjects_writer = BufWriter::new(File::create(&args.out_subjects_txt_path).unwrap());
+    let mut names_writer = BufWriter::new(File::create(&args.out_names_txt_path).unwrap());
 
     let mut line:Vec<u8> = Vec::new();
     let mut n:i64 = 0;
@@ -66,30 +79,60 @@ fn main() {
 
         let sliced = SlicedEntity::from_json(&line);
 
+        let mut names:Vec<Option<&[u8]>> = Vec::with_capacity(name_fields.len());
+        for _ in 0..name_fields.len() {
+            names.push(None);
+        }
+
         sliced.props.iter().for_each(|prop| {
 
             let prop_key = prop.key.to_vec();
 
+            let mut n_name_field:Option<usize> = None;
+            for i in 0..name_fields.len() {
+                if name_fields[i] == prop_key {
+                    n_name_field = Some(i);
+                    break;
+                }
+            }
+            
             let count = entity_props_to_count.entry(prop_key).or_insert(0);
             *count += 1;
 
             if prop.kind == JsonTokenType::StartObject {
 
-                let prop_val = prop.value.to_vec();
-
-                let reified = SlicedReified::from_json(&prop_val);
+                let reified = SlicedReified::from_json(&prop.value);
 
                 if reified.is_some() {
-                    reified.unwrap().props.iter().for_each(|prop| {
+                    let reified_u = reified.unwrap();
+                    reified_u.props.iter().for_each(|prop| {
                         let prop_key = prop.key.to_vec();
 
                         let count2 = edge_props_to_count.entry(prop_key).or_insert(0);
                         *count2 += 1;
                     });
+
+                    if n_name_field.is_some() {
+                        if reified_u.value_kind == JsonTokenType::StartString {
+                            names[n_name_field.unwrap()] = Some(&reified_u.value[1..reified_u.value.len()-1]);
+                        }
+                    }
+                }
+            } else if prop.kind == JsonTokenType::StartString {
+                if n_name_field.is_some() {
+                    names[n_name_field.unwrap()] = Some(&prop.value[1..prop.value.len()-1]);
                 }
             }
         });
 
+        for name in names {
+            if name.is_some() {
+                names_writer.write_all(&id).unwrap();
+                names_writer.write_all(b"\t").unwrap();
+                names_writer.write_all(&name.unwrap()).unwrap();
+                names_writer.write_all(b"\n").unwrap();
+            }
+        }
 
         n = n + 1;
 

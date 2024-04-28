@@ -204,7 +204,7 @@
          More details on the nuances of each LockFactory...
          https://cwiki.apache.org/confluence/display/lucene/AvailableLockFactories
     -->
-    <lockType>${solr.lock.type:native}</lockType>
+    <lockType>${solr.lock.type:single}</lockType>
 
     <!-- Commit Deletion Policy
          Custom deletion policies can be specified here. The class must
@@ -289,10 +289,10 @@
          If the updateLog is enabled, then it's highly recommended to
          have some sort of hard autoCommit to limit the log size.
       -->
-    <autoCommit>
+    <!-- <autoCommit>
       <maxTime>${solr.autoCommit.maxTime:15000}</maxTime>
       <openSearcher>false</openSearcher>
-    </autoCommit>
+    </autoCommit> -->
 
     <!-- softAutoCommit is like autoCommit except it causes a
          'soft' commit which only ensures that changes are visible
@@ -300,9 +300,9 @@
          faster and more near-realtime friendly than a hard commit.
       -->
 
-    <autoSoftCommit>
+    <!-- <autoSoftCommit>
       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
-    </autoSoftCommit>
+    </autoSoftCommit> -->
 
     <!-- Update Related Event Listeners
 

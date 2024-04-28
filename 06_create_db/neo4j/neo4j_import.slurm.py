@@ -19,8 +19,6 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    nodes = glob.glob(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4nodes_*"))
-    edges = glob.glob(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges", "n4edges_*"))
     neo_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_create_db", "neo4j")
     neo_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_create_db", "neo4j", "data")
     neo_logs_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_create_db", "neo4j", "logs")
@@ -29,17 +27,6 @@ def main():
     os.makedirs(neo_data_path, exist_ok=True)
     os.makedirs(neo_logs_path, exist_ok=True)
 
-    neo_cmd = [
-        'neo4j-admin database import full',
-    ] + list(map(lambda f: '--nodes ' + shlex.quote("/mnt/" + os.path.basename(f)), nodes)) + list(map(lambda f: '--relationships ' + shlex.quote("/mnt/" + os.path.basename(f)), edges)) + [
-     '--ignore-empty-strings=true',
-     '--array-delimiter=";"',
-     '--threads=32',
-     '--max-off-heap-memory=50G',
-     '--verbose',
-     '--read-buffer-size=16m'
-    ]
-
     if config['use_slurm'] == True:
         cmd = ' '.join([
             'JAVA_OPTS=\'-server -Xms50g -Xmx50g\'',
@@ -47,17 +34,24 @@ def main():
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges")) + ':/mnt',
             '--bind ' + shlex.quote(neo_data_path) + ':/data',
             '--bind ' + shlex.quote(neo_logs_path) + ':/logs',
+            '--bind ' + os.path.abspath('./06_create_db/neo4j/neo4j_import.dockersh') + ':/import.sh',
+            '--bind ' + os.path.abspath('./06_create_db/neo4j/create_indexes.cypher') + ':/create_indexes.cypher',
             '--writable-tmpfs',
-            'docker://neo4j:5.18.0'
-        ] + neo_cmd)
+            '--network=none',
+            'docker://neo4j:5.18.0',
+            'bash /import.sh'
+        ])
     else:
         cmd = ' '.join([
             'docker run',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialize_edges")) + ':/mnt',
             '-v ' + shlex.quote(neo_data_path) + ':/data',
             '-v ' + shlex.quote(neo_logs_path) + ':/logs',
-            'neo4j:5.18.0'
-        ] + neo_cmd)
+            '-v ' + os.path.abspath('./06_create_db/neo4j/neo4j_import.dockersh') + ':/import.sh',
+            '-v ' + os.path.abspath('./06_create_db/neo4j/create_indexes.cypher') + ':/create_indexes.cypher',
+            'neo4j:5.18.0',
+            'bash /import.sh'
+        ])
 
     print(cmd)
 

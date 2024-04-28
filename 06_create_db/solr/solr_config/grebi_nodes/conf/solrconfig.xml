@@ -204,7 +204,7 @@
          More details on the nuances of each LockFactory...
          https://cwiki.apache.org/confluence/display/lucene/AvailableLockFactories
     -->
-    <lockType>${solr.lock.type:native}</lockType>
+    <lockType>${solr.lock.type:single}</lockType>
 
     <!-- Commit Deletion Policy
          Custom deletion policies can be specified here. The class must
@@ -1001,7 +1001,7 @@
         <str name="dest">str_*</str>
         <int name="maxChars">8192</int>
       </lst>
-      <lst name="copyField">
+      <!--<lst name="copyField">
         <str name="dest">lowercase_*</str>
         <int name="maxChars">8192</int>
       </lst>
@@ -1016,7 +1016,7 @@
       <lst name="copyField">
         <str name="dest">whitespace_edge_*</str>
         <int name="maxChars">8192</int>
-      </lst>
+      </lst> -->
       <!-- Use as default mapping instead of defaultFieldType -->
       <bool name="default">true</bool>
     </lst>

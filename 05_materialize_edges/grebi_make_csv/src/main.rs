@@ -104,7 +104,7 @@ fn main() -> std::io::Result<()> {
             // Compression::fast())
         );
 
-    nodes_writer.write_all("grebi:id:ID,:LABEL,grebi:datasources:string[]".as_bytes()).unwrap();
+    nodes_writer.write_all("grebi:nodeId:ID,:LABEL,grebi:datasources:string[]".as_bytes()).unwrap();
     for prop in &all_entity_props {
         nodes_writer.write_all(b",").unwrap();
         nodes_writer.write_all(prop.as_bytes()).unwrap();
@@ -189,7 +189,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
             nodes_writer.write_all(b",").unwrap();
             let mut wrote_any = false;
             for row_prop in entity.props.iter() {
-                if row_prop.key == "grebi:id".as_bytes() {
+                if row_prop.key == "grebi:nodeId".as_bytes() {
                     continue; // already put in first column
                 }
                 if row_prop.key == "grebi:type".as_bytes() {
@@ -203,8 +203,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
                         nodes_writer.write_all(b";").unwrap();
                     }
                     if row_prop.kind == JsonTokenType::StartObject {
-                        let pv = row_prop.value.to_vec();
-                        let reified = SlicedReified::from_json(&pv); // TODO make this accept a slice to avoid a copy
+                        let reified = SlicedReified::from_json(&row_prop.value); 
                         if reified.is_some() {
                             parse_json_and_write(reified.unwrap().value, nodes_writer);
                             continue;
@@ -231,9 +230,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&BTreeSet
 
     if prop.kind == JsonTokenType::StartObject {
 
-        let value = prop.value.to_vec();
-
-        let reified = SlicedReified::from_json(&value);
+        let reified = SlicedReified::from_json(&prop.value);
 
         if reified.is_some() {
             let reified_u = reified.unwrap();

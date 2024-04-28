@@ -1,0 +1,41 @@
+#!/bin/bash
+
+function get_nodes {
+    for f in ~/grebi2/tmp/local_test/05_materialize_edges/n4nodes_*
+    do
+        echo -n "--nodes=$f "
+    done
+}
+
+
+function get_edges {
+    for f in ~/grebi2/tmp/local_test/05_materialize_edges/n4edges_*
+    do
+        echo -n "--relationships=$f "
+    done
+}
+
+neo4j-admin database import full \
+    $(get_nodes) \
+    $(get_edges) \
+    --ignore-empty-strings=true \
+    --array-delimiter=";" \
+    --threads=32 \
+    --max-off-heap-memory=50G \
+    --verbose \
+    --read-buffer-size=16m
+
+sleep 5
+
+neo4j start
+sleep 20
+
+echo Creating neo4j indexes...
+
+cypher-shell -a neo4j://127.0.0.1:7687 --non-interactive -f /create_indexes.cypher
+
+echo Creating neo4j indexes done
+
+sleep 5
+neo4j stop
+
