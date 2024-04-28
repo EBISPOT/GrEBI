@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 use std::io::{BufWriter, self, BufReader, Write,BufRead};
 use clap::Parser;
-use serde_json;
+use serde_json::{self, de, Map};
 use serde_json::Value;
 use serde_json::json;
 
@@ -27,6 +27,9 @@ struct Args {
 
     #[arg(long)]
     json_inject_value_prefix:Option<Vec<String>>,
+
+    #[arg(long)]
+    json_de_nest_field:Option<Vec<String>>,
 }
 
 #[global_allocator]
@@ -58,6 +61,16 @@ fn main() {
             let delim = arg.find(':').unwrap();
             let (column,prefix)=(arg[0..delim].to_string(), arg[delim+1..].to_string());
             value_prefixes.insert(column.clone(),prefix.clone());
+        }
+    }
+
+    // field -> nested field containing the actual value
+    let mut de_nests:HashMap<String,String> = HashMap::new();
+    if args.json_de_nest_field.is_some() {
+        for arg in args.json_de_nest_field.unwrap() {
+            let delim = arg.find('.').unwrap();
+            let (field,subfield)=(arg[0..delim].to_string(), arg[delim+1..].to_string());
+            de_nests.insert(field.clone(),subfield.clone());
         }
     }
 
@@ -102,24 +115,9 @@ fn main() {
             };
 
             let inject_prefix = value_prefixes.get(k);
+            let denest_subfield:Option<&String> = de_nests.get(k);
 
-            let new_v = {
-                if v.is_array() {
-                    Value::Array(v.as_array().unwrap().iter().map(|v2| {
-                        if inject_prefix.is_some() {
-                            cloned_with_prefix(v2, inject_prefix.unwrap())
-                        } else {
-                            v2.clone()
-                        }
-                    }).collect())
-                } else {
-                    if inject_prefix.is_some() {
-                        cloned_with_prefix(v, inject_prefix.unwrap())
-                    } else {
-                        v.clone()
-                    }
-                }
-            };
+            let new_v = map_value(v, inject_prefix, denest_subfield);
 
             out_json.insert(new_k, new_v);
         }
@@ -129,6 +127,44 @@ fn main() {
     }
 
     output_nodes.flush().unwrap();
+}
+
+fn map_value(v:&Value, inject_prefix:Option<&String>, denest_subfield:Option<&String>) -> Value {
+    if v.is_array() {
+        return Value::Array(v.as_array().unwrap().iter().map(|v2| map_value(v2, inject_prefix, denest_subfield)).collect())
+    }
+
+    if denest_subfield.is_some() && v.is_object() {
+        let subfield = denest_subfield.unwrap();
+        let subfield_value = v.get(subfield);
+        if subfield_value.is_some() {
+            let mut props_obj:Map<String,Value> = Map::new();
+
+            for (k,v) in v.as_object().unwrap().iter() {
+                if k.eq(subfield) {
+                    continue;
+                }
+                props_obj.insert(k.clone(), {
+                    if v.is_array() {
+                        v.clone()
+                    } else {
+                        Value::Array([v.clone()].to_vec())
+                    }
+                });
+            }
+
+            return json!({
+                "grebi:value": subfield_value.unwrap(),
+                "grebi:properties": props_obj
+            });
+        }
+    }
+
+    if inject_prefix.is_some() {
+        return cloned_with_prefix(v, inject_prefix.unwrap())
+    } else {
+        return v.clone()
+    }
 }
 
 fn cloned_with_prefix(val:&Value, prefix:&str) -> Value {
