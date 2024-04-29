@@ -38,6 +38,7 @@ def main():
             '--bind ' + os.path.abspath('./06_create_db/neo4j/create_indexes.cypher') + ':/create_indexes.cypher',
             '--writable-tmpfs',
             '--network=none',
+            '--env NEO4J_AUTH=none',
             'docker://neo4j:5.18.0',
             'bash /import.sh'
         ])
@@ -49,6 +50,7 @@ def main():
             '-v ' + shlex.quote(neo_logs_path) + ':/logs',
             '-v ' + os.path.abspath('./06_create_db/neo4j/neo4j_import.dockersh') + ':/import.sh',
             '-v ' + os.path.abspath('./06_create_db/neo4j/create_indexes.cypher') + ':/create_indexes.cypher',
+            '-e NEO4J_AUTH=none',
             'neo4j:5.18.0',
             'bash /import.sh'
         ])

@@ -27,6 +27,8 @@ neo4j-admin database import full \
 
 sleep 5
 
+echo "dbms.security.auth_enabled=false" >> /var/lib/neo4j/conf/neo4j.conf
+
 neo4j start
 sleep 20
 

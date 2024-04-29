@@ -27,9 +27,8 @@ def main():
         config = json.load(f)
 
     input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.0*")
-    input_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.json")
-    input_subjects_txt = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "subjects.txt")
-    input_names_txt = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")
+    input_summary_json = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "summary.json")
+    input_metadata_jsonl = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.jsonl")
     # out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4nodes_" + task_id + ".csv.gz")
     # out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4edges_" + task_id + ".csv.gz")
     out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4nodes_" + task_id + ".csv")
@@ -46,9 +45,8 @@ def main():
     cmd = ' '.join([
         'cat ' + shlex.quote(our_file) + ' |',
         './target/release/grebi_make_csv',
-        '--in-subjects-txt ' + shlex.quote(input_subjects_txt),
-        '--in-names-txt ' + shlex.quote(input_names_txt),
-        '--in-metadata-json-path ' + shlex.quote(input_metadata_filename),
+        '--in-metadata-jsonl ' + shlex.quote(input_metadata_jsonl),
+        '--in-summary-json ' + shlex.quote(input_summary_json),
         '--out-nodes-csv-path ' + shlex.quote(out_nodes_path),
         '--out-edges-csv-path ' + shlex.quote(out_edges_path),
         '--exclude ' + ','.join(config['exclude_edges']+config['equivalence_props'])
@@ -61,8 +59,8 @@ def main():
     cmd = ' '.join([
         'cat ' + shlex.quote(our_file) + ' |',
         './target/release/grebi_make_solr',
-        '--in-names-txt ' + shlex.quote(input_names_txt),
-        '--in-metadata-json-path ' + shlex.quote(input_metadata_filename),
+        '--in-metadata-jsonl ' + shlex.quote(input_metadata_jsonl),
+        '--in-summary-json ' + shlex.quote(input_summary_json),
         '--out-csv-path ' + shlex.quote(out_solr_path)
     ])
 

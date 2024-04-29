@@ -119,6 +119,8 @@
     <copyField source="grebi:nodeId" dest="str_grebi:nodeId"/>
     <copyField source="grebi:nodeId" dest="lowercase_grebi:nodeId"/>
 
+    <field name="_json" type="string" indexed="false" stored="true" multiValued="false" />
+
     <!-- docValues are enabled by default for long type so we don't need to index the version field  -->
     <field name="_version_" type="plong" indexed="false" stored="false"/>
 

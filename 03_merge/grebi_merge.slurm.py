@@ -28,7 +28,7 @@ def main():
 
     result_filenames = map(
         lambda x: x['datasource']['name'] + ':' +
-            os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', x['datasource']['name'], os.path.splitext(os.path.basename(x))[0] + '.sorted_expanded.jsonl.gz' )),
+            os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', x['datasource']['name'], os.path.splitext(os.path.basename(x['filename']))[0] + '.sorted_expanded.jsonl.gz' )),
         datasource_files)
 
     # filter result_filenames for files that exist only

@@ -25,13 +25,10 @@ use serde_json::json;
 struct Args {
 
     #[arg(long)]
-    out_metadata_json_path: String,
+    out_summary_json_path: String,
 
     #[arg(long)]
-    out_subjects_txt_path: String,
-
-    #[arg(long)]
-    out_names_txt_path: String,
+    out_metadata_jsonl_path: String,
 
     #[arg(long)]
     name_fields: String
@@ -55,9 +52,8 @@ fn main() {
         name_fields.push(prop.as_bytes().to_vec());
     }
 
-    let mut metadata_writer = BufWriter::new(File::create(&args.out_metadata_json_path).unwrap());
-    let mut subjects_writer = BufWriter::new(File::create(&args.out_subjects_txt_path).unwrap());
-    let mut names_writer = BufWriter::new(File::create(&args.out_names_txt_path).unwrap());
+    let mut summary_writer = BufWriter::new(File::create(&args.out_summary_json_path).unwrap());
+    let mut metadata_writer = BufWriter::new(File::create(&args.out_metadata_jsonl_path).unwrap());
 
     let mut line:Vec<u8> = Vec::new();
     let mut n:i64 = 0;
@@ -74,8 +70,9 @@ fn main() {
 
         let id = get_id(&line);
 
-        subjects_writer.write_all(&id).unwrap();
-        subjects_writer.write_all(b"\n").unwrap();
+        metadata_writer.write_all(r#"{"grebi:nodeId":""#.as_bytes()).unwrap();
+        metadata_writer.write_all(id).unwrap();
+        metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
 
         let sliced = SlicedEntity::from_json(&line);
 
@@ -87,6 +84,13 @@ fn main() {
         sliced.props.iter().for_each(|prop| {
 
             let prop_key = prop.key.to_vec();
+
+            if prop_key.eq(b"grebi:type") || prop_key.eq(b"grebi:datasources") || prop_key.eq(b"id") {
+                metadata_writer.write_all(r#",""#.as_bytes()).unwrap();
+                metadata_writer.write_all(&prop_key).unwrap();
+                metadata_writer.write_all(r#"":"#.as_bytes()).unwrap();
+                metadata_writer.write_all(prop.value).unwrap();
+            }
 
             let mut n_name_field:Option<usize> = None;
             for i in 0..name_fields.len() {
@@ -127,13 +131,12 @@ fn main() {
 
         for name in names {
             if name.is_some() {
-                names_writer.write_all(&id).unwrap();
-                names_writer.write_all(b"\t").unwrap();
-                names_writer.write_all(&name.unwrap()).unwrap();
-                names_writer.write_all(b"\n").unwrap();
-                break;
+                metadata_writer.write_all(r#","_name":""#.as_bytes()).unwrap();
+                metadata_writer.write_all(&name.unwrap()).unwrap();
+                metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
             }
         }
+        metadata_writer.write_all("}\n".as_bytes()).unwrap();
 
         n = n + 1;
 
@@ -148,7 +151,7 @@ fn main() {
 
     let start_time3 = std::time::Instant::now();
 
-    metadata_writer.write_all(
+    summary_writer.write_all(
     serde_json::to_string_pretty(&json!({
         "entity_props": entity_props_to_count.iter().map(|(k,v)| {
                 return (String::from_utf8(k.to_vec()).unwrap(), json!({

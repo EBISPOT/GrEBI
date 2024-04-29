@@ -12,10 +12,14 @@ use std::io::BufRead;
 use std::mem::transmute;
 
 use clap::Parser;
+use grebi_shared::find_strings;
 use grebi_shared::json_lexer::JsonTokenType;
 use grebi_shared::json_parser;
+use grebi_shared::load_metadata_mapping_table;
+use grebi_shared::load_metadata_mapping_table::Metadata;
 use grebi_shared::prefix_map::PrefixMap;
 
+use serde_json::Map;
 use serde_json::Value;
 use grebi_shared::slice_merged_entity::SlicedEntity;
 use grebi_shared::slice_merged_entity::SlicedProperty;
@@ -29,10 +33,10 @@ use grebi_shared::json_parser::JsonParser;
 struct Args {
 
     #[arg(long)]
-    in_names_txt: String,
+    in_metadata_jsonl: String,
 
     #[arg(long)]
-    in_metadata_json_path: String,
+    in_summary_json: String,
 
     #[arg(long)]
     out_csv_path: String,
@@ -44,35 +48,11 @@ fn main() -> std::io::Result<()> {
 
     let start_time = std::time::Instant::now();
 
-    let subj_to_name:BTreeMap<String,String> = {
-        let start_time = std::time::Instant::now();
-        let mut res:BTreeMap<String,String> = BTreeMap::new();
-        let mut reader = BufReader::new(File::open(&args.in_names_txt).unwrap());
-        loop {
-            let mut subject: Vec<u8> = Vec::new();
-            reader.read_until(b'\t', &mut subject).unwrap();
-            if subject.len() == 0 {
-                break;
-            }
-            subject.pop();
-            let mut name: Vec<u8> = Vec::new();
-            reader.read_until(b'\n', &mut name).unwrap();
-            if name.len() == 0 {
-                continue;
-            }
-            if name[name.len() - 1] == b'\n' {
-                name.pop();
-            }
-            res.insert(String::from_utf8(subject).unwrap(), String::from_utf8(name).unwrap());
-        }
-        eprintln!("loaded {} subject->name mappings in {} seconds", res.len(), start_time.elapsed().as_secs());
-        res
-    };
+    let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
+    let summary:Value = serde_json::from_reader(File::open(args.in_summary_json).unwrap()).unwrap();
 
-    let index_metadata:Value = serde_json::from_reader(File::open(args.in_metadata_json_path).unwrap()).unwrap();
-
-    let all_entity_props: Vec<String> = index_metadata["entity_props"].as_object().unwrap().keys().cloned().collect();
-    let all_edge_props: Vec<String> = index_metadata["edge_props"].as_object().unwrap().keys().cloned().collect();
+    let all_entity_props: Vec<String> = summary["entity_props"].as_object().unwrap().keys().cloned().collect();
+    let all_edge_props: Vec<String> = summary["edge_props"].as_object().unwrap().keys().cloned().collect();
 
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
@@ -93,13 +73,31 @@ fn main() -> std::io::Result<()> {
         if line.len() == 0 {
             break;
         }
+        if line[line.len() - 1] == b'\n' {
+            line.pop();
+        }
 
-        let json:serde_json::Map<String,Value> = serde_json::from_slice(&line).unwrap();
+        let _refs = {
+            let mut res:Map<String,Value> = Map::new();
+            for (start,end) in find_strings(&line) {
+                let maybe_id = &line[start..end];
+                let metadata = node_metadata.get(maybe_id);
+                if metadata.is_some() {
+                    res.insert(String::from_utf8_lossy(maybe_id).to_string(), serde_json::from_slice(metadata.unwrap().json.as_slice()).unwrap());
+                }
+            }
+            res
+        };
+
+        let mut json:serde_json::Map<String,Value> = serde_json::from_slice(&line).unwrap();
+        json.insert("_refs".to_string(), Value::Object(_refs));
+
         let mut out_json = serde_json::Map::new();
+        out_json.insert("_json".to_string(), Value::String(serde_json::to_string(&json).unwrap()));
 
         for (k,v) in json.iter() {
 
-            if k.eq("grebi:nodeId") || k.eq("grebi:datasources") {
+            if k.eq("grebi:nodeId") || k.eq("grebi:datasources") || k.eq("_refs") {
                 out_json.insert(k.to_string(), v.clone());
                 continue;
             }
@@ -108,7 +106,7 @@ fn main() -> std::io::Result<()> {
             let mut new_arr:Vec<Value> = Vec::new();
 
             for i in 0..arr.len() {
-                new_arr.extend(value_to_solr(&arr[i], &subj_to_name));
+                new_arr.extend(value_to_solr(&arr[i], &node_metadata));
             }
 
             if new_arr.len() > 0 {
@@ -127,7 +125,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn value_to_solr(v:&Value, subj_to_name:&BTreeMap<String,String>) -> Vec<Value> {
+fn value_to_solr(v:&Value, node_metadata:&BTreeMap<Vec<u8>,Metadata>) -> Vec<Value> {
 
     let obj = v.as_object().unwrap();
 
@@ -148,10 +146,13 @@ fn value_to_solr(v:&Value, subj_to_name:&BTreeMap<String,String>) -> Vec<Value> 
     // any other string is left unmodified
     //
     if value.is_string() {
-        let maps_to_name = subj_to_name.get(value.as_str().unwrap());
-        if maps_to_name.is_some() {
-            // add both the ID and its label
-            return vec!(value.clone(), Value::String(maps_to_name.unwrap().to_string()));
+        let metadata = node_metadata.get(value.as_str().unwrap().as_bytes());
+        if metadata.is_some() {
+            let metadata_u = metadata.unwrap();
+            if metadata_u.name.is_some() {
+                // add both the ID and its label
+                return vec!(value.clone(), Value::String(String::from_utf8_lossy(&metadata_u.name.as_ref().unwrap()).to_string()));
+            }
         } else {
             return vec!(value.clone());
         }
@@ -165,15 +166,18 @@ fn value_to_solr(v:&Value, subj_to_name:&BTreeMap<String,String>) -> Vec<Value> 
         if vobj.contains_key("grebi:value") {
             let the_actual_value = vobj.get("grebi:value").unwrap();    
             if the_actual_value.is_string() {
-                let maps_to_name = subj_to_name.get(the_actual_value.as_str().unwrap());
-                if maps_to_name.is_some() {
-                    // add both the ID and its label
-                    return vec!(value.clone(), Value::String(maps_to_name.unwrap().to_string()));
+                let metadata = node_metadata.get(the_actual_value.as_str().unwrap().as_bytes());
+                if metadata.is_some() {
+                    let metadata_u = metadata.unwrap();
+                    if metadata_u.name.is_some() {
+                        // add both the ID and its label
+                        return vec!(the_actual_value.clone(), Value::String(String::from_utf8_lossy(&metadata_u.name.as_ref().unwrap()).to_string()));
+                    }
                 } else {
                     return vec!(the_actual_value.clone());
                 }
             }
-        }
+        } 
     }
 
     return vec!();
