@@ -1,6 +1,7 @@
 
 
 use std::ascii::escape_default;
+use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fs::File;
 use std::io::BufWriter;
@@ -31,6 +32,9 @@ struct Args {
 
     #[arg(long)]
     in_subjects_txt: String,
+
+    #[arg(long)]
+    in_names_txt: String,
 
     #[arg(long)]
     in_metadata_json_path: String,
@@ -76,6 +80,31 @@ fn main() -> std::io::Result<()> {
             res.insert(line);
         }
         eprintln!("loaded {} subjects in {} seconds", res.len(), start_time.elapsed().as_secs());
+        res
+    };
+
+    let subj_to_name:BTreeMap<Vec<u8>,Vec<u8>> = {
+        let start_time = std::time::Instant::now();
+        let mut res:BTreeMap<Vec<u8>,Vec<u8>> = BTreeMap::new();
+        let mut reader = BufReader::new(File::open(&args.in_names_txt).unwrap());
+        loop {
+            let mut subject: Vec<u8> = Vec::new();
+            reader.read_until(b'\t', &mut subject).unwrap();
+            if subject.len() == 0 {
+                break;
+            }
+            subject.pop();
+            let mut name: Vec<u8> = Vec::new();
+            reader.read_until(b'\n', &mut name).unwrap();
+            if name.len() == 0 {
+                continue;
+            }
+            if name[name.len() - 1] == b'\n' {
+                name.pop();
+            }
+            res.insert(subject.clone(), name.clone());
+        }
+        eprintln!("loaded {} subject->name mappings in {} seconds", res.len(), start_time.elapsed().as_secs());
         res
     };
 
@@ -134,7 +163,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEntity::from_json(&line);
 
-        write_node(&sliced, &all_entity_props, &mut nodes_writer);
+        write_node(&sliced, &all_entity_props, &subj_to_name, &mut nodes_writer);
 
         n_nodes = n_nodes + 1;
         if n_nodes % 1000000 == 0 {
@@ -142,7 +171,7 @@ fn main() -> std::io::Result<()> {
         }
 
         sliced.props.iter().for_each(|prop| {
-            maybe_write_edge(sliced.id, prop, &all_subjects, &all_edge_props, &mut edges_writer, &exclude, &prop.datasources);
+            maybe_write_edge(sliced.id, prop, &all_subjects, &all_edge_props, &mut edges_writer, &exclude, &subj_to_name, &prop.datasources);
         });
     }
 
@@ -154,9 +183,9 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&mut BufWriter<File>) {
+fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, subj_to_name:&BTreeMap<Vec<u8>,Vec<u8>>, nodes_writer:&mut BufWriter<File>) {
 
-    // grebi:id
+    // grebi:nodeId
     nodes_writer.write_all(b"\"").unwrap();
     write_escaped_value(entity.id, nodes_writer);
     nodes_writer.write_all(b"\",\"").unwrap();
@@ -166,7 +195,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
     entity.props.iter().for_each(|prop| {
         if prop.key == "grebi:type".as_bytes() {
             nodes_writer.write_all(b";").unwrap();
-            parse_json_and_write(prop.value, nodes_writer);
+            parse_json_and_write(prop.value, subj_to_name, nodes_writer);
         }
     });
 
@@ -205,11 +234,11 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
                     if row_prop.kind == JsonTokenType::StartObject {
                         let reified = SlicedReified::from_json(&row_prop.value); 
                         if reified.is_some() {
-                            parse_json_and_write(reified.unwrap().value, nodes_writer);
+                            parse_json_and_write(reified.unwrap().value, subj_to_name, nodes_writer);
                             continue;
                         }
                     }
-                    parse_json_and_write(row_prop.value, nodes_writer);
+                    parse_json_and_write(row_prop.value, subj_to_name, nodes_writer);
                     continue;
                 }
             }
@@ -222,7 +251,7 @@ fn write_node(entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&m
 
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&BTreeSet<Vec<u8>>, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, datasources:&Vec<&[u8]>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&BTreeSet<Vec<u8>>, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, subj_to_name:&BTreeMap<Vec<u8>,Vec<u8>>, datasources:&Vec<&[u8]>) {
 
     if prop.key.eq(b"id") || exclude.contains(prop.key) {
         return;
@@ -239,7 +268,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&BTreeSet
                 let str = JsonParser::parse(&buf).string();
                 let exists = all_subjects.contains(str);
                 if exists {
-                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), &all_edge_props, all_subjects, edges_writer, &datasources);
+                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), &all_edge_props, all_subjects, edges_writer, subj_to_name, &datasources);
                 }
             } else {
                 // panic!("unexpected kind: {:?}", reified_u.value_kind);
@@ -253,7 +282,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&BTreeSet
         let exists = all_subjects.contains(str);
 
         if exists {
-            write_edge(from_id, str, prop.key, None, &all_edge_props, all_subjects, edges_writer, &datasources);
+            write_edge(from_id, str, prop.key, None, &all_edge_props, all_subjects, edges_writer, subj_to_name, &datasources);
         }
 
     } else if prop.kind == JsonTokenType::StartArray {
@@ -268,7 +297,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_subjects:&BTreeSet
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, all_subjects:&BTreeSet<Vec<u8>>, edges_writer: &mut BufWriter<File>, datasources:&Vec<&[u8]>) {
+fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, all_subjects:&BTreeSet<Vec<u8>>, edges_writer: &mut BufWriter<File>, subj_to_name:&BTreeMap<Vec<u8>,Vec<u8>>, datasources:&Vec<&[u8]>) {
 
     edges_writer.write_all(b"\"").unwrap();
     write_escaped_value(from_id, edges_writer);
@@ -303,7 +332,7 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
                     } else {
                         edges_writer.write_all(b";").unwrap();
                     }
-                    parse_json_and_write(row_prop.value, edges_writer);
+                    parse_json_and_write(row_prop.value, subj_to_name, edges_writer);
                     break;
                 }
             }
@@ -331,14 +360,19 @@ fn write_escaped_value(buf:&[u8], writer:&mut BufWriter<File>) {
 }
 
 
-fn parse_json_and_write(buf:&[u8], writer:&mut BufWriter<File>) {
+fn parse_json_and_write(buf:&[u8], subj_to_name:&BTreeMap<Vec<u8>,Vec<u8>>, writer:&mut BufWriter<File>) {
 
-    let v = buf.to_vec(); // TODO fix lex to accept a slice
-    let mut json = JsonParser::parse(&v);
+    let mut json = JsonParser::parse(buf);
 
     match json.peek().kind {
         JsonTokenType::StartString => {
-            write_escaped_value(json.string(), writer);
+            let str = json.string();
+            write_escaped_value(str, writer);
+            let name = subj_to_name.get(str);
+            if name.is_some() {
+                writer.write_all(b";").unwrap();
+                write_escaped_value(str, writer);
+            }
         },
         _ => {
             write_escaped_value(&buf, writer)

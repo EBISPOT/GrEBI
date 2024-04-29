@@ -3,7 +3,9 @@
 cd /opt/solr
 
 rm -rf /var/solr/*
-cp -r /config/* /var/solr/
+mkdir /var/solr/data
+mkdir /var/solr/logs
+cp -r /config/* /var/solr/data/
 
 export SOLR_ENABLE_REMOTE_STREAMING=true
 export SOLR_SECURITY_MANAGER_ENABLED=false

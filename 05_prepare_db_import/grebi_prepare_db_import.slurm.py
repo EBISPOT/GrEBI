@@ -29,19 +29,22 @@ def main():
     input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.0*")
     input_metadata_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.json")
     input_subjects_txt = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "subjects.txt")
+    input_names_txt = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")
     # out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4nodes_" + task_id + ".csv.gz")
     # out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4edges_" + task_id + ".csv.gz")
     out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4nodes_" + task_id + ".csv")
     out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4edges_" + task_id + ".csv")
+    out_solr_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "solr_" + task_id + ".csv")
+
 
     os.makedirs(os.path.dirname(out_edges_path), exist_ok=True)
 
     all_files = glob.glob(input_merged_gz_filenames)
-    our_file = list(filter(lambda f: int(f.split('.')[-2]) == int(task_id), all_files))[0]
+    our_file = list(filter(lambda f: int(f.split('.')[-1]) == int(task_id), all_files))[0]
     print(get_time() + " --- Our file: " + our_file)
 
     cmd = ' '.join([
-        'zcat ' + shlex.quote(our_file) + ' |',
+        'cat ' + shlex.quote(our_file) + ' |',
         './target/release/grebi_make_csv',
         '--in-subjects-txt ' + shlex.quote(input_subjects_txt),
         '--in-metadata-json-path ' + shlex.quote(input_metadata_filename),
@@ -51,7 +54,19 @@ def main():
     ])
 
     if os.system('bash -c "' + cmd + '"') != 0:
-        print("prepare_db_import failed")
+        print("prepare_db_import neo4j failed")
+        exit(1)
+
+    cmd = ' '.join([
+        'cat ' + shlex.quote(our_file) + ' |',
+        './target/release/grebi_make_solr',
+        '--in-names-txt ' + shlex.quote(input_names_txt),
+        '--in-metadata-json-path ' + shlex.quote(input_metadata_filename),
+        '--out-csv-path ' + shlex.quote(out_solr_path)
+    ])
+
+    if os.system('bash -c "' + cmd + '"') != 0:
+        print("prepare_db_import solr failed")
         exit(1)
 
 def get_time():
