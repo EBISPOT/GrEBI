@@ -17,7 +17,7 @@ def main():
         config = json.load(f)
 
     datasource_files_listing = os.path.abspath( os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '01_ingest', 'datasource_files.jsonl') )
-    datasource_files = json.loads(open(datasource_files_listing, 'r').read())
+    datasource_files = open(datasource_files_listing, 'r').read().split('\n')
 
     if config['use_slurm'] == True:
         print("Running ingest on slurm (use_slurm = true)")

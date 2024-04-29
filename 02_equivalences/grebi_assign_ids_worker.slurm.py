@@ -39,10 +39,12 @@ def main():
     print(get_time() + " --- Config file: " + datasource_file['config'])
     print(get_time() + " --- Datasource: " + datasource_name, flush=True)
 
-    nodes_jsonl_gz_filename = datasource_file['artefacts']['nodes_jsonl_gz']
-    expanded_subjects_jsonl_filename = datasource_file['artefacts']['expanded_subjects_jsonl']
-    sorted_expanded_subjects_jsonl_filename = datasource_file['artefacts']['sorted_expanded_subjects_jsonl']
-    sorted_expanded_subjects_jsonl_gz_filename = datasource_file['artefacts']['sorted_expanded_subjects_jsonl_gz']
+    basename = os.path.splitext(os.path.basename(datasource_file['filename']))[0]
+
+    nodes_jsonl_gz_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '01_ingest', datasource_name, basename + '.jsonl.gz' ))
+    expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', datasource_name, basename + '.expanded.jsonl' ))
+    sorted_expanded_subjects_jsonl_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', datasource_name, basename + '.sorted_expanded.jsonl' ))
+    sorted_expanded_subjects_jsonl_gz_filename = os.path.abspath( os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', datasource_name, basename + '.sorted_expanded.jsonl.gz' ))
 
     os.makedirs(os.path.dirname(expanded_subjects_jsonl_filename), exist_ok=True)
     os.makedirs(os.path.dirname(sorted_expanded_subjects_jsonl_filename), exist_ok=True)

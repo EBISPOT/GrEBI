@@ -36,8 +36,23 @@ def main():
     print(get_time() + " --- Datasource: " + datasource_name, flush=True)
     print(get_time() + " --- Loading file: " + filename, flush=True)
 
-    nodes_jsonl_gz_filename = datasource_file['artefacts']['nodes_jsonl_gz']
-    equivalences_tsv_filename = datasource_file['artefacts']['equivalences_tsv']
+    basename = os.path.splitext(os.path.basename(filename))[0]
+
+    nodes_jsonl_gz_filename = os.path.abspath(
+        os.path.join(
+            os.environ['GREBI_HPS_TMP'],
+            os.environ['GREBI_CONFIG'],
+            '01_ingest',
+            datasource_name,
+            basename + '.jsonl.gz' ))
+
+    equivalences_tsv_filename = os.path.abspath(
+        os.path.join(
+            os.environ['GREBI_HPS_TMP'],
+            os.environ['GREBI_CONFIG'],
+            '01_ingest',
+            datasource_name,
+            basename + '.equivalences.tsv' ))
 
     os.makedirs(os.path.dirname(nodes_jsonl_gz_filename), exist_ok=True)
     os.makedirs(os.path.dirname(equivalences_tsv_filename), exist_ok=True)
@@ -50,7 +65,7 @@ def main():
     else:
         cmd = 'cat ' + shlex.quote(filename)
     cmd = cmd + ' | ' + shlex.quote(datasource_file['ingest']['ingest_script'])
-    cmd = cmd + ' --datasource-name ' + shlex.quote( os.path.basename( datasource_file['datasource']['name'] ))
+    cmd = cmd + ' --datasource-name ' + shlex.quote(datasource_name)
     cmd = cmd + ' --filename ' + shlex.quote( os.path.basename( filename ))
     for param in datasource_file['ingest']['ingest_args']:
         cmd = cmd + ' ' + param['name'] + ' ' + shlex.quote( param['value'] )
