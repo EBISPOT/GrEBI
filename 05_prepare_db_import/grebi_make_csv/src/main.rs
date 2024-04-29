@@ -371,7 +371,7 @@ fn parse_json_and_write(buf:&[u8], subj_to_name:&BTreeMap<Vec<u8>,Vec<u8>>, writ
             let name = subj_to_name.get(str);
             if name.is_some() {
                 writer.write_all(b";").unwrap();
-                write_escaped_value(str, writer);
+                write_escaped_value(name.unwrap(), writer);
             }
         },
         _ => {
