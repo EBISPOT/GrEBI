@@ -20,7 +20,12 @@ fi
 rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
 srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
 
-python3 ./scripts/dataload.py
+python3 ./scripts/dataload_00_prepare.py
+python3 ./scripts/dataload_01_ingest.py
+python3 ./scripts/dataload_02_assign_ids.py
+python3 ./scripts/dataload_03_merge.py
+python3 ./scripts/dataload_04_index.py
+python3 ./scripts/dataload_05_prepare_db_imports.py
 python3 06_create_db/neo4j/neo4j_import.py
 
 echo $(date): Compressing neo4j data

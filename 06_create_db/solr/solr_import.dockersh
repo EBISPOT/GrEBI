@@ -16,7 +16,7 @@ sleep 5
 
 ls -hl /data
 
-for filename in /data/merged.*; do
+for filename in /data/solr*; do
     [ -e "$filename" ] || continue
 
     echo Uploading file: $filename

@@ -47,6 +47,7 @@ def main():
         'cat ' + shlex.quote(our_file) + ' |',
         './target/release/grebi_make_csv',
         '--in-subjects-txt ' + shlex.quote(input_subjects_txt),
+        '--in-names-txt ' + shlex.quote(input_names_txt),
         '--in-metadata-json-path ' + shlex.quote(input_metadata_filename),
         '--out-nodes-csv-path ' + shlex.quote(out_nodes_path),
         '--out-edges-csv-path ' + shlex.quote(out_edges_path),
