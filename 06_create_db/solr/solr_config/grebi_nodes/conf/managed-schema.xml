@@ -119,7 +119,7 @@
     <copyField source="grebi:nodeId" dest="str_grebi:nodeId"/>
     <copyField source="grebi:nodeId" dest="lowercase_grebi:nodeId"/>
 
-    <field name="_json" type="string" indexed="false" stored="true" multiValued="false" />
+    <field name="_json" type="grebi_json" indexed="false" stored="true" multiValued="false" />
 
     <!-- docValues are enabled by default for long type so we don't need to index the version field  -->
     <field name="_version_" type="plong" indexed="false" stored="false"/>
@@ -180,6 +180,9 @@
     <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" docValues="true" />
     <fieldType name="strings" class="solr.StrField" sortMissingLast="true" multiValued="true" docValues="true" />
+
+    <fieldType name="grebi_json" class="solr.TextField" sortMissingLast="true" omitNorms="true" />
+
 
     <!-- boolean type: "true" or "false" -->
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>

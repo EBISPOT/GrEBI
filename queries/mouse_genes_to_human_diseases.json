@@ -1,0 +1,4 @@
+{
+    "title": "What are the disease associations for IMPC genes from OpenTargets?",
+    "datasources": ["IMPC","OpenTargets","OLS.mondo"]
+}

@@ -23,7 +23,7 @@ neo4j-admin database import full \
     --threads=32 \
     --max-off-heap-memory=50G \
     --verbose \
-    --read-buffer-size=16m
+    --read-buffer-size=256m
 
 sleep 5
 

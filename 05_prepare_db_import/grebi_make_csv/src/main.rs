@@ -226,18 +226,17 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
     write_escaped_value(&src_line[0..src_line.len()-1] /* skip closing } */, nodes_writer);
     write_escaped_value(b",\"_refs\":{", nodes_writer);
 
-    let mut is_first_name = true;
-    for (id,name) in _refs {
-        if is_first_name {
-            is_first_name = false;
+    let mut is_first_ref = true;
+    for (id,md) in _refs {
+        if is_first_ref {
+            is_first_ref = false;
         } else {
             nodes_writer.write_all(b",").unwrap();
         }
         write_escaped_value(b"\"", nodes_writer);
         write_escaped_value(id, nodes_writer);
-        write_escaped_value(b"\":\"", nodes_writer);
-        write_escaped_value(name, nodes_writer);
-        write_escaped_value(b"\"", nodes_writer);
+        write_escaped_value(b"\":", nodes_writer);
+        write_escaped_value(md, nodes_writer);
     }
 
     nodes_writer.write_all(b"}}\"").unwrap();

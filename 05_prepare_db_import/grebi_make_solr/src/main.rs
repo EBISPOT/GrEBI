@@ -97,7 +97,11 @@ fn main() -> std::io::Result<()> {
 
         for (k,v) in json.iter() {
 
-            if k.eq("grebi:nodeId") || k.eq("grebi:datasources") || k.eq("_refs") {
+            if k.eq("_refs") {
+                continue; // we just added this for the _json field, don't want it indexed
+            }
+
+            if k.eq("grebi:nodeId") || k.eq("grebi:datasources") {
                 out_json.insert(k.to_string(), v.clone());
                 continue;
             }

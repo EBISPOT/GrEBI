@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+import os
+from py2neo import Graph
+from pandas import DataFrame
+from pathlib import Path
+import glob
+import sys
+
+os.system('echo "dbms.security.auth_enabled=false" >> /var/lib/neo4j/conf/neo4j.conf')
+os.system('neo4j start')
+os.system('sleep 20')
+
+graph = Graph("bolt://localhost:7687")
+
+for file in glob.glob("/mnt/*.cypher"):
+    query = open(file).read()
+    df = DataFrame(graph.run(query).data())
+    df.to_csv("/out/" + os.path.basename(file).split(".")[0]+".csv", index=False)
+
+os.system('neo4j stop')
+os.system('sleep 20')
+
