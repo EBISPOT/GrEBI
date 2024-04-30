@@ -1001,6 +1001,10 @@
         <str name="dest">str_*</str>
         <int name="maxChars">8192</int>
       </lst>
+      <lst name="copyField">
+        <str name="dest">_text_</str>
+        <int name="maxChars">8192</int>
+      </lst>
       <!--<lst name="copyField">
         <str name="dest">lowercase_*</str>
         <int name="maxChars">8192</int>

@@ -4,11 +4,16 @@ use crate::json_lexer::{lex, JsonToken, JsonTokenType};
 use crate::json_parser::JsonParser;
 
 #[derive(Clone)]
-pub struct SlicedProperty<'a> {
+pub struct SlicedPropertyValue<'a> {
     pub kind:JsonTokenType,
-    pub key:&'a [u8],
     pub datasources:Vec<&'a [u8]>,
     pub value:&'a [u8]
+}
+
+#[derive(Clone)]
+pub struct SlicedProperty<'a> {
+    pub key:&'a [u8],
+    pub values:Vec<SlicedPropertyValue<'a>>
 }
 
 #[derive(Clone)]
@@ -47,6 +52,7 @@ impl<'a> SlicedEntity<'a> {
         while parser.peek().kind != JsonTokenType::EndObject {
 
             let prop_key = parser.name();
+            let mut values:Vec<SlicedPropertyValue> = Vec::new();
 
             parser.begin_array();
 
@@ -72,12 +78,14 @@ impl<'a> SlicedEntity<'a> {
                         let prop_value_kind = parser.peek().kind;
                         let prop_value = parser.value();
 
-                        props.push(SlicedProperty { kind: prop_value_kind, key: prop_key, datasources: value_datasources, value: prop_value });
+                        values.push(SlicedPropertyValue { kind: prop_value_kind, datasources: value_datasources, value: prop_value });
 
                     parser.end_object();
                 }
 
             parser.end_array();
+
+            props.push(SlicedProperty { key: prop_key, values });
         }
         parser.end_object();
 
@@ -125,6 +133,7 @@ impl<'a> SlicedReified<'a> {
             while parser.peek().kind != JsonTokenType::EndObject {
 
                 let prop_key = parser.name();
+                let mut values:Vec<SlicedPropertyValue> = Vec::new();
 
                 parser.begin_array();
 
@@ -133,11 +142,13 @@ impl<'a> SlicedReified<'a> {
                         let kind = parser.peek().kind;
                         let prop_value = parser.value();
 
-                        props.push(SlicedProperty { kind, key: prop_key, value: prop_value, datasources: Vec::new() });
+                        values.push(SlicedPropertyValue { kind, value: prop_value, datasources: Vec::new() });
 
                     }
 
                 parser.end_array();
+
+                props.push(SlicedProperty { key: prop_key, values });
             }
             parser.end_object();
 

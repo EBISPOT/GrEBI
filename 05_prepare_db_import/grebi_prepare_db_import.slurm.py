@@ -56,17 +56,17 @@ def main():
         print("prepare_db_import neo4j failed")
         exit(1)
 
-    cmd = ' '.join([
-        'cat ' + shlex.quote(our_file) + ' |',
-        './target/release/grebi_make_solr',
-        '--in-metadata-jsonl ' + shlex.quote(input_metadata_jsonl),
-        '--in-summary-json ' + shlex.quote(input_summary_json),
-        '--out-csv-path ' + shlex.quote(out_solr_path)
-    ])
+    # cmd = ' '.join([
+    #     'cat ' + shlex.quote(our_file) + ' |',
+    #     './target/release/grebi_make_solr',
+    #     '--in-metadata-jsonl ' + shlex.quote(input_metadata_jsonl),
+    #     '--in-summary-json ' + shlex.quote(input_summary_json),
+    #     '--out-csv-path ' + shlex.quote(out_solr_path)
+    # ])
 
-    if os.system('bash -c "' + cmd + '"') != 0:
-        print("prepare_db_import solr failed")
-        exit(1)
+    # if os.system('bash -c "' + cmd + '"') != 0:
+    #     print("prepare_db_import solr failed")
+    #     exit(1)
 
 def get_time():
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())

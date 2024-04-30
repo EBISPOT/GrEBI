@@ -17,25 +17,29 @@ if [[ -z "$GREBI_HPS_TMP" ]]; then
     exit 1
 fi
 
-rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
-srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
+# rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
+# srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
 
-python3 ./scripts/dataload_00_prepare.py
-python3 ./scripts/dataload_01_ingest.py
-python3 ./scripts/dataload_02_assign_ids.py
-python3 ./scripts/dataload_03_merge.py
-python3 ./scripts/dataload_04_index.py
-python3 ./scripts/dataload_05_prepare_db_imports.py
-python3 06_create_db/neo4j/neo4j_import.py
+# python3 ./scripts/dataload_00_prepare.py
+# python3 ./scripts/dataload_01_ingest.py
+# python3 ./scripts/dataload_02_assign_ids.py
+# python3 ./scripts/dataload_03_merge.py
+# python3 ./scripts/dataload_04_index.py
+# python3 ./scripts/dataload_05_prepare_db_imports.py
+# python3 06_create_db/neo4j/neo4j_import.py
+python3 07_run_queries/run_queries.py
+# python3 06_create_db/solr/solr_import.py
 
-echo $(date): Compressing neo4j data
+exit 0
 
-srun -t 2:0:0 --mem=2G tar -cf  \
+echo $(date): Compressing data
+
+srun -t 8:0:0 --mem=32G --cpus-per-task 32 tar -cf  \
     $GREBI_NFS_TMP/$GREBI_CONFIG.tgz \
     --use-compress-program="pigz --fast" \
-    -C $GREBI_HPS_TMP/$GREBI_CONFIG/06_create_db/neo4j data \
-    -C $GREBI_HPS_TMP/$GREBI_CONFIG/04_index metadata.json
-    
+    -C $GREBI_HPS_TMP/$GREBI_CONFIG/06_create_db neo4j solr \
+    -C $GREBI_HPS_TMP/$GREBI_CONFIG/04_index summary.json
+
 echo $(date): Copying to FTP
 
 export RELEASE_DATE=`date +%Y_%m_%d__%H_%M`

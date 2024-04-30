@@ -83,13 +83,31 @@ fn main() {
 
         sliced.props.iter().for_each(|prop| {
 
-            let prop_key = prop.key.to_vec();
+            let prop_key = prop.key;
+
+            let mut w_count = entity_props_to_count.get_mut(prop_key);
+            if w_count.is_none() {
+                entity_props_to_count.insert(prop_key.to_vec(), 0);
+            }
+            w_count = entity_props_to_count.get_mut(prop_key);
+            let count:&mut i64 = w_count.unwrap();
 
             if prop_key.eq(b"grebi:type") || prop_key.eq(b"grebi:datasources") || prop_key.eq(b"id") {
                 metadata_writer.write_all(r#",""#.as_bytes()).unwrap();
                 metadata_writer.write_all(&prop_key).unwrap();
-                metadata_writer.write_all(r#"":"#.as_bytes()).unwrap();
-                metadata_writer.write_all(prop.value).unwrap();
+                metadata_writer.write_all(r#"":["#.as_bytes()).unwrap();
+                {
+                    let mut is_first = true;
+                    for val in prop.values.iter() {
+                        if is_first {
+                            is_first = false;
+                        } else {
+                            metadata_writer.write_all(r#","#.as_bytes()).unwrap();
+                        }
+                        metadata_writer.write_all(val.value).unwrap();
+                    }
+                }
+                metadata_writer.write_all(r#"]"#.as_bytes()).unwrap();
             }
 
             let mut n_name_field:Option<usize> = None;
@@ -99,34 +117,36 @@ fn main() {
                     break;
                 }
             }
-            
-            let count = entity_props_to_count.entry(prop_key).or_insert(0);
-            *count += 1;
 
-            if prop.kind == JsonTokenType::StartObject {
+            for val in prop.values.iter() {
+                *count += 1;
 
-                let reified = SlicedReified::from_json(&prop.value);
+                if val.kind == JsonTokenType::StartObject {
 
-                if reified.is_some() {
-                    let reified_u = reified.unwrap();
-                    reified_u.props.iter().for_each(|prop| {
-                        let prop_key = prop.key.to_vec();
+                    let reified = SlicedReified::from_json(&val.value);
 
-                        let count2 = edge_props_to_count.entry(prop_key).or_insert(0);
-                        *count2 += 1;
-                    });
+                    if reified.is_some() {
+                        let reified_u = reified.unwrap();
+                        reified_u.props.iter().for_each(|prop| {
+                            let prop_key = prop.key.to_vec();
 
-                    if n_name_field.is_some() {
-                        if reified_u.value_kind == JsonTokenType::StartString {
-                            names[n_name_field.unwrap()] = Some(&reified_u.value[1..reified_u.value.len()-1]);
+                            let count2 = edge_props_to_count.entry(prop_key).or_insert(0);
+                            *count2 += 1;
+                        });
+
+                        if n_name_field.is_some() {
+                            if reified_u.value_kind == JsonTokenType::StartString {
+                                names[n_name_field.unwrap()] = Some(&reified_u.value[1..reified_u.value.len()-1]);
+                            }
                         }
                     }
-                }
-            } else if prop.kind == JsonTokenType::StartString {
-                if n_name_field.is_some() {
-                    names[n_name_field.unwrap()] = Some(&prop.value[1..prop.value.len()-1]);
+                } else if val.kind == JsonTokenType::StartString {
+                    if n_name_field.is_some() {
+                        names[n_name_field.unwrap()] = Some(&val.value[1..val.value.len()-1]);
+                    }
                 }
             }
+            
         });
 
         for name in names {

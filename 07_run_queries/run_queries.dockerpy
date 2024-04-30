@@ -6,6 +6,8 @@ from pandas import DataFrame
 from pathlib import Path
 import glob
 import sys
+import sqlite3
+import subprocess
 
 os.system('echo "dbms.security.auth_enabled=false" >> /var/lib/neo4j/conf/neo4j.conf')
 os.system('neo4j start')
@@ -14,6 +16,7 @@ os.system('sleep 20')
 graph = Graph("bolt://localhost:7687")
 
 for file in glob.glob("/mnt/*.cypher"):
+    print("Running query: " + file)
     query = open(file).read()
     df = DataFrame(graph.run(query).data())
     df.to_csv("/out/" + os.path.basename(file).split(".")[0]+".csv", index=False)
@@ -21,3 +24,31 @@ for file in glob.glob("/mnt/*.cypher"):
 os.system('neo4j stop')
 os.system('sleep 20')
 
+
+os.system('rm -f /out/materialised_queries.sqlite')
+con = sqlite3.connect("/out/materialised_queries.sqlite")
+cur = con.cursor()
+
+cur.execute("CREATE TABLE metadata(json BLOB);")
+for file in glob.glob("/mnt/*.json"):
+    cur.execute("INSERT INTO metadata VALUES (?);", (open(file).read()))
+
+for file in glob.glob("/out/*.csv"):
+    table_name = os.path.basename(file).split(".")[0]
+    with open(file) as f:
+        header = f.readline()
+    columns = header.split(",")
+    cur.execute("CREATE TABLE "
+        + table_name
+        + " (" + ", ".join([c + " TEXT" for c in columns]) + ");")
+
+con.close()
+
+for file in glob.glob("/out/*.csv"):
+    table_name = os.path.basename(file).split(".")[0]
+    result = subprocess.run(['sqlite3',
+                            '/out/materialised_queries.sqlite',
+                            '-cmd',
+                            '.mode csv',
+                            '.import --skip 1 ' + file + ' ' + table_name],
+                            capture_output=True)

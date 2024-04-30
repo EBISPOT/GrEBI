@@ -21,6 +21,7 @@ use grebi_shared::load_metadata_mapping_table;
 use grebi_shared::load_metadata_mapping_table::Metadata;
 use grebi_shared::prefix_map::PrefixMap;
 
+use grebi_shared::slice_merged_entity::SlicedPropertyValue;
 use serde_json::Map;
 use serde_json::Value;
 use grebi_shared::slice_merged_entity::SlicedEntity;
@@ -132,7 +133,9 @@ fn main() -> std::io::Result<()> {
         }
 
         sliced.props.iter().for_each(|prop| {
-            maybe_write_edge(sliced.id, prop, &all_edge_props, &mut edges_writer, &exclude, &node_metadata, &prop.datasources);
+            for val in &prop.values {
+                maybe_write_edge(sliced.id, prop, &val, &all_edge_props, &mut edges_writer, &exclude, &node_metadata, &val.datasources);
+            }
         });
     }
 
@@ -155,8 +158,10 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
     nodes_writer.write_all(b"GraphNode").unwrap();
     entity.props.iter().for_each(|prop| {
         if prop.key == "grebi:type".as_bytes() {
-            nodes_writer.write_all(b";").unwrap();
-            parse_json_and_write(prop.value, node_metadata, nodes_writer);
+            for val in &prop.values {
+                nodes_writer.write_all(b";").unwrap();
+                parse_json_and_write(val.value, node_metadata, nodes_writer);
+            }
         }
     });
 
@@ -186,20 +191,22 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
                     continue; // already put in :LABEL column
                 }
                 if header_prop.as_bytes() == row_prop.key {
-                    if !wrote_any {
-                        nodes_writer.write_all(b"\"").unwrap();
-                        wrote_any = true;
-                    } else {
-                        nodes_writer.write_all(b";").unwrap();
-                    }
-                    if row_prop.kind == JsonTokenType::StartObject {
-                        let reified = SlicedReified::from_json(&row_prop.value); 
-                        if reified.is_some() {
-                            parse_json_and_write(reified.unwrap().value, node_metadata, nodes_writer);
-                            continue;
+                    for val in row_prop.values.iter() {
+                        if !wrote_any {
+                            nodes_writer.write_all(b"\"").unwrap();
+                            wrote_any = true;
+                        } else {
+                            nodes_writer.write_all(b";").unwrap();
                         }
+                        if val.kind == JsonTokenType::StartObject {
+                            let reified = SlicedReified::from_json(&val.value); 
+                            if reified.is_some() {
+                                parse_json_and_write(reified.unwrap().value, node_metadata, nodes_writer);
+                                continue;
+                            }
+                        }
+                        parse_json_and_write(val.value, node_metadata, nodes_writer);
                     }
-                    parse_json_and_write(row_prop.value, node_metadata, nodes_writer);
                     continue;
                 }
             }
@@ -244,15 +251,15 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
 
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>) {
 
     if prop.key.eq(b"id") || exclude.contains(prop.key) {
         return;
     }
 
-    if prop.kind == JsonTokenType::StartObject {
+    if val.kind == JsonTokenType::StartObject {
 
-        let reified = SlicedReified::from_json(&prop.value);
+        let reified = SlicedReified::from_json(&val.value);
 
         if reified.is_some() {
             let reified_u = reified.unwrap();
@@ -268,9 +275,9 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_edge_props:&Vec<St
             }
         } 
  
-    } else if prop.kind == JsonTokenType::StartString {
+    } else if val.kind == JsonTokenType::StartString {
 
-        let buf = &prop.value.to_vec();
+        let buf = &val.value.to_vec();
         let str = JsonParser::parse(&buf).string();
         let exists = node_metadata.contains_key(str);
 
@@ -278,7 +285,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, all_edge_props:&Vec<St
             write_edge(from_id, str, prop.key, &buf, None, &all_edge_props, edges_writer, node_metadata, &datasources);
         }
 
-    } else if prop.kind == JsonTokenType::StartArray {
+    } else if val.kind == JsonTokenType::StartArray {
 
         // panic!("unexpected array, value: {:?}", String::from_utf8_lossy(prop.value));
 
@@ -319,14 +326,16 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props_src_json:&[u8
             edges_writer.write_all(b"\"").unwrap();
             let mut is_first = true;
             for row_prop in edge_props.unwrap() {
-                if header_prop.as_bytes() == row_prop.key {
-                    if is_first {
-                        is_first = false;
-                    } else {
-                        edges_writer.write_all(b";").unwrap();
+                for val in row_prop.values.iter() {
+                    if header_prop.as_bytes() == row_prop.key {
+                        if is_first {
+                            is_first = false;
+                        } else {
+                            edges_writer.write_all(b";").unwrap();
+                        }
+                        parse_json_and_write(val.value, node_metadata, edges_writer);
+                        break;
                     }
-                    parse_json_and_write(row_prop.value, node_metadata, edges_writer);
-                    break;
                 }
             }
             edges_writer.write_all(b"\"").unwrap();
