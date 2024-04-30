@@ -1,14 +1,21 @@
 import moment from "moment";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "../../components/Header";
 import React, { Fragment } from "react";
 import SearchBox from "../../components/SearchBox";
+import { get } from "../../app/api";
+import Stats from "../../model/Stats";
 
 export default function Home() {
 
   document.title = "EMBL-EBI Knowledge Graph";
-  let stats:any = null
+
+  let [stats, setStats] = useState<Stats|null>(null);
+  
+  useEffect(() => {
+    get<Stats>("api/v1/stats").then(r => setStats(r));
+  }, []);
 
   return (
     <div>
@@ -31,8 +38,8 @@ export default function Home() {
                       diabetes
                     </Link>
                     &#44;&nbsp;
-                    <Link to={"/search?q=GO:0098743"} className="link-default">
-                      GO:0098743
+                    <Link to={"/search?q=BRCA1"} className="link-default">
+                      BRCA1
                     </Link>
                   </span>
                 </div>
@@ -52,22 +59,18 @@ export default function Home() {
               </div>
               {stats ? (
                 <div className="text-neutral-black">
-                  <div className="mb-2 text-sm italic">
+                  {/* <div className="mb-2 text-sm italic">
                     Updated&nbsp;
                     {moment(stats.lastModified).format(
                       "D MMM YYYY ddd HH:mm(Z)"
                     )}
-                  </div>
+                  </div> */}
                   <ul className="list-disc list-inside pl-2">
                     <li>
-                      {stats.numberOfOntologies.toLocaleString()} ontologies
-                    </li>
-                    <li>{stats.numberOfClasses.toLocaleString()} classes</li>
-                    <li>
-                      {stats.numberOfProperties.toLocaleString()} properties
+                      {stats.num_nodes.toLocaleString()} nodes
                     </li>
                     <li>
-                      {stats.numberOfIndividuals.toLocaleString()} individuals
+                      {stats.num_edges.toLocaleString()} edges
                     </li>
                   </ul>
                 </div>

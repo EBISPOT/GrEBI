@@ -9,6 +9,8 @@ import Footer from "./components/Footer";
 import Error from "./pages/Error";
 import Home from "./pages/home/Home";
 import {Helmet} from "react-helmet";
+import Search from "./pages/search/Search";
+import NodePage from "./pages/node/NodePage";
 
 class App extends React.Component {
   render() {
@@ -16,7 +18,7 @@ class App extends React.Component {
       <Fragment>
         <Helmet>
           <meta charSet="utf-8" />
-          <title>GrEBI</title>
+          <title>EMBL-EBI Knowledge Graph</title>
         </Helmet>
       <BrowserRouter basename={process.env.PUBLIC_URL!}>
         <Routes>
@@ -24,6 +26,9 @@ class App extends React.Component {
           <Route path={`/error`} element={<Error />} />
 
           <Route path={`/`} element={<Home />} />
+          <Route path={`/search`} element={<Search />} />
+
+          <Route path={`/nodes/:nodeId`} element={<NodePage />} />
         </Routes>
         <Footer />
       </BrowserRouter>

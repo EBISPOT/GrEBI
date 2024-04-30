@@ -9,6 +9,8 @@ import JoinRightIcon from '@mui/icons-material/JoinRight';
 import HelpIcon from '@mui/icons-material/Help';
 import InfoIcon from '@mui/icons-material/Info';
 import DownloadIcon from '@mui/icons-material/Download';
+import TravelExplore from '@mui/icons-material/TravelExplore';
+import { Science } from "@mui/icons-material";
 
 
 export default function Header({ section }: { section?: string }) {
@@ -54,12 +56,12 @@ export default function Header({ section }: { section?: string }) {
                 }`}
               >
                 <Stack alignItems="center" direction="row" gap={1}>
-                  <HomeIcon />
-                  Home
+                  <TravelExplore />
+                  Explore
                 </Stack>
               </li>
             </Link>
-            <Link to="/subgraphs">
+            {/* <Link to="/subgraphs">
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -73,8 +75,8 @@ export default function Header({ section }: { section?: string }) {
                   Subgraphs
                 </Stack>
               </li>
-            </Link>
-            <Link to="/datasources">
+            </Link> */}
+            {/* <Link to="/datasources">
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -88,41 +90,26 @@ export default function Header({ section }: { section?: string }) {
                   Datasources
                 </Stack>
               </li>
-            </Link>
-            <Link to={`/help`}>
+            </Link> */}
+            <Link to={`/analyses`}>
               <li
                 role="menuitem"
-                className={`px-4 py-3  ${
+                className={`rounded-r-md px-4 py-3  ${
                   section === "help"
                     ? " bg-opacity-75 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
                 }`}
               >
                 <Stack alignItems="center" direction="row" gap={1}>
-                  <HelpIcon />
-                  Help
-                </Stack>
-              </li>
-            </Link>
-            <Link to={`/about`}>
-              <li
-                role="menuitem"
-                className={`px-4 py-3 ${
-                  section === "about"
-                    ? " bg-opacity-75 bg-neutral-500"
-                    : "hover:bg-opacity-50 hover:bg-neutral-500"
-                }`}
-              >
-                <Stack alignItems="center" direction="row" gap={1}>
-                  <InfoIcon />
-                  About
+                  <Science />
+                  Analyses
                 </Stack>
               </li>
             </Link>
             <Link to={`/downloads`}>
               <li
                 role="menuitem"
-                className={`rounded-r-md px-4 py-3 ${
+                className={`px-4 py-3 ${
                   section === "downloads"
                     ? " bg-opacity-75 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500"

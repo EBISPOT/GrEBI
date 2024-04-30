@@ -6,6 +6,7 @@ import { theme } from "../app/mui";
 import { randomString } from "../app/util";
 import { Suggest } from "../model/Suggest";
 import React, { Fragment } from "react";
+import GraphNode from "../model/GraphNode";
 
 let curSearchToken: any = null;
 
@@ -54,34 +55,6 @@ export default function SearchBox({
     [searchParams, setSearchParams]
   );
 
-  const setObsolete = useCallback(
-    (obsolete: boolean) => {
-      let newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.set("q", query);
-      if (obsolete.toString() === "true") {
-        newSearchParams.set("includeObsoleteEntities", obsolete.toString());
-      } else {
-        newSearchParams.delete("includeObsoleteEntities");
-      }
-      setSearchParams(newSearchParams);
-    },
-    [searchParams, setSearchParams]
-  );
-
-  const setCanonical = useCallback(
-    (canonical: boolean) => {
-      let newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.set("q", query);
-      if (canonical.toString() === "true") {
-        newSearchParams.set("isDefiningSubgraph", canonical.toString());
-      } else {
-        newSearchParams.delete("isDefiningSubgraph");
-      }
-      setSearchParams(newSearchParams);
-    },
-    [searchParams, setSearchParams]
-  );
-
   const searchForSubgraphs = subgraphId === undefined;
   const showSuggestions = subgraphId === undefined;
 
@@ -102,10 +75,10 @@ export default function SearchBox({
       const searchToken = randomString();
       curSearchToken = searchToken;
 
-      const [entities, subgraphs, autocomplete] = await Promise.all([
-        getPaginated<any>(
-          `api/v2/entities?${new URLSearchParams({
-            search: query,
+      const [nodes, subgraphs, autocomplete] = await Promise.all([
+        get<any>(
+          `api/v1/search?${new URLSearchParams({
+            q: query,
             size: "5",
             lang: "en",
             exactMatch: exact.toString(),
@@ -115,8 +88,8 @@ export default function SearchBox({
           })}`
         ),
         searchForSubgraphs
-          ? getPaginated<any>(
-              `api/v2/subgraphs?${new URLSearchParams({
+          ? get<any>(
+              `api/v1/subgraphs?${new URLSearchParams({
                 search: query,
                 size: "5",
                 lang: "en",
@@ -127,7 +100,7 @@ export default function SearchBox({
           : null,
         showSuggestions
           ? get<Suggest>(
-              `api/suggest?${new URLSearchParams({
+              `api/v1/suggest?${new URLSearchParams({
                 q: query,
                 exactMatch: exact.toString(),
                 includeObsoleteEntities: obsolete.toString(),
@@ -139,8 +112,8 @@ export default function SearchBox({
 
       if (searchToken === curSearchToken) {
         setJumpTo([
-          ...entities.elements,
-          ...subgraphs?.elements
+          ...nodes.map(node => new GraphNode(node)),
+          // ...subgraphs?.elements
         ]);
         setAutocomplete(autocomplete);
         setLoading(false);
@@ -181,20 +154,11 @@ export default function SearchBox({
   );
 
   let jumpToEntityElements = jumpTo
-    .filter((thing) => thing.getType() !== "subgraph")
-    .map((jumpToEntry: Thing, i: number): SearchBoxEntry => {
-      const termUrl = encodeURIComponent(
-        encodeURIComponent(jumpToEntry.getIri())
-      );
-      if (!(jumpToEntry instanceof Entity)) {
-        throw new Error("jumpToEntry should be Entity");
-      }
-      // TODO which names to show? (multilang = lots of names)
-      return jumpToEntry
-        .getNames()
-        .splice(0, 1)
-        .map((name) => {
-          const linkUrl = `/subgraphs/${jumpToEntry.getSubgraphId()}/${jumpToEntry.getTypePlural()}/${termUrl}`;
+    .map((entry: any, i: number): SearchBoxEntry => {
+          let name = entry.getNames()[0]
+          let type = entry.extractType()
+          // const linkUrl = `/subgraphs/${jumpToEntry.getSubgraphId()}/${jumpToEntry.getTypePlural()}/${termUrl}`;
+          const linkUrl = ""
           return {
             linkUrl,
             li: (
@@ -218,78 +182,34 @@ export default function SearchBox({
                       {name}
                     </div>
                     <div className="truncate flex-initial ml-2 text-right">
+                    { type &&
                       <span
                         className="mr-2 bg-link-default px-3 py-1 rounded-lg text-sm text-white uppercase"
-                        title={jumpToEntry.getSubgraphId()}
+                        title={type}
                       >
-                        {jumpToEntry.getSubgraphId()}
+                        {type}
                       </span>
+          }
                       <span
                         className="bg-orange-default px-3 py-1 rounded-lg text-sm text-white uppercase"
-                        title={jumpToEntry.getShortForm()}
+                        title={entry.getId()}
                       >
-                        {jumpToEntry.getShortForm()}
+                        {entry.getId()}
                       </span>
+                      { entry.getIds().length > 1 && <span><small><i> + {entry.getIds().length - 1}</i></small></span> }
                     </div>
+                  
                   </div>
                 </Link>
               </li>
             ),
           };
-        })[0];
-    });
+        })
 
-  let jumpToSubgraphElements = jumpTo
-    .filter((thing) => thing.getType() === "subgraph")
-    .map((jumpToEntry: Thing, i: number): SearchBoxEntry => {
-      if (!(jumpToEntry instanceof Subgraph)) {
-        throw new Error("jumpToEntry should be Subgraph");
-      }
-      return jumpToEntry
-        .getNames()
-        .splice(0, 1)
-        .map(() => {
-          const linkUrl = "/subgraphs/" + jumpToEntry.getSubgraphId();
-          return {
-            linkUrl,
-            li: (
-              <li
-                key={jumpToEntry.getSubgraphId()}
-                className={
-                  "py-1 px-3 leading-7 hover:bg-link-light hover:cursor-pointer" +
-                  (arrowKeySelectedN ===
-                  i + jumpToEntityElements.length + autocompleteElements.length
-                    ? " bg-link-light"
-                    : "")
-                }
-              >
-                <Link
-                  onClick={() => {
-                    setQuery("");
-                  }}
-                  to={linkUrl}
-                >
-                  <div className="flex">
-                    <span
-                      className="truncate text-link-dark font-bold"
-                      title={
-                        jumpToEntry.getName() || jumpToEntry.getSubgraphId()
-                      }
-                    >
-                      {jumpToEntry.getName() || jumpToEntry.getSubgraphId()}
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            ),
-          };
-        })[0];
-    });
 
   let allDropdownElements = [
     ...autocompleteElements,
-    ...jumpToEntityElements,
-    ...jumpToSubgraphElements,
+    ...jumpToEntityElements
   ];
 
   return (
@@ -362,14 +282,13 @@ export default function SearchBox({
             >
               {autocompleteElements.map((entry) => entry.li)}
               <hr />
-              {jumpToEntityElements.length + jumpToSubgraphElements.length >
+              {jumpToEntityElements.length >
                 0 && (
                 <div className="pt-1 px-3 leading-7">
-                  <b>Jump to</b>
+                  <b>Nodes</b>
                 </div>
               )}
               {jumpToEntityElements.map((entry) => entry.li)}
-              {jumpToSubgraphElements.map((entry) => entry.li)}
               <hr />
               {query && (
                 <div
@@ -388,7 +307,7 @@ export default function SearchBox({
                     }
                   }}
                 >
-                  <b className="pr-1">Search OLS for </b>
+                  <b className="pr-1">Search for</b>
                   {query}
                 </div>
               )}
