@@ -15,11 +15,12 @@ function get_edges {
     done
 }
 
+
 neo4j-admin database import full \
     $(get_nodes) \
     $(get_edges) \
     --ignore-empty-strings=true \
-    --array-delimiter=";" \
+    --array-delimiter="U+001F" \
     --threads=32 \
     --max-off-heap-memory=50G \
     --verbose \

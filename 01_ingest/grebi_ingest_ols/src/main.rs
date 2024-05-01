@@ -166,7 +166,13 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
             let qualified_safe_label = {
                 let curie = get_string_values(obj.get("ols:curie").unwrap()).iter().next().unwrap().to_string();
-                let pref_prefix = curie.split(":").next().unwrap().to_ascii_lowercase();
+                let pref_prefix = {
+                    if curie.contains(":") {
+                        curie.split(":").next().unwrap().to_ascii_lowercase()
+                    } else {
+                        get_string_values(obj.get("ols:definedBy").unwrap()).iter().next().unwrap().to_string()
+                    }
+                };
                 let label = get_string_values(obj.get("ols:label").unwrap()).iter().next().unwrap().to_string();
 
                 // this might not be a real label, in which case just return the curie

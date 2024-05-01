@@ -31,7 +31,7 @@ cur = con.cursor()
 
 cur.execute("CREATE TABLE metadata(json BLOB);")
 for file in glob.glob("/mnt/*.json"):
-    cur.execute("INSERT INTO metadata VALUES (?);", (open(file).read()))
+    cur.execute("INSERT INTO metadata VALUES (?);", (open(file).read(),))
 
 for file in glob.glob("/out/*.csv"):
     table_name = os.path.basename(file).split(".")[0]

@@ -159,7 +159,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
     entity.props.iter().for_each(|prop| {
         if prop.key == "grebi:type".as_bytes() {
             for val in &prop.values {
-                nodes_writer.write_all(b";").unwrap();
+                nodes_writer.write_all(&[(31 as u8)]).unwrap();
                 parse_json_and_write(val.value, node_metadata, nodes_writer);
             }
         }
@@ -173,7 +173,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
         if is_first {
             is_first = false;
         } else {
-            nodes_writer.write_all(b";").unwrap();
+            nodes_writer.write_all(&[(31 as u8)]).unwrap();
         }
         nodes_writer.write_all(ds).unwrap();
     });
@@ -196,7 +196,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
                             nodes_writer.write_all(b"\"").unwrap();
                             wrote_any = true;
                         } else {
-                            nodes_writer.write_all(b";").unwrap();
+                            nodes_writer.write_all(&[(31 as u8)]).unwrap();
                         }
                         if val.kind == JsonTokenType::StartObject {
                             let reified = SlicedReified::from_json(&val.value); 
@@ -313,7 +313,7 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props_src_json:&[u8
         if is_first_ds {
             is_first_ds = false;
         } else {
-            edges_writer.write_all(b";").unwrap();
+            edges_writer.write_all(&[(31 as u8)]).unwrap();
         }
         edges_writer.write_all(ds).unwrap();
     });
@@ -331,7 +331,7 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props_src_json:&[u8
                         if is_first {
                             is_first = false;
                         } else {
-                            edges_writer.write_all(b";").unwrap();
+                            edges_writer.write_all(&[(31 as u8)]).unwrap();
                         }
                         parse_json_and_write(val.value, node_metadata, edges_writer);
                         break;
@@ -358,7 +358,6 @@ fn write_escaped_value(buf:&[u8], writer:&mut BufWriter<File>) {
             b'\n' => writer.write_all(b"\\n").unwrap(),
             b'\r' => writer.write_all(b"\\r").unwrap(),
             b'\t' => writer.write_all(b"\\t").unwrap(),
-            b';' => writer.write_all(b"\\;").unwrap(),
             b'\\' => writer.write_all(b"\\\\").unwrap(),
             b'"' => writer.write_all(b"\"\"").unwrap(),
             b => writer.write_all(&[*b]).unwrap(),
@@ -380,7 +379,7 @@ fn parse_json_and_write(buf:&[u8], node_metadata:&BTreeMap<Vec<u8>,Metadata>, wr
                 let metadata_u = metadata.unwrap();
                 if metadata_u.name.is_some() {
                     let name = metadata_u.name.as_ref().unwrap();
-                    writer.write_all(b";").unwrap();
+                    writer.write_all(&[(31 as u8)]).unwrap();
                     write_escaped_value(&name, writer);
                 }
             }
