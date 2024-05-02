@@ -17,7 +17,7 @@ def main():
 
     if config['use_slurm'] == True:
         cmd = ' '.join([
-            'srun -t 23:0:0 --mem 300g -c 32',
+            'srun -t 23:0:0 --mem 180g -c 32',
             'python3',
             './07_run_queries/run_queries.slurm.py',
             config_filename
