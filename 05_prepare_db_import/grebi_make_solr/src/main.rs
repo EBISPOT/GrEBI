@@ -28,6 +28,9 @@ use grebi_shared::slice_merged_entity::SlicedReified;
 use grebi_shared::json_lexer::{lex, JsonToken };
 use grebi_shared::json_parser::JsonParser;
 
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {

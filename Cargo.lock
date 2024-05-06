@@ -472,6 +472,7 @@ dependencies = [
  "clap",
  "flate2",
  "grebi_shared",
+ "jemallocator",
  "serde_json",
 ]
 
@@ -481,6 +482,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "grebi_shared",
+ "jemallocator",
  "serde_json",
 ]
 
