@@ -57,11 +57,10 @@ fn main() -> std::io::Result<()> {
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
 
+    let mut file = File::create(args.out_csv_path).unwrap();
     let mut writer =
         BufWriter::with_capacity(1024*1024*32,
-            // GzEncoder::new(
-            File::create(args.out_csv_path).unwrap()
-            // Compression::fast())
+            &file
         );
 
     let mut n_nodes:i64 = 0;
@@ -123,6 +122,7 @@ fn main() -> std::io::Result<()> {
     }
 
     writer.flush().unwrap();
+    file.sync_all().unwrap();
 
     eprintln!("prepare_db_import for solr took {} seconds", start_time.elapsed().as_secs());
 

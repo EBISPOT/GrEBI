@@ -78,18 +78,16 @@ fn main() -> std::io::Result<()> {
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
 
+    let mut nodes_file = File::create(args.out_nodes_csv_path).unwrap();
     let mut nodes_writer =
         BufWriter::with_capacity(1024*1024*32,
-            // GzEncoder::new(
-            File::create(args.out_nodes_csv_path).unwrap()
-            // Compression::fast())
+            &nodes_file
         );
 
+    let mut edges_file = File::create(args.out_edges_csv_path).unwrap();
     let mut edges_writer =
         BufWriter::with_capacity(1024*1024*32,
-            // GzEncoder::new(
-            File::create(args.out_edges_csv_path).unwrap()
-            // Compression::fast())
+            &edges_file
         );
 
     nodes_writer.write_all("grebi:nodeId:ID,:LABEL,grebi:datasources:string[]".as_bytes()).unwrap();
@@ -142,12 +140,15 @@ fn main() -> std::io::Result<()> {
     nodes_writer.flush().unwrap();
     edges_writer.flush().unwrap();
 
+    nodes_file.sync_all().unwrap();
+    edges_file.sync_all().unwrap();
+
     eprintln!("prepare_db_import took {} seconds", start_time.elapsed().as_secs());
 
     Ok(())
 }
 
-fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, nodes_writer:&mut BufWriter<File>) {
+fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, nodes_writer:&mut BufWriter<&File>) {
 
     // grebi:nodeId
     nodes_writer.write_all(b"\"").unwrap();
@@ -251,7 +252,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
 
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<&File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>) {
 
     if prop.key.eq(b"id") || exclude.contains(prop.key) {
         return;
@@ -297,7 +298,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props_src_json:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>) {
+fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props_src_json:&[u8], edge_props:Option<&Vec<SlicedProperty>>, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<&File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>) {
 
     edges_writer.write_all(b"\"").unwrap();
     write_escaped_value(from_id, edges_writer);
@@ -351,7 +352,7 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props_src_json:&[u8
 
 }
 
-fn write_escaped_value(buf:&[u8], writer:&mut BufWriter<File>) {
+fn write_escaped_value(buf:&[u8], writer:&mut BufWriter<&File>) {
 
     for byte in buf.iter() {
         match byte {
@@ -366,7 +367,7 @@ fn write_escaped_value(buf:&[u8], writer:&mut BufWriter<File>) {
 }
 
 
-fn parse_json_and_write(buf:&[u8], node_metadata:&BTreeMap<Vec<u8>,Metadata>, writer:&mut BufWriter<File>) {
+fn parse_json_and_write(buf:&[u8], node_metadata:&BTreeMap<Vec<u8>,Metadata>, writer:&mut BufWriter<&File>) {
 
     let mut json = JsonParser::parse(buf);
 
