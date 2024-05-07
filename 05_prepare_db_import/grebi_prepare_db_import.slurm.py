@@ -29,8 +29,13 @@ def main():
     input_merged_gz_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.0*")
     input_summary_json = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "summary.json")
     input_metadata_jsonl = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.jsonl")
-    # out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4nodes_" + task_id + ".csv.gz")
-    # out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4edges_" + task_id + ".csv.gz")
+
+    # Writing directly to the NFS currently sometimes causes large ranges of 0 bytes to be inserted into the files.
+    # Temp fix: write to /dev/shm and then mv to the NFS
+    tmp_out_nodes_path = os.path.join("/dev/shm/n4nodes_" + task_id + ".csv")
+    tmp_out_edges_path = os.path.join("/dev/shm/n4edges_" + task_id + ".csv")
+    tmp_out_solr_path = os.path.join("/dev/shm/solr_" + task_id + ".csv")
+
     out_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4nodes_" + task_id + ".csv")
     out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "n4edges_" + task_id + ".csv")
     out_solr_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_prepare_db_import", "solr_" + task_id + ".csv")
@@ -47,8 +52,8 @@ def main():
         './target/release/grebi_make_csv',
         '--in-metadata-jsonl ' + shlex.quote(input_metadata_jsonl),
         '--in-summary-json ' + shlex.quote(input_summary_json),
-        '--out-nodes-csv-path ' + shlex.quote(out_nodes_path),
-        '--out-edges-csv-path ' + shlex.quote(out_edges_path),
+        '--out-nodes-csv-path ' + shlex.quote(tmp_out_nodes_path),
+        '--out-edges-csv-path ' + shlex.quote(tmp_out_edges_path),
         '--exclude ' + ','.join(config['exclude_edges']+config['equivalence_props'])
     ])
 
@@ -61,12 +66,26 @@ def main():
         './target/release/grebi_make_solr',
         '--in-metadata-jsonl ' + shlex.quote(input_metadata_jsonl),
         '--in-summary-json ' + shlex.quote(input_summary_json),
-        '--out-csv-path ' + shlex.quote(out_solr_path)
+        '--out-csv-path ' + shlex.quote(tmp_out_solr_path)
     ])
 
     if os.system('bash -c "' + cmd + '"') != 0:
         print("prepare_db_import solr failed")
         exit(1)
+
+    cmd = "mv " + shlex.quote(tmp_out_nodes_path) + " " + shlex.quote(out_nodes_path)
+    if os.system('bash -c "' + cmd + '"') != 0:
+        print("moving files failed")
+        exit(1)
+    cmd = "mv " + shlex.quote(tmp_out_edges_path) + " " + shlex.quote(out_edges_path)
+    if os.system('bash -c "' + cmd + '"') != 0:
+        print("moving files failed")
+        exit(1)
+    cmd = "mv " + shlex.quote(tmp_out_solr_path) + " " + shlex.quote(out_solr_path)
+    if os.system('bash -c "' + cmd + '"') != 0:
+        print("moving files failed")
+        exit(1)
+    
 
 def get_time():
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())

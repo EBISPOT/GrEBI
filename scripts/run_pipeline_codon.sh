@@ -17,20 +17,17 @@ if [[ -z "$GREBI_HPS_TMP" ]]; then
     exit 1
 fi
 
-# rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
-# srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
+#rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
+#srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
 
-# python3 ./scripts/dataload_00_prepare.py
-# python3 ./scripts/dataload_01_ingest.py
-# python3 ./scripts/dataload_02_assign_ids.py
-# python3 ./scripts/dataload_03_merge.py
-# python3 ./scripts/dataload_04_index.py
+#python3 ./scripts/dataload_00_prepare.py
+#python3 ./scripts/dataload_01_ingest.py
+#python3 ./scripts/dataload_02_assign_ids.py
+#python3 ./scripts/dataload_03_merge.py
+#python3 ./scripts/dataload_04_index.py
 python3 ./scripts/dataload_05_prepare_db_imports.py
 python3 06_create_db/neo4j/neo4j_import.py
 python3 06_create_db/solr/solr_import.py
-python3 07_run_queries/run_queries.py
-
-exit 0
 
 echo $(date): Compressing data
 
@@ -50,5 +47,4 @@ srun --partition=datamover --time 2:30:00 --mem=5G \
 
 echo $(date): Done
 
-
-
+#python3 07_run_queries/run_queries.py

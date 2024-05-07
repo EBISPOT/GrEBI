@@ -13,7 +13,7 @@
         "merge": "16G",
         "index": "64G",
         "extract": "8G",
-        "prepare_db_import": "48G"
+        "prepare_db_import": "64G"
     },
     "slurm_max_time": {
         "ingest": "8:0:0",

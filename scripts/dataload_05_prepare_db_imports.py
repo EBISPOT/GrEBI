@@ -15,9 +15,6 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    datasource_files_listing = os.path.abspath( os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '01_ingest', 'datasource_files.jsonl') )
-    datasource_files = open(datasource_files_listing, 'r').read().split('\n')
-
     ###
     ### 5. Materialize edges
     ###
@@ -48,7 +45,7 @@ def main():
     else:
         for n in range(max_file_num+1):
             print("Running " + str(n) + " of " + str(max_file_num))
-            if os.system('SLURM_ARRAY_TASK_ID=' + str(n) + ' ./05_prepare_db_import/grebi_prepare_db_import.slurm.sh ' + config_filename) != 0:
+            if os.system('SLURM_ARRAY_TASK_ID=' + str(n) + ' ./05_prepare_db_import/grebi_prepare_db_import.local.sh ' + config_filename) != 0:
                 print("prepare_db_import failed")
                 exit(1)
 
