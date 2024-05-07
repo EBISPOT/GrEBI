@@ -21,6 +21,7 @@ def main():
     input_merged_filenames = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.*")
     out_metadata_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.jsonl")
     output_summary_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "summary.json")
+    names_filename = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")
 
     os.makedirs(os.path.dirname(out_metadata_path), exist_ok=True)
     os.makedirs(os.path.dirname(output_summary_filename), exist_ok=True)
@@ -29,6 +30,7 @@ def main():
     cmd = cmd + ' ./target/release/grebi_index'
     cmd = cmd + ' --out-metadata-jsonl-path ' + out_metadata_path
     cmd = cmd + ' --out-summary-json-path ' + output_summary_filename
+    cmd = cmd + ' --out-names-txt ' + names_filename
     cmd = cmd + ' --name-fields ' + ','.join(config['name_props'])
 
     print(get_time() + " --- Running index command: " + cmd, flush=True)

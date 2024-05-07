@@ -29,6 +29,7 @@ def main():
         cmd = ' '.join([
             'singularity run',
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/data',
+            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")) + ':/names.txt',
             '--bind ' + os.path.abspath('./07_create_db/solr/solr_config') + ':/config',
             '--bind ' + shlex.quote(solr_path) + ':/var/solr',
             '--bind ' + os.path.abspath('./07_create_db/solr/solr_import.dockersh') + ':/import.sh',
@@ -42,9 +43,10 @@ def main():
         cmd = ' '.join([
             'docker run',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/data',
+            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")) + ':/names.txt',
             '-v ' + os.path.abspath('./07_create_db/solr/solr_config') + ':/config',
             '-v ' + shlex.quote(solr_path) + ':/var/solr',
-            '-v ' + os.path.abspath('./06_create_db/solr/solr_import.dockersh') + ':/import.sh',
+            '-v ' + os.path.abspath('./07_create_db/solr/solr_import.dockersh') + ':/import.sh',
             'solr:9.5.0',
             'bash /import.sh'
         ])

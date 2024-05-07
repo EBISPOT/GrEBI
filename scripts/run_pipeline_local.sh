@@ -26,8 +26,9 @@ fi
 # python3 ./scripts/dataload_03_merge.py
 # python3 ./scripts/dataload_04_index.py
 # python3 ./scripts/dataload_05_materialise_edges.py
-python3 ./scripts/dataload_06_prepare_db_imports.py
+# python3 ./scripts/dataload_06_prepare_db_imports.py
 # python3 07_create_db/neo4j/neo4j_import.py
+python3 07_create_db/solr/solr_import.py
 # python3 08_run_queries/run_queries.py
 # python3 07_create_db/solr/solr_import.py
 

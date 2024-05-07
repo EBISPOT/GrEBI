@@ -1,6 +1,7 @@
 
 use grebi_shared::get_id;
 use grebi_shared::json_lexer::JsonToken;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::File;
@@ -31,6 +32,9 @@ struct Args {
     out_metadata_jsonl_path: String,
 
     #[arg(long)]
+    out_names_txt: String,
+
+    #[arg(long)]
     name_fields: String
 }
 
@@ -45,6 +49,7 @@ fn main() {
 
     let mut entity_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut edge_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
+    let mut all_names:BTreeSet<Vec<u8>> = BTreeSet::new();
 
 
     let mut name_fields:Vec<Vec<u8>> = Vec::new();
@@ -54,6 +59,7 @@ fn main() {
 
     let mut summary_writer = BufWriter::new(File::create(&args.out_summary_json_path).unwrap());
     let mut metadata_writer = BufWriter::new(File::create(&args.out_metadata_jsonl_path).unwrap());
+    let mut names_writer = BufWriter::new(File::create(&args.out_names_txt).unwrap());
 
     let mut line:Vec<u8> = Vec::new();
     let mut n:i64 = 0;
@@ -149,11 +155,16 @@ fn main() {
             
         });
 
+        let mut wrote_name = false;
         for name in names {
             if name.is_some() {
-                metadata_writer.write_all(r#","_name":""#.as_bytes()).unwrap();
-                metadata_writer.write_all(&name.unwrap()).unwrap();
-                metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
+                all_names.insert(name.unwrap().to_vec());
+                if !wrote_name {
+                    metadata_writer.write_all(r#","_name":""#.as_bytes()).unwrap();
+                    metadata_writer.write_all(&name.unwrap()).unwrap();
+                    metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
+                    wrote_name = true;
+                }
             }
         }
         metadata_writer.write_all("}\n".as_bytes()).unwrap();
@@ -184,6 +195,11 @@ fn main() {
                 }))
         }).collect::<HashMap<String,serde_json::Value>>()
     })).unwrap().as_bytes()).unwrap();
+
+    for name in all_names {
+        names_writer.write_all(&name).unwrap();
+        names_writer.write_all(b"\n").unwrap();
+    }
     
     eprintln!("Building metadata took {} seconds", start_time3.elapsed().as_secs());
 
