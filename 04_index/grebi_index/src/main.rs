@@ -74,13 +74,24 @@ fn main() {
             break;
         }
 
-        let id = get_id(&line);
+        let sliced = SlicedEntity::from_json(&line);
 
         metadata_writer.write_all(r#"{"grebi:nodeId":""#.as_bytes()).unwrap();
-        metadata_writer.write_all(id).unwrap();
-        metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
+        metadata_writer.write_all(sliced.id).unwrap();
+        metadata_writer.write_all(r#"","grebi:datasources":["#.as_bytes()).unwrap();
+        let mut is_first_ds = true;
+        for ds in sliced.datasources.iter() {
+            if is_first_ds {
+                is_first_ds = false;
+            } else {
+                metadata_writer.write_all(r#","#.as_bytes()).unwrap();
+            }
+            metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
+            metadata_writer.write_all(ds).unwrap();
+            metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
+        }
+        metadata_writer.write_all(r#"]"#.as_bytes()).unwrap();
 
-        let sliced = SlicedEntity::from_json(&line);
 
         let mut names:Vec<Option<&[u8]>> = Vec::with_capacity(name_fields.len());
         for _ in 0..name_fields.len() {
