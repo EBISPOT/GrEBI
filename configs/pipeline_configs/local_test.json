@@ -28,6 +28,6 @@
     ],
     "datasource_configs": [
         "./configs/datasource_configs/gwas.json",
-        "./configs/datasource_configs/ols.json"
+        "./configs/datasource_configs/ols_local_test.json"
     ]
 }

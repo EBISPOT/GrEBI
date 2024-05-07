@@ -1,0 +1,13 @@
+{
+    "name": "OLS",
+    "enabled": true,
+    "ingests": [
+        {
+            "ingest_files": ["/data/ontologies/ontologies.json.gz"],
+            "ingest_script": "./target/release/grebi_ingest_ols",
+            "ingest_args": [
+                { "name": "--ontologies", "value": "efo,ro,hp" }
+            ]
+        }
+    ]
+}

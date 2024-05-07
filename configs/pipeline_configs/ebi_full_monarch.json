@@ -4,7 +4,8 @@
         "ingest": 100,
         "assign_ids": 100,
         "extract": 100,
-        "prepare_db_import": 200
+        "materialise_edges": 200,
+        "prepare_db_import": 50
     },
     "slurm_max_memory": {
         "ingest": "32G",
@@ -13,7 +14,8 @@
         "merge": "16G",
         "index": "64G",
         "extract": "8G",
-        "prepare_db_import": "64G"
+        "materialise_edges": "64G",
+        "prepare_db_import": "96G"
     },
     "slurm_max_time": {
         "ingest": "8:0:0",
@@ -22,6 +24,7 @@
         "merge": "23:0:0",
         "index": "23:0:0",
         "extract": "23:0:0",
+        "materialise_edges": "1:0:0",
         "prepare_db_import": "1:0:0"
     },
     "bytes_per_merged_file": 1073741824,

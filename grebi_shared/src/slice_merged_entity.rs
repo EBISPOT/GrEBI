@@ -13,6 +13,7 @@ pub struct SlicedPropertyValue<'a> {
 #[derive(Clone)]
 pub struct SlicedProperty<'a> {
     pub key:&'a [u8],
+    pub values_slice:&'a [u8],
     pub values:Vec<SlicedPropertyValue<'a>>
 }
 
@@ -54,7 +55,7 @@ impl<'a> SlicedEntity<'a> {
             let prop_key = parser.name();
             let mut values:Vec<SlicedPropertyValue> = Vec::new();
 
-            parser.begin_array();
+            let values_slice_begin = parser.begin_array();
 
                 while parser.peek().kind != JsonTokenType::EndArray {
 
@@ -83,9 +84,9 @@ impl<'a> SlicedEntity<'a> {
                     parser.end_object();
                 }
 
-            parser.end_array();
+            let values_slice_end = parser.end_array();
 
-            props.push(SlicedProperty { key: prop_key, values });
+            props.push(SlicedProperty { key: prop_key, values, values_slice: &buf[values_slice_begin.index..values_slice_end.index+1] });
         }
         parser.end_object();
 
@@ -135,7 +136,7 @@ impl<'a> SlicedReified<'a> {
                 let prop_key = parser.name();
                 let mut values:Vec<SlicedPropertyValue> = Vec::new();
 
-                parser.begin_array();
+                let values_slice_begin = parser.begin_array();
 
                     while parser.peek().kind != JsonTokenType::EndArray {
 
@@ -146,9 +147,9 @@ impl<'a> SlicedReified<'a> {
 
                     }
 
-                parser.end_array();
+                let values_slice_end = parser.end_array();
 
-                props.push(SlicedProperty { key: prop_key, values });
+                props.push(SlicedProperty { key: prop_key, values, values_slice: &buf[values_slice_begin.index..values_slice_end.index+1]});
             }
             parser.end_object();
 

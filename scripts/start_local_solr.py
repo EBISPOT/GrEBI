@@ -9,7 +9,7 @@ import glob
 from subprocess import Popen, PIPE, STDOUT
 
 def main():
-    solr_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_create_db", "solr")
+    solr_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "solr")
 
     cmd = ' '.join([
         'docker run',

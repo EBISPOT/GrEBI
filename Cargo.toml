@@ -16,8 +16,9 @@ members = [
 	"02_equivalences/grebi_assign_ids",
 	"03_merge/grebi_merge",
 	"04_index/grebi_index",
-	"05_prepare_db_import/grebi_make_csv",
-	"05_prepare_db_import/grebi_make_solr",
+	"05_materialise_edges/grebi_materialise_edges",
+	"06_prepare_db_import/grebi_make_csv",
+	"06_prepare_db_import/grebi_make_solr",
 	"grebi_shared"
 ]
 

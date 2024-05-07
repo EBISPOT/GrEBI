@@ -1,0 +1,14 @@
+
+[package]
+name = "grebi_materialise_edges"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+jemallocator = "0.5.4"
+grebi_shared = { path = "../../grebi_shared" }
+flate2 = {version="1.0.28", features=["zlib-ng"]}
+serde_json = { version = "1.0.108", features=["preserve_order"] }
+sha1 = "0.10.6"
+hex = "0.4.3"

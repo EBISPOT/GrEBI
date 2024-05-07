@@ -3,6 +3,7 @@ pub mod json_parser;
 pub mod json_lexer;
 pub mod prefix_map;
 pub mod slice_merged_entity;
+pub mod slice_materialised_edge;
 pub mod load_metadata_mapping_table;
 
 // get the id without parsing json
