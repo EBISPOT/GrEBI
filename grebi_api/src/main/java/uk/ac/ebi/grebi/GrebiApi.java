@@ -16,30 +16,24 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import io.javalin.plugin.bundled.CorsPluginConfig;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.neo4j.driver.*;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import uk.ac.ebi.grebi.repo.GrebiNeoRepo;
+import uk.ac.ebi.grebi.db.GrebiSolrClient;
+import uk.ac.ebi.grebi.db.GrebiSolrQuery;
+import uk.ac.ebi.grebi.repo.GrebiSolrRepo;
 
 
 public class GrebiApi {
 
-    static Driver driver;
 
 
     public static void main(String[] args) throws ParseException, org.apache.commons.cli.ParseException, IOException {
 
         String solr_host = System.getenv("GREBI_SOLR_HOST");
 
-        final String STATS_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/stats.cypher").readAllBytes(), StandardCharsets.UTF_8);
-        final String SEARCH_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/search.cypher").readAllBytes(), StandardCharsets.UTF_8);
-        final String PROPS_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/props.cypher").readAllBytes(), StandardCharsets.UTF_8);
-
-        driver = GraphDatabase.driver("neo4j://localhost");
-        driver.verifyConnectivity();
-
+        final GrebiNeoRepo neo = new GrebiNeoRepo();
+        final GrebiSolrRepo solr = new GrebiSolrRepo();
 
 //        Options options = new Options();
 //
@@ -55,17 +49,8 @@ public class GrebiApi {
         Gson gson = new Gson();
 //        GraphMetadata md = gson.fromJson(new FileReader(metadata_json), GraphMetadata.class);
 
-        EagerResult props_res = driver.executableQuery(PROPS_QUERY)
-                .withConfig(QueryConfig.builder().withDatabase("neo4j").build())
-                .execute();
-
-        Map<String,JsonElement> edge_types = new TreeMap<>();
-
-        for(var r : props_res.records().get(0).values()) {
-            System.out.println(r.asString());
-            JsonObject prop_def = gson.fromJson(r.asString(), JsonElement.class).getAsJsonObject();
-            edge_types.put(prop_def.get("grebi:id").getAsString(), prop_def);
-        }
+        var edgeTypes = neo.getEdgeTypes();
+        var stats = neo.getStats();
 
 
         GrebiSolrClient solrClient = new GrebiSolrClient();
@@ -77,30 +62,26 @@ public class GrebiApi {
                     });
                 })
                 .get("/api/v1/stats", ctx -> {
-                    EagerResult res = driver.executableQuery(STATS_QUERY)
-                            .withConfig(QueryConfig.builder().withDatabase("neo4j").build())
-                            .execute();
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(res.records().get(0).values().get(0).asMap()));
+                    ctx.result(gson.toJson(stats));
                 })
-                .post("/api/v1/cypher", ctx -> {
-
-                    EagerResult res = driver.executableQuery(ctx.body())
-                            .withConfig(QueryConfig.builder().withDatabase("neo4j").build())
-                            .execute();
-
-                    ctx.contentType("application/json");
-                    ctx.result(gson.toJson(res.records().get(0).values().stream().map(GrebiApi::mapValue).collect(Collectors.toList())));
-                })
-                .get("/api/v1/nodes", ctx -> {
+                .get("/api/v1/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result("{}");
+
+                    var q = new GrebiSolrQuery();
+                    q.addFilter("grebi:nodeId", List.of(ctx.pathParam("nodeId")), SearchType.WHOLE_FIELD);
+
+                    var res = solrClient.getFirst(q);
+
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/edge_types", ctx -> {
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(edge_types));
+                    ctx.result(gson.toJson(edgeTypes));
                 })
-                .get("/api/v1/subgraphs", ctx -> {
+                .get("/api/v1/collections", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result("{}");
                 })
@@ -109,18 +90,33 @@ public class GrebiApi {
                     q.setSearchText(ctx.queryParam("q"));
                     q.setExactMatch(false);
                     for(var param : ctx.queryParamMap().entrySet()) {
-                        if(param.getKey().equals("page") ||
+                        if(param.getKey().equals("q") ||
+                                param.getKey().equals("page") ||
                                 param.getKey().equals("size") ||
+                                param.getKey().equals("exactMatch") ||
+                                param.getKey().equals("includeObsoleteEntries") ||
+                                param.getKey().equals("lang") ||
                                     param.getKey().equals("facet")
                         ) {
                             continue;
                         }
                         q.addFilter(param.getKey(), param.getValue(), SearchType.WHOLE_FIELD);
+                        q.addSearchField("id", 1000, SearchType.WHOLE_FIELD);
+                        q.addSearchField("id", 500, SearchType.CASE_INSENSITIVE_TOKENS);
+                        q.addSearchField("_text_", 1, SearchType.CASE_INSENSITIVE_TOKENS);
                     }
-                    var page = PageRequest.of(Integer.getInteger(ctx.queryParam("page")), Integer.getInteger(ctx.queryParam("size")));
+                    var page_num = ctx.queryParam("page");
+                    if(page_num == null) {
+                        page_num = "0";
+                    }
+                    var size = ctx.queryParam("size");
+                    if(size == null) {
+                        size = "100";
+                    }
+                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
                     var res = solrClient.searchSolrPaginated(q, page);
                     ctx.contentType("application/json");
-                    ctx.result(res.toString());
+                    ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/suggest", ctx -> {
                     ctx.contentType("application/json");
@@ -129,10 +125,5 @@ public class GrebiApi {
                 .start(8080);
     }
 
-    static Map<String, Object> mapValue(Value value) {
-        Map<String, Object> res = new TreeMap<>(value.asMap());
-        res.put("grebi:type", StreamSupport.stream(value.asNode().labels().spliterator(), false).collect(Collectors.toList()));
-        return res;
-    }
 }
 

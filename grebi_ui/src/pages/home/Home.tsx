@@ -43,11 +43,11 @@ export default function Home() {
                     </Link>
                   </span>
                 </div>
-                <div className="md:text-right">
+                {/* <div className="md:text-right">
                   <Link to={"/ontologies"} className="link-default">
-                    Looking for a particular subgraph?
+                    Looking for a particular collection?
                   </Link>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

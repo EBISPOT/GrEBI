@@ -1,14 +1,8 @@
-package uk.ac.ebi.grebi;
+package uk.ac.ebi.grebi.db;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -18,6 +12,7 @@ import org.apache.solr.common.SolrDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
+import uk.ac.ebi.grebi.GrebiFacetedResultsPage;
 
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -73,7 +68,7 @@ public class GrebiSolrClient {
         QueryResponse qr = runSolrQuery(query, null);
 
         if(qr.getResults().getNumFound() < 1) {
-            logger.debug("Expected at least 1 result for solr getFirst for solr query = {}", query.constructQuery().jsonStr());
+            logger.info("Expected at least 1 result for solr getFirst for solr query = {}", query.constructQuery().jsonStr());
             throw new RuntimeException("Expected at least 1 result for solr getFirst");
         }
 
@@ -95,17 +90,17 @@ public class GrebiSolrClient {
             query.setRows(pageable.getPageSize() > MAX_ROWS ? MAX_ROWS : pageable.getPageSize());
         }
 
-        logger.debug("solr rows: {} ", query.getRows());
-        logger.debug("solr query: {} ", query.toQueryString());
-        logger.debug("solr query urldecoded: {}",URLDecoder.decode(query.toQueryString()));
-        logger.debug("solr host: {}", SOLR_HOST);
+        logger.info("solr rows: {} ", query.getRows());
+        logger.info("solr query: {} ", query.toQueryString());
+        logger.info("solr query urldecoded: {}",URLDecoder.decode(query.toQueryString()));
+        logger.info("solr host: {}", SOLR_HOST);
 
         org.apache.solr.client.solrj.SolrClient mySolrClient = new HttpSolrClient.Builder(getSolrHost() + "/solr/grebi_nodes").build();
 
         QueryResponse qr = null;
         try {
             qr = mySolrClient.query(query);
-            logger.debug("solr query had {} result(s).", qr.getResults().getNumFound());
+            logger.info("solr query had {} result(s).", qr.getResults().getNumFound());
         } catch (SolrServerException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {

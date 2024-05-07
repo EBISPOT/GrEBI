@@ -91,11 +91,11 @@ module.exports = {
           black: "#292929",
         },
         link: {
-            default: "#3B6FB6",
+            default: "#7323B7",
+            visited: "#7323B7",
             light: "#8BB8E8",
-            dark: "#193F90",
-          hover: "#106462",
-          visited: "#2185a9",
+            dark: "#3a1157",
+          hover: "#106462"
         },
         // other colours
         embl: {

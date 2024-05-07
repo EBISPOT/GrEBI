@@ -18,11 +18,11 @@ interface SearchBoxEntry {
 export default function SearchBox({
   initialQuery,
   placeholder,
-  subgraphId,
+  collectionId,
 }: {
   initialQuery?: string;
   placeholder?: string;
-  subgraphId?: string;
+  collectionId?: string;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   //   let lang = searchParams.get("lang") || "en";
@@ -38,8 +38,8 @@ export default function SearchBox({
   >(undefined);
 
   let exact = searchParams.get("exactMatch") === "true";
-  let obsolete = searchParams.get("includeObsoleteEntities") === "true";
-  let canonical = searchParams.get("isDefiningSubgraph") === "true";
+  let obsolete = searchParams.get("includeObsoleteEntries") === "true";
+  let canonical = searchParams.get("isDefiningcollection") === "true";
 
   const setExact = useCallback(
     (exact: boolean) => {
@@ -55,8 +55,8 @@ export default function SearchBox({
     [searchParams, setSearchParams]
   );
 
-  const searchForSubgraphs = subgraphId === undefined;
-  const showSuggestions = subgraphId === undefined;
+  const searchForcollections = collectionId === undefined;
+  const showSuggestions = collectionId === undefined;
 
   const mounted = useRef(false);
   useEffect(() => {
@@ -75,47 +75,36 @@ export default function SearchBox({
       const searchToken = randomString();
       curSearchToken = searchToken;
 
-      const [nodes, subgraphs, autocomplete] = await Promise.all([
-        get<any>(
+      const [nodes, autocomplete] = await Promise.all([
+        getPaginated<any>(
           `api/v1/search?${new URLSearchParams({
             q: query,
             size: "5",
             lang: "en",
             exactMatch: exact.toString(),
-            includeObsoleteEntities: obsolete.toString(),
-            ...(subgraphId ? { subgraphId } : {}),
-            ...((canonical ? { isDefiningSubgraph: true } : {}) as any),
+            includeObsoleteEntries: obsolete.toString(),
+            ...(collectionId ? { collectionId } : {}),
+            ...((canonical ? { isDefiningcollection: true } : {}) as any),
           })}`
         ),
-        searchForSubgraphs
-          ? get<any>(
-              `api/v1/subgraphs?${new URLSearchParams({
-                search: query,
-                size: "5",
-                lang: "en",
-                exactMatch: exact.toString(),
-                includeObsoleteEntities: obsolete.toString(),
-              })}`
-            )
-          : null,
         showSuggestions
-          ? get<Suggest>(
+          ? getPaginated<Suggest>(
               `api/v1/suggest?${new URLSearchParams({
                 q: query,
                 exactMatch: exact.toString(),
-                includeObsoleteEntities: obsolete.toString(),
+                includeObsoleteEntries: obsolete.toString(),
               })}`
             )
-          : null,
+          : null
       ]);
       if (cancelPromisesRef.current && !mounted.current) return;
 
       if (searchToken === curSearchToken) {
         setJumpTo([
-          ...nodes.map(node => new GraphNode(node)),
-          // ...subgraphs?.elements
+          ...nodes.elements.map(node => new GraphNode(node)),
+          // ...collections?.elements
         ]);
-        setAutocomplete(autocomplete);
+        setAutocomplete(null);
         setLoading(false);
       }
     }
@@ -131,7 +120,7 @@ export default function SearchBox({
   let autocompleteElements = autocompleteToShow.map(
     (autocomplete, i): SearchBoxEntry => {
       searchParams.set("q", autocomplete.autosuggest);
-      if (subgraphId) searchParams.set("subgraph", subgraphId);
+      if (collectionId) searchParams.set("collection", collectionId);
       const linkUrl = `/search?${new URLSearchParams(searchParams)}`;
       return {
         linkUrl,
@@ -154,11 +143,10 @@ export default function SearchBox({
   );
 
   let jumpToEntityElements = jumpTo
-    .map((entry: any, i: number): SearchBoxEntry => {
-          let name = entry.getNames()[0]
+    .map((entry: GraphNode, i: number): SearchBoxEntry => {
+          let name = entry.getName().value;
           let type = entry.extractType()
-          // const linkUrl = `/subgraphs/${jumpToEntry.getSubgraphId()}/${jumpToEntry.getTypePlural()}/${termUrl}`;
-          const linkUrl = ""
+          const linkUrl = `/nodes/${btoa(entry.getNodeId()).replace(/=+$/, '')}`;
           return {
             linkUrl,
             li: (
@@ -192,9 +180,9 @@ export default function SearchBox({
           }
                       <span
                         className="bg-orange-default px-3 py-1 rounded-lg text-sm text-white uppercase"
-                        title={entry.getId()}
+                        title={entry.getId().value}
                       >
-                        {entry.getId()}
+                        {entry.getId().value}
                       </span>
                       { entry.getIds().length > 1 && <span><small><i> + {entry.getIds().length - 1}</i></small></span> }
                     </div>
@@ -248,7 +236,7 @@ export default function SearchBox({
                     navigate(allDropdownElements[arrowKeySelectedN].linkUrl);
                   } else if (query) {
                     searchParams.set("q", query);
-                    if (subgraphId) searchParams.set("subgraph", subgraphId);
+                    if (collectionId) searchParams.set("collection", collectionId);
                     navigate(`/search?${new URLSearchParams(searchParams)}`);
                   }
                 } else if (ev.key === "ArrowDown") {
@@ -301,8 +289,8 @@ export default function SearchBox({
                   onClick={() => {
                     if (query) {
                       searchParams.set("q", query);
-                      if (subgraphId)
-                        searchParams.set("subgraph", subgraphId);
+                      if (collectionId)
+                        searchParams.set("collection", collectionId);
                       navigate(`/search?${new URLSearchParams(searchParams)}`);
                     }
                   }}
@@ -319,7 +307,7 @@ export default function SearchBox({
               onClick={() => {
                 if (query) {
                   searchParams.set("q", query);
-                  if (subgraphId) searchParams.set("subgraph", subgraphId);
+                  if (collectionId) searchParams.set("collection", collectionId);
                   navigate(`/search?${new URLSearchParams(searchParams)}`);
                 }
               }}

@@ -10,7 +10,7 @@ import HelpIcon from '@mui/icons-material/Help';
 import InfoIcon from '@mui/icons-material/Info';
 import DownloadIcon from '@mui/icons-material/Download';
 import TravelExplore from '@mui/icons-material/TravelExplore';
-import { Science } from "@mui/icons-material";
+import { FeaturedPlayList, LibraryBooks, Science, ViewList } from "@mui/icons-material";
 
 
 export default function Header({ section }: { section?: string }) {
@@ -61,7 +61,7 @@ export default function Header({ section }: { section?: string }) {
                 </Stack>
               </li>
             </Link>
-            {/* <Link to="/subgraphs">
+            <Link to="/collections">
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -71,11 +71,12 @@ export default function Header({ section }: { section?: string }) {
                 }`}
               >
                 <Stack alignItems="center" direction="row" gap={1}>
-                  <JoinRightIcon />
-                  Subgraphs
+                  {/* <JoinRightIcon /> good for collections */}
+                  <ViewList/>
+                  Collections
                 </Stack>
               </li>
-            </Link> */}
+            </Link>
             {/* <Link to="/datasources">
               <li
                 role="menuitem"

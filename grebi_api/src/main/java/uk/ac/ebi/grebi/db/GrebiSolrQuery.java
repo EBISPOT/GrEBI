@@ -1,4 +1,4 @@
-package uk.ac.ebi.grebi;
+package uk.ac.ebi.grebi.db;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import uk.ac.ebi.grebi.SearchType;
 
 public class GrebiSolrQuery {
 

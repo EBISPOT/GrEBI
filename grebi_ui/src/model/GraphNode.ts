@@ -1,3 +1,4 @@
+import Reified from "./Reified"
 
 export default class GraphNode {
 
@@ -7,42 +8,44 @@ export default class GraphNode {
         this.props = props
     }
 
-    getNames() {
-        return Array.from(new Set([
-            ...(this.props['ols:label'] || []),
-            ...(this.props['impc:name'] || []),
-            ...(this.props['monarch:name'] || [])
-        ]))
+    getNames():Reified<string>[] {
+        return [
+            ...(this.props['ols:label'] || []).map(Reified.from),
+            ...(this.props['impc:name'] || []).map(Reified.from),
+            ...(this.props['monarch:name'] || []).map(Reified.from)
+        ];
     }
 
-    getName() {
+    getName():Reified<string> {
         return this.getNames()[0] || this.getId()
     }
 
-    getDescriptions() {
-        return Array.from(new Set([
-            ...(this.props['rdfs:comment'] || [])
-        ]))
+    getDescriptions():Reified<string>[] {
+        return (this.props['rdfs:comment'] || []).map(Reified.from)
     }
 
-    getDescription() {
-        return this.getDescriptions()[0] || ''
+    getDescription():Reified<string> {
+        return this.getDescriptions()[0] || Reified.from('')
     }
 
-    getId() {
-        if(this.props['ols:curie']){
-            return this.props['ols:curie'][0]
-        }
+    getNodeId():string {
         return this.props['grebi:nodeId']
     }
 
-    getIds() {
-        return this.props['id']
+    getId():Reified<string> {
+        if(this.props['ols:curie']){
+            return Reified.from(this.props['ols:curie'][0])
+        }
+        return Reified.from(this.props['grebi:nodeId'])
+    }
+
+    getIds():Reified<string>[] {
+        return (this.props['id'] || []).map(Reified.from)
     }
 
     extractType():'Gene'|'Disease'|'Phenotype'|undefined {
 
-        let types:string[] = this.props['grebi:type']
+        let types:string[] = this.props['grebi:type'].map(Reified.from).map(r => r.value)
 
         if(types.indexOf('impc:MouseGene') !== -1) {
             return 'Gene'
@@ -52,7 +55,7 @@ export default class GraphNode {
         }
     }
 
-    getDatasources() {
+    getDatasources():string[] {
         return this.props['grebi:datasources'] || []
     }
 
