@@ -30,7 +30,7 @@ class App extends React.Component {
 
           <Route path={`/nodes/:nodeId`} element={<NodePage />} />
         </Routes>
-        <Footer />
+        {/* <Footer /> */}
       </BrowserRouter>
       </Fragment>
     );

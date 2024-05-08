@@ -89,6 +89,9 @@ public class GrebiApi {
                     var q = new GrebiSolrQuery();
                     q.setSearchText(ctx.queryParam("q"));
                     q.setExactMatch(false);
+                    q.addSearchField("id", 1000, SearchType.WHOLE_FIELD);
+                    q.addSearchField("id", 500, SearchType.CASE_INSENSITIVE_TOKENS);
+                    q.addSearchField("_text_", 1, SearchType.CASE_INSENSITIVE_TOKENS);
                     for(var param : ctx.queryParamMap().entrySet()) {
                         if(param.getKey().equals("q") ||
                                 param.getKey().equals("page") ||
@@ -101,9 +104,6 @@ public class GrebiApi {
                             continue;
                         }
                         q.addFilter(param.getKey(), param.getValue(), SearchType.WHOLE_FIELD);
-                        q.addSearchField("id", 1000, SearchType.WHOLE_FIELD);
-                        q.addSearchField("id", 500, SearchType.CASE_INSENSITIVE_TOKENS);
-                        q.addSearchField("_text_", 1, SearchType.CASE_INSENSITIVE_TOKENS);
                     }
                     var page_num = ctx.queryParam("page");
                     if(page_num == null) {

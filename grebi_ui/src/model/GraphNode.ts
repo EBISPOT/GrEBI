@@ -1,4 +1,5 @@
-import Reified from "./Reified"
+import PropVal from "./PropVal";
+import Refs from "./Refs";
 
 export default class GraphNode {
 
@@ -8,47 +9,50 @@ export default class GraphNode {
         this.props = props
     }
 
-    getNames():Reified<string>[] {
-        return [
-            ...(this.props['ols:label'] || []).map(Reified.from),
-            ...(this.props['impc:name'] || []).map(Reified.from),
-            ...(this.props['monarch:name'] || []).map(Reified.from)
-        ];
+    getNames():PropVal[] {
+        return PropVal.arrFrom([
+            ...(this.props['ols:label'] || []),
+            ...(this.props['impc:name'] || []),
+            ...(this.props['monarch:name'] || [])
+        ])
     }
 
-    getName():Reified<string> {
+    getName():PropVal {
         return this.getNames()[0] || this.getId()
     }
 
-    getDescriptions():Reified<string>[] {
-        return (this.props['rdfs:comment'] || []).map(Reified.from)
+    getDescriptions():PropVal[] {
+        return PropVal.arrFrom(this.props['rdfs:comment'])
     }
 
-    getDescription():Reified<string> {
-        return this.getDescriptions()[0] || Reified.from('')
+    getDescription():PropVal|undefined {
+        return PropVal.arrFrom(this.getDescriptions())[0]
     }
 
     getNodeId():string {
         return this.props['grebi:nodeId']
     }
 
-    getId():Reified<string> {
+    getId():PropVal {
         if(this.props['ols:curie']){
-            return Reified.from(this.props['ols:curie'][0])
+            return PropVal.arrFrom(this.props['ols:curie'])[0]
         }
-        return Reified.from(this.props['grebi:nodeId'])
+        return PropVal.from(this.props['grebi:nodeId'])
     }
 
-    getIds():Reified<string>[] {
-        return (this.props['id'] || []).map(Reified.from)
+    getIds():PropVal[] {
+        return PropVal.arrFrom(this.props['id'])
     }
 
-    extractType():'Gene'|'Disease'|'Phenotype'|undefined {
+    extractType():'Gene'|'Disease'|'Phenotype'|'SNP'|undefined {
 
-        let types:string[] = this.props['grebi:type'].map(Reified.from).map(r => r.value)
+        let types:string[] = PropVal.arrFrom(this.props['grebi:type']).map(t => t.value)
 
         if(types.indexOf('impc:MouseGene') !== -1) {
             return 'Gene'
+        }
+        if(types.indexOf('gwas:SNP') !== -1) {
+            return 'SNP'
         }
         if(types.indexOf('ols:Class') !== -1) {
             let ancestors:any[] = this.props['ols:hirarchicalAncestors']
@@ -65,5 +69,20 @@ export default class GraphNode {
 
     isDeprecated() {
         return false // TODO: only if this is nothing else but an ontology term which is deprecated
+    }
+
+    getRefs():Refs {
+        return new Refs(this.props['_refs'])
+    }
+
+    getProps():{[key:string]:PropVal[]} {
+        let res_props = {}
+        for(let k of Object.keys(this.props)) {
+            if(k.startsWith('grebi:') || k === '_refs') {
+                continue;
+            }
+            res_props[k] = PropVal.arrFrom(this.props[k])
+        }
+        return res_props
     }
 }

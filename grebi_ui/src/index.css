@@ -113,6 +113,9 @@
     hover:text-link-hover
     hover:underline
     visited:text-link-visited;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-thickness: 0.5px;
   }
   .link-orange {
     @apply text-orange-600 cursor-pointer
@@ -127,6 +130,14 @@
     visited:text-embl-grey-lightest;
   }
   .link-ontology {
+    @apply text-white cursor-pointer bg-link-default
+    hover:bg-white
+    hover:text-link-default
+    hover:outline
+    hover:outline-2
+    hover:outline-link-default;
+  }
+  .link-datasource {
     @apply text-white cursor-pointer bg-link-default
     hover:bg-white
     hover:text-link-default
@@ -1311,7 +1322,22 @@ filter: gray;
   border-bottom: 1px dashed black;
 }
 
-/*From main.css for EntityTree:*/
+.link-datasource {
+  cursor: pointer;
+  --tw-bg-opacity: 1;
+  background-color: rgb(115 35 183 / var(--tw-bg-opacity));
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity));
+}
+.link-datasource:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
+  --tw-text-opacity: 1;
+  color: rgb(115 35 183 / var(--tw-text-opacity));
+  outline-style: solid;
+  outline-width: 2px;
+  outline-color: rgb(115 35 183);
+}
 .link-ontology {
   cursor: pointer;
   --tw-bg-opacity: 1;

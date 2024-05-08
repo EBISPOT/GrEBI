@@ -106,10 +106,10 @@ pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nod
                 "id": snps,
                 "grebi:type": ["gwas:SNP"],
                 "rdf:type": ["so:0000694"], // SNP
-                "gwas:mapped_gene": [mapped_gene],
+                "gwas:mapped_gene": mapped_gene.split(", ").collect::<Vec<&str>>(),
                 "gwas:upstream_gene_id": [upstream_gene_id],
                 "gwas:downstream_gene_id": [downstream_gene_id],
-                "gwas:snp_gene_ids": [snp_gene_ids],
+                "gwas:snp_gene_ids": snp_gene_ids.split(", ").collect::<Vec<&str>>(),
                 "gwas:associated_with": Value::Array(mapped_trait_uri.split(", ").map(|tr| {
                     return json!({
                         "grebi:value": tr,

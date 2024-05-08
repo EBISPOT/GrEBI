@@ -7,6 +7,8 @@ import { randomString } from "../app/util";
 import { Suggest } from "../model/Suggest";
 import React, { Fragment } from "react";
 import GraphNode from "../model/GraphNode";
+import encodeNodeId from "../encodeNodeId";
+import { DatasourceTags } from "./DatasourceTag";
 
 let curSearchToken: any = null;
 
@@ -146,7 +148,7 @@ export default function SearchBox({
     .map((entry: GraphNode, i: number): SearchBoxEntry => {
           let name = entry.getName().value;
           let type = entry.extractType()
-          const linkUrl = `/nodes/${btoa(entry.getNodeId()).replace(/=+$/, '')}`;
+          const linkUrl = `/nodes/${encodeNodeId(entry.getNodeId())}`;
           return {
             linkUrl,
             li: (
@@ -178,13 +180,14 @@ export default function SearchBox({
                         {type}
                       </span>
           }
-                      <span
+                      <DatasourceTags dss={entry.getDatasources()} />
+                      {/* <span
                         className="bg-orange-default px-3 py-1 rounded-lg text-sm text-white uppercase"
                         title={entry.getId().value}
                       >
                         {entry.getId().value}
                       </span>
-                      { entry.getIds().length > 1 && <span><small><i> + {entry.getIds().length - 1}</i></small></span> }
+                      { entry.getIds().length > 1 && <span><small><i> + {entry.getIds().length - 1}</i></small></span> } */}
                     </div>
                   
                   </div>

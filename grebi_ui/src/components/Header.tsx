@@ -61,6 +61,21 @@ export default function Header({ section }: { section?: string }) {
                 </Stack>
               </li>
             </Link>
+            <Link to="/datasources">
+              <li
+                role="menuitem"
+                className={`px-4 py-3 ${
+                  section === "ontologies"
+                    ? " bg-opacity-75 bg-neutral-500"
+                    : "hover:bg-opacity-50 hover:bg-neutral-500 "
+                }`}
+              >
+                <Stack alignItems="center" direction="row" gap={1}>
+                  <MediationIcon />
+                  Datasources
+                </Stack>
+              </li>
+            </Link>
             <Link to="/collections">
               <li
                 role="menuitem"
@@ -77,25 +92,10 @@ export default function Header({ section }: { section?: string }) {
                 </Stack>
               </li>
             </Link>
-            {/* <Link to="/datasources">
-              <li
-                role="menuitem"
-                className={`px-4 py-3 ${
-                  section === "ontologies"
-                    ? " bg-opacity-75 bg-neutral-500"
-                    : "hover:bg-opacity-50 hover:bg-neutral-500 "
-                }`}
-              >
-                <Stack alignItems="center" direction="row" gap={1}>
-                  <MediationIcon />
-                  Datasources
-                </Stack>
-              </li>
-            </Link> */}
             <Link to={`/analyses`}>
               <li
                 role="menuitem"
-                className={`rounded-r-md px-4 py-3  ${
+                className={`px-4 py-3  ${
                   section === "help"
                     ? " bg-opacity-75 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
@@ -110,7 +110,7 @@ export default function Header({ section }: { section?: string }) {
             <Link to={`/downloads`}>
               <li
                 role="menuitem"
-                className={`px-4 py-3 ${
+                className={`rounded-r-md px-4 py-3 ${
                   section === "downloads"
                     ? " bg-opacity-75 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500"

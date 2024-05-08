@@ -15,7 +15,7 @@
         "index": "64G",
         "extract": "8G",
         "materialise_edges": "64G",
-        "prepare_db_import": "96G"
+        "prepare_db_import": "105G"
     },
     "slurm_max_time": {
         "ingest": "8:0:0",
