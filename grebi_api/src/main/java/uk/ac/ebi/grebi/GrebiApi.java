@@ -77,6 +77,16 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
+                .get("/api/v1/nodes/{nodeId}/incoming_edges", ctx -> {
+                    ctx.contentType("application/json");
+                    ctx.result("{}");
+
+
+                    neo.
+
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(res));
+                })
                 .get("/api/v1/edge_types", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(edgeTypes));

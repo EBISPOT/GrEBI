@@ -56,6 +56,9 @@ struct Args {
 
     #[arg(long)]
     out_edges_csv_path: String,
+
+    #[arg(long)]
+    include_json_field: bool
 }
 
 fn main() -> std::io::Result<()> {
@@ -92,7 +95,11 @@ fn main() -> std::io::Result<()> {
         nodes_writer.write_all(prop.as_bytes()).unwrap();
         nodes_writer.write_all(b":string[]").unwrap();
     }
-    nodes_writer.write_all(",_json:string\n".as_bytes()).unwrap();
+
+    if args.include_json_field == true {
+        nodes_writer.write_all(",_json:string".as_bytes()).unwrap();
+    }
+    nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
     edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[]".as_bytes()).unwrap();
@@ -101,7 +108,10 @@ fn main() -> std::io::Result<()> {
         edges_writer.write_all(prop.as_bytes()).unwrap();
         edges_writer.write_all(b":string[]").unwrap();
     }
-    edges_writer.write_all(",_json:string\n".as_bytes()).unwrap();
+    if args.include_json_field == true {
+        edges_writer.write_all(",_json:string".as_bytes()).unwrap();
+    }
+    edges_writer.write_all("\n".as_bytes()).unwrap();
 
 
     let mut n_nodes:i64 = 0;
@@ -119,7 +129,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEntity::from_json(&line);
 
-        write_node(&line, &sliced, &all_entity_props, &node_metadata, &mut nodes_writer);
+        write_node(&line, &sliced, &all_entity_props, &node_metadata, &mut nodes_writer, args.include_json_field);
 
         n_nodes = n_nodes + 1;
         if n_nodes % 1000000 == 0 {
@@ -142,7 +152,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEdge::from_json(&line);
 
-        write_edge(&line, sliced, &all_edge_props, &node_metadata, &mut edges_writer);
+        write_edge(&line, sliced, &all_edge_props, &node_metadata, &mut edges_writer, args.include_json_field);
 
         n_edges = n_edges + 1;
         if n_edges % 1000000 == 0 {
@@ -161,7 +171,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, nodes_writer:&mut BufWriter<&File>) {
+fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, nodes_writer:&mut BufWriter<&File>, include_json_field:bool) {
 
     // grebi:nodeId
     nodes_writer.write_all(b"\"").unwrap();
@@ -242,30 +252,32 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
         res
     };
 
-    nodes_writer.write_all(b",").unwrap();
-    nodes_writer.write_all(b"\"").unwrap();
-    write_escaped_value(&src_line[0..src_line.len()-1] /* skip closing } */, nodes_writer);
-    write_escaped_value(b",\"_refs\":{", nodes_writer);
+    if include_json_field {
+        nodes_writer.write_all(b",").unwrap();
+        nodes_writer.write_all(b"\"").unwrap();
+        write_escaped_value(&src_line[0..src_line.len()-1] /* skip closing } */, nodes_writer);
+        write_escaped_value(b",\"_refs\":{", nodes_writer);
 
-    let mut is_first_ref = true;
-    for (id,md) in _refs {
-        if is_first_ref {
-            is_first_ref = false;
-        } else {
-            nodes_writer.write_all(b",").unwrap();
+        let mut is_first_ref = true;
+        for (id,md) in _refs {
+            if is_first_ref {
+                is_first_ref = false;
+            } else {
+                nodes_writer.write_all(b",").unwrap();
+            }
+            write_escaped_value(b"\"", nodes_writer);
+            write_escaped_value(id, nodes_writer);
+            write_escaped_value(b"\":", nodes_writer);
+            write_escaped_value(md, nodes_writer);
         }
-        write_escaped_value(b"\"", nodes_writer);
-        write_escaped_value(id, nodes_writer);
-        write_escaped_value(b"\":", nodes_writer);
-        write_escaped_value(md, nodes_writer);
+
+        nodes_writer.write_all(b"}}\"").unwrap();
     }
 
-    nodes_writer.write_all(b"}}\"").unwrap();
     nodes_writer.write_all(b"\n").unwrap();
-
 }
 
-fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&Vec<String>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, edges_writer: &mut BufWriter<&File>) {
+fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&Vec<String>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, edges_writer: &mut BufWriter<&File>, include_json_field:bool) {
 
     let _refs = {
         let mut res:BTreeMap<&[u8],&[u8]> = BTreeMap::new();
@@ -322,25 +334,28 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&Vec<String>, node
         edges_writer.write_all(b"\"").unwrap();
     }
 
-    edges_writer.write_all(b",").unwrap();
-    edges_writer.write_all(b"\"").unwrap();
-    write_escaped_value(&src_line[0..src_line.len()-1] /* skip closing } */, edges_writer);
-    write_escaped_value(b",\"_refs\":{", edges_writer);
+    if include_json_field {
+        edges_writer.write_all(b",").unwrap();
+        edges_writer.write_all(b"\"").unwrap();
+        write_escaped_value(&src_line[0..src_line.len()-1] /* skip closing } */, edges_writer);
+        write_escaped_value(b",\"_refs\":{", edges_writer);
 
-    let mut is_first_ref = true;
-    for (id,md) in _refs {
-        if is_first_ref {
-            is_first_ref = false;
-        } else {
-            edges_writer.write_all(b",").unwrap();
+        let mut is_first_ref = true;
+        for (id,md) in _refs {
+            if is_first_ref {
+                is_first_ref = false;
+            } else {
+                edges_writer.write_all(b",").unwrap();
+            }
+            write_escaped_value(b"\"", edges_writer);
+            write_escaped_value(id, edges_writer);
+            write_escaped_value(b"\":", edges_writer);
+            write_escaped_value(md, edges_writer);
         }
-        write_escaped_value(b"\"", edges_writer);
-        write_escaped_value(id, edges_writer);
-        write_escaped_value(b"\":", edges_writer);
-        write_escaped_value(md, edges_writer);
+
+        edges_writer.write_all(b"}}\"").unwrap();
     }
 
-    edges_writer.write_all(b"}}\"").unwrap();
     edges_writer.write_all(b"\n").unwrap();
 
 }

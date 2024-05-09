@@ -11,6 +11,7 @@ import Home from "./pages/home/Home";
 import {Helmet} from "react-helmet";
 import Search from "./pages/search/Search";
 import NodePage from "./pages/node/NodePage";
+import DownloadsPage from "./pages/downloads/Downloads";
 
 class App extends React.Component {
   render() {
@@ -29,6 +30,8 @@ class App extends React.Component {
           <Route path={`/search`} element={<Search />} />
 
           <Route path={`/nodes/:nodeId`} element={<NodePage />} />
+
+          <Route path={`/downloads`} element={<DownloadsPage />} />
         </Routes>
         {/* <Footer /> */}
       </BrowserRouter>

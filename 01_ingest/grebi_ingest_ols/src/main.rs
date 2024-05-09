@@ -22,7 +22,10 @@ struct Args {
     filename: String,
 
     #[arg(long)]
-    ontologies:String
+    ontologies:String,
+
+    #[arg(long)]
+    defining_only:bool
 }
 
 fn main() {
@@ -53,14 +56,14 @@ fn main() {
     }
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
-        read_ontology(&mut json, &mut output_nodes, &datasource_name, &ontology_whitelist);
+        read_ontology(&mut json, &mut output_nodes, &datasource_name, &ontology_whitelist, args.defining_only);
     }
     json.end_array().unwrap();
     json.end_object().unwrap();
 
 }
 
-fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource_name: &str, ontology_whitelist:&HashSet<String>) {
+fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource_name: &str, ontology_whitelist:&HashSet<String>, defining_only:bool) {
 
     json.begin_object().unwrap();
 
@@ -124,11 +127,11 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
     loop {
         if key.eq("classes") {
-            read_entities(json, output_nodes, &datasource, "ols:Class");
+            read_entities(json, output_nodes, &datasource, "ols:Class", defining_only);
         } else if key.eq("properties") {
-            read_entities(json, output_nodes, &datasource, "ols:Property");
+            read_entities(json, output_nodes, &datasource, "ols:Property", defining_only);
         } else if key.eq("individuals") {
-            read_entities(json, output_nodes, &datasource, "ols:Individual");
+            read_entities(json, output_nodes, &datasource, "ols:Individual", defining_only);
         } else {
             panic!();
         }
@@ -153,7 +156,7 @@ const EQUIV_PREDICATES :[&str;2]= [
     // "iao:0100001" // -> replacement term
 ];
 
-fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource:&String, grebitype:&str) {
+fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource:&String, grebitype:&str, defining_only:bool) {
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
         let mut val:Value = read_value(json);
@@ -161,6 +164,11 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
         // eprintln!("obj: {:?}", obj);
 
+        if defining_only {
+            if obj.contains_key("ols:imported") && get_string_values(obj.get("ols:imported").unwrap()).iter().next().unwrap().eq(&"true") {
+                continue
+            }
+        }
 
         if grebitype.eq("ols:Property") { 
 

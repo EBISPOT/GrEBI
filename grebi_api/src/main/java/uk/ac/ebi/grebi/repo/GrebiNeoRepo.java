@@ -54,6 +54,10 @@ public class GrebiNeoRepo {
         return List.of();
     }
 
+    public void getIncomingEdges(String nodeId) {
+        neo4jClient.traverseIncomingEdges("GraphNode", nodeId,
+    }
+
     static Map<String, Object> mapValue(Value value) {
         Map<String, Object> res = new TreeMap<>(value.asMap());
         res.put("grebi:type", StreamSupport.stream(value.asNode().labels().spliterator(), false).collect(Collectors.toList()));

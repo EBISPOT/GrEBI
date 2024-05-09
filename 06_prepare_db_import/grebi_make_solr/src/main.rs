@@ -52,6 +52,9 @@ struct Args {
 
     #[arg(long)]
     out_edges_jsonl_path: String,
+
+    #[arg(long)]
+    include_json_field: bool
 }
 
 fn main() -> std::io::Result<()> {
@@ -94,7 +97,7 @@ fn main() -> std::io::Result<()> {
             line.pop();
         }
 
-        write_solr_object(&line, &mut nodes_writer, &node_metadata);
+        write_solr_object(&line, &mut nodes_writer, &node_metadata, args.include_json_field);
     }
 
     loop {
@@ -108,7 +111,7 @@ fn main() -> std::io::Result<()> {
             line.pop();
         }
 
-        write_solr_object(&line, &mut edges_writer, &node_metadata);
+        write_solr_object(&line, &mut edges_writer, &node_metadata, args.include_json_field);
     }
 
     nodes_writer.flush().unwrap();
@@ -122,7 +125,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>) {
+fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, include_json_field:bool) {
 
     let _refs = {
         let mut res:Map<String,Value> = Map::new();
@@ -137,10 +140,12 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, node_met
     };
 
     let mut json:serde_json::Map<String,Value> = serde_json::from_slice(&line).unwrap();
-    json.insert("_refs".to_string(), Value::Object(_refs));
-
     let mut out_json = serde_json::Map::new();
-    out_json.insert("_json".to_string(), Value::String(serde_json::to_string(&json).unwrap()));
+
+    if include_json_field {
+        json.insert("_refs".to_string(), Value::Object(_refs));
+        out_json.insert("_json".to_string(), Value::String(serde_json::to_string(&json).unwrap()));
+    }
 
     for (k,v) in json.iter() {
 
