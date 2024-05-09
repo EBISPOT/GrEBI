@@ -4,7 +4,6 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { get, getPaginated } from "../app/api";
 import { theme } from "../app/mui";
 import { randomString } from "../app/util";
-import { Suggest } from "../model/Suggest";
 import React, { Fragment } from "react";
 import GraphNode from "../model/GraphNode";
 import encodeNodeId from "../encodeNodeId";
@@ -30,7 +29,7 @@ export default function SearchBox({
   //   let lang = searchParams.get("lang") || "en";
   const navigate = useNavigate();
 
-  const [autocomplete, setAutocomplete] = useState<Suggest | null>(null);
+  const [autocomplete, setAutocomplete] = useState<string[] | null>(null);
   const [jumpTo, setJumpTo] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [query, setQuery] = useState<string>(initialQuery || "");
@@ -90,7 +89,7 @@ export default function SearchBox({
           })}`
         ),
         showSuggestions
-          ? getPaginated<Suggest>(
+          ? get<string[]>(
               `api/v1/suggest?${new URLSearchParams({
                 q: query,
                 exactMatch: exact.toString(),
@@ -106,7 +105,7 @@ export default function SearchBox({
           ...nodes.elements.map(node => new GraphNode(node)),
           // ...collections?.elements
         ]);
-        setAutocomplete(null);
+        setAutocomplete(autocomplete?.filter(ac => ac !== query) || []);
         setLoading(false);
       }
     }
@@ -118,26 +117,26 @@ export default function SearchBox({
     };
   }, [query, exact, obsolete, canonical]);
 
-  let autocompleteToShow = autocomplete?.response.docs.slice(0, 5) || [];
+  let autocompleteToShow = autocomplete?.slice(0, 5) || [];
   let autocompleteElements = autocompleteToShow.map(
-    (autocomplete, i): SearchBoxEntry => {
-      searchParams.set("q", autocomplete.autosuggest);
+    (text, i): SearchBoxEntry => {
+      searchParams.set("q", text);
       if (collectionId) searchParams.set("collection", collectionId);
       const linkUrl = `/search?${new URLSearchParams(searchParams)}`;
       return {
         linkUrl,
         li: (
           <li
-            key={autocomplete.autosuggest}
+            key={text}
             className={
               "py-1 px-3 leading-7 hover:bg-link-light hover:cursor-pointer" +
               (arrowKeySelectedN === i ? " bg-link-light" : "")
             }
             onClick={() => {
-              setQuery(autocomplete.autosuggest);
+              setQuery(text);
             }}
           >
-            {autocomplete.autosuggest}
+            {text}
           </li>
         ),
       };

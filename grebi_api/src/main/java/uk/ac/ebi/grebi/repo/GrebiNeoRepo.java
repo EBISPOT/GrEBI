@@ -55,7 +55,6 @@ public class GrebiNeoRepo {
     }
 
     public void getIncomingEdges(String nodeId) {
-        neo4jClient.traverseIncomingEdges("GraphNode", nodeId,
     }
 
     static Map<String, Object> mapValue(Value value) {

@@ -82,10 +82,9 @@ public class GrebiApi {
                     ctx.result("{}");
 
 
-                    neo.
 
-                    ctx.contentType("application/json");
-                    ctx.result(gson.toJson(res));
+//                    ctx.contentType("application/json");
+//                    ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/edge_types", ctx -> {
                     ctx.contentType("application/json");
@@ -129,8 +128,9 @@ public class GrebiApi {
                     ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/suggest", ctx -> {
+                    var res = solrClient.autocomplete(ctx.queryParam("q"));
                     ctx.contentType("application/json");
-                    ctx.result("{\"response\":{\"docs\":[]}}");
+                    ctx.result(gson.toJson(res));
                 })
                 .start(8080);
     }
