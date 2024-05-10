@@ -26,11 +26,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-
-node
-
-
-
 dist/index.html
 dist/bundle.js
 dist/bundle.js.map
