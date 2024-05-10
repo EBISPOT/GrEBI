@@ -17,9 +17,9 @@ export default function ClassExpression({
   if (typeof expr !== "object") {
     let mapped_value = node?.getRefs().get(expr);
     if(mapped_value) {
-      return <Link className="link-default" to={"/nodes/" + encodeNodeId(expr)}>{mapped_value.name}</Link>
+      return <Link className="link-default" style={{color:'black'}} to={"/nodes/" + encodeNodeId(expr)}>{mapped_value.name}</Link>
     } else {
-      return <Link className="link-default" to={"https://www.ebi.ac.uk/ols4/search?q=" + encodeURIComponent(expr)}>expr</Link>
+      return <Link className="link-default" style={{color:'black'}} to={"https://www.ebi.ac.uk/ols4/search?q=" + encodeURIComponent(expr)}>expr</Link>
     }
   }
 
