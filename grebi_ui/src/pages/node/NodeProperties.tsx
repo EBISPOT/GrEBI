@@ -58,7 +58,8 @@ export default function NodeProperties(params:{node:GraphNode}) {
       <main className="container mx-auto px-4 pt-1">
         <SearchBox/>
         <div className="text-center">
-        <Typography variant="h5">{pageTitle}</Typography>
+        <Typography variant="h5">{pageTitle} {
+          node.extractType() && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()}</span>}</Typography>
                       <Grid item xs={10} className="pt-2">
                 {props['id'].map(id => <span
 className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 text-sm"
@@ -103,7 +104,7 @@ className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 text-sm"
           </Grid>
           <Grid item xs={10}>
         <TabPanel value={tab} index={"properties"}>
-          <PropTable node={node} dsEnabled={dsEnabled} />
+          <PropTable node={node} datasources={datasources} dsEnabled={dsEnabled} />
         </TabPanel>
         <TabPanel value={tab} index={"edges"}>
           Item Two

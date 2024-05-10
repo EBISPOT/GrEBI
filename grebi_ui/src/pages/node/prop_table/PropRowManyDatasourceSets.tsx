@@ -6,7 +6,7 @@ import PropRow from "./PropRow";
 import PropVals from "./PropVals";
 import { DatasourceTag, DatasourceTags } from "../../../components/DatasourceTag";
 
-export default function PropRowManyDatasourceSets(params:{node:GraphNode,prop:string,values:PropVal[],dsEnabled:string[]}) {
+export default function PropRowManyDatasourceSets(params:{node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
 
     let {node,prop,values,dsEnabled } = params
 

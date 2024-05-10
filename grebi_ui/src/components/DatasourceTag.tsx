@@ -1,4 +1,4 @@
-import React, { Fragment } from "react"
+import React, { Fragment, useState } from "react"
 
 function DatasourceTag(props:{ds:string}) {
     let { ds } = props
@@ -14,8 +14,24 @@ function DatasourceTag(props:{ds:string}) {
     }
 }
 
+let MAX_DSS = 3
+
 function DatasourceTags(props:{dss:string[]}) {
-    return <Fragment>{props.dss.map(ds => <DatasourceTag ds={ds}/>)}</Fragment>
+    let [ expanded, setExpanded ] = useState<boolean>(false);
+    if(props.dss.length > MAX_DSS && !expanded) {
+        return <Fragment>
+              {props.dss.slice(0, MAX_DSS).map(ds => <DatasourceTag ds={ds}/>)}
+              &nbsp;
+              <span
+                className="link-default italic"
+                onClick={() => setExpanded(true)}
+              >
+                + {props.dss.length - MAX_DSS}
+              </span>
+            </Fragment>
+    } else {
+        return <Fragment>{props.dss.map(ds => <DatasourceTag ds={ds}/>)}</Fragment>
+    }
 }
 
 export { DatasourceTag, DatasourceTags }

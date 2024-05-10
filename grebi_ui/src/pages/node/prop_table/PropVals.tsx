@@ -4,6 +4,7 @@ import encodeNodeId from "../../../encodeNodeId";
 import GraphNode from "../../../model/GraphNode";
 import PropVal from "../../../model/PropVal";
 import Refs from "../../../model/Refs";
+import ClassExpression from "../../../components/ClassExpression";
 
 export default function PropVals(params:{ node:GraphNode,prop:string,values:PropVal[] }) {
 
@@ -42,6 +43,14 @@ function PropValue(params:{node:GraphNode,prop:string,value:PropVal,monospace:bo
 
     let { node, prop, value, monospace, separator } = params;
 
+    if(typeof value.value === 'object') {
+        if(value.value["rdf:type"] !== undefined) {
+            return <ClassExpression node={node} expr={value.value} />
+        } else {
+            return <span>{JSON.stringify(value.value)}</span>
+        }
+    }
+
     let mapped_value = node.getRefs().get(value.value);
   
     // todo mapped value datasources
@@ -61,7 +70,7 @@ function PropValue(params:{node:GraphNode,prop:string,value:PropVal,monospace:bo
                       {separator} <span
       className="rounded-sm font-mono py-0 pl-1 ml-1 my-1 text-sm" style={{backgroundColor:'rgb(240,240,240)'}}
       >
-              {typeof value.value === 'string' ? value.value : JSON.stringify(value.value)}
+              {value.value}
               </span>
           </span>
           )
@@ -69,4 +78,3 @@ function PropValue(params:{node:GraphNode,prop:string,value:PropVal,monospace:bo
     }
 
 }
-

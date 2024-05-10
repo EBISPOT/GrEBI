@@ -6,17 +6,17 @@ import PropRow from "./PropRow";
 import PropVals from "./PropVals";
 import { DatasourceTag, DatasourceTags } from "../../../components/DatasourceTag";
 
-export default function PropRowOneDatasourceSet(params:{node:GraphNode,prop:string,values:PropVal[],dsEnabled:string[]}) {
+export default function PropRowOneDatasourceSet(params:{node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
 
-    let {node,prop,values,dsEnabled } = params
+    let {node,prop,values,datasources,dsEnabled } = params
 
     return (
         <Fragment>
               <Grid item xs={12} style={{overflow:'hidden'}}>
                 <b style={{fontFamily:"'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace"}}>{prop}</b>
-                <span>
+              { datasources.length > 1 && <span>
                 <DatasourceTags dss={values[0].datasources} />
-                </span>
+                </span>}
               </Grid>
               <Grid item xs={12}>
                 <div className="pl-2">

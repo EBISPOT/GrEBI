@@ -44,7 +44,7 @@ export default class GraphNode {
         return PropVal.arrFrom(this.props['id'])
     }
 
-    extractType():'Gene'|'Disease'|'Phenotype'|'SNP'|undefined {
+    extractType():string {
 
         let types:string[] = PropVal.arrFrom(this.props['grebi:type']).map(t => t.value)
 
@@ -55,8 +55,16 @@ export default class GraphNode {
             return 'SNP'
         }
         if(types.indexOf('ols:Class') !== -1) {
-            let ancestors:any[] = this.props['ols:hirarchicalAncestors']
+            let ancestors:any[] = this.props['ols:hierarchicalAncestors']
+            return 'Class'
         }
+        if(types.indexOf('ols:Property') !== -1) {
+            return 'Property'
+        }
+        if(types.indexOf('ols:Individual') !== -1) {
+            return 'Individual'
+        }
+
     }
 
     getDatasources():string[] {
@@ -78,7 +86,7 @@ export default class GraphNode {
     getProps():{[key:string]:PropVal[]} {
         let res_props = {}
         for(let k of Object.keys(this.props)) {
-            if(k.startsWith('grebi:') || k === '_refs') {
+            if( (k.startsWith('grebi:') || k === '_refs') && k !== 'grebi:type') {
                 continue;
             }
             res_props[k] = PropVal.arrFrom(this.props[k])

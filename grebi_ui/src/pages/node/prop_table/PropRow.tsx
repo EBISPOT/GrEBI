@@ -5,9 +5,9 @@ import PropVal from "../../../model/PropVal";
 import PropRowOneDatasourceSet from "./PropRowOneDatasourceSet";
 import PropRowManyDatasourceSets from "./PropRowManyDatasourceSets";
 
-export default function PropRow(params:{node:GraphNode,prop:string,values:PropVal[],dsEnabled:string[]}) {
+export default function PropRow(params:{node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
 
-    let { node, prop, values, dsEnabled } = params
+    let { node, prop, values, datasources, dsEnabled } = params
 
     // remove any values that don't aren't asserted by at least 1 of our enabled datasources
     values = values.filter(v => {
@@ -29,8 +29,8 @@ export default function PropRow(params:{node:GraphNode,prop:string,values:PropVa
       }
 
       if(ds_sets.size === 1) {
-        return <PropRowOneDatasourceSet node={node} prop={prop} values={values} dsEnabled={dsEnabled} />
+        return <PropRowOneDatasourceSet node={node} prop={prop} values={values} datasources={datasources} dsEnabled={dsEnabled} />
       } else {
-        return <PropRowManyDatasourceSets node={node} prop={prop} values={values} dsEnabled={dsEnabled} />
+        return <PropRowManyDatasourceSets node={node} prop={prop} values={values} datasources={datasources} dsEnabled={dsEnabled} />
       }
     }
