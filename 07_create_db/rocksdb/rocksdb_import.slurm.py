@@ -24,7 +24,7 @@ def main():
 
     final_rocksdb_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "rocksdb")
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         rocksdb_path="/dev/shm/rocksdb"
     else:
         rocksdb_path=final_rocksdb_path
@@ -46,7 +46,7 @@ def main():
         print("rocksdb import failed")
         exit(1)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         if os.system("mv " + shlex.quote(rocksdb_path) + " " + shlex.quote(final_rocksdb_path)) != 0:
             print("failed moving rocksdb to nfs")
             exit(1)

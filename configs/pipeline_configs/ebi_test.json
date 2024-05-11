@@ -1,5 +1,4 @@
 {
-    "use_slurm":true,
     "slurm_max_workers": {
         "ingest": 100,
         "assign_ids": 100,

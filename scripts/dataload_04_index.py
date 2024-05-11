@@ -22,7 +22,7 @@ def main():
     ###
     ### 4. Index
     ###
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         print("Indexing on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'srun',

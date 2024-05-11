@@ -22,7 +22,7 @@ def main():
     ###
     ### 3. Merge
     ###
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         print("Merging on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'srun',

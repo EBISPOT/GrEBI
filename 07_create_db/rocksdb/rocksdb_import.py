@@ -15,7 +15,7 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         cmd = ' '.join([
             'srun -t 4:0:0 --mem 400g -c 8',
             './07_create_db/rocksdb/rocksdb_import.slurm.sh',

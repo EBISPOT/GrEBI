@@ -23,7 +23,7 @@ def main():
 
     os.makedirs(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialise'), exist_ok=True)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         print("Running materialise on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'sbatch',

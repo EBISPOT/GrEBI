@@ -1,5 +1,31 @@
 {
-    "use_slurm": false,
+    "slurm_max_workers": {
+        "ingest": 100,
+        "assign_ids": 100,
+        "extract": 100,
+        "materialise": 50,
+        "prepare_db_import": 300
+    },
+    "slurm_max_memory": {
+        "ingest": "150G",
+        "build_equiv_groups": "64G",
+        "assign_ids": "64G",
+        "merge": "16G",
+        "index": "64G",
+        "extract": "8G",
+        "materialise": "105G",
+        "prepare_db_import": "32G"
+    },
+    "slurm_max_time": {
+        "ingest": "8:0:0",
+        "build_equiv_groups": "23:0:0",
+        "assign_ids": "23:0:0",
+        "merge": "23:0:0",
+        "index": "23:0:0",
+        "extract": "23:0:0",
+        "materialise": "1:0:0",
+        "prepare_db_import": "1:0:0"
+    },
     "bytes_per_merged_file": 1073741824,
     "equivalence_props": [
         "owl:equivalentClass",
@@ -33,7 +59,6 @@
     "exclude_edges": [
     ],
     "datasource_configs": [
-        "./configs/datasource_configs/gwas.json",
-        "./configs/datasource_configs/ols_local_test.json"
+        "./configs/datasource_configs/uniprot.json"
     ]
 }

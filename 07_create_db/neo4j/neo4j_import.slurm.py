@@ -29,7 +29,7 @@ def main():
     os.makedirs(neo_data_path, exist_ok=True)
     os.makedirs(neo_logs_path, exist_ok=True)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         cmd = ' '.join([
             'JAVA_OPTS=\'-server -Xms50g -Xmx50g\'',
             'singularity run',

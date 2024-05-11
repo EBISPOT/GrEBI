@@ -30,7 +30,7 @@ def main():
     input_metadata_jsonl = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "metadata.jsonl")
     final_out_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "05_materialise", "edges_" + task_id + ".jsonl")
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         # Writing directly to the NFS currently sometimes causes large ranges of 0 bytes to be inserted into the files.
         # Temp fix: write to /dev/shm and then mv to the NFS
         out_edges_path = os.path.join("/dev/shm/edges_" + task_id + ".jsonl")
@@ -58,7 +58,7 @@ def main():
         print("materialise failed")
         exit(1)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         cmd = ' '.join([
             "mv " + shlex.quote(out_edges_path) + " " + shlex.quote(final_out_edges_path)
         ])

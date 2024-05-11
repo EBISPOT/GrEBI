@@ -17,11 +17,14 @@ if [[ -z "$GREBI_HPS_TMP" ]]; then
     exit 1
 fi
 
-# rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
-# srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
+rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
+srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
 
-# python3 ./scripts/dataload_00_prepare.py
-# python3 ./scripts/dataload_01_ingest.py
+python3 ./scripts/dataload_00_prepare.py
+python3 ./scripts/dataload_01_ingest.py
+
+exit 0
+
 # python3 ./scripts/dataload_02_assign_ids.py
 python3 ./scripts/dataload_03_merge.py
 python3 ./scripts/dataload_04_index.py

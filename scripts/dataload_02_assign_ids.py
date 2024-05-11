@@ -22,7 +22,7 @@ def main():
     ### 2. Assign IDs to nodes (merging cliques)
     ###
     # 2.1. Build database of equivalence cliques
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         print("Building equivalence db on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'srun',
@@ -49,7 +49,7 @@ def main():
     equiv_groups_txt = os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', 'groups.txt'))
 
     # 2.2. Assign IDs using the equivalences db
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         print("Assigning IDs on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'sbatch',

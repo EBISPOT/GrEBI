@@ -27,7 +27,7 @@ def main():
     os.system('rm -rf ' + shlex.quote(out_path))
     os.makedirs(out_path, exist_ok=True)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         cmd = ' '.join([
             'JAVA_OPTS=\'-server -Xms150g -Xmx150g\'',
             'singularity run',

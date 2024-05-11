@@ -19,7 +19,7 @@ def main():
     datasource_files_listing = os.path.abspath( os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '01_ingest', 'datasource_files.jsonl') )
     datasource_files = open(datasource_files_listing, 'r').read().split('\n')
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         print("Running ingest on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'sbatch',

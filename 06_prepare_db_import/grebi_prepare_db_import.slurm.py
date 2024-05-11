@@ -35,7 +35,7 @@ def main():
     final_out_solr_nodes_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import", "solr_nodes_" + task_id + ".jsonl")
     final_out_solr_edges_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import", "solr_edges_" + task_id + ".jsonl")
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         # Writing directly to the NFS currently sometimes causes large ranges of 0 bytes to be inserted into the files.
         # Temp fix: write to /dev/shm and then mv to the NFS
         out_neo_nodes_path = os.path.join("/dev/shm/n4nodes_" + task_id + ".csv")
@@ -70,7 +70,7 @@ def main():
         print("prepare_db_import neo4j failed")
         exit(1)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         cmd = ' '.join([
             "mv " + shlex.quote(out_neo_nodes_path) + " " + shlex.quote(final_out_neo_nodes_path),
             "&&", "mv " + shlex.quote(out_neo_edges_path) + " " + shlex.quote(final_out_neo_edges_path)
@@ -92,7 +92,7 @@ def main():
         print("prepare_db_import solr failed")
         exit(1)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         cmd = ' '.join([
             "mv " + shlex.quote(out_solr_nodes_path) + " " + shlex.quote(final_out_solr_nodes_path),
             "&&", "mv " + shlex.quote(out_solr_edges_path) + " " + shlex.quote(final_out_solr_edges_path)

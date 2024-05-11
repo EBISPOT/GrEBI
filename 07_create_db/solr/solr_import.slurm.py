@@ -27,7 +27,7 @@ def main():
     os.makedirs(solr_path, exist_ok=True)
     os.system('chmod 777 ' + solr_path)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         cmd = ' '.join([
             'singularity run',
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/data',

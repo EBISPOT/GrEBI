@@ -15,7 +15,7 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    if config['use_slurm'] == True:
+    if os.environ['GREBI_USE_SLURM'] == "1":
         cmd = ' '.join([
             'srun -t 5-0:0:0 --mem 64g -c 8',
             './07_create_db/solr/solr_import.slurm.sh',

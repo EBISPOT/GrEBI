@@ -17,15 +17,16 @@ The resulting graphs can be downloaded from https://ftp.ebi.ac.uk/pub/databases/
 
 ## Implementation
 
-This is a implemented as a combination of Python scripts for orchestration and [Rust](https://www.rust-lang.org/) programs with simple CLIs for high performance data wrangling.
+The pipeline is implemented as a combination of Python scripts for orchestration and [Rust](https://www.rust-lang.org/) programs with simple CLIs for high performance data wrangling.
 
-The pipeline makes property graphs (where both nodes and edges can have properties) for Neo4j, with "bruteforce" integration:
+The primary output the pipeline is a [property graph](https://docs.oracle.com/en/database/oracle/property-graph/22.2/spgdg/what-are-property-graphs.html) for [Neo4j](https://github.com/neo4j/neo4j). The input format (after ingests to extract from [KGX](https://github.com/biolink/kgx), RDF, and bespoke DB formats) is simple [JSONL](https://jsonlines.org/) files, to which "bruteforce" integration is applied:
 
 * All strings that begin with any IRI or CURIE prefix from the [Bioregistry](https://bioregistry.io/) are canonicalised to the standard CURIE form
 * All property values that are the identifier of another node in the graph become edges
 * Cliques of equivalent nodes are merged into single nodes
+* Cliques of equivalent properties are merged into single properties (and for ontology-defined properties, the [qualified safe labels](https://github.com/VirtualFlyBrain/neo4j2owl/blob/master/README.md) are used)
 
-
+In addition to Neo4j, the nodes and edges are loaded into [Solr](https://solr.apache.org/) for full-text search and [RocksDB](https://rocksdb.org/) for id->object resolution.
 
 
 
