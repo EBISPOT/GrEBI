@@ -1,6 +1,7 @@
 
 
 use std::ascii::escape_default;
+use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fs::File;
@@ -36,12 +37,6 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 struct Args {
 
     #[arg(long)]
-    in_metadata_jsonl: String,
-
-    #[arg(long)]
-    in_summary_json: String,
-
-    #[arg(long)]
     in_nodes_jsonl: String,
 
     #[arg(long)]
@@ -62,12 +57,6 @@ fn main() -> std::io::Result<()> {
     let args = Args::parse();
 
     let start_time = std::time::Instant::now();
-
-    let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
-    let summary:Value = serde_json::from_reader(File::open(args.in_summary_json).unwrap()).unwrap();
-
-    let all_entity_props: Vec<String> = summary["entity_props"].as_object().unwrap().keys().cloned().collect();
-    let all_edge_props: Vec<String> = summary["edge_props"].as_object().unwrap().keys().cloned().collect();
 
     let mut nodes_reader = BufReader::new(File::open(args.in_nodes_jsonl).unwrap());
     let mut edges_reader = BufReader::new(File::open(args.in_edges_jsonl).unwrap());
@@ -97,7 +86,7 @@ fn main() -> std::io::Result<()> {
             line.pop();
         }
 
-        write_solr_object(&line, &mut nodes_writer, &node_metadata, args.include_json_field);
+        write_solr_object(&line, &mut nodes_writer, args.include_json_field);
     }
 
     loop {
@@ -111,7 +100,7 @@ fn main() -> std::io::Result<()> {
             line.pop();
         }
 
-        write_solr_object(&line, &mut edges_writer, &node_metadata, args.include_json_field);
+        write_solr_object(&line, &mut edges_writer, args.include_json_field);
     }
 
     nodes_writer.flush().unwrap();
@@ -125,32 +114,17 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, include_json_field:bool) {
+fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, include_json_field:bool) {
 
-    let _refs = {
-        let mut res:Map<String,Value> = Map::new();
-        for (start,end) in find_strings(&line) {
-            let maybe_id = &line[start..end];
-            let metadata = node_metadata.get(maybe_id);
-            if metadata.is_some() {
-                res.insert(String::from_utf8_lossy(maybe_id).to_string(), serde_json::from_slice(metadata.unwrap().json.as_slice()).unwrap());
-            }
-        }
-        res
-    };
-
-    let mut json:serde_json::Map<String,Value> = serde_json::from_slice(&line).unwrap();
+    let json:serde_json::Map<String,Value> = serde_json::from_slice(&line).unwrap();
     let mut out_json = serde_json::Map::new();
 
-    if include_json_field {
-        json.insert("_refs".to_string(), Value::Object(_refs));
-        out_json.insert("_json".to_string(), Value::String(serde_json::to_string(&json).unwrap()));
-    }
+    let refs = json.get("_refs").unwrap().as_object().unwrap();
 
     for (k,v) in json.iter() {
 
-        if k.eq("_refs") {
-            continue; // we just added this for the _json field, don't want it indexed
+        if k.starts_with("_refs") {
+            continue;
         }
 
         // for internal fields just copy the value
@@ -164,7 +138,7 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, node_met
 
         for i in 0..arr.len() {
             let el = &arr[i];
-            new_arr.extend(value_to_solr(el, &node_metadata));
+            new_arr.extend(value_to_solr(el, &refs));
         }
 
         if new_arr.len() > 0 {
@@ -172,34 +146,45 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, node_met
         }
     }
 
+    if include_json_field {
+        out_json.insert("_json".to_string(), Value::String(serde_json::to_string(&json).unwrap()));
+    }
+
     nodes_writer.write_all(serde_json::to_string(&out_json).unwrap().as_bytes()).unwrap();
     nodes_writer.write_all(b"\n").unwrap();
 }
 
-fn value_to_solr(v:&Value, node_metadata:&BTreeMap<Vec<u8>,Metadata>) -> Vec<Value> {
+fn value_to_solr(v:&Value, refs:&Map<String,Value>) -> Vec<Value> {
 
     if v.is_array() {
         return v.as_array().map(|arr| {
-            arr.iter().flat_map(|el| value_to_solr(el, node_metadata)).collect()
+            arr.iter().flat_map(|el| value_to_solr(el, &refs)).collect()
         }).unwrap();
     }
 
     if v.is_object() {
         let vobj = v.as_object().unwrap();
         if vobj.contains_key("grebi:value") {
-            return value_to_solr(vobj.get("grebi:value").unwrap(), node_metadata);
+            return value_to_solr(vobj.get("grebi:value").unwrap(), &refs);
         } else {
             return vec!();
         }
     }
 
     if v.is_string() {
-        let metadata = node_metadata.get(v.as_str().unwrap().as_bytes());
+        let metadata = refs.get(&v.as_str().unwrap().to_owned());
         if metadata.is_some() {
             let metadata_u = metadata.unwrap();
-            if metadata_u.name.is_some() {
-                // add both the ID and its label
-                return vec!(v.clone(), Value::String(String::from_utf8_lossy(&metadata_u.name.as_ref().unwrap()).to_string()));
+            let names = metadata_u.get("grebi:name");
+            if names.is_some() {
+                // add both the ID and its labels
+                return {
+                    let mut res = vec!(v.clone());
+                    for label in names.unwrap().as_array().unwrap() {
+                        res.push(label.clone());
+                    }
+                    res
+                }
             }
         } else {
             return vec!(v.clone());

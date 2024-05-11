@@ -2,5 +2,4 @@
 
 export PYTHONUNBUFFERED=TRUE
 
-python3 ./06_prepare_db_import/grebi_prepare_db_import.slurm.py $1 nojson
-python3 ./06_prepare_db_import/grebi_prepare_db_import.slurm.py $1 full
+python3 ./06_prepare_db_import/grebi_prepare_db_import.slurm.py $1

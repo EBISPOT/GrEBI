@@ -9,20 +9,19 @@ from subprocess import Popen, PIPE, STDOUT
 
 def main():
 
-    if len(sys.argv) < 3:
-        print("Usage: solr_import.py <grebi_config.json> <nojson|full>")
+    if len(sys.argv) < 2:
+        print("Usage: solr_import.py <grebi_config.json>")
         exit(1)
 
     config_filename = os.path.abspath(sys.argv[1])
-    release = sys.argv[2]
 
-    print(get_time() + " --- Create Solr DB: " + release)
+    print(get_time() + " --- Create Solr DB")
     print(get_time() + " --- Config filename: " + config_filename, flush=True)
 
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    solr_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", release, "solr")
+    solr_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "solr")
 
     os.system('rm -rf ' + shlex.quote(solr_path))
     os.makedirs(solr_path, exist_ok=True)
@@ -31,7 +30,7 @@ def main():
     if config['use_slurm'] == True:
         cmd = ' '.join([
             'singularity run',
-            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import", release)) + ':/data',
+            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/data',
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")) + ':/names.txt',
             '--bind ' + os.path.abspath('./07_create_db/solr/solr_config') + ':/config',
             '--bind ' + shlex.quote(solr_path) + ':/var/solr',
@@ -45,7 +44,7 @@ def main():
         os.system("chmod 777 " + shlex.quote(solr_path))
         cmd = ' '.join([
             'docker run',
-            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import", release)) + ':/data',
+            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/data',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")) + ':/names.txt',
             '-v ' + os.path.abspath('./07_create_db/solr/solr_config') + ':/config',
             '-v ' + shlex.quote(solr_path) + ':/var/solr',

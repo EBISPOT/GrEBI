@@ -1,5 +1,5 @@
 [package]
-name = "grebi_json2rocks"
+name = "grebi_make_rocks"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.4.11", features = ["derive"] }
-grebi_shared = { path = "../../grebi_shared" }
+grebi_shared = { path = "../../../grebi_shared" }
 rocksdb = { git = "https://github.com/rust-rocksdb/rust-rocksdb", branch = "master" }
 flate2 = {version="1.0.28", features=["zlib-ng"]}
 serde_json = { version = "1.0.108", features=["preserve_order"] }

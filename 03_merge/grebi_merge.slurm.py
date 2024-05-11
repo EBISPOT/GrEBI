@@ -38,7 +38,9 @@ def main():
     out_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "03_merge", "merged.jsonl.")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
-    cmd = './target/release/grebi_merge ' + ' '.join(result_filenames)
+    cmd = './target/release/grebi_merge '
+    cmd = cmd + ' --exclude-props ' + ','.join(config['exclude_props'])
+    cmd = cmd + ' ' + ' '.join(result_filenames)
     cmd = cmd + " | split -a 6 -d -C " + str(config['bytes_per_merged_file']) + " - " + shlex.quote(out_path)
 
     print("Running merge command: " + cmd, flush=True)

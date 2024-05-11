@@ -9,22 +9,21 @@ from subprocess import Popen, PIPE, STDOUT
 
 def main():
 
-    if len(sys.argv) < 3:
-        print("Usage: neo4j_import.py <grebi_config.json> <nojson|full>")
+    if len(sys.argv) < 2:
+        print("Usage: neo4j_import.py <grebi_config.json>")
         exit(1)
 
     config_filename = os.path.abspath(sys.argv[1])
-    release = sys.argv[2]
 
-    print(get_time() + " --- Create Neo4j DB: " + release)
+    print(get_time() + " --- Create Neo4j DB")
     print(get_time() + " --- Config filename: " + config_filename, flush=True)
 
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    neo_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", release, "neo4j")
-    neo_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", release, "neo4j", "data")
-    neo_logs_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", release, "neo4j", "logs")
+    neo_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "neo4j")
+    neo_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "neo4j", "data")
+    neo_logs_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "neo4j", "logs")
 
     os.system('rm -rf ' + shlex.quote(neo_path))
     os.makedirs(neo_data_path, exist_ok=True)
@@ -34,7 +33,7 @@ def main():
         cmd = ' '.join([
             'JAVA_OPTS=\'-server -Xms50g -Xmx50g\'',
             'singularity run',
-            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import", release)) + ':/mnt',
+            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/mnt',
             '--bind ' + shlex.quote(neo_data_path) + ':/data',
             '--bind ' + shlex.quote(neo_logs_path) + ':/logs',
             '--bind ' + os.path.abspath('./07_create_db/neo4j/neo4j_import.dockersh') + ':/import.sh',
@@ -48,7 +47,7 @@ def main():
     else:
         cmd = ' '.join([
             'docker run',
-            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import", release)) + ':/mnt',
+            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/mnt',
             '-v ' + shlex.quote(neo_data_path) + ':/data',
             '-v ' + shlex.quote(neo_logs_path) + ':/logs',
             '-v ' + os.path.abspath('./07_create_db/neo4j/neo4j_import.dockersh') + ':/import.sh',

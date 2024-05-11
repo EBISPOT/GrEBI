@@ -21,7 +21,8 @@ pub struct SlicedProperty<'a> {
 pub struct SlicedEntity<'a> {
     pub id:&'a [u8],
     pub datasources:Vec<&'a [u8]>,
-    pub props:Vec<SlicedProperty<'a>>
+    pub props:Vec<SlicedProperty<'a>>,
+    pub _refs:Option<&'a [u8]>
 }
 
 impl<'a> SlicedEntity<'a> {
@@ -32,6 +33,7 @@ impl<'a> SlicedEntity<'a> {
 
         let mut props:Vec<SlicedProperty> = Vec::new();
         let mut entity_datasources:Vec<&[u8]> = Vec::new();
+        let mut _refs:Option<&[u8]> = None;
         
         // {
         parser.begin_object();
@@ -53,6 +55,12 @@ impl<'a> SlicedEntity<'a> {
         while parser.peek().kind != JsonTokenType::EndObject {
 
             let prop_key = parser.name();
+
+            if prop_key == b"_refs" {
+                _refs = Some(&parser.value());
+                continue;
+            }
+
             let mut values:Vec<SlicedPropertyValue> = Vec::new();
 
             let values_slice_begin = parser.begin_array();
@@ -92,7 +100,7 @@ impl<'a> SlicedEntity<'a> {
 
 
 
-        return SlicedEntity { id, datasources: entity_datasources, props };
+        return SlicedEntity { id, datasources: entity_datasources, props, _refs };
 
     }
 

@@ -21,29 +21,29 @@ def main():
     max_file_num = max(list(map(lambda f: int(f.split('.')[-1]), all_files)))
     print(get_time() + " --- Max file num: " + str(max_file_num))
 
-    os.makedirs(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialise_edges'), exist_ok=True)
+    os.makedirs(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialise'), exist_ok=True)
 
     if config['use_slurm'] == True:
-        print("Running materialise edges on slurm (use_slurm = true)")
+        print("Running materialise on slurm (use_slurm = true)")
         slurm_cmd = ' '.join([
             'sbatch',
             '--wait',
-            '-o ' + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialise_edges', 'materialise_edges_%a.log')),
-            '--array=0-' + str(max_file_num) + '%' + str(config['slurm_max_workers']['materialise_edges']),
-            '--time=' + config['slurm_max_time']['materialise_edges'],
-            '--mem=' + config['slurm_max_memory']['materialise_edges'],
-            './05_materialise_edges/grebi_materialise_edges.slurm.sh',
+            '-o ' + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialise', 'materialise_%a.log')),
+            '--array=0-' + str(max_file_num) + '%' + str(config['slurm_max_workers']['materialise']),
+            '--time=' + config['slurm_max_time']['materialise'],
+            '--mem=' + config['slurm_max_memory']['materialise'],
+            './05_materialise/grebi_materialise.slurm.sh',
             config_filename
         ])
         if os.system(slurm_cmd) != 0:
-            print("materialise edges failed")
+            print("materialise failed")
             exit(1)
-        os.system("tail -n +1 " + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialise_edges', '*.log')))
+        os.system("tail -n +1 " + os.path.abspath(os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '05_materialise', '*.log')))
     else:
         for n in range(max_file_num+1):
             print("Running " + str(n) + " of " + str(max_file_num))
-            if os.system('SLURM_ARRAY_TASK_ID=' + str(n) + ' ./05_materialise_edges/grebi_materialise_edges.slurm.sh ' + config_filename) != 0:
-                print("materialise edges failed")
+            if os.system('SLURM_ARRAY_TASK_ID=' + str(n) + ' ./05_materialise/grebi_materialise.slurm.sh ' + config_filename) != 0:
+                print("materialise failed")
                 exit(1)
 
 

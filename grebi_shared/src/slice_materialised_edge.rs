@@ -10,7 +10,8 @@ pub struct SlicedEdge<'a> {
     pub from:&'a [u8],
     pub to:&'a [u8],
     pub datasources:Vec<&'a [u8]>,
-    pub props:Vec<SlicedProperty<'a>>
+    pub props:Vec<SlicedProperty<'a>>,
+    pub _refs:Option<&'a [u8]>
 }
 
 impl<'a> SlicedEdge<'a> {
@@ -21,6 +22,7 @@ impl<'a> SlicedEdge<'a> {
 
         let mut props:Vec<SlicedProperty> = Vec::new();
         let mut entity_datasources:Vec<&[u8]> = Vec::new();
+        let mut _refs:Option<&[u8]> = None;
         
         // {
         parser.begin_object();
@@ -57,6 +59,12 @@ impl<'a> SlicedEdge<'a> {
         while parser.peek().kind != JsonTokenType::EndObject {
 
             let prop_key = parser.name();
+
+            if prop_key == b"_refs" {
+                _refs = Some(&parser.value());
+                continue;
+            }
+
             let mut values:Vec<SlicedPropertyValue> = Vec::new();
 
             let values_slice_begin = parser.begin_array();
@@ -77,7 +85,7 @@ impl<'a> SlicedEdge<'a> {
         parser.end_object();
 
 
-        return SlicedEdge { edge_id, edge_type, from, to, datasources: entity_datasources, props };
+        return SlicedEdge { edge_id, edge_type, from, to, datasources: entity_datasources, props, _refs };
     }
 
 

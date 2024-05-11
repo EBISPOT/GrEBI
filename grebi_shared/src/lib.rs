@@ -9,11 +9,16 @@ pub mod load_metadata_mapping_table;
 // get the id without parsing json
 pub fn get_id<'a>(json:&'a [u8])->&'a [u8] {
 
-    if !json.starts_with("{\"grebi:nodeId\":\"".as_bytes()) {
-        panic!("could not do quick id extraction from: {} length {}", String::from_utf8(json.to_vec()).unwrap(), json.len());
-    }
+    let start:usize = {
+        if json.starts_with("{\"grebi:nodeId\":\"".as_bytes()) {
+            b"{\"grebi:nodeId\":\"".len()
+        } else if json.starts_with("{\"grebi:edgeId\":\"".as_bytes()) {
+            b"{\"grebi:edgeId\":\"".len()
+        } else {
+            panic!("could not do quick id extraction from: {} length {}", String::from_utf8(json.to_vec()).unwrap(), json.len());
+        }
+    };
 
-    let start = "{\"grebi:nodeId\":\"".as_bytes().len();
     let mut end = start;
 
     while json[end] != b'"' {

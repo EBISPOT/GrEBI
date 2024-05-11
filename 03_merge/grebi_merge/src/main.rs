@@ -1,9 +1,10 @@
 use flate2::read::GzDecoder;
 use std::cmp::Ordering;
-use std::collections::VecDeque;
+use std::collections::{BTreeSet, VecDeque};
 use std::fs::File;
 use std::io::{Write, BufWriter};
 use std::io::{BufRead, BufReader };
+use clap::Parser;
 use std::{env, io};
 
 use grebi_shared::get_id;
@@ -21,18 +22,32 @@ struct Input {
     reader:BufReader<GzDecoder<File>>
 }
 
+#[derive(clap::Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+
+    #[arg(long)]
+    exclude_props: String,
+
+     #[arg(trailing_var_arg = true, allow_hyphen_values = true, required = true)]
+    _files: Vec<String>,
+}
+
 struct BufferedLine {
     input_index:usize,
     line:Vec<u8>
 }
 
 fn main() -> std::io::Result<()> {
-    let args: Vec<String> = env::args().collect();
+
+    let args = Args::parse();
 
     let stdout = io::stdout().lock();
     let mut writer = BufWriter::with_capacity(1024*1024*32,stdout);
 
-    let mut input_filenames: Vec<String> = args[1..].to_vec();
+    let exclude_props:BTreeSet<Vec<u8>> = args.exclude_props.split(",").map(|s| s.to_string().as_bytes().to_vec()).collect();
+
+    let mut input_filenames: Vec<String> = args._files.to_vec();
     input_filenames.sort();
     input_filenames.dedup();
 
@@ -95,7 +110,7 @@ fn main() -> std::io::Result<()> {
         if !id.eq(&cur_id) {
             // this is a new subject; we have finished the old one (if present)
             if cur_id.len() > 0 {
-                write_merged_entity(&lines_to_write, &mut writer, &inputs);
+                write_merged_entity(&lines_to_write, &mut writer, &inputs, &exclude_props);
                 lines_to_write.clear();
             }
             cur_id = id.to_vec();
@@ -128,7 +143,7 @@ fn main() -> std::io::Result<()> {
     }
 
     if cur_id.len() > 0 {
-        write_merged_entity(&lines_to_write, &mut writer, &inputs);
+        write_merged_entity(&lines_to_write, &mut writer, &inputs, &exclude_props);
         lines_to_write.clear();
     }
 
@@ -138,7 +153,7 @@ fn main() -> std::io::Result<()> {
 }
 
 #[inline(always)]
-fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWriter<std::io::StdoutLock>, inputs: &Vec<Input>) {
+fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWriter<std::io::StdoutLock>, inputs: &Vec<Input>, exclude_props:&BTreeSet<Vec<u8>>) {
 
     if lines_to_write.len() == 0 {
         panic!();
@@ -167,6 +182,25 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         return;
     }
 
+    // merge all the {prop_key, prop_value, datasource} into a single list for sorting
+    let mut n_props_total = 0;
+    for json in &jsons {
+        n_props_total += json.props.len();
+    }
+    let mut merged_props = Vec::<(&[u8] /* datasource */, ParsedProperty)>::with_capacity(n_props_total);
+    for json in &jsons {
+        for prop in json.props.iter() {
+            if !exclude_props.contains(prop.key) {
+                merged_props.push(( json.datasource, prop.clone()));
+            }
+        }
+    }
+
+    if merged_props.len() == 0 {
+        // skip if after excluding properties there are none left
+        return;
+    }
+
     datasources.sort();
     datasources.dedup();
 
@@ -185,19 +219,6 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         stdout.write_all(r#"""#.as_bytes()).unwrap();
     }
     stdout.write_all(r#"]"#.as_bytes()).unwrap();
-
-
-    // merge all the {prop_key, prop_value, datasource} into a single list for sorting
-    let mut n_props_total = 0;
-    for json in &jsons {
-        n_props_total += json.props.len();
-    }
-    let mut merged_props = Vec::<(&[u8] /* datasource */, ParsedProperty)>::with_capacity(n_props_total);
-    for json in &jsons {
-        for prop in json.props.iter() {
-            merged_props.push(( json.datasource, prop.clone()));
-        }
-    }
 
     // sort by key, then value, then datasource
     merged_props.sort_by(|a, b| {

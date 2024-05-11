@@ -5,8 +5,18 @@ use std::{env, io};
 use csv;
 use rusqlite::Connection;
 use bloomfilter::Bloom;
+use clap::Parser;
 use std::io::{BufRead, BufReader };
 use std::io::{Write, BufWriter};
+
+#[derive(clap::Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+
+    #[arg(long)]
+    add_group: Vec<String>
+}
+
 
 fn main() {
 
@@ -14,6 +24,18 @@ fn main() {
     let mut entity_to_group:BTreeMap<Vec<u8>, u64> = BTreeMap::new();
 
     let mut next_group_id:u64 = 0;
+
+    let args = Args::parse();
+    let add_group:Vec<String> = args.add_group;
+    for group in add_group {
+        let entries:HashSet<Vec<u8>> = group.split(",").map(|s| s.as_bytes().to_vec()).collect();
+        let gid = next_group_id;
+        next_group_id = next_group_id + 1;
+        for id in &entries {
+            entity_to_group.insert(id.to_vec(), gid);
+        }
+        group_to_entities.insert(gid, entries);
+    }
 
     let start_time = std::time::Instant::now();
     let mut n = 0;
@@ -140,14 +162,19 @@ fn main() {
 // Prefer:
 //      - CURIEs
 //      - textual (readable) IDs rather than numeric
+//      - "grebi:" IDs always win (used to consolidate names on grebi:name etc.)
 // lower score is better
 //
 fn id_score(id:&[u8]) -> i32 {
 
+    if id.starts_with(b"grebi:") {
+        return i32::MIN;
+    }
+
     let mut score = 0;
 
     if id.contains(&b':') && !id.starts_with(b"http") {
-        score = score - 1000;
+        score = score - 1000; // curie-like
     }
 
     for c in id {

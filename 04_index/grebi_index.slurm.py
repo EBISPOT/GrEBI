@@ -31,7 +31,6 @@ def main():
     cmd = cmd + ' --out-metadata-jsonl-path ' + out_metadata_path
     cmd = cmd + ' --out-summary-json-path ' + output_summary_filename
     cmd = cmd + ' --out-names-txt ' + names_filename
-    cmd = cmd + ' --name-fields ' + ','.join(config['name_props'])
 
     print(get_time() + " --- Running index command: " + cmd, flush=True)
 

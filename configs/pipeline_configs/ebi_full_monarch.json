@@ -4,8 +4,8 @@
         "ingest": 100,
         "assign_ids": 100,
         "extract": 100,
-        "materialise_edges": 200,
-        "prepare_db_import": 50
+        "materialise": 50,
+        "prepare_db_import": 300
     },
     "slurm_max_memory": {
         "ingest": "32G",
@@ -14,8 +14,8 @@
         "merge": "16G",
         "index": "64G",
         "extract": "8G",
-        "materialise_edges": "64G",
-        "prepare_db_import": "105G"
+        "materialise": "105G",
+        "prepare_db_import": "32G"
     },
     "slurm_max_time": {
         "ingest": "8:0:0",
@@ -24,7 +24,7 @@
         "merge": "23:0:0",
         "index": "23:0:0",
         "extract": "23:0:0",
-        "materialise_edges": "1:0:0",
+        "materialise": "1:0:0",
         "prepare_db_import": "1:0:0"
     },
     "bytes_per_merged_file": 1073741824,
@@ -40,19 +40,24 @@
         "obo:chebi/inchikey",
         "obo:chebi/smiles",
         "impc:pmId",
-        "impc:humanGeneAccId"
+        "impc:humanGeneAccId",
+        "monarch:iri"
+    ],
+    "additional_equivalence_groups": [
+        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name"],
+        ["grebi:description", "iao:definition", "monarch:description", "ols:definition"],
+        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym"]
+    ],
+    "exclude_props": [
+        "ols:curie",
+        "ols:shortForm",
+        "ols:ontologyPreferredPrefix",
+        "ols:iri",
+        "oboinowl:id",
+        "oboinowl:url",
+        "monarch:iri"
     ],
     "exclude_edges": [
-        "ols:iri",
-        "ols:curie",
-        "oboinowl:id",
-        "oboinowl:url"
-    ],
-    "name_props": [
-        "ols:label",
-        "rdfs:label",
-        "monarch:name",
-        "impc:name"
     ],
     "datasource_configs": [
         "./configs/datasource_configs/gwas.json",

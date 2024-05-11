@@ -1,6 +1,7 @@
 
 use grebi_shared::get_id;
 use grebi_shared::json_lexer::JsonToken;
+use serde_json::Value;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -33,9 +34,6 @@ struct Args {
 
     #[arg(long)]
     out_names_txt: String,
-
-    #[arg(long)]
-    name_fields: String
 }
 
 fn main() {
@@ -50,12 +48,6 @@ fn main() {
     let mut entity_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut edge_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut all_names:BTreeSet<Vec<u8>> = BTreeSet::new();
-
-
-    let mut name_fields:Vec<Vec<u8>> = Vec::new();
-    for prop in args.name_fields.split(",") {
-        name_fields.push(prop.as_bytes().to_vec());
-    }
 
     let mut summary_writer = BufWriter::new(File::create(&args.out_summary_json_path).unwrap());
     let mut metadata_writer = BufWriter::new(File::create(&args.out_metadata_jsonl_path).unwrap());
@@ -93,10 +85,7 @@ fn main() {
         metadata_writer.write_all(r#"]"#.as_bytes()).unwrap();
 
 
-        let mut names:Vec<Option<&[u8]>> = Vec::with_capacity(name_fields.len());
-        for _ in 0..name_fields.len() {
-            names.push(None);
-        }
+        let mut wrote_name = false;
 
         sliced.props.iter().for_each(|prop| {
 
@@ -127,12 +116,35 @@ fn main() {
                 metadata_writer.write_all(r#"]"#.as_bytes()).unwrap();
             }
 
-            let mut n_name_field:Option<usize> = None;
-            for i in 0..name_fields.len() {
-                if name_fields[i] == prop_key {
-                    n_name_field = Some(i);
-                    break;
+            if prop_key.eq(b"grebi:name") {
+                metadata_writer.write_all(r#","grebi:name":["#.as_bytes()).unwrap();
+                {
+                    let mut is_first = true;
+                    for val in prop.values.iter() {
+                        if val.kind == JsonTokenType::StartString {
+                            if is_first {
+                                is_first = false;
+                            } else {
+                                metadata_writer.write_all(r#","#.as_bytes()).unwrap();
+                            }
+                            metadata_writer.write_all(val.value).unwrap();
+                        } else {
+                            let reif = SlicedReified::from_json(&val.value);
+                            if reif.is_some() {
+                                let reif_u = reif.unwrap();
+                                if reif_u.value_kind == JsonTokenType::StartString {
+                                    if is_first {
+                                        is_first = false;
+                                    } else {
+                                        metadata_writer.write_all(r#","#.as_bytes()).unwrap();
+                                    }
+                                    metadata_writer.write_all(reif_u.value).unwrap();
+                                }
+                            }
+                        }
+                    }
                 }
+                metadata_writer.write_all(r#"]"#.as_bytes()).unwrap();
             }
 
             for val in prop.values.iter() {
@@ -150,34 +162,22 @@ fn main() {
                             let count2 = edge_props_to_count.entry(prop_key).or_insert(0);
                             *count2 += 1;
                         });
-
-                        if n_name_field.is_some() {
+                        if prop_key.eq(b"grebi:name") || prop.key.eq(b"grebi:synonym") {
                             if reified_u.value_kind == JsonTokenType::StartString {
-                                names[n_name_field.unwrap()] = Some(&reified_u.value[1..reified_u.value.len()-1]);
+                                all_names.insert(reified_u.value[1..reified_u.value.len()-1].to_vec());
                             }
                         }
+
                     }
                 } else if val.kind == JsonTokenType::StartString {
-                    if n_name_field.is_some() {
-                        names[n_name_field.unwrap()] = Some(&val.value[1..val.value.len()-1]);
+                    if prop_key.eq(b"grebi:name") || prop.key.eq(b"grebi:synonym") {
+                        all_names.insert(val.value[1..val.value.len()-1].to_vec());
                     }
                 }
             }
             
         });
 
-        let mut wrote_name = false;
-        for name in names {
-            if name.is_some() {
-                all_names.insert(name.unwrap().to_vec());
-                if !wrote_name {
-                    metadata_writer.write_all(r#","_name":""#.as_bytes()).unwrap();
-                    metadata_writer.write_all(&name.unwrap()).unwrap();
-                    metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
-                    wrote_name = true;
-                }
-            }
-        }
         metadata_writer.write_all("}\n".as_bytes()).unwrap();
 
         n = n + 1;

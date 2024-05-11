@@ -46,6 +46,9 @@ struct Args {
     in_summary_json: String,
 
     #[arg(long)]
+    out_edges_jsonl: String,
+
+    #[arg(long)]
     exclude: String
 }
 
@@ -56,7 +59,6 @@ fn main() -> std::io::Result<()> {
     let start_time = std::time::Instant::now();
 
     let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
-    let summary:Value = serde_json::from_reader(File::open(args.in_summary_json).unwrap()).unwrap();
 
     let exclude:BTreeSet<Vec<u8>> = args.exclude.split(",").map(|s| s.to_string().as_bytes().to_vec()).collect();
 
@@ -64,9 +66,11 @@ fn main() -> std::io::Result<()> {
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
 
-    let stdout = io::stdout().lock();
-    let mut edges_writer = BufWriter::new(stdout);
+    let edges_file = File::create(args.out_edges_jsonl).unwrap();
+    let mut edges_writer = BufWriter::new(edges_file);
 
+    let stdout = io::stdout().lock();
+    let mut nodes_writer = BufWriter::new(stdout);
 
     let mut n_nodes:i64 = 0;
 
@@ -93,18 +97,38 @@ fn main() -> std::io::Result<()> {
                 maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &node_metadata, &val.datasources);
             }
         });
+
+        let _refs = {
+            let mut res:Map<String,Value> = Map::new();
+            for (start,end) in find_strings(&line) {
+                let maybe_id = &line[start..end];
+                let id_as_str = String::from_utf8_lossy(maybe_id).to_string();
+                if !res.contains_key(&id_as_str) {
+                    let metadata = node_metadata.get(maybe_id);
+                    if metadata.is_some() {
+                        res.insert(id_as_str, serde_json::from_slice(metadata.unwrap().json.as_slice()).unwrap());
+                    }
+                }
+            }
+            res
+        };
+
+        nodes_writer.write_all(&line[0..line.len()-1] /* skip closing bracket */).unwrap();
+        nodes_writer.write_all(b",\"_refs\":").unwrap();
+        nodes_writer.write_all(serde_json::to_string(&_refs).unwrap().as_bytes()).unwrap();
+        nodes_writer.write_all(b"}\n").unwrap();
     }
 
     edges_writer.flush().unwrap();
 
-    eprintln!("materialise edges took {} seconds", start_time.elapsed().as_secs());
+    eprintln!("materialise took {} seconds", start_time.elapsed().as_secs());
 
     Ok(())
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<StdoutLock>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>) {
 
-    if prop.key.eq(b"id") || exclude.contains(prop.key) {
+    if prop.key.eq(b"id") || prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
         return;
     }
 
@@ -148,11 +172,11 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, edges_writer: &mut BufWriter<StdoutLock>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>) {
+fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, edges_writer: &mut BufWriter<File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>) {
 
     let mut buf = Vec::new();
 
-    buf.extend(b"\",\"grebi:type\":\"");
+    buf.extend(b"\"grebi:type\":\"");
     buf.extend(edge);
     buf.extend(b"\",\"grebi:from\":\"");
     buf.extend(from_id);
@@ -182,7 +206,21 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
             buf.extend(prop.values_slice);
         }
     }
-    buf.extend(b"}\n");
+
+    let _refs = {
+        let mut res:Map<String,Value> = Map::new();
+        for (start,end) in find_strings(&buf) {
+            let maybe_id = &buf[start..end];
+            let id_as_str = String::from_utf8_lossy(maybe_id).to_string();
+            if !res.contains_key(&id_as_str) {
+                let metadata = node_metadata.get(maybe_id);
+                if metadata.is_some() {
+                    res.insert(id_as_str, serde_json::from_slice(metadata.unwrap().json.as_slice()).unwrap());
+                }
+            }
+        }
+        res
+    };
 
     // sha1 not for security, just as a simple way to assign a unique
     // id to the edge that will be reproducible between dataloads
@@ -193,8 +231,11 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
 
     edges_writer.write_all(b"{\"grebi:edgeId\":\"").unwrap();
     edges_writer.write_all(hex::encode(hash).as_bytes()).unwrap();
+    edges_writer.write_all(b"\",").unwrap();
     edges_writer.write_all(&buf).unwrap();
-
+    edges_writer.write_all(b",\"_refs\":").unwrap();
+    edges_writer.write_all(serde_json::to_string(&_refs).unwrap().as_bytes()).unwrap();
+    edges_writer.write_all(b"}\n").unwrap();
 }
 
 

@@ -21,9 +21,6 @@ def main():
     ###
     ### 2. Assign IDs to nodes (merging cliques)
     ###
-    dir_to_search_for_equiv_files = os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '01_ingest'))
-    equiv_groups_txt = os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', 'groups.txt'))
-
     # 2.1. Build database of equivalence cliques
     if config['use_slurm'] == True:
         print("Building equivalence db on slurm (use_slurm = true)")
@@ -32,8 +29,7 @@ def main():
             '--time=' + config['slurm_max_time']['build_equiv_groups'],
             '--mem=' + config['slurm_max_memory']['build_equiv_groups'],
             './02_equivalences/grebi_build_equiv_groups.slurm.sh',
-            dir_to_search_for_equiv_files,
-            equiv_groups_txt
+            config_filename
         ])
         if os.system(slurm_cmd) != 0:
             print("Failed to build equivalence groups")
@@ -42,14 +38,15 @@ def main():
         print("Building equivalence db locally (use_slurm = false)")
         cmd = ' '.join([
             './02_equivalences/grebi_build_equiv_groups.slurm.sh',
-            dir_to_search_for_equiv_files,
-            equiv_groups_txt
+            config_filename
         ])
         print(cmd)
         if os.system(cmd) != 0:
             print("Failed to build equivalence db")
             exit(1)
     os.sync()
+
+    equiv_groups_txt = os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], '02_equivalences', 'groups.txt'))
 
     # 2.2. Assign IDs using the equivalences db
     if config['use_slurm'] == True:
