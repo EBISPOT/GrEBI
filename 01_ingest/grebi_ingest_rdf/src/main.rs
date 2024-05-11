@@ -71,7 +71,10 @@ struct Args {
     rdf_graph:Vec<String>, // named graphs to load, if we are loading quads
 
     #[arg(long)]
-    nest:Vec<String>
+    nest:Vec<String>,
+
+    #[arg(long)]
+    p_to_ignore_o:Vec<String> // if an object is used with this predicate, ignore the object
 }
 
 fn main() -> std::io::Result<()> {
@@ -91,6 +94,7 @@ fn main() -> std::io::Result<()> {
     let mut output_nodes = BufWriter::new(stdout);
 
     let nest_preds:BTreeSet<String> = args.nest.into_iter().collect();
+    let ignore_preds:BTreeSet<String> = args.p_to_ignore_o.into_iter().collect();
         
     let gr:CustomGraph = match args.rdf_type.as_str() {
         "rdf_triples_xml" => {
@@ -128,28 +132,33 @@ fn main() -> std::io::Result<()> {
     eprintln!("Loading graph took {} seconds", start_time.elapsed().as_secs());
 
 
+    let mut exclude_subjects:HashSet<Term<Rc<str>>> = HashSet::new();
+
     let mut owl_axiom_subjs:Vec<Term<Rc<str>>> = Vec::new();
     let mut rdf_statement_subjs:Vec<Term<Rc<str>>> = Vec::new();
-    let mut exclude_subjects:HashSet<Term<Rc<str>>> = HashSet::new();
 
     for triple in ds.triples() {
         let triple_u = triple.unwrap();
         if triple_u.p().eq(&RDF_TYPE) {
             if triple_u.o().eq(&OWL_AXIOM) {
                 owl_axiom_subjs.push(triple_u.s().clone());
+                exclude_subjects.insert(triple_u.s().clone());
             } else if triple_u.o().eq(&RDF_STATEMENT) {
                 rdf_statement_subjs.push(triple_u.s().clone());
+                exclude_subjects.insert(triple_u.s().clone());
             }
         }
-        if nest_preds.contains(&triple_u.p().value().to_string()) {
+        if nest_preds.contains(&triple_u.p().value().to_string())
+                || ignore_preds.contains(&triple_u.p().value().to_string())
+        {
             exclude_subjects.insert(triple_u.o().clone());
         }
     }
     eprintln!("Found {} owl axioms and {} rdf statements", owl_axiom_subjs.len(), rdf_statement_subjs.len());
 
     let mut reifs:HashMap<ReifLhs, BTreeMap<String, Term<Rc<str>>>> = HashMap::new();
-    populate_reifs(&mut reifs, rdf_statement_subjs, RDF_SUBJECT, RDF_PREDICATE, RDF_OBJECT, ds, &nest_preds);
-    populate_reifs(&mut reifs, owl_axiom_subjs, OWL_SUBJECT, OWL_PREDICATE, OWL_OBJECT, ds, &nest_preds);
+    populate_reifs(&mut reifs, rdf_statement_subjs, RDF_SUBJECT, RDF_PREDICATE, RDF_OBJECT, ds, &nest_preds, &exclude_subjects);
+    populate_reifs(&mut reifs, owl_axiom_subjs, OWL_SUBJECT, OWL_PREDICATE, OWL_OBJECT, ds, &nest_preds, &exclude_subjects);
 
     eprintln!("Building reification index took {} seconds", start_time.elapsed().as_secs());
 
@@ -167,16 +176,23 @@ fn populate_reifs(
     pred_prop:SimpleIri,
     obj_prop:SimpleIri,
     ds:&CustomGraph,
-    nest_preds:&BTreeSet<String>
+    nest_preds:&BTreeSet<String>,
+    exclude_subjects:&HashSet<Term<Rc<str>>>
 ) {
 
     for s in subjs {
 
         let annotated_subject = ds.triples_matching(&s, &subj_prop, &ANY).next().unwrap().unwrap().o().clone();
+
+        if exclude_subjects.contains(&annotated_subject) {
+            // no point in storing the reifs for this subject as it won't be written anyway
+            continue;
+        }
+
         let annotated_predicate = ds.triples_matching(&s, &pred_prop, &ANY).next().unwrap().unwrap().o().clone();
         let annotated_object = ds.triples_matching(&s, &obj_prop, &ANY).next().unwrap().unwrap().o().clone();
 
-        let obj_json = term_to_json(&annotated_object, ds, nest_preds, None).to_string();
+        let obj_json = term_to_json(&annotated_object, ds, nest_preds, None, exclude_subjects).to_string();
 
         let lhs =  ReifLhs {
             s: annotated_subject.clone(),
@@ -213,14 +229,14 @@ fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<StdoutLock>, nest
             continue;
         }
 
-        nodes_writer.write_all( term_to_json(s, ds, nest_preds, Some(&reifs)).to_string().as_bytes()).unwrap();
+        nodes_writer.write_all( term_to_json(s, ds, nest_preds, Some(&reifs), exclude_subjects).to_string().as_bytes()).unwrap();
         nodes_writer.write_all("\n".as_bytes()).unwrap();
     }
 
     eprintln!("Writing JSONL took {} seconds", start_time2.elapsed().as_secs());
 }
 
-fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<String>, reifs:Option<&HashMap<ReifLhs, BTreeMap<String, Term<Rc<str>>>>>) -> Value {
+fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<String>, reifs:Option<&HashMap<ReifLhs, BTreeMap<String, Term<Rc<str>>>>>, exclude_subjects:&HashSet<Term<Rc<str>>>) -> Value {
 
     let triples = ds.triples_matching(term, &ANY, &ANY);
 
@@ -247,13 +263,17 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<Strin
 
         let o = tu.o();
 
+        if o.kind() == Iri && exclude_subjects.contains(o) {
+            continue;
+        }
+
         let reif_subj = {
             if reifs.is_some() {
                 let reifs_u = reifs.unwrap();
                 let reifs_for_this_sp = reifs_u.get(&ReifLhs { s: tu.s().clone(), p: tu.p().clone() });
                 if reifs_for_this_sp.is_some() {
                     let reifs_for_this_sp_u = reifs_for_this_sp.unwrap();
-                    let o_json = term_to_json(&o, ds, nest_preds, None).to_string();
+                    let o_json = term_to_json(&o, ds, nest_preds, None, exclude_subjects).to_string();
                     let reif = reifs_for_this_sp_u.get(&o_json);
                     if reif.is_some() {
                         Some(reif.unwrap())
@@ -272,7 +292,7 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<Strin
             if nest_preds.contains(p) {
                 match o.kind() {
                     Iri|Literal|BlankNode => {
-                        let mut obj = term_to_json(o, ds, nest_preds, reifs);
+                        let mut obj = term_to_json(o, ds, nest_preds, reifs, exclude_subjects);
                         let obj_o = obj.as_object_mut().unwrap();
                         obj_o.remove_entry("id");
                         obj
@@ -282,14 +302,14 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<Strin
             } else {
                 match o.kind() {
                     Iri|Literal => Value::String( o.value().to_string() ),
-                    BlankNode => term_to_json(o, ds, nest_preds, reifs),
+                    BlankNode => term_to_json(o, ds, nest_preds, reifs, exclude_subjects),
                     Variable => todo!(),
                 }
             }
         };
 
         if reif_subj.is_some() {
-            let mut reif_as_json = term_to_json(reif_subj.unwrap(), ds, nest_preds, None);
+            let mut reif_as_json = term_to_json(reif_subj.unwrap(), ds, nest_preds, None, exclude_subjects);
             let reif_as_json_o = reif_as_json.as_object_mut().unwrap();
             reif_as_json_o.remove_entry("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
             v = json!({
