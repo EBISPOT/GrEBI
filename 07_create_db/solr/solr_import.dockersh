@@ -1,11 +1,18 @@
 #!/bin/bash
 
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <core>"
+    echo "core: grebi_autocomplete, grebi_nodes, grebi_edges"
+    exit 1
+fi
+
+CORE=$1
+
 cd /opt/solr
 
-rm -rf /var/solr/*
-mkdir /var/solr/data
-mkdir /var/solr/logs
+rm -rf /var/solr/data/$CORE/*
 cp -r /config/* /var/solr/data/
+echo /var/solr/data: $(find /var/solr/data)
 
 export SOLR_ENABLE_REMOTE_STREAMING=true
 export SOLR_SECURITY_MANAGER_ENABLED=false
@@ -14,44 +21,34 @@ solr start -m 50g -p 8999 -noprompt -force
 
 sleep 5
 
-ls -hl /data
-ls -hl /names.txt
-
-echo Uploading names.txt
-
-curl --noproxy '*' \
-    "http://localhost:8999/solr/grebi_autocomplete/update?stream.file=/names.txt&fieldnames=label&separator=%00&stream.contentType=application/csv;charset=utf-8&commit=true"
-
-for filename in /data/solr_edges*; do
-    [ -e "$filename" ] || continue
-
-    echo Uploading file: $filename
-
-    curl --noproxy '*' \
-        "http://localhost:8999/solr/grebi_edges/update/json/docs?stream.file=${filename}&stream.contentType=application/json;charset=utf-8&commit=true"
-
-done
-
-for filename in /data/solr_nodes*; do
-    [ -e "$filename" ] || continue
-
-    echo Uploading file: $filename
-
-    curl --noproxy '*' \
-        "http://localhost:8999/solr/grebi_nodes/update/json/docs?stream.file=${filename}&stream.contentType=application/json;charset=utf-8&commit=true"
-
-done
+# ls -hl /data
+# ls -hl /names.txt
 
 
-sleep 5
-
-wget --no-proxy -O - --server-response --content-on-error=on http://127.0.0.1:8999/solr/grebi_nodes/update?commit=true
-
-
-wget --no-proxy -O - --server-response --content-on-error=on http://127.0.0.1:8999/solr/grebi_edges/update?commit=true
+if [ "$CORE" == "grebi_autocomplete" ]; then
+    echo Uploading names.txt
+    echo $(curl --noproxy '*' --no-progress-meter "http://localhost:8999/solr/grebi_autocomplete/update?stream.file=/names.txt&fieldnames=label&separator=%00&stream.contentType=application/csv;charset=utf-8&commit=true")
+elif [ "$CORE" == "grebi_nodes" ]; then
+    for filename in /data/solr_nodes*; do
+        [ -e "$filename" ] || continue
+        echo Uploading nodes file: $filename
+        echo $(curl --noproxy '*' --no-progress-meter "http://localhost:8999/solr/grebi_nodes/update/json/docs?stream.file=${filename}&stream.contentType=application/json;charset=utf-8&commit=true")
+    done
+    sleep 5
+    echo $(curl --noproxy '*' --no-progress-meter "http://127.0.0.1:8999/solr/grebi_nodes/update?commit=true")
+elif [ "$CORE" == "grebi_edges" ]; then
+    for filename in /data/solr_edges*; do
+        [ -e "$filename" ] || continue
+        echo Uploading edges file: $filename
+        echo $(curl --noproxy '*' --no-progress-meter "http://localhost:8999/solr/grebi_edges/update/json/docs?stream.file=${filename}&stream.contentType=application/json;charset=utf-8&commit=true")
+    done
+    sleep 5
+    echo $(curl --noproxy '*' --no-progress-meter "http://127.0.0.1:8999/solr/grebi_edges/update?commit=true")
+else
+    echo "Invalid core"
+    exit 1
+fi
 
 sleep 5
-
 solr stop -all
-
 sleep 5
