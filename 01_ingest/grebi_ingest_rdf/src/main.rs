@@ -59,7 +59,7 @@ type CustomGraph = SpoWrapper<GenericGraph<u32, RcTermFactory>>;
 struct Args {
 
     #[arg(long)]
-    datasource_name: String,
+    datasource_name: Option<String>,
 
     #[arg(long, default_value_t = String::new())]
     filename: String, // we ignore this in the RDF ingest
@@ -71,17 +71,15 @@ struct Args {
     rdf_graph:Vec<String>, // named graphs to load, if we are loading quads
 
     #[arg(long)]
-    nest:Vec<String>,
+    nest_objects_of_predicate:Vec<String>,
 
     #[arg(long)]
-    p_to_ignore_o:Vec<String> // if an object is used with this predicate, ignore the object
+    exclude_objects_of_predicate:Vec<String> // if an object is used with this predicate, ignore the object
 }
 
 fn main() -> std::io::Result<()> {
 
      let args = Args::parse();
-
-    eprintln!("grebi_ingest_rdf running for {}", args.datasource_name);
 
     let start_time = std::time::Instant::now();
 
@@ -93,8 +91,8 @@ fn main() -> std::io::Result<()> {
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
-    let nest_preds:BTreeSet<String> = args.nest.into_iter().collect();
-    let ignore_preds:BTreeSet<String> = args.p_to_ignore_o.into_iter().collect();
+    let nest_preds:BTreeSet<String> = args.nest_objects_of_predicate.into_iter().collect();
+    let ignore_preds:BTreeSet<String> = args.exclude_objects_of_predicate.into_iter().collect();
         
     let gr:CustomGraph = match args.rdf_type.as_str() {
         "rdf_triples_xml" => {
@@ -132,6 +130,7 @@ fn main() -> std::io::Result<()> {
     eprintln!("Loading graph took {} seconds", start_time.elapsed().as_secs());
 
 
+    let mut exclude_subjects_at_toplevel = HashSet::new();
     let mut exclude_subjects:HashSet<Term<Rc<str>>> = HashSet::new();
 
     let mut owl_axiom_subjs:Vec<Term<Rc<str>>> = Vec::new();
@@ -142,15 +141,14 @@ fn main() -> std::io::Result<()> {
         if triple_u.p().eq(&RDF_TYPE) {
             if triple_u.o().eq(&OWL_AXIOM) {
                 owl_axiom_subjs.push(triple_u.s().clone());
-                exclude_subjects.insert(triple_u.s().clone());
             } else if triple_u.o().eq(&RDF_STATEMENT) {
                 rdf_statement_subjs.push(triple_u.s().clone());
-                exclude_subjects.insert(triple_u.s().clone());
             }
         }
-        if nest_preds.contains(&triple_u.p().value().to_string())
-                || ignore_preds.contains(&triple_u.p().value().to_string())
-        {
+        if nest_preds.contains(&triple_u.p().value().to_string()) {
+            exclude_subjects_at_toplevel.insert(triple_u.o().clone());
+        }
+        if ignore_preds.contains(&triple_u.p().value().to_string()) {
             exclude_subjects.insert(triple_u.o().clone());
         }
     }
@@ -162,7 +160,7 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("Building reification index took {} seconds", start_time.elapsed().as_secs());
 
-    write_subjects(ds, &mut output_nodes, &nest_preds, &exclude_subjects, reifs);
+    write_subjects(ds, &mut output_nodes, &nest_preds, &exclude_subjects, &exclude_subjects_at_toplevel, reifs);
 
     eprintln!("Total time elapsed: {} seconds", start_time.elapsed().as_secs());
 
@@ -185,14 +183,13 @@ fn populate_reifs(
         let annotated_subject = ds.triples_matching(&s, &subj_prop, &ANY).next().unwrap().unwrap().o().clone();
 
         if exclude_subjects.contains(&annotated_subject) {
-            // no point in storing the reifs for this subject as it won't be written anyway
             continue;
         }
 
         let annotated_predicate = ds.triples_matching(&s, &pred_prop, &ANY).next().unwrap().unwrap().o().clone();
         let annotated_object = ds.triples_matching(&s, &obj_prop, &ANY).next().unwrap().unwrap().o().clone();
 
-        let obj_json = term_to_json(&annotated_object, ds, nest_preds, None, exclude_subjects).to_string();
+        let obj_json = term_to_json(&annotated_object, ds, nest_preds, None).to_string();
 
         let lhs =  ReifLhs {
             s: annotated_subject.clone(),
@@ -215,11 +212,11 @@ fn populate_reifs(
 }
 
 
-fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<StdoutLock>, nest_preds:&BTreeSet<String>, exclude_subjects:&HashSet<Term<Rc<str>>>, reifs:HashMap<ReifLhs, BTreeMap<String, Term<Rc<str>>>>) {
+fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<StdoutLock>, nest_preds:&BTreeSet<String>, exclude_subjects:&HashSet<Term<Rc<str>>>, exclude_subjects_at_toplevel:&HashSet<Term<Rc<str>>>, reifs:HashMap<ReifLhs, BTreeMap<String, Term<Rc<str>>>>) {
 
     let start_time2 = std::time::Instant::now();
 
-    for s in &ds.gw_subjects().unwrap() {
+    'write_subjs: for s in &ds.gw_subjects().unwrap() {
 
         if s.kind() != Iri {
             continue; 
@@ -228,15 +225,34 @@ fn write_subjects(ds:&CustomGraph, nodes_writer:&mut BufWriter<StdoutLock>, nest
         if exclude_subjects.contains(s) {
             continue;
         }
+        if exclude_subjects_at_toplevel.contains(s) {
+            continue;
+        }
 
-        nodes_writer.write_all( term_to_json(s, ds, nest_preds, Some(&reifs), exclude_subjects).to_string().as_bytes()).unwrap();
+        let json = term_to_json(s, ds, nest_preds, Some(&reifs));
+
+        let json_obj = json.as_object().unwrap();
+        let types = json_obj.get("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+        if types.is_some() {
+            for t in types.unwrap().as_array().unwrap() {
+                if t.is_string() {
+                    if t.as_str().unwrap().eq("http://www.w3.org/2002/07/owl#Axiom")
+                        || t.as_str().unwrap().eq("http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement")
+                    {
+                        continue 'write_subjs;
+                    }
+                }
+            }
+        }
+
+        nodes_writer.write_all(json.to_string().as_bytes()).unwrap();
         nodes_writer.write_all("\n".as_bytes()).unwrap();
     }
 
     eprintln!("Writing JSONL took {} seconds", start_time2.elapsed().as_secs());
 }
 
-fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<String>, reifs:Option<&HashMap<ReifLhs, BTreeMap<String, Term<Rc<str>>>>>, exclude_subjects:&HashSet<Term<Rc<str>>>) -> Value {
+fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<String>, reifs:Option<&HashMap<ReifLhs, BTreeMap<String, Term<Rc<str>>>>>) -> Value {
 
     let triples = ds.triples_matching(term, &ANY, &ANY);
 
@@ -263,17 +279,13 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<Strin
 
         let o = tu.o();
 
-        if o.kind() == Iri && exclude_subjects.contains(o) {
-            continue;
-        }
-
         let reif_subj = {
             if reifs.is_some() {
                 let reifs_u = reifs.unwrap();
                 let reifs_for_this_sp = reifs_u.get(&ReifLhs { s: tu.s().clone(), p: tu.p().clone() });
                 if reifs_for_this_sp.is_some() {
                     let reifs_for_this_sp_u = reifs_for_this_sp.unwrap();
-                    let o_json = term_to_json(&o, ds, nest_preds, None, exclude_subjects).to_string();
+                    let o_json = term_to_json(&o, ds, nest_preds, None).to_string();
                     let reif = reifs_for_this_sp_u.get(&o_json);
                     if reif.is_some() {
                         Some(reif.unwrap())
@@ -292,7 +304,7 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<Strin
             if nest_preds.contains(p) {
                 match o.kind() {
                     Iri|Literal|BlankNode => {
-                        let mut obj = term_to_json(o, ds, nest_preds, reifs, exclude_subjects);
+                        let mut obj = term_to_json(o, ds, nest_preds, reifs);
                         let obj_o = obj.as_object_mut().unwrap();
                         obj_o.remove_entry("id");
                         obj
@@ -302,16 +314,17 @@ fn term_to_json(term:&Term<Rc<str>>, ds:&CustomGraph, nest_preds:&BTreeSet<Strin
             } else {
                 match o.kind() {
                     Iri|Literal => Value::String( o.value().to_string() ),
-                    BlankNode => term_to_json(o, ds, nest_preds, reifs, exclude_subjects),
+                    BlankNode => term_to_json(o, ds, nest_preds, reifs),
                     Variable => todo!(),
                 }
             }
         };
 
         if reif_subj.is_some() {
-            let mut reif_as_json = term_to_json(reif_subj.unwrap(), ds, nest_preds, None, exclude_subjects);
+            let mut reif_as_json = term_to_json(reif_subj.unwrap(), ds, nest_preds, None);
             let reif_as_json_o = reif_as_json.as_object_mut().unwrap();
             reif_as_json_o.remove_entry("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+            reif_as_json_o.remove_entry("id");
             v = json!({
                 "grebi:value": v,
                 "grebi:properties": reif_as_json_o
