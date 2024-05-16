@@ -10,7 +10,7 @@ export class Ref {
 		this.nodeId = obj['grebi:nodeId']
 		this.type = obj['grebi:type']
 		this.id = obj['id']
-		this.name = obj['_name']
+		this.name = obj['grebi:name']
 	}
 }
 

@@ -10,11 +10,7 @@ export default class GraphNode {
     }
 
     getNames():PropVal[] {
-        return PropVal.arrFrom([
-            ...(this.props['ols:label'] || []),
-            ...(this.props['impc:name'] || []),
-            ...(this.props['monarch:name'] || [])
-        ])
+        return PropVal.arrFrom(this.props['grebi:name'] || []);
     }
 
     getName():PropVal {
@@ -44,7 +40,7 @@ export default class GraphNode {
         return PropVal.arrFrom(this.props['id'])
     }
 
-    extractType():string {
+    extractType():string|undefined {
 
         let types:string[] = PropVal.arrFrom(this.props['grebi:type']).map(t => t.value)
 

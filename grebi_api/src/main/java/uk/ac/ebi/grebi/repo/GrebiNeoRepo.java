@@ -38,9 +38,10 @@ public class GrebiNeoRepo {
         EagerResult props_res = neo4jClient.getDriver().executableQuery(PROPS_QUERY).withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
         Map<String,JsonElement> edgeTypes = new TreeMap<>();
         for(var r : props_res.records().get(0).values()) {
-            System.out.println(r.asString());
-            JsonObject prop_def = gson.fromJson(r.asString(), JsonElement.class).getAsJsonObject();
-            edgeTypes.put(prop_def.get("grebi:nodeId").getAsString(), prop_def);
+            //JsonObject prop_def = gson.fromJson(r.asString(), JsonElement.class).getAsJsonObject();
+            //edgeTypes.put(prop_def.get("grebi:nodeId").getAsString(), prop_def);
+            //Map<String,Object> o = (Map<String,Object>)r.get("n").asObject();
+            //edgeTypes.put((String)o.get("grebi:nodeId"), gson.toJsonTree(o));
         }
         return edgeTypes;
     }
