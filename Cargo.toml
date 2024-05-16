@@ -20,6 +20,7 @@ members = [
 	"06_prepare_db_import/grebi_make_csv",
 	"06_prepare_db_import/grebi_make_solr",
 	"07_create_db/rocksdb/grebi_make_rocks",
-	"grebi_shared"
+	"grebi_shared",
+	"grebi_resolver_service"
 ]
 
