@@ -17,7 +17,9 @@ def main():
         '&&',
         'mkdir -p ' + shlex.quote(solr_path),
         '&&',
-        'cp -f ./07_create_db/solr/solr_config/* ' + solr_path + '/'
+        'cp -f ./07_create_db/solr/solr_config/*.xml ' + solr_path + '/'
+        '&&',
+        'cp -f ./07_create_db/solr/solr_config/*.cfg ' + solr_path + '/'
     ])
 
     if os.environ['GREBI_USE_SLURM'] == "1":
@@ -27,9 +29,9 @@ def main():
     
     cmd = ' '.join([
         'parallel --tag --line-buffer :::',
-        '"./07_create_db/solr/solr_import.sh grebi_autocomplete"',
-        '"./07_create_db/solr/solr_import.sh grebi_nodes"',
-        '"./07_create_db/solr/solr_import.sh grebi_edges"'
+        '"./07_create_db/solr/solr_import.sh grebi_autocomplete 8984"',
+        '"./07_create_db/solr/solr_import.sh grebi_nodes 8985"',
+        '"./07_create_db/solr/solr_import.sh grebi_edges 8986"'
     ])
 
     if os.system(cmd) != 0:

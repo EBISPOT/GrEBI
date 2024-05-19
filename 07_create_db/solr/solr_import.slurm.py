@@ -9,11 +9,12 @@ from subprocess import Popen, PIPE, STDOUT
 
 def main():
 
-    if len(sys.argv) < 2:
-        print("Usage: solr_import.py <solr_core>")
+    if len(sys.argv) < 3:
+        print("Usage: solr_import.py <solr_core> <port>")
         exit(1)
 
     core = sys.argv[1]
+    port = sys.argv[2]
 
     print(get_time() + " --- Create Solr core")
 
@@ -32,9 +33,9 @@ def main():
             '--bind ' + shlex.quote(solr_core_path) + ':/var/solr/data/' + core,
             '--bind ' + os.path.abspath('./07_create_db/solr/solr_import.dockersh') + ':/import.sh',
             '--writable-tmpfs',
-            '--network=none',
+            '--net --network=none',
             'docker://solr:9.5.0',
-            'bash /import.sh ' + core
+            'bash /import.sh', core, port
         ])
     else:
         os.system("chmod 777 " + shlex.quote(solr_core_path))
@@ -46,7 +47,7 @@ def main():
             '-v ' + shlex.quote(solr_core_path) + ':/var/solr/data/' + core,
             '-v ' + os.path.abspath('./07_create_db/solr/solr_import.dockersh') + ':/import.sh',
             'solr:9.5.0',
-            'bash /import.sh ' + core
+            'bash /import.sh', core, port
         ])
 
     print(cmd)
