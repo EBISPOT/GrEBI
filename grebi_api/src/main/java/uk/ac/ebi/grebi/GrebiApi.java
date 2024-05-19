@@ -4,59 +4,32 @@
 package uk.ac.ebi.grebi;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import io.javalin.Javalin;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import io.javalin.plugin.bundled.CorsPluginConfig;
-import org.neo4j.driver.*;
 import org.springframework.data.domain.PageRequest;
 import uk.ac.ebi.grebi.repo.GrebiNeoRepo;
-import uk.ac.ebi.grebi.db.GrebiSolrClient;
 import uk.ac.ebi.grebi.db.GrebiSolrQuery;
 import uk.ac.ebi.grebi.repo.GrebiSolrRepo;
 
 
 public class GrebiApi {
 
-
-
     public static void main(String[] args) throws ParseException, org.apache.commons.cli.ParseException, IOException {
-
-        String solr_host = System.getenv("GREBI_SOLR_HOST");
 
         final GrebiNeoRepo neo = new GrebiNeoRepo();
         final GrebiSolrRepo solr = new GrebiSolrRepo();
 
-//        Options options = new Options();
-//
-//        Option opt_metadata_json = new Option(null, "metadata_json", true, "path to metadata.json");
-//        opt_metadata_json.setRequired(true);
-//        options.addOption(opt_metadata_json);
-//
-//        CommandLineParser parser = new DefaultParser();
-//        CommandLine cmd = parser.parse(options, args);
-//
-//        String metadata_json = cmd.getOptionValue("metadata_json");
-
         Gson gson = new Gson();
-//        GraphMetadata md = gson.fromJson(new FileReader(metadata_json), GraphMetadata.class);
 
         var edgeTypes = neo.getEdgeTypes();
         var stats = neo.getStats();
 
-
-        GrebiSolrClient solrClient = new GrebiSolrClient();
-
-
-        var app = Javalin.create(config -> {
+        Javalin.create(config -> {
                     config.bundledPlugins.enableCors(cors -> {
                         cors.addRule(CorsPluginConfig.CorsRule::anyHost);
                     });
@@ -72,19 +45,14 @@ public class GrebiApi {
                     var q = new GrebiSolrQuery();
                     q.addFilter("grebi:nodeId", List.of(ctx.pathParam("nodeId")), SearchType.WHOLE_FIELD);
 
-                    var res = solrClient.getFirst(q);
+                    var res = solr.getFirstNode(q);
 
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/nodes/{nodeId}/incoming_edges", ctx -> {
-                    ctx.contentType("application/json");
-                    ctx.result("{}");
-
-
-
-//                    ctx.contentType("application/json");
-//                    ctx.result(gson.toJson(res));
+                   ctx.contentType("application/json");
+                   ctx.result(gson.toJson(neo.getIncomingEdges(ctx.pathParam("nodeId"))));
                 })
                 .get("/api/v1/edge_types", ctx -> {
                     ctx.contentType("application/json");
@@ -123,16 +91,16 @@ public class GrebiApi {
                         size = "100";
                     }
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
-                    var res = solrClient.searchSolrPaginated(q, page);
+                    var res = solr.searchNodesPaginated(q, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/suggest", ctx -> {
-                    var res = solrClient.autocomplete(ctx.queryParam("q"));
+                    var res = solr.autocomplete(ctx.queryParam("q"));
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .start(8080);
+                .start(8090);
     }
 
 }

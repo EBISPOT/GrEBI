@@ -36,7 +36,7 @@ public class GrebiSolrClient {
         return "http://localhost:8983/";
     }
 
-    public GrebiFacetedResultsPage<JsonElement> searchSolrPaginated(GrebiSolrQuery query, Pageable pageable) {
+    public GrebiFacetedResultsPage<SolrDocument> searchSolrPaginated(GrebiSolrQuery query, Pageable pageable) {
 
         QueryResponse qr = runSolrQuery(query, pageable);
 
@@ -58,14 +58,13 @@ public class GrebiSolrClient {
         return new GrebiFacetedResultsPage<>(
                 qr.getResults()
                         .stream()
-                        .map(res -> getGrebiEntityFromSolrResult(res))
                         .collect(Collectors.toList()),
                 facetFieldToCounts,
                 pageable,
                 qr.getResults().getNumFound());
     }
 
-    public JsonElement getFirst(GrebiSolrQuery query) {
+    public SolrDocument getFirst(GrebiSolrQuery query) {
 
         QueryResponse qr = runSolrQuery(query, null);
 
@@ -74,11 +73,7 @@ public class GrebiSolrClient {
             throw new RuntimeException("Expected at least 1 result for solr getFirst");
         }
 
-        return getGrebiEntityFromSolrResult(qr.getResults().get(0));
-    }
-
-    private JsonElement getGrebiEntityFromSolrResult(SolrDocument doc) {
-        return JsonParser.parseString((String) doc.get("_json"));
+        return qr.getResults().get(0);
     }
 
     public QueryResponse runSolrQuery(GrebiSolrQuery query, Pageable pageable) {

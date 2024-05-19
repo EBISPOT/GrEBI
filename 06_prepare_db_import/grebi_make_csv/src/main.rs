@@ -35,9 +35,6 @@ struct Args {
 
     #[arg(long)]
     out_edges_csv_path: String,
-
-    #[arg(long)]
-    include_json_field: bool
 }
 
 fn main() -> std::io::Result<()> {
@@ -74,9 +71,6 @@ fn main() -> std::io::Result<()> {
         nodes_writer.write_all(b":string[]").unwrap();
     }
 
-    if args.include_json_field == true {
-        nodes_writer.write_all(",_json:string".as_bytes()).unwrap();
-    }
     nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
@@ -85,9 +79,6 @@ fn main() -> std::io::Result<()> {
         edges_writer.write_all(b",").unwrap();
         edges_writer.write_all(prop.as_bytes()).unwrap();
         edges_writer.write_all(b":string[]").unwrap();
-    }
-    if args.include_json_field == true {
-        edges_writer.write_all(",_json:string".as_bytes()).unwrap();
     }
     edges_writer.write_all("\n".as_bytes()).unwrap();
 
@@ -107,7 +98,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEntity::from_json(&line);
 
-        write_node(&line, &sliced, &all_entity_props, &mut nodes_writer, args.include_json_field);
+        write_node(&line, &sliced, &all_entity_props, &mut nodes_writer);
 
         n_nodes = n_nodes + 1;
         if n_nodes % 1000000 == 0 {
@@ -130,7 +121,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEdge::from_json(&line);
 
-        write_edge(&line, sliced, &all_edge_props, &mut edges_writer, args.include_json_field);
+        write_edge(&line, sliced, &all_edge_props, &mut edges_writer);
 
         n_edges = n_edges + 1;
         if n_edges % 1000000 == 0 {
@@ -149,7 +140,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&mut BufWriter<&File>, include_json_field:bool) {
+fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&mut BufWriter<&File>) {
 
     let refs:Map<String,Value> = serde_json::from_slice(entity._refs.unwrap()).unwrap();
 
@@ -220,16 +211,10 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
         }
 
 
-    if include_json_field {
-        nodes_writer.write_all(b",\"").unwrap();
-        write_escaped_value(&src_line, nodes_writer);
-        nodes_writer.write_all(b"\"").unwrap();
-    }
-
     nodes_writer.write_all(b"\n").unwrap();
 }
 
-fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<&File>, include_json_field:bool) {
+fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<&File>) {
 
     let refs:Map<String,Value> = serde_json::from_slice(edge._refs.unwrap()).unwrap();
 
@@ -276,14 +261,7 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&Vec<String>, edge
         edges_writer.write_all(b"\"").unwrap();
     }
 
-    if include_json_field {
-        edges_writer.write_all(b",\"").unwrap();
-        write_escaped_value(&src_line, edges_writer);
-        edges_writer.write_all(b"}\"").unwrap();
-    }
-
     edges_writer.write_all(b"\n").unwrap();
-
 }
 
 fn write_escaped_value(buf:&[u8], writer:&mut BufWriter<&File>) {

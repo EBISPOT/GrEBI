@@ -2,30 +2,26 @@ package uk.ac.ebi.grebi.repo;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import org.neo4j.driver.EagerResult;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Value;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import uk.ac.ebi.grebi.GrebiApi;
 import uk.ac.ebi.grebi.db.Neo4jClient;
+import uk.ac.ebi.grebi.db.ResolverClient;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.neo4j.driver.Values.parameters;
-
 public class GrebiNeoRepo {
 
     Neo4jClient neo4jClient = new Neo4jClient();
+    ResolverClient resolver = new ResolverClient();
     Gson gson = new Gson();
 
     public GrebiNeoRepo() throws IOException {}
@@ -33,6 +29,7 @@ public class GrebiNeoRepo {
     final String STATS_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/stats.cypher").readAllBytes(), StandardCharsets.UTF_8);
     final String SEARCH_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/search.cypher").readAllBytes(), StandardCharsets.UTF_8);
     final String PROPS_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/props.cypher").readAllBytes(), StandardCharsets.UTF_8);
+    final String INCOMING_EDGES_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/incoming_edges.cypher").readAllBytes(), StandardCharsets.UTF_8);
 
     public Map<String,JsonElement> getEdgeTypes() {
         EagerResult props_res = neo4jClient.getDriver().executableQuery(PROPS_QUERY).withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
@@ -55,7 +52,31 @@ public class GrebiNeoRepo {
         return List.of();
     }
 
-    public void getIncomingEdges(String nodeId) {
+    public class EdgeAndNode {
+        public Map<String,JsonElement> edge, node;
+        public EdgeAndNode(Map<String,JsonElement> edge, Map<String,JsonElement> node) {
+            this.edge = edge;
+            this.node = node;
+        }
+    }
+
+    public List<EdgeAndNode> getIncomingEdges(String nodeId) {
+        EagerResult res = neo4jClient.getDriver().executableQuery(INCOMING_EDGES_QUERY)
+            .withParameters(Map.of("nodeId", nodeId))
+            .withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
+
+        var resolved = resolver.resolve(
+                res.records().stream().flatMap(record -> {
+                    var props = record.asMap();
+                    return List.of((String) props.get("otherId"), (String) props.get("edgeId")).stream();
+                }).collect(Collectors.toSet()));
+
+        return res.records().stream().map(record -> {
+            var props = record.asMap();
+            var otherId = (String)props.get("otherId");
+            var edgeId = (String)props.get("edgeId");
+            return new EdgeAndNode(resolved.get(edgeId), resolved.get(otherId));
+        }).collect(Collectors.toList());
     }
 
     static Map<String, Object> mapValue(Value value) {

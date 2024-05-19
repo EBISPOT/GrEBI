@@ -47,9 +47,6 @@ struct Args {
 
     #[arg(long)]
     out_edges_jsonl_path: String,
-
-    #[arg(long)]
-    include_json_field: bool
 }
 
 fn main() -> std::io::Result<()> {
@@ -86,7 +83,7 @@ fn main() -> std::io::Result<()> {
             line.pop();
         }
 
-        write_solr_object(&line, &mut nodes_writer, args.include_json_field);
+        write_solr_object(&line, &mut nodes_writer);
     }
 
     loop {
@@ -100,7 +97,7 @@ fn main() -> std::io::Result<()> {
             line.pop();
         }
 
-        write_solr_object(&line, &mut edges_writer, args.include_json_field);
+        write_solr_object(&line, &mut edges_writer);
     }
 
     nodes_writer.flush().unwrap();
@@ -114,7 +111,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, include_json_field:bool) {
+fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>) {
 
     let json:serde_json::Map<String,Value> = serde_json::from_slice(&line).unwrap();
     let mut out_json = serde_json::Map::new();
@@ -129,7 +126,7 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, include_
 
         // for internal fields just copy the value
         if k.starts_with("grebi:") {
-            out_json.insert(k.to_string(), v.clone());
+            out_json.insert(escape_key(k), v.clone());
             continue;
         }
 
@@ -142,12 +139,8 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>, include_
         }
 
         if new_arr.len() > 0 {
-            out_json.insert(k.clone(), Value::Array(new_arr));
+            out_json.insert(escape_key(k), Value::Array(new_arr));
         }
-    }
-
-    if include_json_field {
-        out_json.insert("_json".to_string(), Value::String(serde_json::to_string(&json).unwrap()));
     }
 
     nodes_writer.write_all(serde_json::to_string(&out_json).unwrap().as_bytes()).unwrap();
@@ -195,4 +188,15 @@ fn value_to_solr(v:&Value, refs:&Map<String,Value>) -> Vec<Value> {
 
 }
 
+fn escape_key(k:&str) -> String {
+    let mut res = String::new();
+    for c in k.chars() {
+        if c == ':' {
+            res.push_str("__");
+        } else {
+            res.push(c);
+        }
+    }
+    return res;
+}
 

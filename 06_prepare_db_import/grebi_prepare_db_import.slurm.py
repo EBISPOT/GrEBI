@@ -84,8 +84,7 @@ def main():
         '--in-nodes-jsonl ' + shlex.quote(our_nodes_file),
         '--in-edges-jsonl ' + shlex.quote(our_edges_file),
         '--out-nodes-jsonl-path ' + shlex.quote(out_solr_nodes_path),
-        '--out-edges-jsonl-path ' + shlex.quote(out_solr_edges_path),
-        '--include-json-field'
+        '--out-edges-jsonl-path ' + shlex.quote(out_solr_edges_path)
     ])
 
     if os.system('bash -c "' + cmd + '"') != 0:

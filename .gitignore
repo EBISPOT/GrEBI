@@ -16,7 +16,5 @@ efo.owl
 graph.db
 *.dump
 *.txt
-
-
-
+*.swp
 
