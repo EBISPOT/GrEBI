@@ -47,6 +47,9 @@ export default class GraphNode {
         if(types.indexOf('impc:MouseGene') !== -1) {
             return 'Gene'
         }
+        if(types.indexOf('biolink:Gene') !== -1) {
+            return 'Gene'
+        }
         if(types.indexOf('gwas:SNP') !== -1) {
             return 'SNP'
         }

@@ -4,6 +4,7 @@ import GraphNode from "../../../model/GraphNode";
 import PropVal from "../../../model/PropVal";
 import PropRowOneDatasourceSet from "./PropRowOneDatasourceSet";
 import PropRowManyDatasourceSets from "./PropRowManyDatasourceSets";
+import PropRowNoDatasourceLabels from "./PropRowNoDatasourceLabels";
 
 export default function PropRow(params:{node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
 
@@ -23,14 +24,28 @@ export default function PropRow(params:{node:GraphNode,prop:string,values:PropVa
         return <Fragment></Fragment>
       }
 
+      // if only 1 datasource is enabled, no need to display datasource labels anywhere
+      if(dsEnabled.length === 1) {
+        return <PropRowNoDatasourceLabels node={node} prop={prop} values={values} />
+      }
+
       let ds_sets = new Set()
       for(let v of values) {
         ds_sets.add([...v.datasources].sort().join(','))
       }
 
       if(ds_sets.size === 1) {
+        // [prop name] [datasources]
+        //   [value]
+        //
         return <PropRowOneDatasourceSet node={node} prop={prop} values={values} datasources={datasources} dsEnabled={dsEnabled} />
       } else {
+        // [prop name]
+        //    [datasources1]
+        //      [value1]
+        //    [datasources2]
+        //      [value2]
+        //
         return <PropRowManyDatasourceSets node={node} prop={prop} values={values} datasources={datasources} dsEnabled={dsEnabled} />
       }
     }
