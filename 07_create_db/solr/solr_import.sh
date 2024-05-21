@@ -10,8 +10,12 @@ fi
 CORE=$1
 PORT=$2
 
-srun -t 5-0:0:0 --mem 64g -c 8 \
-    ./07_create_db/solr/solr_import.slurm.sh \
-    $CORE \
-    $PORT
+if [ $GREBI_USE_SLURM = "1" ]; then
+    srun -t 5-0:0:0 --mem 64g -c 8 \
+        ./07_create_db/solr/solr_import.slurm.sh $CORE $PORT
+else
+    ./07_create_db/solr/solr_import.slurm.sh $CORE $PORT
+fi
+
+
 

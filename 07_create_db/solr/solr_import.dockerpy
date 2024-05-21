@@ -1,0 +1,86 @@
+import sys
+import os
+import shutil
+import subprocess
+import time
+import glob
+import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import multiprocessing
+
+def main():
+    if len(sys.argv) != 3:
+        print("Usage: {} <core> <tmp_port_to_use>".format(sys.argv[0]))
+        print("core: grebi_autocomplete, grebi_nodes, grebi_edges")
+        sys.exit(1)
+
+    core = sys.argv[1]
+    port = sys.argv[2]
+
+    os.chdir('/opt/solr')
+
+    core_data_path = f"/var/solr/data/{core}"
+    shutil.rmtree(core_data_path, ignore_errors=True)
+    os.makedirs(core_data_path, exist_ok=True)
+
+    os.system("cp /config/*.xml /var/solr/data/")
+    os.system("cp /config/*.cfg /var/solr/data/")
+    os.system(f'cp -r /config/{core} /var/solr/data/')
+    
+    print(f"/var/solr/data: {list_files('/var/solr/data')}")
+
+    os.environ['SOLR_ENABLE_REMOTE_STREAMING'] = 'true'
+    os.environ['SOLR_SECURITY_MANAGER_ENABLED'] = 'false'
+
+    subprocess.run(['solr', 'start', '-m', '50g', '-p', port, '-noprompt', '-force'])
+
+    time.sleep(5)
+
+    if core == "grebi_autocomplete":
+        print("Uploading names.txt")
+        response = requests.get(f"http://localhost:{port}/solr/grebi_autocomplete/update",
+                                params={
+                                    'stream.file': '/names.txt',
+                                    'fieldnames': 'label',
+                                    'separator': '%00',
+                                    'stream.contentType': 'application/csv;charset=utf-8',
+                                    'commit': 'true'
+                                })
+        print(response.text)
+
+    elif core in {"grebi_nodes", "grebi_edges"}:
+        filenames = glob.glob(f'/data/solr_{core.split("_")[1]}*')
+        with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+            futures = [executor.submit(upload_file, core, port, filename) for filename in filenames if os.path.exists(filename)]
+            for future in as_completed(futures):
+                print(future.result())
+        
+        time.sleep(5)
+        response = requests.get(f"http://127.0.0.1:{port}/solr/{core}/update",
+                                params={'commit': 'true'})
+        print(response.text)
+
+    else:
+        print("Invalid core")
+        sys.exit(1)
+
+    time.sleep(5)
+    subprocess.run(['solr', 'stop', '-all'])
+    time.sleep(5)
+    subprocess.run(['bash'])
+
+def upload_file(core, port, filename):
+    print(f"Uploading {core.split('_')[1]} file: {filename}")
+    response = requests.get(f"http://localhost:{port}/solr/{core}/update/json/docs",
+                            params={
+                                'stream.file': filename,
+                                'stream.contentType': 'application/json;charset=utf-8',
+                                'commit': 'true'
+                            })
+    return response.text
+
+def list_files(directory):
+    return [os.path.join(dp, f) for dp, dn, filenames in os.walk(directory) for f in filenames]
+
+if __name__ == "__main__":
+    main()

@@ -2,8 +2,6 @@
 
 rm -rf target
 
-docker build -t rust_environment_for_codon - < Dockerfile.build
-
-docker run --rm --user "$(id -u)":"$(id -g)" -v "$PWD":/work -w /work rust_environment_for_codon \
+docker run --rm --user "$(id -u)":"$(id -g)" -v "$PWD":/work -w /work ghcr.io/ebispot/rust_for_codon:1.74 \
     bash -c "cargo build --release"
 

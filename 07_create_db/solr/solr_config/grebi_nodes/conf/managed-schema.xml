@@ -115,9 +115,9 @@
         stored - If true, the actual value of the field can be retrieved by queries.
     -->
 
-    <field name="grebi:nodeId" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-    <copyField source="grebi:nodeId" dest="str_grebi:nodeId"/>
-    <copyField source="grebi:nodeId" dest="lowercase_grebi:nodeId"/>
+    <field name="grebi__nodeId" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+    <copyField source="grebi__nodeId" dest="str_grebi__nodeId"/>
+    <copyField source="grebi__nodeId" dest="lowercase_grebi__nodeId"/>
 
     <field name="_json" type="grebi_json" indexed="false" stored="true" multiValued="false" />
 
@@ -145,7 +145,7 @@
     <!-- Field to use to determine and enforce document uniqueness.
       Unless this field is marked with required="false", it will be a required field
     -->
-    <uniqueKey>grebi:nodeId</uniqueKey>
+    <uniqueKey>grebi__nodeId</uniqueKey>
 
     <!-- copyField commands copy one field to another at the time a document
        is added to the index.  It's used either to index the same field differently,

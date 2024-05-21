@@ -114,9 +114,9 @@
         indexed - If true, the value of the field can be used in queries to retrieve matching documents.
         stored - If true, the actual value of the field can be retrieved by queries.
     -->
-    <field name="grebi:edgeId" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-    <field name="grebi:from" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-    <field name="grebi:to" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+    <field name="grebi__edgeId" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+    <field name="grebi__from" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+    <field name="grebi__to" type="string" indexed="true" stored="true" required="true" multiValued="false" />
 
     <field name="_json" type="grebi_json" indexed="false" stored="true" multiValued="false" />
 
@@ -144,7 +144,7 @@
     <!-- Field to use to determine and enforce document uniqueness.
       Unless this field is marked with required="false", it will be a required field
     -->
-    <uniqueKey>grebi:edgeId</uniqueKey>
+    <uniqueKey>grebi__edgeId</uniqueKey>
 
     <!-- copyField commands copy one field to another at the time a document
        is added to the index.  It's used either to index the same field differently,

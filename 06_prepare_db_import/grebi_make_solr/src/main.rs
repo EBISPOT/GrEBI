@@ -120,15 +120,24 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>) {
 
     for (k,v) in json.iter() {
 
-        if k.starts_with("_refs") {
+        if k.eq("_refs") {
             continue;
         }
 
-        // for internal fields just copy the value
-        if k.starts_with("grebi:") {
+        // some special properties aren't structured like normal properties, so
+        // just copy the value
+        //
+        if k.eq("grebi:nodeId") ||
+            k.eq("grebi:edgeId") ||
+            k.eq("grebi:datasources") ||
+            k.eq("grebi:from") ||
+            k.eq("grebi:to") ||
+            ( k.eq("grebi:type") && !v.is_array() /* edge types are singular */ )
+            {
             out_json.insert(escape_key(k), v.clone());
             continue;
         }
+        
 
         let arr = v.as_array().unwrap();
         let mut new_arr:Vec<Value> = Vec::new();

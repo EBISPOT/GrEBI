@@ -59,6 +59,6 @@
     "exclude_edges": [
     ],
     "datasource_configs": [
-        "./configs/datasource_configs/uniprot.json"
+        "./configs/datasource_configs/gwas.json"
     ]
 }

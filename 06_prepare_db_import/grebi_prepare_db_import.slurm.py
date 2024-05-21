@@ -66,18 +66,6 @@ def main():
         '--out-edges-csv-path ' + shlex.quote(out_neo_edges_path)
     ])
 
-    if os.system('bash -c "' + cmd + '"') != 0:
-        print("prepare_db_import neo4j failed")
-        exit(1)
-
-    if os.environ['GREBI_USE_SLURM'] == "1":
-        cmd = ' '.join([
-            "mv " + shlex.quote(out_neo_nodes_path) + " " + shlex.quote(final_out_neo_nodes_path),
-            "&&", "mv " + shlex.quote(out_neo_edges_path) + " " + shlex.quote(final_out_neo_edges_path)
-        ])
-        if os.system('bash -c "' + cmd + '"') != 0:
-            print("moving neo4j files failed")
-            exit(1)
 
     cmd = ' '.join([
         './target/release/grebi_make_solr',

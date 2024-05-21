@@ -17,26 +17,26 @@ if [[ -z "$GREBI_HPS_TMP" ]]; then
     exit 1
 fi
 
-rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
-srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
+#rm -rf $GREBI_NFS_TMP/$GREBI_CONFIG/*
+#srun -t 2:0:0 --mem=2G rm -rf $GREBI_HPS_TMP/$GREBI_CONFIG/*
 
-python3 ./scripts/dataload_00_prepare.py
-python3 ./scripts/dataload_01_ingest.py
+#python3 ./scripts/dataload_00_prepare.py
+#python3 ./scripts/dataload_01_ingest.py
+
+# python3 ./scripts/dataload_02_assign_ids.py
+#python3 ./scripts/dataload_03_merge.py
+#python3 ./scripts/dataload_04_index.py
+#python3 ./scripts/dataload_05_materialise.py
+#python3 ./scripts/dataload_06_prepare_db_imports.py
+#python3 07_create_db/neo4j/neo4j_import.py
+#python3 07_create_db/rocksdb/rocksdb_import.py
+python3 07_create_db/solr/solr_import.py
 
 exit 0
 
-# python3 ./scripts/dataload_02_assign_ids.py
-python3 ./scripts/dataload_03_merge.py
-python3 ./scripts/dataload_04_index.py
-python3 ./scripts/dataload_05_materialise.py
-python3 ./scripts/dataload_06_prepare_db_imports.py
-python3 07_create_db/neo4j/neo4j_import.py
-python3 07_create_db/rocksdb/rocksdb_import.py
-python3 07_create_db/solr/solr_import.py
-
 echo $(date): Compressing data
 
-mkdir $GREBI_NFS_TMP/${GREBI_CONFIG}/release
+mkdir -p $GREBI_NFS_TMP/${GREBI_CONFIG}/release
 
 srun -t 8:0:0 --mem=32G --cpus-per-task 32 tar -cf  \
     $GREBI_NFS_TMP/${GREBI_CONFIG}/release/neo4j.tgz \
@@ -70,7 +70,7 @@ echo $(date): Data release complete
 echo $(date): Running queries
 python3 08_run_queries/run_queries.py
 
-echo $(date): Copying to FTP
+echo $(date): Copying materialised queries to FTP
 
 srun -t 1:0:0 --mem=8G --cpus-per-task 8 \
     cat $GREBI_HPS_TMP/$GREBI_CONFIG/08_run_queries/materialised_queries.sqlite | pigz --fast > $GREBI_NFS_TMP/$GREBI_CONFIG/release/materialised_queries.sqlite.gz
