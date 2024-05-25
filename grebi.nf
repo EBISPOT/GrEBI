@@ -21,13 +21,23 @@ workflow {
         assigned,
         Channel.value(config.exclude_props),
         Channel.value(config.bytes_per_merged_file))
-            .collect(flat: false)
 
-    indexed = index(merged)
-    materialised = materialise(merged, indexed, Channel.value(config.exclude_edges + config.equivalence_props))
+    indexed = index(merged.collect())
+    materialised = materialise(merged.flatten(), indexed, Channel.value(config.exclude_edges + config.equivalence_props))
 
-    neo = prepare_neo(indexed, materialised)
-    solr = prepare_solr(materialised)
+    rocks_db = create_rocks(materialised.collect())
+
+    neo_input_dir = prepare_neo(indexed, materialised)
+    neo_db = create_neo(prepare_neo.out.nodes.collect() + prepare_neo.out.edges.collect())
+
+    solr_inputs = prepare_solr(materialised)
+    solr_nodes_core = create_solr_nodes_core(prepare_solr.out.nodes.collect(), indexed)
+    solr_edges_core = create_solr_edges_core(prepare_solr.out.edges.collect(), indexed)
+    solr_autocomplete_core = create_solr_autocomplete_core(indexed)
+
+    package_solr(solr_nodes_core, solr_edges_core, solr_autocomplete_core)
+    package_neo(neo_db)
+    package_rocks(rocks_db)
 }
 
 process prepare {
@@ -36,7 +46,7 @@ process prepare {
 
     script: 
     """
-    python3 ${params.home}/scripts/dataload_00_prepare.py
+    PYTHONUNBUFFERED=true python3 ${params.home}/scripts/dataload_00_prepare.py
     """
 }
 
@@ -116,7 +126,7 @@ process merge_ingests {
     val(bytes_per_merged_file)
 
     output:
-    file('merged.jsonl.*')
+    path('merged.jsonl.*')
 
     script:
     """
@@ -173,6 +183,24 @@ process materialise {
     """
 }
 
+process create_rocks {
+
+    input:
+    val(materialised)
+
+    output:
+    path("rocksdb")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    cat ${materialised.iterator().join(" ")} \
+        | ${params.home}/target/release/grebi_make_rocks \
+            --rocksdb-path rocksdb
+    """
+}
+
 process prepare_neo {
 
     input:
@@ -180,16 +208,19 @@ process prepare_neo {
     tuple(path(nodes_jsonl), path(edges_jsonl))
 
     output:
-    tuple(path("neo_nodes.csv"), path("neo_edges.csv"))
+    path("neo_nodes_${task.index}.csv"), emit: nodes
+    path("neo_edges_${task.index}.csv"), emit: edges
 
     script:
     """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
     ${params.home}/target/release/grebi_make_csv \
       --in-summary-json ${summary_json} \
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-edges-jsonl ${edges_jsonl} \
-      --out-nodes-csv-path neo_nodes.csv \
-      --out-edges-csv-path neo_edges.csv
+      --out-nodes-csv-path neo_nodes_${task.index}.csv \
+      --out-edges-csv-path neo_edges_${task.index}.csv
     """
 }
 
@@ -199,17 +230,147 @@ process prepare_solr {
     tuple(path(nodes_jsonl), path(edges_jsonl))
 
     output:
-    tuple(path("solr_nodes.jsonl"), path("solr_edges.jsonl"))
+    path("solr_nodes_${task.index}.jsonl"), emit: nodes
+    path("solr_edges_${task.index}.jsonl"), emit: edges
 
     script:
     """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
     ${params.home}/target/release/grebi_make_solr  \
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-edges-jsonl ${edges_jsonl} \
-      --out-nodes-jsonl-path solr_nodes.jsonl \
-      --out-edges-jsonl-path solr_edges.jsonl
+      --out-nodes-jsonl-path solr_nodes_${task.index}.jsonl \
+      --out-edges-jsonl-path solr_edges_${task.index}.jsonl
     """
 }
+
+process create_neo {
+
+    input:
+    path(neo_inputs)
+
+    output:
+    path("neo4j")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    PYTHONUNBUFFERED=true python3 ${params.home}/07_create_db/neo4j/neo4j_import.slurm.py \
+        --in-csv-path . \
+        --out-db-path neo4j
+    """
+}
+
+process create_solr_nodes_core {
+
+    input:
+    path(solr_inputs)
+    tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
+
+    output:
+    path("grebi_nodes")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    PYTHONUNBUFFERED=true python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
+        --core grebi_nodes --in-data . --in-names-txt ${names_txt} --out-path grebi_nodes --port 8985
+    """
+}
+
+process create_solr_edges_core {
+
+    input:
+    path(solr_inputs)
+    tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
+
+    output:
+    path("grebi_edges")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    PYTHONUNBUFFERED=true python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
+        --core grebi_edges --in-data . --in-names-txt ${names_txt} --out-path grebi_edges --port 8986
+    """
+}
+
+process create_solr_autocomplete_core {
+
+    input:
+    tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
+
+    output:
+    path("grebi_autocomplete")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    PYTHONUNBUFFERED=true python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
+        --core grebi_autocomplete --in-data . --in-names-txt ${names_txt} --out-path grebi_autocomplete --port 8987
+    """
+}
+
+process package_neo {
+
+    publishDir "${params.home}/release/${params.config}", overwrite: true
+
+    input: 
+    path(neo4j)
+
+    output:
+    path("neo4j.tgz")
+
+    script:
+    """
+    tar -chf neo4j.tgz --use-compress-program="pigz --fast" neo4j
+    """
+}
+
+process package_rocks {
+
+    publishDir "${params.home}/release/${params.config}", overwrite: true
+
+    input: 
+    path(rocks_db)
+
+    output:
+    path("rocksdb.tgz")
+
+    script:
+    """
+    tar -chf rocksdb.tgz --use-compress-program="pigz --fast" ${rocks_db}
+    """
+}
+
+process package_solr {
+
+    publishDir "${params.home}/release/${params.config}", overwrite: true
+
+    input: 
+    path(solr_nodes_core)
+    path(solr_edges_core)
+    path(solr_autocomplete_core)
+
+    output:
+    path("solr.tgz")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    cp -f ${params.home}/07_create_db/solr/solr_config/*.xml .
+    cp -f ${params.home}/07_create_db/solr/solr_config/*.cfg .
+    tar -chf solr.tgz --transform 's,^,solr/,' --use-compress-program="pigz --fast" \
+	*.xml *.cfg ${solr_nodes_core} ${solr_edges_core} ${solr_autocomplete_core}
+    """
+}
+
 
 def parseJson(json) {
     return new JsonSlurper().parseText(json)

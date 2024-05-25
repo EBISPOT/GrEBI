@@ -5,39 +5,37 @@ import sys
 import shlex
 import time
 import glob
+import argparse
 from subprocess import Popen, PIPE, STDOUT
 
 def main():
 
-    if len(sys.argv) < 2:
-        print("Usage: neo4j_import.py <grebi_config.json>")
-        exit(1)
+    parser = argparse.ArgumentParser(description='Create Neo4j DB')
+    parser.add_argument('--in-csv-path', type=str, help='Path with the neo4j import csv files', required=True)
+    parser.add_argument('--out-db-path', type=str, help='Path for the new Neo4j database', required=True)
+    args = parser.parse_args()
 
-    config_filename = os.path.abspath(sys.argv[1])
+    has_singularity = os.system('which singularity') == 0
 
     print(get_time() + " --- Create Neo4j DB")
-    print(get_time() + " --- Config filename: " + config_filename, flush=True)
 
-    with open(config_filename, 'r') as f:
-        config = json.load(f)
+    neo_path = args.out_db_path
+    neo_data_path = os.path.abspath(os.path.join(neo_path, "data"))
+    neo_logs_path = os.path.abspath(os.path.join(neo_path, "logs"))
 
-    neo_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "neo4j")
-    neo_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "neo4j", "data")
-    neo_logs_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "neo4j", "logs")
+    os.makedirs(neo_data_path)
+    os.makedirs(neo_logs_path)
 
-    os.system('rm -rf ' + shlex.quote(neo_path))
-    os.makedirs(neo_data_path, exist_ok=True)
-    os.makedirs(neo_logs_path, exist_ok=True)
-
-    if os.environ['GREBI_USE_SLURM'] == "1":
+    if has_singularity:
         cmd = ' '.join([
             'JAVA_OPTS=\'-server -Xms50g -Xmx50g\'',
-            'singularity run',
-            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/mnt',
+            'singularity run'
+        ] + list(map(lambda f: "--bind " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_csv_path + "/neo_*"))) + [
+            '--bind ' + os.path.abspath(args.in_csv_path) + ':/mnt',
             '--bind ' + shlex.quote(neo_data_path) + ':/data',
             '--bind ' + shlex.quote(neo_logs_path) + ':/logs',
-            '--bind ' + os.path.abspath('./07_create_db/neo4j/neo4j_import.dockersh') + ':/import.sh',
-            '--bind ' + os.path.abspath('./07_create_db/neo4j/create_indexes.cypher') + ':/create_indexes.cypher',
+            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/neo4j/neo4j_import.dockersh')) + ':/import.sh',
+            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/neo4j/create_indexes.cypher')) + ':/create_indexes.cypher',
             '--writable-tmpfs',
             '--network=none',
             '--env NEO4J_AUTH=none',
@@ -47,11 +45,13 @@ def main():
     else:
         cmd = ' '.join([
             'docker run',
-            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/mnt',
+            '--user="$(id -u):$(id -g)"'
+        ] + list(map(lambda f: "-v " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_csv_path + "/neo_*"))) + [
+            '-v ' + os.path.abspath(args.in_csv_path) + ':/mnt',
             '-v ' + shlex.quote(neo_data_path) + ':/data',
             '-v ' + shlex.quote(neo_logs_path) + ':/logs',
-            '-v ' + os.path.abspath('./07_create_db/neo4j/neo4j_import.dockersh') + ':/import.sh',
-            '-v ' + os.path.abspath('./07_create_db/neo4j/create_indexes.cypher') + ':/create_indexes.cypher',
+            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/neo4j/neo4j_import.dockersh')) + ':/import.sh',
+            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/neo4j/create_indexes.cypher')) + ':/create_indexes.cypher',
             '-e NEO4J_AUTH=none',
             'neo4j:5.18.0',
             'bash /import.sh'

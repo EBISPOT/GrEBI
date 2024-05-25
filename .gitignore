@@ -17,4 +17,5 @@ graph.db
 *.dump
 *.txt
 *.swp
+.nextflow*
 
