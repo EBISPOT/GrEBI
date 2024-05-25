@@ -8,6 +8,8 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
 
+WORKERS=1
+
 def main():
     if len(sys.argv) != 3:
         print("Usage: {} <core> <tmp_port_to_use>".format(sys.argv[0]))
@@ -20,19 +22,18 @@ def main():
     os.chdir('/opt/solr')
 
     core_data_path = f"/var/solr/data/{core}"
-    shutil.rmtree(core_data_path, ignore_errors=True)
-    os.makedirs(core_data_path, exist_ok=True)
 
     os.system("cp /config/*.xml /var/solr/data/")
     os.system("cp /config/*.cfg /var/solr/data/")
-    os.system(f'cp -r /config/{core} /var/solr/data/')
+    os.system(f"cp -r /config/{core}/* /var/solr/data/{core}/")
     
-    print(f"/var/solr/data: {list_files('/var/solr/data')}")
+    print("/var/solr/data")
+    os.system("find /var/solr/data")
 
     os.environ['SOLR_ENABLE_REMOTE_STREAMING'] = 'true'
     os.environ['SOLR_SECURITY_MANAGER_ENABLED'] = 'false'
 
-    subprocess.run(['solr', 'start', '-m', '50g', '-p', port, '-noprompt', '-force'])
+    subprocess.run(['solr', 'start', '-m', '16g', '-p', port, '-noprompt', '-force'])
 
     time.sleep(5)
 
@@ -49,8 +50,8 @@ def main():
         print(response.text)
 
     elif core in {"grebi_nodes", "grebi_edges"}:
-        filenames = glob.glob(f'/data/solr_{core.split("_")[1]}*')
-        with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+        filenames = glob.glob('/mnt/*.jsonl')
+        with ThreadPoolExecutor(max_workers=WORKERS) as executor:
             futures = [executor.submit(upload_file, core, port, filename) for filename in filenames if os.path.exists(filename)]
             for future in as_completed(futures):
                 print(future.result())
@@ -66,8 +67,6 @@ def main():
 
     time.sleep(5)
     subprocess.run(['solr', 'stop', '-all'])
-    time.sleep(5)
-    subprocess.run(['bash'])
 
 def upload_file(core, port, filename):
     print(f"Uploading {core.split('_')[1]} file: {filename}")
@@ -78,9 +77,6 @@ def upload_file(core, port, filename):
                                 'commit': 'true'
                             })
     return response.text
-
-def list_files(directory):
-    return [os.path.join(dp, f) for dp, dn, filenames in os.walk(directory) for f in filenames]
 
 if __name__ == "__main__":
     main()

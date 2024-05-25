@@ -16,6 +16,13 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 fn main() {
 
+    let args = env::args().collect::<Vec<String>>();
+
+    if args.len() != 2 {
+        eprintln!("Usage: grebi_normalise_prefixes <prefix_map.json>");
+        std::process::exit(1);
+    }
+
     let stdin = io::stdin();
     let handle = stdin.lock();
     let mut reader = BufReader::new(handle);
@@ -24,7 +31,7 @@ fn main() {
     let mut writer = BufWriter::new(stdout);
 
     let normalise = {
-        let rdr = BufReader::new( std::fs::File::open("./prefix_maps/prefix_map_normalise.json").unwrap() );
+        let rdr = BufReader::new( std::fs::File::open(args.get(1).unwrap()).unwrap() );
         let mut builder = PrefixMapBuilder::new();
         serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
             builder.add_mapping(k, v);

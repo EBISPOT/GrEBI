@@ -26,7 +26,7 @@
         "materialise": "1:0:0",
         "prepare_db_import": "1:0:0"
     },
-    "bytes_per_merged_file": 1073741824,
+    "bytes_per_merged_file": 173741824,
     "equivalence_props": [
         "owl:equivalentClass",
         "owl:equivalentProperty",

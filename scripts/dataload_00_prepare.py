@@ -10,12 +10,14 @@ import time
 
 def main():
 
-    config_filename = os.path.abspath(os.path.join('./configs/pipeline_configs/', os.environ['GREBI_CONFIG'] + '.json'))
+    print("home is " + os.environ['GREBI_HOME'])
+
+    config_filename = os.path.abspath(os.path.join(os.environ['GREBI_HOME'], 'configs/pipeline_configs/', os.environ['GREBI_CONFIG'] + '.json'))
 
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    datasources = map(lambda x: json.load(open(x, 'r')), config['datasource_configs'])
+    datasources = map(lambda x: json.load(open(os.path.join(os.environ['GREBI_HOME'], x), 'r')), config['datasource_configs'])
     datasource_files = []
 
     for datasource in datasources:
@@ -24,7 +26,7 @@ def main():
         else:
             for ingest in datasource['ingests']:
                 for g in ingest['ingest_files']:
-                    files = glob.glob(g)
+                    files = glob.glob(os.path.join(os.environ['GREBI_HOME'], g))
                     for file in files:
                         filename = os.path.abspath(file)
                         datasource_files.append(json.dumps({
@@ -36,9 +38,7 @@ def main():
 
     print("Found " + str(len(datasource_files)) + " files to ingest")
 
-    datasource_files_listing = os.path.abspath( os.path.join(os.environ['GREBI_NFS_TMP'], os.environ['GREBI_CONFIG'], '01_ingest', 'datasource_files.jsonl') )
-    os.makedirs(os.path.dirname(datasource_files_listing), exist_ok=True)
-
+    datasource_files_listing = 'datasource_files.jsonl'
     with open(datasource_files_listing, 'w') as f2:
         f2.write('\n'.join(datasource_files))
     print("Files listing written to " + datasource_files_listing)

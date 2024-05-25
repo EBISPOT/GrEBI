@@ -5,51 +5,54 @@ import sys
 import shlex
 import time
 import glob
+import argparse
 from subprocess import Popen, PIPE, STDOUT
 
 def main():
 
-    if len(sys.argv) < 3:
-        print("Usage: solr_import.py <solr_core> <port>")
-        exit(1)
+    parser = argparse.ArgumentParser(description='Create Neo4j DB')
+    parser.add_argument('--core', type=str, help='Core to import', required=True)
+    parser.add_argument('--port', type=str, help='Port to use for temp solr instance', required=True)
+    parser.add_argument('--in-names-txt', type=str, help='Path to names.txt', required=True)
+    parser.add_argument('--in-data', type=str, help='Path to jsonl files to import', required=True)
+    parser.add_argument('--out-path', type=str, help='Path to use to store the solr core', required=True)
+    args = parser.parse_args()
 
-    core = sys.argv[1]
-    port = sys.argv[2]
+    has_singularity = os.system('which singularity') == 0
 
     print(get_time() + " --- Create Solr core")
 
-    solr_core_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "solr", "data", core)
+    os.makedirs(args.out_path, exist_ok=True)
+    os.system('chmod 777 ' + args.out_path)
 
-    os.system('rm -rf ' + shlex.quote(solr_core_path))
-    os.makedirs(solr_core_path, exist_ok=True)
-    os.system('chmod 777 ' + solr_core_path)
-
-    if os.environ['GREBI_USE_SLURM'] == "1":
+    if has_singularity:
         cmd = ' '.join([
             'singularity run',
-            '--env PYTHONUNBUFFERED=TRUE',
-            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/data',
-            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")) + ':/names.txt',
-            '--bind ' + os.path.abspath('./07_create_db/solr/solr_config') + ':/config',
-            '--bind ' + shlex.quote(solr_core_path) + ':/var/solr/data/' + core,
-            '--bind ' + os.path.abspath('./07_create_db/solr/solr_import.dockerpy') + ':/import.py',
+            '--env PYTHONUNBUFFERED=TRUE'
+        ] + list(map(lambda f: "--bind " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_data + "/solr_*"))) + [
+            '--bind ' + os.path.abspath(args.in_data) + ':/data',
+            '--bind ' + os.path.abspath(args.in_names_txt) + ':/names.txt',
+            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_config')) + ':/config',
+            '--bind ' + os.path.abspath(args.out_path) + ':/var/solr/data/' + args.core,
+            '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_import.dockerpy')) + ':/import.py',
             '--writable-tmpfs',
             '--net --network=none',
             'docker://ghcr.io/ebispot/grebi_solr_with_python:9.5.0',
-            'python3 /import.py', core, port
+            'python3 /import.py', args.core, args.port
         ])
     else:
-        os.system("chmod 777 " + shlex.quote(solr_core_path))
+        os.system("chmod 777 " + shlex.quote(args.out_path))
         cmd = ' '.join([
             'docker run',
             '-e PYTHONUNBUFFERED=TRUE',
-            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "06_prepare_db_import")) + ':/data',
-            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "04_index", "names.txt")) + ':/names.txt',
-            '-v ' + os.path.abspath('./07_create_db/solr/solr_config') + ':/config',
-            '-v ' + shlex.quote(solr_core_path) + ':/var/solr/data/' + core,
-            '-v ' + os.path.abspath('./07_create_db/solr/solr_import.dockerpy') + ':/import.py',
+        ] + list(map(lambda f: "-v " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_data + "/solr_*"))) + [
+            '-v ' + os.path.abspath(args.in_names_txt) + ':/names.txt',
+            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_config')) + ':/config',
+            '-v ' + os.path.abspath(args.out_path) + ':/var/solr/data/' + args.core,
+            '-v ' + os.path.abspath("logs") + ':/var/solr/logs',
+            '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_import.dockerpy')) + ':/import.py',
             'ghcr.io/ebispot/grebi_solr_with_python:9.5.0',
-            'python3 /import.py', core, port
+            'python3 /import.py', args.core, args.port
         ])
 
     print(cmd)
