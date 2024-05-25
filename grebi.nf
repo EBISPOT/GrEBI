@@ -41,6 +41,9 @@ workflow {
 }
 
 process prepare {
+    memory "4 GB"
+    time "1h"
+
     output:
     path "datasource_files.jsonl"
 
@@ -51,6 +54,11 @@ process prepare {
 }
 
 process ingest {
+    memory { 4.GB + 32.GB * (task.attempt-1) }
+    time { 1.hour + 8.hour * (task.attempt-1) }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 5
+    
     input:
     val(file_listing)
     val(equivalence_props)
@@ -66,7 +74,7 @@ process ingest {
         | ${new File(params.home, file_listing.ingest.ingest_script)} \
             --datasource-name ${file_listing.datasource.name} \
             --filename "${basename(file_listing.filename)}" \
-            ${buildIngestArgs(file_listing.ingest_args)} \
+            ${buildIngestArgs(file_listing.ingest.ingest_args)} \
         | ${params.home}/target/release/grebi_normalise_prefixes ${params.home}/prefix_maps/prefix_map_normalise.json \
         | tee >(${params.home}/target/release/grebi_extract_equivalences \
                 --equivalence-properties ${equivalence_props.iterator().join(",")} \
@@ -76,6 +84,8 @@ process ingest {
 }
 
 process build_equiv_groups {
+    memory '64 GB'
+    time '23h'
 
     input:
     tuple(val(datasource_name), path(nodes_jsonl), path(equivalences_tsv))
@@ -96,6 +106,10 @@ process build_equiv_groups {
 }
 
 process assign_ids {
+    memory { 32.GB + 32.GB * (task.attempt-1) }
+    time { 1.hour + 8.hour * (task.attempt-1) }
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    maxRetries 5
 
     input:
     tuple(val(datasource_name), path(nodes_jsonl), path(equivalences_tsv))
@@ -119,6 +133,8 @@ process assign_ids {
 }
 
 process merge_ingests {
+    memory "16 GB" 
+    time "8h"
 
     input:
     val(assigned)
@@ -140,6 +156,8 @@ process merge_ingests {
 }
 
 process index {
+    memory "64 GB" 
+    time "8h"
 
     input:
     val(merged_filenames)
@@ -160,6 +178,8 @@ process index {
 }
 
 process materialise {
+    memory "100 GB" 
+    time "1h"
 
     input:
     path(merged_filename)
@@ -202,6 +222,8 @@ process create_rocks {
 }
 
 process prepare_neo {
+    memory "4 GB" 
+    time "1h"
 
     input:
     tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
@@ -225,6 +247,8 @@ process prepare_neo {
 }
 
 process prepare_solr {
+    memory "4 GB" 
+    time "1h"
 
     input:
     tuple(path(nodes_jsonl), path(edges_jsonl))
@@ -246,6 +270,8 @@ process prepare_solr {
 }
 
 process create_neo {
+    memory "100 GB" 
+    time "8h"
 
     input:
     path(neo_inputs)
@@ -264,6 +290,8 @@ process create_neo {
 }
 
 process create_solr_nodes_core {
+    memory "64 GB" 
+    time "23h"
 
     input:
     path(solr_inputs)
@@ -282,6 +310,8 @@ process create_solr_nodes_core {
 }
 
 process create_solr_edges_core {
+    memory "64 GB" 
+    time "23h"
 
     input:
     path(solr_inputs)
@@ -300,6 +330,8 @@ process create_solr_edges_core {
 }
 
 process create_solr_autocomplete_core {
+    memory "64 GB" 
+    time "4h"
 
     input:
     tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
@@ -317,6 +349,8 @@ process create_solr_autocomplete_core {
 }
 
 process package_neo {
+    memory "4 GB" 
+    time "8h"
 
     publishDir "${params.home}/release/${params.config}", overwrite: true
 
@@ -333,6 +367,8 @@ process package_neo {
 }
 
 process package_rocks {
+    memory "4 GB" 
+    time "8h"
 
     publishDir "${params.home}/release/${params.config}", overwrite: true
 
@@ -349,6 +385,8 @@ process package_rocks {
 }
 
 process package_solr {
+    memory "4 GB" 
+    time "8h"
 
     publishDir "${params.home}/release/${params.config}", overwrite: true
 
@@ -388,7 +426,7 @@ def getDecompressionCommand(filename) {
 
 def buildIngestArgs(ingestArgs) {
     res = ""
-    ingestArgs.each { arg -> res += "--${arg.name} ${arg.value} " }
+    ingestArgs.each { arg -> res += "${arg.name} ${arg.value} " }
     return res
 }
 
