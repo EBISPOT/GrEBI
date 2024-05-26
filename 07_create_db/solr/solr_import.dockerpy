@@ -25,7 +25,7 @@ def main():
 
     os.system("cp /config/*.xml /var/solr/data/")
     os.system("cp /config/*.cfg /var/solr/data/")
-    os.system(f"cp -r /config/{core}/* /var/solr/data/{core}/")
+    os.system(f"cp -r /config/{core} /var/solr/data/{core}")
     
     print("/var/solr/data")
     os.system("find /var/solr/data")

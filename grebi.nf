@@ -13,9 +13,10 @@ workflow {
         new File(params.home + "/configs/pipeline_configs/" + params.config + ".json")))
 
     files_listing = prepare() | splitText | map { row -> parseJson(row) }
-    ingested = ingest(files_listing, Channel.value(config.equivalence_props))
-    groups_txt = build_equiv_groups(ingested, Channel.value(config.additional_equivalence_groups))
-    assigned = assign_ids(ingested, groups_txt).collect(flat: false)
+
+    ingest(files_listing, Channel.value(config.equivalence_props))
+    groups_txt = build_equiv_groups(ingest.out.equivalences.collect(), Channel.value(config.additional_equivalence_groups))
+    assigned = assign_ids(ingest.out.nodes, groups_txt).collect(flat: false)
 
     merged = merge_ingests(
         assigned,
@@ -38,9 +39,16 @@ workflow {
     package_solr(solr_nodes_core, solr_edges_core, solr_autocomplete_core)
     package_neo(neo_db)
     package_rocks(rocks_db)
+
+    if(params.config == "ebi_full_monarch") {
+        copy_solr_to_staging(solr_nodes_core, solr_edges_core, solr_autocomplete_core)
+        copy_neo_to_staging(neo_db)
+        copy_rocksdb_to_staging(rocks_db)
+    }
 }
 
 process prepare {
+    cache "lenient"
     memory "4 GB"
     time "1h"
 
@@ -54,6 +62,7 @@ process prepare {
 }
 
 process ingest {
+    cache "lenient"
     memory { 4.GB + 32.GB * (task.attempt-1) }
     time { 1.hour + 8.hour * (task.attempt-1) }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
@@ -64,7 +73,8 @@ process ingest {
     val(equivalence_props)
 
     output:
-    tuple(val(file_listing.datasource.name), path("nodes.jsonl.gz"), path("equivalences.tsv"))
+    tuple val(file_listing.datasource.name), path("nodes_${task.index}.jsonl.gz"), emit: nodes
+    path("equivalences_${task.index}.tsv"), emit: equivalences
 
     script:
     """
@@ -78,17 +88,18 @@ process ingest {
         | ${params.home}/target/release/grebi_normalise_prefixes ${params.home}/prefix_maps/prefix_map_normalise.json \
         | tee >(${params.home}/target/release/grebi_extract_equivalences \
                 --equivalence-properties ${equivalence_props.iterator().join(",")} \
-                    > equivalences.tsv) \
-        | pigz --fast > nodes.jsonl.gz
+                    > equivalences_${task.index}.tsv) \
+        | pigz --fast > nodes_${task.index}.jsonl.gz
     """
 }
 
 process build_equiv_groups {
+    cache "lenient"
     memory '64 GB'
     time '23h'
 
     input:
-    tuple(val(datasource_name), path(nodes_jsonl), path(equivalences_tsv))
+    path(equivalences_tsv)
     val(additional_equivalence_groups)
 
     output:
@@ -106,13 +117,14 @@ process build_equiv_groups {
 }
 
 process assign_ids {
+    cache "lenient"
     memory { 32.GB + 32.GB * (task.attempt-1) }
     time { 1.hour + 8.hour * (task.attempt-1) }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 5
 
     input:
-    tuple(val(datasource_name), path(nodes_jsonl), path(equivalences_tsv))
+    tuple(val(datasource_name), path(nodes_jsonl))
     path groups_txt
 
     output:
@@ -133,6 +145,7 @@ process assign_ids {
 }
 
 process merge_ingests {
+    cache "lenient"
     memory "16 GB" 
     time "8h"
 
@@ -156,6 +169,7 @@ process merge_ingests {
 }
 
 process index {
+    cache "lenient"
     memory "64 GB" 
     time "8h"
 
@@ -178,6 +192,7 @@ process index {
 }
 
 process materialise {
+    cache "lenient"
     memory "100 GB" 
     time "1h"
 
@@ -204,6 +219,9 @@ process materialise {
 }
 
 process create_rocks {
+    cache "lenient"
+    memory "64 GB" 
+    time "4h"
 
     input:
     val(materialised)
@@ -222,6 +240,7 @@ process create_rocks {
 }
 
 process prepare_neo {
+    cache "lenient"
     memory "4 GB" 
     time "1h"
 
@@ -247,6 +266,7 @@ process prepare_neo {
 }
 
 process prepare_solr {
+    cache "lenient"
     memory "4 GB" 
     time "1h"
 
@@ -270,6 +290,7 @@ process prepare_solr {
 }
 
 process create_neo {
+    cache "lenient"
     memory "100 GB" 
     time "8h"
 
@@ -290,6 +311,7 @@ process create_neo {
 }
 
 process create_solr_nodes_core {
+    cache "lenient"
     memory "64 GB" 
     time "23h"
 
@@ -298,18 +320,19 @@ process create_solr_nodes_core {
     tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
 
     output:
-    path("grebi_nodes")
+    path("solr/data/grebi_nodes")
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
     PYTHONUNBUFFERED=true python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
-        --core grebi_nodes --in-data . --in-names-txt ${names_txt} --out-path grebi_nodes --port 8985
+        --core grebi_nodes --in-data . --in-names-txt ${names_txt} --out-path solr --port 8985
     """
 }
 
 process create_solr_edges_core {
+    cache "lenient"
     memory "64 GB" 
     time "23h"
 
@@ -318,18 +341,19 @@ process create_solr_edges_core {
     tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
 
     output:
-    path("grebi_edges")
+    path("solr/data/grebi_edges")
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
     PYTHONUNBUFFERED=true python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
-        --core grebi_edges --in-data . --in-names-txt ${names_txt} --out-path grebi_edges --port 8986
+        --core grebi_edges --in-data . --in-names-txt ${names_txt} --out-path solr --port 8986
     """
 }
 
 process create_solr_autocomplete_core {
+    cache "lenient"
     memory "64 GB" 
     time "4h"
 
@@ -337,18 +361,19 @@ process create_solr_autocomplete_core {
     tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
 
     output:
-    path("grebi_autocomplete")
+    path("solr/data/grebi_autocomplete")
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
     PYTHONUNBUFFERED=true python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
-        --core grebi_autocomplete --in-data . --in-names-txt ${names_txt} --out-path grebi_autocomplete --port 8987
+        --core grebi_autocomplete --in-data . --in-names-txt ${names_txt} --out-path solr --port 8987
     """
 }
 
 process package_neo {
+    cache "lenient"
     memory "4 GB" 
     time "8h"
 
@@ -367,6 +392,7 @@ process package_neo {
 }
 
 process package_rocks {
+    cache "lenient"
     memory "4 GB" 
     time "8h"
 
@@ -385,6 +411,7 @@ process package_rocks {
 }
 
 process package_solr {
+    cache "lenient"
     memory "4 GB" 
     time "8h"
 
@@ -409,6 +436,79 @@ process package_solr {
     """
 }
 
+process copy_neo_to_staging {
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    publishDir "/nfs/public/rw/ontoapps/grebi/staging/neo4j", mode: 'copy', overwrite: true
+
+    input: 
+    path("neo4j")
+
+    output:
+    path("neo4j")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    rm -rf /nfs/public/rw/ontoapps/grebi/staging/neo4j && mkdir -p /nfs/public/rw/ontoapps/grebi/staging/neo4j
+    """
+}
+
+process copy_solr_to_staging {
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    publishDir "/nfs/public/rw/ontoapps/grebi/staging/solr", mode: 'copy', overwrite: true
+
+    input: 
+    path("grebi_nodes")
+    path("grebi_edges")
+    path("grebi_autocomplete")
+
+    output:
+    path("grebi_nodes")
+    path("grebi_edges")
+    path("grebi_autocomplete")
+    path("solr.xml")
+    path("zoo.cfg")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    rm -rf /nfs/public/rw/ontoapps/grebi/staging/solr && mkdir -p /nfs/public/rw/ontoapps/grebi/staging/solr
+    cp -f ${params.home}/07_create_db/solr/solr_config/*.xml .
+    cp -f ${params.home}/07_create_db/solr/solr_config/*.cfg .
+    """
+}
+
+process copy_rocksdb_to_staging {
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    publishDir "/nfs/public/rw/ontoapps/grebi/staging/rocksdb", mode: 'copy', overwrite: true
+
+    input: 
+    path("rocksdb")
+
+    output:
+    path("rocksdb")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    rm -rf /nfs/public/rw/ontoapps/grebi/staging/rocksdb && mkdir -p /nfs/public/rw/ontoapps/grebi/staging/rocksdb
+    """
+}
 
 def parseJson(json) {
     return new JsonSlurper().parseText(json)

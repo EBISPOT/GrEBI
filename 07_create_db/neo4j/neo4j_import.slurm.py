@@ -29,9 +29,9 @@ def main():
     if has_singularity:
         cmd = ' '.join([
             'JAVA_OPTS=\'-server -Xms50g -Xmx50g\'',
-            'singularity run'
-        ] + list(map(lambda f: "--bind " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_csv_path + "/neo_*"))) + [
-            '--bind ' + os.path.abspath(args.in_csv_path) + ':/mnt',
+            'singularity run',
+        # ] + list(map(lambda f: "--bind " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_csv_path + "/neo_*"))) + [
+            '--bind ' + os.path.abspath(".") + ':/mnt',
             '--bind ' + shlex.quote(neo_data_path) + ':/data',
             '--bind ' + shlex.quote(neo_logs_path) + ':/logs',
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/neo4j/neo4j_import.dockersh')) + ':/import.sh',
@@ -47,7 +47,6 @@ def main():
             'docker run',
             '--user="$(id -u):$(id -g)"'
         ] + list(map(lambda f: "-v " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_csv_path + "/neo_*"))) + [
-            '-v ' + os.path.abspath(args.in_csv_path) + ':/mnt',
             '-v ' + shlex.quote(neo_data_path) + ':/data',
             '-v ' + shlex.quote(neo_logs_path) + ':/logs',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/neo4j/neo4j_import.dockersh')) + ':/import.sh',

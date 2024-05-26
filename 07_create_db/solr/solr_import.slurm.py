@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--port', type=str, help='Port to use for temp solr instance', required=True)
     parser.add_argument('--in-names-txt', type=str, help='Path to names.txt', required=True)
     parser.add_argument('--in-data', type=str, help='Path to jsonl files to import', required=True)
-    parser.add_argument('--out-path', type=str, help='Path to use to store the solr core', required=True)
+    parser.add_argument('--out-path', type=str, help='Path to use to store the solr database', required=True)
     args = parser.parse_args()
 
     has_singularity = os.system('which singularity') == 0
@@ -28,14 +28,15 @@ def main():
     if has_singularity:
         cmd = ' '.join([
             'singularity run',
-            '--env PYTHONUNBUFFERED=TRUE'
-        ] + list(map(lambda f: "--bind " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_data + "/solr_*"))) + [
-            '--bind ' + os.path.abspath(args.in_data) + ':/data',
+            '--env PYTHONUNBUFFERED=TRUE',
+            '--env NO_PROXY=localhost',
+        # ] + list(map(lambda f: "--bind " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_data + "/solr_*"))) + [
+            '--bind ' + os.path.abspath(".") + ':/mnt',
             '--bind ' + os.path.abspath(args.in_names_txt) + ':/names.txt',
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_config')) + ':/config',
-            '--bind ' + os.path.abspath(args.out_path) + ':/var/solr/data/' + args.core,
+            '--bind ' + os.path.abspath(args.out_path) + ':/var/solr',
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_import.dockerpy')) + ':/import.py',
-            '--writable-tmpfs',
+            #'--writable-tmpfs',
             '--net --network=none',
             'docker://ghcr.io/ebispot/grebi_solr_with_python:9.5.0',
             'python3 /import.py', args.core, args.port
@@ -45,11 +46,11 @@ def main():
         cmd = ' '.join([
             'docker run',
             '-e PYTHONUNBUFFERED=TRUE',
+            '-e NO_PROXY=localhost'
         ] + list(map(lambda f: "-v " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_data + "/solr_*"))) + [
             '-v ' + os.path.abspath(args.in_names_txt) + ':/names.txt',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_config')) + ':/config',
-            '-v ' + os.path.abspath(args.out_path) + ':/var/solr/data/' + args.core,
-            '-v ' + os.path.abspath("logs") + ':/var/solr/logs',
+            '-v ' + os.path.abspath(args.out_path) + ':/var/solr',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_import.dockerpy')) + ':/import.py',
             'ghcr.io/ebispot/grebi_solr_with_python:9.5.0',
             'python3 /import.py', args.core, args.port
