@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grebi-ui
+  labels:
+    app: grebi-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grebi-ui
+  template:
+    metadata:
+      labels:
+        app: grebi-ui
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/ebispot/grebi-ui:{{.Values.imageTag}}
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 0.25
+            limits:
+              memory: 1Gi
+              cpu: 0.5
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REACT_APP_APIURL
+              value: https://wwwdev.ebi.ac.uk/kg/
+            - name: PUBLIC_URL
+              value: /kg
+            - name: GREBI_MINIFY
+              value: 'true'
+          command: ["/bin/bash", "-c"]
+          args: ["/opt/grebi-ui/entrypoint.dockersh"]
+
+

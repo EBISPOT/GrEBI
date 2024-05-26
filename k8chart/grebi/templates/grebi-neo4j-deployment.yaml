@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  grebi-neo4j
+  labels:
+    app: grebi-neo4j
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grebi-neo4j
+  template:
+    metadata:
+      labels:
+        app: grebi-neo4j
+    spec:
+      volumes:
+        - name: grebi-neo4j-storage
+          mountOptions:
+            - nfsvers=3
+          nfs:
+            server: hh-isi-srv-vlan1496.ebi.ac.uk
+            path: /ifs/public/rw/ontoapps/grebi/current/neo4j
+      containers:
+        - name: neo4j
+          image: neo4j:5.18.0
+          volumeMounts:
+            - mountPath: "/data"
+              name: grebi-neo4j-storage
+          resources:
+            requests:
+              memory: 60Gi
+              cpu: 3
+            limits:
+              memory: 60Gi
+              cpu: 3
+          env:
+            - name: NEO4J_HEAP_MEMORY
+              value: 30g
+            - name: NEO4J_dbms_memory_heap_maxSize
+              value: 16g
+            - name: NEO4J_AUTH
+              value: none
+          ports:
+            - containerPort: 7474
+            - containerPort: 7687

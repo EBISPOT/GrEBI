@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grebi-solr
+  labels:
+    app: grebi-solr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grebi-solr
+  template:
+    metadata:
+      labels:
+        app: grebi-solr
+    spec:
+      volumes:
+        - name: grebi-solr-storage
+          mountOptions:
+            - nfsvers=3
+          nfs:
+            server: hh-isi-srv-vlan1496.ebi.ac.uk
+            path: /ifs/public/rw/ontoapps/grebi/current/solr
+      securityContext:
+        fsGroup: 8983
+      containers:
+        - name: solr
+          image: solr:9.5.0
+          volumeMounts:
+            - mountPath: "/data"
+              name: grebi-solr-storage
+          resources:
+            requests:
+              memory: 15Gi
+              cpu: 3
+            limits:
+              memory: 20Gi
+              cpu: 3
+          env:
+            - name: SOLR_HOME
+              value: /data
+            - name: SOLR_JAVA_MEM
+              value: -Xms2g -Xmx8g
+          ports:
+            - containerPort: 8983
+

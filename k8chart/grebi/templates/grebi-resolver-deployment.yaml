@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grebi-resolver
+  labels:
+    app: grebi-resolver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grebi-resolver
+  template:
+    metadata:
+      labels:
+        app: grebi-resolver
+    spec:
+      volumes:
+        - name: grebi-rocksdb-storage
+          mountOptions:
+            - nfsvers=3
+          nfs:
+            server: hh-isi-srv-vlan1496.ebi.ac.uk
+            path: /ifs/public/rw/ontoapps/grebi/current/rocksdb
+      containers:
+        - name: web
+          image: ghcr.io/ebispot/grebi_resolver_service:{{.Values.imageTag}}
+          env:
+            - name: GREBI_ROCKSDB_PATH
+              value: /data
+          volumeMounts:
+            - mountPath: "/data"
+              name: grebi-rocksdb-storage
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: 10Gi
+              cpu: 1
+            limits:
+              memory: 20Gi
+              cpu: 2
+          env:
+            - name: JDK_JAVA_OPTIONS
+              value: "-XX:InitialRAMPercentage=60.0 -XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=80.0"
+              
