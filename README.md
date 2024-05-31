@@ -7,6 +7,7 @@ EBI Codon HPC pipeline for building integrated knowledge graphs from [EMBL-EBI r
 * [OLS](https://www.ebi.ac.uk/ols4)
 * [Reactome](https://reactome.org/)
 * [OpenTargets](https://www.opentargets.org/)
+* [Metabolights](https://www.ebi.ac.uk/metabolights)
 
 GrEBI also imports complementary datasets, so far:
 

@@ -9,9 +9,9 @@ def parse_metabolights_xml(xml_content):
 
     entries = []
     for entry in root.findall(".//entry"):
+        entry_id = entry.get("id")
         entry_data = {
-            "id": entry.get("id"),
-            "grebi:type": "metabolights:Study",
+            "id": entry_id,
             "grebi:name": entry.find("name").text if entry.find("name") is not None else None,
             "grebi:description": entry.find("description").text if entry.find("description") is not None else None
         }
@@ -30,11 +30,21 @@ def parse_metabolights_xml(xml_content):
         for field in entry.findall(".//field"):
             field_name = f"metabolights:{field.get('name')}"
             if field_name in entry_data:
-                if not isinstance(entry_data[field_name], list):
-                    entry_data[field_name] = [entry_data[field_name]]
                 entry_data[field_name].append(field.text)
             else:
-                entry_data[field_name] = field.text
+                entry_data[field_name] = [field.text]
+
+        if entry_id.startswith("MTBLS"):
+            entry_data["grebi:type"]="metabolights:Study"
+        elif entry_id.startswith("MTBLC"):
+            entry_data["grebi:type"]="metabolights:Chemical"
+            entry_data["grebi:equivalentTo"]=entry_data["metabolights:ref"]
+            if "metabolights:inchi" in entry_data:
+                entry_data["grebi:equivalentTo"]=entry_data["grebi:equivalentTo"]+entry_data["metabolights:inchi"]
+            if "metabolights:formula" in entry_data:
+                entry_data["grebi:equivalentTo"]=entry_data["grebi:equivalentTo"]+entry_data["metabolights:formula"]
+        else:
+            assert False
 
         entries.append(entry_data)
 
