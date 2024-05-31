@@ -20,8 +20,8 @@ def main():
     os.system('cp -r ' + shlex.quote(args.in_template_config_dir) + ' ' + shlex.quote(args.out_config_dir))
 
     summary = json.load(open(args.in_summary_json))
-    node_props = map(lambda f: f.replace(':', '__'), summary['entity_props'].keys())
-    edge_props = map(lambda f: f.replace(':', '__'), summary['edge_props'].keys())
+    node_props = map(lambda f: f.replace(':', '__').replace('&', '_'), summary['entity_props'].keys())
+    edge_props = map(lambda f: f.replace(':', '__').replace('&', '_'), summary['edge_props'].keys())
 
     nodes_schema = Path(os.path.join(args.out_config_dir, 'grebi_nodes/conf/schema.xml'))
     nodes_schema.write_text(nodes_schema.read_text().replace('[[GREBI_FIELDS]]', '\n'.join(list(map(
