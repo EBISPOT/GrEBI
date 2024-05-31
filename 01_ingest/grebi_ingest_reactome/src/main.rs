@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufWriter, self, BufReader, StdinLock, StdoutLock, Write, BufRead, Read};
 use std::ptr::eq;
+use std::env;
 use clap::Parser;
 use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
@@ -31,8 +32,11 @@ fn main() {
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
+
+
+
     let normalise:PrefixMap = {
-        let rdr = BufReader::new( std::fs::File::open("./prefix_maps/prefix_map_normalise.json").unwrap() );
+        let rdr = BufReader::new( std::fs::File::open(env::var("GREBI_HOME").unwrap().to_owned() + "/prefix_maps/prefix_map_normalise.json").unwrap() );
         let mut builder = PrefixMapBuilder::new();
         serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
             builder.add_mapping(k, v);
