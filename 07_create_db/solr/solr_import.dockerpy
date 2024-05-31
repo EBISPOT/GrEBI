@@ -8,7 +8,12 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
 
-WORKERS=1
+WORKERS=32
+
+# workaround to disable proxy which prevents us from reaching localhost
+# https://stackoverflow.com/questions/28521535/requests-how-to-disable-bypass-proxy
+session = requests.Session()
+session.trust_env = False
 
 def main():
     if len(sys.argv) != 3:
@@ -33,17 +38,21 @@ def main():
     os.environ['SOLR_ENABLE_REMOTE_STREAMING'] = 'true'
     os.environ['SOLR_SECURITY_MANAGER_ENABLED'] = 'false'
 
-    subprocess.run(['solr', 'start', '-m', '16g', '-p', port, '-noprompt', '-force'])
+    subprocess.run(['solr', 'start', '-m', '128g', '-p', port, '-noprompt', '-force'])
+
+    time.sleep(5)
+
+    subprocess.run(['wait-for-solr.sh', '--solr-url', f"http://localhost:{port}/solr/{core}/select?q=*:*"])
 
     time.sleep(5)
 
     if core == "grebi_autocomplete":
         print("Uploading names.txt")
-        response = requests.get(f"http://localhost:{port}/solr/grebi_autocomplete/update",
+        response = session.get(f"http://localhost:{port}/solr/grebi_autocomplete/update",
                                 params={
                                     'stream.file': '/names.txt',
                                     'fieldnames': 'label',
-                                    'separator': '%00',
+                                    'separator': '\x00',
                                     'stream.contentType': 'application/csv;charset=utf-8',
                                     'commit': 'true'
                                 })
@@ -53,11 +62,9 @@ def main():
         filenames = glob.glob('/mnt/*.jsonl')
         with ThreadPoolExecutor(max_workers=WORKERS) as executor:
             futures = [executor.submit(upload_file, core, port, filename) for filename in filenames if os.path.exists(filename)]
-            for future in as_completed(futures):
-                print(future.result())
         
         time.sleep(5)
-        response = requests.get(f"http://127.0.0.1:{port}/solr/{core}/update",
+        response = session.get(f"http://127.0.0.1:{port}/solr/{core}/update",
                                 params={'commit': 'true'})
         print(response.text)
 
@@ -65,18 +72,19 @@ def main():
         print("Invalid core")
         sys.exit(1)
 
-    time.sleep(5)
-    subprocess.run(['solr', 'stop', '-all'])
+    os.environ['SOLR_STOP_WAIT'] = '500'
+    subprocess.run(['solr', 'stop', '-p', port])
 
 def upload_file(core, port, filename):
     print(f"Uploading {core.split('_')[1]} file: {filename}")
-    response = requests.get(f"http://localhost:{port}/solr/{core}/update/json/docs",
+    response = session.get(f"http://localhost:{port}/solr/{core}/update/json/docs",
                             params={
                                 'stream.file': filename,
                                 'stream.contentType': 'application/json;charset=utf-8',
                                 'commit': 'true'
                             })
-    return response.text
+    r = response.text.replace("\n", "")
+    print(f"Uploaded {filename}: {r}")
 
 if __name__ == "__main__":
     main()
