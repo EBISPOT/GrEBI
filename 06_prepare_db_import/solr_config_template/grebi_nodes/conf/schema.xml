@@ -136,6 +136,7 @@
 <!--    <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField" />-->
 
     <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
+    <copyField source="*" dest="_text_"/>
 
 
     <!-- Type used for data-driven schema, to add a string copy for each text field -->
