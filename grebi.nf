@@ -222,7 +222,6 @@ process materialise {
     cat ${merged_filename} \
         | ${params.home}/target/release/grebi_materialise \
           --in-metadata-jsonl ${metadata_jsonl} \
-          --in-summary-json ${summary_json} \
           --out-edges-jsonl edges.jsonl \
           --exclude ${exclude.iterator().join(",")} \
         > nodes.jsonl

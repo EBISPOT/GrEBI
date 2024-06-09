@@ -43,9 +43,6 @@ struct Args {
     in_metadata_jsonl: String,
 
     #[arg(long)]
-    in_summary_json: String,
-
-    #[arg(long)]
     out_edges_jsonl: String,
 
     #[arg(long)]
