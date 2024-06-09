@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  {{ .Release.Name }}-neo4j
+  labels:
+    app: {{ .Release.Name }}-neo4j
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-neo4j
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-neo4j
+    spec:
+      securityContext:
+        runAsUser: 5533
+        runAsGroup: 1279
+        fsGroup: 5533
+      volumes:
+        - name: {{ .Release.Name }}-neo4j-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-neo4j-pvc
+      containers:
+        - name: neo4j
+          image: neo4j:5.18.0
+          volumeMounts:
+            - mountPath: "/data"
+              name: {{ .Release.Name }}-neo4j-storage
+          resources:
+            requests:
+              memory: 40Gi
+              cpu: 4
+            limits:
+              memory: 40Gi
+              cpu: 4
+          env:
+            - name: NEO4J_AUTH
+              value: none
+            - name: NEO4J_server_memory_heap_initial__size
+              value: 15000m
+            - name: NEO4J_server_memory_heap_max__size
+              value: 15000m
+            - name: NEO4J_server_memory_pagecache_size
+              value: 15g
+            - name: NEO4J_PLUGINS
+              value: \["apoc"\]
+          ports:
+            - containerPort: 7474
+            - containerPort: 7687

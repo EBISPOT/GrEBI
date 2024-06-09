@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+  finalizers:
+  - kubernetes.io/pv-protection
+  name: {{ .Release.Name }}-resolver-pv
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: standard-nfs-production
+  volumeMode: Filesystem
+  mountOptions:
+    - nfsvers=3
+  nfs:
+    server: hh-isi-srv-vlan1496.ebi.ac.uk
+    path: /ifs/public/rw/ontoapps/grebi/current/rocksdb
+  capacity: 
+    storage: 1000Gi
+

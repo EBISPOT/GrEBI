@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-resolver
+  labels:
+    app: {{ .Release.Name }}-resolver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-resolver
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-resolver
+    spec:
+      volumes:
+        - name: {{ .Release.Name }}-resolver-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-resolver-pvc
+      containers:
+        - name: resolver
+          image: ghcr.io/ebispot/grebi_resolver_service:{{.Values.imageTag}}
+          volumeMounts:
+            - mountPath: "/data"
+              name: {{ .Release.Name }}-resolver-storage
+          resources:
+            requests:
+              memory: 8Gi
+              cpu: 2
+            limits:
+              memory: 8Gi
+              cpu: 2
+          env:
+            - name: GREBI_ROCKSDB_PATH
+              value: /data
+          ports:
+            - containerPort: 8983
+

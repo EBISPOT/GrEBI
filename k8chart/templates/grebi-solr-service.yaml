@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: grebi-solr
+  name: {{ .Release.Name }}-solr
   labels:
-    app: grebi-solr
+    app: {{ .Release.Name }}-solr
 spec:
   ports:
       - port: 8983
@@ -11,4 +11,4 @@ spec:
         name: http
         protocol: TCP
   selector:
-    app: grebi-solr
+    app: {{ .Release.Name }}-solr

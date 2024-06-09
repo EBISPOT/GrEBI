@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: grebi-neo4j
+  name: {{ .Release.Name }}-neo4j
   labels:
-    app: grebi-neo4j
+    app: {{ .Release.Name }}-neo4j
 spec:
   ports:
       - port: 7474
@@ -15,4 +15,4 @@ spec:
         name: bolt
         protocol: TCP
   selector:
-    app: grebi-neo4j
+    app: {{ .Release.Name }}-neo4j

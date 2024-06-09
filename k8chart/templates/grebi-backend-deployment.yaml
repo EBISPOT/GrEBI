@@ -1,40 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: grebi-api
+  name: {{ .Release.Name }}-backend
   labels:
-    app: grebi-api
+    app: {{ .Release.Name }}-backend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: grebi-api
+      app: {{ .Release.Name }}-backend
   template:
     metadata:
       labels:
-        app: grebi-api
+        app: {{ .Release.Name }}-backend
     spec:
       containers:
         - name: web
-          image: ghcr.io/ebispot/grebi-api:{{.Values.imageTag}}
+          image: ghcr.io/ebispot/grebi_api:{{.Values.imageTag}}
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
           resources:
             requests:
-              memory: 10Gi
-              cpu: 1
+              memory: 8Gi
+              cpu: 0.5
             limits:
-              memory: 20Gi
-              cpu: 2
+              memory: 8Gi
+              cpu: 0.5
           env:
             - name: GREBI_SOLR_HOST
-              value: http://grebi-solr:8983
+              value: http://{{ .Release.Name }}-solr:8983
             - name: GREBI_NEO4J_HOST
-              value: bolt://grebi-neo4j:7687
-            - name: GREBI_RESOLVER_HOST
-              value: http://grebi-resolver:8080
-            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: bolt://{{ .Release.Name }}-neo4j:7687
+            - name: GREBI_CONTEXT_PATH
               value: /kg
             - name: JDK_JAVA_OPTIONS
               value: "-XX:InitialRAMPercentage=60.0 -XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=80.0"

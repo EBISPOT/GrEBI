@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-solr
+  labels:
+    app: {{ .Release.Name }}-solr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-solr
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-solr
+    spec:
+      volumes:
+        - name: {{ .Release.Name }}-solr-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-solr-pvc
+      containers:
+        - name: solr
+          image: solr:9.5.0
+          volumeMounts:
+            - mountPath: "/var/solr/data"
+              name: {{ .Release.Name }}-solr-storage
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 1
+            limits:
+              memory: 4Gi
+              cpu: 1
+          ports:
+            - containerPort: 8983
+

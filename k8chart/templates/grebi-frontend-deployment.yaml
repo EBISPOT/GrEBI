@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: grebi-ui
+  name: {{ .Release.Name }}-frontend
   labels:
-    app: grebi-ui
+    app: {{ .Release.Name }}-frontend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: grebi-ui
+      app: {{ .Release.Name }}-frontend
   template:
     metadata:
       labels:
-        app: grebi-ui
+        app: {{ .Release.Name }}-frontend
     spec:
       containers:
         - name: web
-          image: ghcr.io/ebispot/grebi-ui:{{.Values.imageTag}}
+          image: ghcr.io/ebispot/grebi_ui:{{.Values.imageTag}}
           imagePullPolicy: Always
           resources:
             requests:
@@ -35,6 +35,6 @@ spec:
             - name: GREBI_MINIFY
               value: 'true'
           command: ["/bin/bash", "-c"]
-          args: ["/opt/grebi-ui/entrypoint.dockersh"]
+          args: ["/opt/grebi_ui/entrypoint.dockersh"]
 
 

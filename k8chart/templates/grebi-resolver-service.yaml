@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: grebi-resolver
+  name: {{ .Release.Name }}-resolver
   labels:
-    app: grebi-resolver
+    app: {{ .Release.Name }}-resolver
 spec:
   ports:
       - port: 8080
@@ -11,4 +11,4 @@ spec:
         name: http
         protocol: TCP
   selector:
-    app: grebi-resolver
+    app: {{ .Release.Name }}-resolver
