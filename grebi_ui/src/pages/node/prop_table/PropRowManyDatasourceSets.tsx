@@ -22,14 +22,14 @@ export default function PropRowManyDatasourceSets(params:{node:GraphNode,prop:st
     if(allSingleValues) {
       return (
           <Fragment>
-                <Grid item xs={12} style={{overflow:'hidden'}}>
+                <Grid item xs={12} style={{overflow:'hidden',padding:'8px'}} className="bg-gradient-to-r from-neutral-light to-white rounded-lg">
                   <b style={{fontFamily:"'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace"}}>{prop}</b>
                 </Grid>
                 {
                   dsSetsSorted.map(dsSet => {
                     let values = dsSetToVals.get(dsSet) || []
                       return <Fragment>
-                      <Grid item xs={12}>
+                      <Grid item xs={12} style={{padding:'8px'}}>
                         <div className="pl-2">
                         <DatasourceTags dss={values[0].datasources} />
                         <PropVals node={node} prop={prop} values={values} />
@@ -43,7 +43,7 @@ export default function PropRowManyDatasourceSets(params:{node:GraphNode,prop:st
     } else {
       return (
           <Fragment>
-                <Grid item xs={12} style={{overflow:'hidden'}}>
+                <Grid item xs={12} style={{overflow:'hidden',padding:'8px'}} className="bg-gradient-to-r from-neutral-light to-white rounded-lg">
                   <b style={{fontFamily:"'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace"}}>{prop}</b>
                 </Grid>
                 {

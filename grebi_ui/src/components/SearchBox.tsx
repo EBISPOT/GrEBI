@@ -167,18 +167,18 @@ export default function SearchBox({
                   to={linkUrl}
                 >
                   <div className="flex justify-between">
-                    <div className="truncate flex-auto" title={name}>
-                      {name}
-                    </div>
-                    <div className="truncate flex-initial ml-2 text-right">
                     { type &&
                       <span
-                        className="mr-2 bg-link-default px-3 py-1 rounded-lg text-sm text-white uppercase"
+                        className="bg-link-default px-3 py-1 rounded-lg text-sm text-white uppercase"
                         title={type}
                       >
                         {type}
                       </span>
           }
+                    <div className="truncate flex-auto" title={name}>
+                      {name}
+                    </div>
+                    <div className="truncate flex-initial ml-2 text-right">
                       <DatasourceTags dss={entry.getDatasources()} />
                       {/* <span
                         className="bg-orange-default px-3 py-1 rounded-lg text-sm text-white uppercase"

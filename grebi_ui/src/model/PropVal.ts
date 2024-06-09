@@ -25,7 +25,7 @@ class PropVal {
         let ds = src['grebi:datasources']
         let value = src['grebi:value']
 
-        if(!ds || !value) {
+        if(ds === undefined || value === undefined) {
             throw new Error('missing ds or value in ' + JSON.stringify(src))
         }
 

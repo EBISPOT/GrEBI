@@ -43,6 +43,8 @@ public class ResolverClient {
         HttpPost request = new HttpPost(resolverHost + "/resolve");
         request.setEntity(new StringEntity(gson.toJson(ids), ContentType.APPLICATION_JSON));
 
+//        System.out.println("calling resolver at " + resolverHost + "/resolve" + " with " + gson.toJson(ids));
+
         try {
             HttpResponse response = client.execute(request);
             HttpEntity entity = response.getEntity();
@@ -51,6 +53,7 @@ public class ResolverClient {
                 System.out.println("Resolved " + ids.size() + " ids in " + timer.stop().toString());
 
                 String json = EntityUtils.toString(entity);
+//                System.out.println("response was " + json);
                 return gson.fromJson(json, Map.class);
             } else {
                 // Handle empty response

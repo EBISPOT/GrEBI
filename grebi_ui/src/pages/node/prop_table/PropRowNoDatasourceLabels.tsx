@@ -12,7 +12,7 @@ export default function PropRowNoDatasourceLabels(params:{node:GraphNode,prop:st
 
     return (
         <Fragment>
-              <Grid item xs={12} style={{overflow:'hidden'}}>
+              <Grid item xs={12} style={{overflow:'hidden',padding:'8px'}} className="bg-gradient-to-r from-neutral-light to-white rounded-lg">
                 <b style={{fontFamily:"'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace"}}>{prop}</b>
               </Grid>
               <Grid item xs={12}>

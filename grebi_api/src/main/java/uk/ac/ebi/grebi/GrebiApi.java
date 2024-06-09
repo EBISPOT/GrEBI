@@ -43,7 +43,7 @@ public class GrebiApi {
                     ctx.result("{}");
 
                     var q = new GrebiSolrQuery();
-                    q.addFilter("grebi:nodeId", List.of(ctx.pathParam("nodeId")), SearchType.WHOLE_FIELD);
+                    q.addFilter("grebi__nodeId", List.of(ctx.pathParam("nodeId")), SearchType.WHOLE_FIELD);
 
                     var res = solr.getFirstNode(q);
 
@@ -67,7 +67,11 @@ public class GrebiApi {
                     q.setSearchText(ctx.queryParam("q"));
                     q.setExactMatch(false);
                     q.addSearchField("id", 1000, SearchType.WHOLE_FIELD);
+                    q.addSearchField("grebi__synonym", 900, SearchType.WHOLE_FIELD);
                     q.addSearchField("id", 500, SearchType.CASE_INSENSITIVE_TOKENS);
+                    q.addSearchField("grebi__synonym", 450, SearchType.CASE_INSENSITIVE_TOKENS);
+                    q.addSearchField("grebi__description", 400, SearchType.WHOLE_FIELD);
+                    q.addSearchField("grebi__description", 250, SearchType.CASE_INSENSITIVE_TOKENS);
                     q.addSearchField("_text_", 1, SearchType.CASE_INSENSITIVE_TOKENS);
                     for(var param : ctx.queryParamMap().entrySet()) {
                         if(param.getKey().equals("q") ||

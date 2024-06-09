@@ -12,13 +12,13 @@ export default function PropRowOneDatasourceSet(params:{node:GraphNode,prop:stri
 
     return (
         <Fragment>
-              <Grid item xs={12} style={{overflow:'hidden'}}>
+              <Grid item xs={12} style={{overflow:'hidden',padding:'8px'}} className="bg-gradient-to-r from-neutral-light to-white rounded-lg">
                 <b style={{fontFamily:"'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace"}}>{prop}</b>
               { datasources.length > 1 && <span>
                 <DatasourceTags dss={values[0].datasources} />
                 </span>}
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} style={{padding:'8px'}}>
                 <div className="pl-2">
                 <PropVals node={node} prop={prop} values={values} />
                 </div>
