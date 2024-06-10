@@ -34,6 +34,9 @@ public class GrebiApi {
                         cors.addRule(CorsPluginConfig.CorsRule::anyHost);
                     });
                     config.router.contextPath = System.getenv("GREBI_CONTEXT_PATH");
+                    if(config.router.contextPath == null) {
+                        config.router.contextPath = "";
+                    }
                 })
                 .get("/api/v1/stats", ctx -> {
                     ctx.contentType("application/json");
@@ -105,7 +108,7 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .start(8090);
+                .start("0.0.0.0", 8090);
     }
 
 }
