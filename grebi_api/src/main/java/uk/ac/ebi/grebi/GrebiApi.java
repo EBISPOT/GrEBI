@@ -33,6 +33,7 @@ public class GrebiApi {
                     config.bundledPlugins.enableCors(cors -> {
                         cors.addRule(CorsPluginConfig.CorsRule::anyHost);
                     });
+                    config.router.contextPath = System.getenv("GREBI_CONTEXT_PATH");
                 })
                 .get("/api/v1/stats", ctx -> {
                     ctx.contentType("application/json");
