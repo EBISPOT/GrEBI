@@ -19,7 +19,7 @@ export default function PropRowOneDatasourceSet(params:{node:GraphNode,prop:stri
                 </span>}
               </Grid>
               <Grid item xs={12} style={{padding:'8px'}}>
-                <div className="pl-2">
+                <div className="pl-2 mb-2">
                 <PropVals node={node} prop={prop} values={values} />
                 </div>
               </Grid>

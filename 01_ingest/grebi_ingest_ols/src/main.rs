@@ -251,6 +251,28 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
 
         }
+
+        // hack to assert equivalence for NCBITaxon ids to species names
+        // because some important DBs (including reactome, metabolights) just use names instead of IDs
+        // really this should be implemented as a separate datasource using sssom string->id mappings extracted from ncbitaxon
+        if obj.contains_key("ols:ontologyId") && get_string_values(obj.get("ols:ontologyId").unwrap()).iter().next().unwrap().eq(&"ncbitaxon") {
+            if obj.contains_key("http://purl.obolibrary.org/obo/ncbitaxon#has_rank") && get_string_values(obj.get("http://purl.obolibrary.org/obo/ncbitaxon#has_rank").unwrap()).iter().next().unwrap().eq(&"http://purl.obolibrary.org/obo/NCBITaxon_species") {
+                output_nodes.write_all(r#","grebi:equivalentTo":["#.as_bytes()).unwrap();
+                let mut is_first_species_name = true;
+                for name in get_string_values(obj.get("ols:label").unwrap()) {
+                    if is_first_species_name {
+                        is_first_species_name = false;
+                    } else {
+                        output_nodes.write_all(r#","#.as_bytes()).unwrap();
+                    }
+                    output_nodes.write_all(r#"""#.as_bytes()).unwrap();
+                    output_nodes.write_all(name.as_bytes()).unwrap();
+                    output_nodes.write_all(r#"""#.as_bytes()).unwrap();
+                }
+                output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
+            }
+        }
+
         output_nodes.write_all(r#"}"#.as_bytes()).unwrap();
         output_nodes.write_all("\n".as_bytes()).unwrap();
     }

@@ -38,7 +38,7 @@ export default function NodeProperties(params:{node:GraphNode}) {
     }
   }
 
-  let pageTitle = node.getName()?.value;
+  let pageTitle = node.getName();
   let pageDesc = node.getDescription()?.value
   let props = node.getProps();
   let refs = node.getRefs();
@@ -59,10 +59,10 @@ export default function NodeProperties(params:{node:GraphNode}) {
         <SearchBox/>
         <div className="text-center">
         <Typography variant="h5">{pageTitle} {
-          node.extractType() && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()}</span>}</Typography>
+          node.extractType()?.long && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.long}</span>}</Typography>
                       <Grid item xs={10} className="pt-2">
                 {props['id'].map(id => <span
-className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 text-sm"
+className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 mb-2 text-sm"
 >{id.value}
 <button
                     onClick={() => {

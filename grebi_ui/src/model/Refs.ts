@@ -4,7 +4,7 @@ export class Ref {
 	nodeId:string
 	type:string[]
 	id:string[]
-	name:string
+	name:string[]
 
 	constructor(obj:any) {
 		this.nodeId = obj['grebi:nodeId']

@@ -21,7 +21,7 @@ export default function Home() {
     <div>
       <Header section="home" />
       <main className="container mx-auto px-4 h-fit">
-        <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
           <div className="lg:col-span-3">
             <div className="bg-gradient-to-r from-neutral-light to-white rounded-lg my-8 p-8">
               <div className="text-3xl mb-4 text-neutral-black font-bold">
@@ -43,45 +43,37 @@ export default function Home() {
                     </Link>
                   </span>
                 </div>
-                {/* <div className="md:text-right">
-                  <Link to={"/ontologies"} className="link-default">
-                    Looking for a particular collection?
-                  </Link>
-                </div> */}
-              </div>
-            </div>
-          </div>
-          <div className="lg:col-span-1 lg:order-none order-first">
-            <div className="shadow-card border-b-8 border-link-default rounded-md mt-8 p-4">
-              <div className="text-2xl text-neutral-black font-bold mb-3">
-                <i className="icon icon-common icon-analyse-graph icon-spacer" />
-                <span>Data Content</span>
-              </div>
+                <div className="md:text-right">
+         
               {stats ? (
-                <div className="text-neutral-black">
+                <div className="text-neutral-black text-sm">
                   {/* <div className="mb-2 text-sm italic">
                     Updated&nbsp;
                     {moment(stats.lastModified).format(
                       "D MMM YYYY ddd HH:mm(Z)"
                     )}
                   </div> */}
-                  <ul className="list-disc list-inside pl-2">
-                    <li>
-                      {stats.num_nodes.toLocaleString()} nodes
-                    </li>
-                    <li>
-                      {stats.num_edges.toLocaleString()} edges
-                    </li>
-                  </ul>
+                  <p>
+                      <i>{stats.num_nodes.toLocaleString()} nodes</i><br/>
+                      <i>{stats.num_edges.toLocaleString()} edges</i>
+                    </p>
                 </div>
               ) : (
-                <div className="text-center">
                   <div className="spinner-default w-7 h-7" />
-                </div>
               )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+          </div>
+          <div>
+                <p className="mb-3">
+                  This website enables you to search and explore data from <Link className="link-default" to="/datasources">multiple EBI resources</Link> and the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>. It combines data exports from each resource with rich ontology relationships loaded from <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link> and <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>.
+                </p>
+                <p>
+                  The KG is a very early work in progress. No querying interface is currently provided other than simple search/browsing functionality. If you are interested in querying the KG and/or have a potential application please <Link className="link-default" to="mailto:jmcl@ebi.ac.uk">get in touch</Link>.
+                </p>
+          </div>
       </main>
     </div>
   );

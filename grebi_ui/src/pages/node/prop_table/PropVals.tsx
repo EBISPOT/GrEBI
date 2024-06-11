@@ -5,6 +5,7 @@ import GraphNode from "../../../model/GraphNode";
 import PropVal from "../../../model/PropVal";
 import Refs from "../../../model/Refs";
 import ClassExpression from "../../../components/ClassExpression";
+import { pickBestDisplayName } from "../../../app/util";
 
 export default function PropVals(params:{ node:GraphNode,prop:string,values:PropVal[] }) {
 
@@ -57,7 +58,7 @@ function PropValue(params:{node:GraphNode,prop:string,value:PropVal,monospace:bo
     if(mapped_value && mapped_value.name) {
       return (
         <span className="mr-0">
-          {separator} <Link className="link-default" to={"/nodes/" + encodeNodeId(value.value)}>{mapped_value.name}</Link>
+          {separator} <Link className="link-default" to={"/nodes/" + encodeNodeId(value.value)}>{pickBestDisplayName(mapped_value.name)}</Link>
         </span>
       )
     } else {

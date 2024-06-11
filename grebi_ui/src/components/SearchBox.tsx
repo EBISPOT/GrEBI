@@ -145,8 +145,8 @@ export default function SearchBox({
 
   let jumpToEntityElements = jumpTo
     .map((entry: GraphNode, i: number): SearchBoxEntry => {
-          let name = entry.getName().value;
-          let type = entry.extractType()
+          let name = entry.getName();
+          let type = entry.extractType()?.short
           const linkUrl = `/nodes/${encodeNodeId(entry.getNodeId())}`;
           return {
             linkUrl,
@@ -167,17 +167,15 @@ export default function SearchBox({
                   to={linkUrl}
                 >
                   <div className="flex justify-between">
-                    { type &&
-                      <span
-                        className="bg-link-default px-3 py-1 rounded-lg text-sm text-white uppercase"
-                        title={type}
-                      >
-                        {type}
-                      </span>
-          }
+                 
                     <div className="truncate flex-auto" title={name}>
                       {name}
+                      { type &&
+                      <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{type}</span>
+
+          }
                     </div>
+                    
                     <div className="truncate flex-initial ml-2 text-right">
                       <DatasourceTags dss={entry.getDatasources()} />
                       {/* <span

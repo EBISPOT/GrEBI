@@ -47,7 +47,7 @@ export default function PropRowManyDatasourceSets(params:{node:GraphNode,prop:st
                   <b style={{fontFamily:"'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace"}}>{prop}</b>
                 </Grid>
                 {
-                  dsSetsSorted.map(dsSet => {
+                  dsSetsSorted.map((dsSet, i) => {
                     let values = dsSetToVals.get(dsSet) || []
                       return <Fragment>
                         <Grid item xs={12}>
@@ -56,7 +56,7 @@ export default function PropRowManyDatasourceSets(params:{node:GraphNode,prop:st
                           </div>
                         </Grid>
                         <Grid item xs={12}>
-                        <div className="pl-4">
+                        <div className={"pl-4" + (i == dsSetsSorted.length-1 ? " mb-2" : "")}>
                           <PropVals node={node} prop={prop} values={values} />
                           </div>
                         </Grid>

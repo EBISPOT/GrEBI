@@ -16,7 +16,7 @@ export default function PropRowNoDatasourceLabels(params:{node:GraphNode,prop:st
                 <b style={{fontFamily:"'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace"}}>{prop}</b>
               </Grid>
               <Grid item xs={12}>
-                <div className="pl-2">
+                <div className="pl-2 mb-2">
                 <PropVals node={node} prop={prop} values={values} />
                 </div>
               </Grid>

@@ -51,3 +51,17 @@ export function toCamel(str: string) {
     return $1.toUpperCase().replace("-", "").replace("_", "");
   });
 }
+
+
+export function pickBestDisplayName(names:string[]):string|undefined {
+  return names.slice(0).sort((a, b) => score(b) - score(a))[0]
+  function score(name) {
+    let n = 0
+    for (let c of name) {
+      if (c.match(/[A-Za-z ]/)) {
+        n++
+      }
+    }
+    return n
+  }
+}
