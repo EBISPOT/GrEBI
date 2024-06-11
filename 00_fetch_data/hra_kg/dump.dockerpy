@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+import requests
+import os
+
+def dump_named_graphs(blazegraph_url):
+    query = """
+    SELECT DISTINCT ?graph WHERE {
+        GRAPH ?graph {?s ?p ?o}
+    }
+    """
+    params = {
+        'query': query
+    }
+    response = requests.get(blazegraph_url, params=params, headers={'Accept': 'application/json'})
+
+    if response.status_code == 200:
+        data = response.json()
+        named_graphs = [result['graph']['value'] for result in data['results']['bindings']]
+
+        for named_graph in named_graphs:
+            params['query'] = f"CONSTRUCT {{ ?s ?p ?o }} WHERE {{ GRAPH <{named_graph}> {{ ?s ?p ?o }} }}"
+            response = requests.get(blazegraph_url, params=params,headers={'Accept': 'text/x-nquads'})
+
+            if response.status_code == 200:
+                nquads = response.text.split('\n')
+                for nquad in nquads:
+                    if nquad:
+                        stripped = nquad.strip('.').strip()
+                        print(f"{stripped} <{named_graph}> .")
+            else:
+                print(f"Failed to fetch data for named graph '{named_graph}'")
+    else:
+        print("Failed to fetch named graphs")
+
+if __name__ == "__main__":
+    blazegraph_url = "http://127.0.0.1:8080/blazegraph/sparql"
+    dump_named_graphs(blazegraph_url)
+
