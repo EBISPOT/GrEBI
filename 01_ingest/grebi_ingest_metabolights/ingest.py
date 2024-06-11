@@ -38,11 +38,11 @@ def parse_metabolights_xml(xml_content):
             entry_data["grebi:type"]="metabolights:Study"
         elif entry_id.startswith("MTBLC"):
             entry_data["grebi:type"]="metabolights:Chemical"
-            entry_data["grebi:equivalentTo"]=entry_data["metabolights:ref"]
+            entry_data["metabolights:chemical"]=entry_data["metabolights:ref"]
             if "metabolights:inchi" in entry_data:
-                entry_data["grebi:equivalentTo"]=entry_data["grebi:equivalentTo"]+entry_data["metabolights:inchi"]
+                entry_data["metabolights:chemical"]=entry_data["metabolights:chemical"]+entry_data["metabolights:inchi"]
             if "metabolights:formula" in entry_data:
-                entry_data["grebi:equivalentTo"]=entry_data["grebi:equivalentTo"]+entry_data["metabolights:formula"]
+                entry_data["metabolights:chemical"]=entry_data["metabolights:chemical"]+entry_data["metabolights:formula"]
         else:
             assert False
 
