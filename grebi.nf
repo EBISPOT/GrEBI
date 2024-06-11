@@ -222,6 +222,7 @@ process materialise {
     cat ${merged_filename} \
         | ${params.home}/target/release/grebi_materialise \
           --in-metadata-jsonl ${metadata_jsonl} \
+          --in-summary-json ${summary_json} \
           --out-edges-jsonl edges.jsonl \
           --exclude ${exclude.iterator().join(",")} \
         > nodes.jsonl
@@ -230,9 +231,11 @@ process materialise {
 
 process create_rocks {
     cache "lenient"
-    memory "400 GB" 
-    time "8h"
+    memory "800 GB" 
+    time "23h"
     cpus "8"
+    errorStrategy 'retry'
+    maxRetries 10
 
     input:
     val(materialised)
@@ -246,7 +249,7 @@ process create_rocks {
     set -Eeuo pipefail
     cat ${materialised.iterator().join(" ")} \
         | ${params.home}/target/release/grebi_make_rocks \
-            --rocksdb-path /dev/shm/rocksdb
+            --rocksdb-path /dev/shm/rocksdb && \
     mv /dev/shm/rocksdb .
     """
 }
@@ -571,8 +574,8 @@ process copy_neo_to_staging {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    rm -rf /nfs/public/rw/ontoapps/grebi/staging/neo4j && mkdir /nfs/public/rw/ontoapps/grebi/staging/neo4j 
-    cp -r * /nfs/public/rw/ontoapps/grebi/staging/neo4j/
+    rm -rf /nfs/public/rw/ontoapps/grebi/staging/neo4j
+    cp -LR neo4j /nfs/public/rw/ontoapps/grebi/staging/neo4j
     """
 }
 
@@ -595,7 +598,7 @@ process copy_solr_to_staging {
     rm -rf /nfs/public/rw/ontoapps/grebi/staging/solr && mkdir /nfs/public/rw/ontoapps/grebi/staging/solr
     cp -f ${solr_config}/*.xml .
     cp -f ${solr_config}/*.cfg .
-    cp -r * /nfs/public/rw/ontoapps/grebi/staging/solr/
+    cp -LR * /nfs/public/rw/ontoapps/grebi/staging/solr/
     """
 }
 
@@ -614,8 +617,8 @@ process copy_rocksdb_to_staging {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    rm -rf /nfs/public/rw/ontoapps/grebi/staging/rocksdb && mkdir /nfs/public/rw/ontoapps/grebi/staging/rocksdb
-    cp -r * /nfs/public/rw/ontoapps/grebi/staging/rocksdb/
+    rm -rf /nfs/public/rw/ontoapps/grebi/staging/rocksdb
+    cp -LR rocksdb /nfs/public/rw/ontoapps/grebi/staging/rocksdb
     """
 }
 
