@@ -41,6 +41,7 @@
         "./configs/datasource_configs/ubergraph.json",
         "./configs/datasource_configs/otar.json",
         "./configs/datasource_configs/monarch.json",
-        "./configs/datasource_configs/metabolights.json"
+        "./configs/datasource_configs/metabolights.json",
+        "./configs/datasource_configs/mondo_efo.json"
     ]
 }
