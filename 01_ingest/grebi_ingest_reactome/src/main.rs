@@ -65,7 +65,10 @@ fn main() {
             let labels = obj.get("labels").unwrap().as_array().unwrap();
             let id = "reactome_".to_owned() + neo_id;
 
-            let mut out_props = properties.clone();
+            let mut out_props = serde_json::Map::new();
+            for (k, v) in properties {
+                out_props.insert("reactome:".to_owned() + k, v.clone());
+            }
             out_props.insert("grebi:type".to_string(), Value::Array(labels.iter().map(|v| Value::String("reactome:".to_owned() + v.as_str().unwrap())).collect::<Vec<Value>>()));
 
             let mut equivalences:Vec<Value> = Vec::new();
@@ -118,9 +121,14 @@ fn main() {
             let mut out_props = serde_json::Map::new();
             out_props.insert("id".to_string(), Value::String("reactome_".to_owned() + start_id));
 
+            let new_props = serde_json::Map::new();
+            for (k, v) in obj.get("properties").unwrap().as_object().unwrap() {
+                out_props.insert("reactome:".to_owned() + k, v.clone());
+            }
+
             out_props.insert("reactome:".to_owned() + label, json!([{
                 "grebi:value": Value::String("reactome_".to_owned() + end_id),
-                "grebi:properties": arrayify( obj.get("properties").unwrap().clone() )
+                "grebi:properties": arrayify( Value::Object( new_props ) )
             }]));
 
             output_nodes.write_all(serde_json::to_string(&out_props).unwrap().as_bytes()).unwrap();
