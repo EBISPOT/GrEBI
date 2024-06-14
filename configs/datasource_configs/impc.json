@@ -37,7 +37,6 @@
                 { "name": "--json-inject-type", "value": "impc:GenePhenotypeAssociation" },
                 { "name": "--json-inject-key-prefix", "value": "impc:" },
                 { "name": "--json-de-nest-field", "value": "phenotype.id" }
-
             ]
         },
         {
@@ -145,7 +144,9 @@
             "ingest_args": [
                 { "name": "--json-rename-field", "value": "statisticalResultId:id" },
                 { "name": "--json-inject-type", "value": "impc:StatisticalResult" },
-                { "name": "--json-inject-key-prefix", "value": "impc:" }
+                { "name": "--json-inject-key-prefix", "value": "impc:" },
+                { "name": "--json-de-nest-field", "value": "potentialPhenotypes.id" },
+                { "name": "--json-de-nest-field", "value": "statisticalMethod.name" }
             ]
         },
         {
