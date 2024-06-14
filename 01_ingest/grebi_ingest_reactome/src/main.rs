@@ -103,6 +103,10 @@ fn main() {
                 }
             }
 
+            if properties.contains_key("taxId") {
+                equivalences.push(Value::String("ncbitaxon:".to_owned() + properties.get("taxId").unwrap().as_str().unwrap()));
+            }
+
             if equivalences.len() > 0 {
                 out_props.insert("grebi:equivalentTo".to_string(), Value::Array( equivalences));
             }
