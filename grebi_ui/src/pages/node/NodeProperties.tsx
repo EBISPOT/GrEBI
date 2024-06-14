@@ -96,7 +96,7 @@ className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 mb-2 text-sm
         </div>
         <Grid container spacing={1} direction="row">
             <Grid item xs={2}>
-          <Tabs orientation="vertical" variant="scrollable" value={tab} aria-label="basic tabs example" sx={{ borderRight: 1, borderColor: 'divider' }}>
+          <Tabs orientation="vertical" variant="scrollable" value={tab} aria-label="basic tabs example" className="border-green" sx={{ borderRight: 1, borderColor: 'divider' }}>
             <Tab label="Properties" value="properties" />
             <Tab label="Edges" value="edges" />
             <Tab label="Mappings" value="mappings" />

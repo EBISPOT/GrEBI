@@ -147,9 +147,8 @@ export default function SearchBox({
     .map((entry: GraphNode, i: number): SearchBoxEntry => {
           let name = entry.getName();
           let type = entry.extractType()?.short
-          const linkUrl = `/nodes/${encodeNodeId(entry.getNodeId())}`;
           return {
-            linkUrl,
+            linkUrl: entry.getLinkUrl(),
             li: (
               <li
                 key={randomString()}
@@ -164,7 +163,7 @@ export default function SearchBox({
                   onClick={() => {
                     setQuery("");
                   }}
-                  to={linkUrl}
+                  to={entry.getLinkUrl()}
                 >
                   <div className="flex justify-between">
                  

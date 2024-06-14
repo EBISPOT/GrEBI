@@ -55,10 +55,12 @@ function PropValue(params:{node:GraphNode,prop:string,value:PropVal,monospace:bo
     let mapped_value = node.getRefs().get(value.value);
   
     // todo mapped value datasources
-    if(mapped_value && mapped_value.name) {
+    if(mapped_value) {
       return (
         <span className="mr-0">
-          {separator} <Link className="link-default" to={"/nodes/" + encodeNodeId(value.value)}>{pickBestDisplayName(mapped_value.name)}</Link>
+          {separator} <Link className="link-default" to={"/nodes/" + encodeNodeId(value.value)}>{
+            (mapped_value.name && pickBestDisplayName(mapped_value.name)) || value.value
+          }</Link>
         </span>
       )
     } else {

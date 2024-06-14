@@ -47,7 +47,7 @@ public class GrebiApi {
                     ctx.result("{}");
 
                     var q = new GrebiSolrQuery();
-                    q.addFilter("grebi__nodeId", List.of(ctx.pathParam("nodeId")), SearchType.WHOLE_FIELD);
+                    q.addFilter("grebi:nodeId", List.of(ctx.pathParam("nodeId")), SearchType.WHOLE_FIELD, false);
 
                     var res = solr.getFirstNode(q);
 
@@ -71,12 +71,15 @@ public class GrebiApi {
                     q.setSearchText(ctx.queryParam("q"));
                     q.setExactMatch(false);
                     q.addSearchField("id", 1000, SearchType.WHOLE_FIELD);
-                    q.addSearchField("grebi__synonym", 900, SearchType.WHOLE_FIELD);
+                    q.addSearchField("grebi:name", 900, SearchType.WHOLE_FIELD);
+                    q.addSearchField("grebi:synonym", 800, SearchType.WHOLE_FIELD);
                     q.addSearchField("id", 500, SearchType.CASE_INSENSITIVE_TOKENS);
-                    q.addSearchField("grebi__synonym", 450, SearchType.CASE_INSENSITIVE_TOKENS);
-                    q.addSearchField("grebi__description", 400, SearchType.WHOLE_FIELD);
-                    q.addSearchField("grebi__description", 250, SearchType.CASE_INSENSITIVE_TOKENS);
+                    q.addSearchField("grebi:name", 450, SearchType.CASE_INSENSITIVE_TOKENS);
+                    q.addSearchField("grebi:synonym", 420, SearchType.CASE_INSENSITIVE_TOKENS);
+                    q.addSearchField("grebi:description", 400, SearchType.WHOLE_FIELD);
+                    q.addSearchField("grebi:description", 250, SearchType.CASE_INSENSITIVE_TOKENS);
                     q.addSearchField("_text_", 1, SearchType.CASE_INSENSITIVE_TOKENS);
+                    q.addFilter("ols:isObsolete", Set.of("true"), SearchType.WHOLE_FIELD, true);
                     for(var param : ctx.queryParamMap().entrySet()) {
                         if(param.getKey().equals("q") ||
                                 param.getKey().equals("page") ||
@@ -88,7 +91,10 @@ public class GrebiApi {
                         ) {
                             continue;
                         }
-                        q.addFilter(param.getKey(), param.getValue(), SearchType.WHOLE_FIELD);
+                        q.addFilter(param.getKey(), param.getValue(), SearchType.WHOLE_FIELD, false);
+                    }
+                    for(var facetField : ctx.queryParams("facet")) {
+                        q.addFacetField(facetField);
                     }
                     var page_num = ctx.queryParam("page");
                     if(page_num == null) {
@@ -96,7 +102,7 @@ public class GrebiApi {
                     }
                     var size = ctx.queryParam("size");
                     if(size == null) {
-                        size = "100";
+                        size = "10";
                     }
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
                     var res = solr.searchNodesPaginated(q, page);

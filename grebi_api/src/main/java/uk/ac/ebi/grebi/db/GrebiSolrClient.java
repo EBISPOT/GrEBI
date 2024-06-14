@@ -51,7 +51,7 @@ public class GrebiSolrClient {
                     valueToCount.put(count.getName(), count.getCount());
                 }
 
-                facetFieldToCounts.put(facetField.getName(), valueToCount);
+                facetFieldToCounts.put(facetField.getName().replace("__", ":"), valueToCount);
             }
         }
 

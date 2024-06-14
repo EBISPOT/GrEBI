@@ -8,8 +8,11 @@ import java.util.Map;
 import com.google.gson.JsonElement;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.google.gson.JsonElement;
 import com.google.gson.Gson;
+import com.google.gson.internal.LinkedTreeMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -31,7 +34,7 @@ public class ResolverClient {
         return "http://localhost:8080/";
     }
 
-    public Map<String, Map<String,JsonElement>> resolve(Collection<String> ids) {
+    public Map<String, Map<String,JsonElement>> resolveToMap(Collection<String> ids) {
 
         Stopwatch timer = Stopwatch.createStarted();
 
@@ -64,5 +67,12 @@ public class ResolverClient {
         }
 
         return null;
+    }
+
+    public List<Map<String, JsonElement>> resolveToList(Collection<String> ids) {
+
+        var resolved = resolveToMap(ids);
+
+        return ids.stream().map(id -> resolved.get(id)).collect(Collectors.toList());
     }
 }

@@ -5,6 +5,7 @@ import PropVal from "../../../model/PropVal";
 import PropRow from "./PropRow";
 import PropVals from "./PropVals";
 import { DatasourceTag, DatasourceTags } from "../../../components/DatasourceTag";
+import PropLabel from "./PropLabel";
 
 export default function PropRowNoDatasourceLabels(params:{node:GraphNode,prop:string,values:PropVal[]}) {
 
@@ -13,7 +14,7 @@ export default function PropRowNoDatasourceLabels(params:{node:GraphNode,prop:st
     return (
         <Fragment>
               <Grid item xs={12} style={{overflow:'hidden',padding:'8px'}} className="bg-gradient-to-r from-neutral-light to-white rounded-lg">
-                <b style={{fontFamily:"'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace"}}>{prop}</b>
+                  <PropLabel prop={prop} refs={node.getRefs()} />
               </Grid>
               <Grid item xs={12}>
                 <div className="pl-2 mb-2">

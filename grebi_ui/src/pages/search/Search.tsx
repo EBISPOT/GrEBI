@@ -9,7 +9,8 @@ import SearchBox from "../../components/SearchBox";
 import GraphNode from "../../model/GraphNode";
 import { getSearchResults } from "./searchSlice";
 import React from "react";
-import { get } from "../../app/api";
+import { get, getPaginated } from "../../app/api";
+import { DatasourceTags } from "../../components/DatasourceTag";
 
 export default function Search() {
   const [searchParams] = useSearchParams();
@@ -29,7 +30,7 @@ export default function Search() {
   const [hideFilters, setHideFilters] = useState<boolean>(true);
 
   const datasourceFacets =
-    facets && Object.keys(facets).length > 0 ? facets["grebi:datasource"] : {};
+    facets && Object.keys(facets).length > 0 ? facets["grebi:datasources"] : {};
   const [datasourceFacetselected, setDatasourceFacetselected] = useState<string[]>(
     []
   );
@@ -72,7 +73,7 @@ export default function Search() {
   );
   useEffect(() => {
     setOntologyFacetFiltered(datasourceFacets);
-  }, [datasourceFacets]);
+  }, [JSON.stringify(datasourceFacets)]);
 
   const [isShortFormCopied, setIsShortFormCopied] = useState(false);
   const copyShortForm = (text: string) => {
@@ -92,12 +93,16 @@ export default function Search() {
   useEffect(() => {
 
     async function doSearch() {
-      get('/api/v1/search', {
-        page: page.toString(), size: rowsPerPage.toString(), q: search 
-        /*ontologyId: datasourceFacetselected,
+      let res = (await getPaginated<any>('api/v1/search', {
+        page: page.toString(), size: rowsPerPage.toString(), q: search,
+        facet: ['grebi:datasources','grebi:type']
+        /*grebi__datasource: datasourceFacetselected,
         type: typeFacetSelected,
         searchParams,*/
-      })
+      })).map(r => new GraphNode(r))
+
+      setResults(res.elements)
+      setFacets(res.facetFieldsToCounts)
     }
 
     doSearch()
@@ -307,72 +312,32 @@ export default function Search() {
                   dataCount={totalResults}
                   rowsPerPage={rowsPerPage}
                 />
-                {results.map((entity: GraphNode) => {
+                {results.map((graphNode: GraphNode) => {
+                  let nodeType = graphNode.extractType()
                   return (
-                    <div key={randomString()} className="my-4">
-                      <div className="mb-2 leading-loose truncate flex flex-row items-center">
-                        <Link to={"/nodes/" + entity.getId()}
+                    <div className="my-5">
+                      <div className="my-2 leading-loose truncate flex flex-row items-center">
+                        <Link to={graphNode.getLinkUrl()}
                           className={`link-default text-xl mr-2 ${
-                            entity.isBold() ? "font-bold" : ""
-                          } ${entity.isDeprecated() ? "line-through" : ""}`}
+                            graphNode.isBoldForQuery(search) ? "font-bold" : ""
+                          } ${graphNode.isDeprecated() ? "line-through" : ""}`}
                         >
-                          {entity.getName()}
+                          {graphNode.getName()}
                         </Link>
-                        {entity.getId() ? (
-                          <span className="mr-1">
-                            <span className="bg-orange-default text-white text-sm rounded-md px-2 py-1 w-fit font-bold break-all">
-                              {entity.getId()}
-                            </span>
-                            &nbsp;&nbsp;
-                            <i
-                              title="Copy ID"
-                              className={`text-sm text-neutral-default icon icon-common icon-copy icon-spacer ${
-                                isShortFormCopied
-                                  ? "cursor-wait"
-                                  : "cursor-pointer"
-                              }`}
-                              onClick={() => {
-                                copyShortForm(
-                                  entity.getId() || entity.getName()
-                                );
-                              }}
-                            />
-                          </span>
-                        ) : null}
+                      { nodeType &&
+                      <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px',marginRight:'12px'}}>{nodeType.long}</span>
+                    }
+            <DatasourceTags dss={graphNode.getDatasources()} />
+                    </div>
+                      <div className="my-1 leading-relaxed">
+                {graphNode.getIds().map(id => <span
+className="bg-grey-default rounded-sm font-mono py-1 px-1 mr-1 text-sm"
+>{id.value}</span>)}
                       </div>
-                      <div className="mb-1 leading-relaxed text-sm text-neutral-default">
-                        {entity.getId()}
-                      </div>
-                      <div className="mb-1 leading-relaxed">
-                        {entity.getDescription()}
-                      </div>
-                      <div className="leading-loose">
-                          <div
-                            className="mb-2"
-                            style={{ maxWidth: "100%", inlineSize: "100%" }}
-                          >
-                            <span className="font-bold mr-2">
-                              Datasources:
-                            </span>
-                              {entity.getDatasources().map((datasource) => {
-                                return (
-                                  <Link
-                                    key={datasource}
-                                    className="my-2"
-                                    style={{ display: "inline-block" }}
-                                    to={"/datasources/" + datasource}
-                                  >
-                                    <span
-                                      className="link-ontology px-2 py-1 rounded-md text-sm font-bold text-white uppercase mr-1"
-                                      title={datasource.toUpperCase()}
-                                    >
-                                      {datasource}
-                                    </span>
-                                  </Link>
-                                );
-                              })}
-                          </div>
-                      </div>
+                      {graphNode.getDescription() && (
+                      <div className="my-1 leading-relaxed">
+                        {graphNode.getDescription()}
+                      </div>)}
                     </div>
                   );
                 })}

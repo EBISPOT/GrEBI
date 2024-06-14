@@ -1,5 +1,20 @@
 
-type ReqParams = {[k:string]:string}|undefined 
+type ReqParams = {[k:string]:(string|string[])}|undefined 
+
+function buildSearchParams(reqParams:ReqParams):string {
+  let params = new URLSearchParams()
+  for(let key in reqParams) {
+    let val = reqParams[key]
+    if(Array.isArray(val)) {
+      for(let v of val) {
+        params.append(key, v)
+      }
+    } else {
+      params.append(key, val)
+    }
+  }
+  return params.toString()
+}
 
 export async function request(
   path: string,
@@ -9,7 +24,7 @@ export async function request(
 ): Promise<any> {
   const url = (apiUrl || process.env.REACT_APP_APIURL) + path;
   //const res = await fetch(url.replace(/([^:]\/)\/+/g, "$1"), {
-  const res = await fetch(url + (reqParams ? ('?' + new URLSearchParams(Object.entries(reqParams)).toString()) : ''), {
+  const res = await fetch(url + (reqParams ? ('?' + buildSearchParams(reqParams)) : ''), {
     ...(init ? init : {}),
     //headers: { ...(init?.headers || {}), ...getAuthHeaders() }
   });

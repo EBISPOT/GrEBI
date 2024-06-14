@@ -38,28 +38,21 @@ public class GrebiSolrRepo {
 
         List<String> ids = solrDocs.map(doc -> doc.getFieldValue("grebi__nodeId").toString()).toList();
 
-        Map<String,Map<String,JsonElement>> idToEntity = resolver.resolve(ids);
-
-        List<Map<String,JsonElement>> vals = idToEntity.values().stream().collect(Collectors.toList());
+        List<Map<String,JsonElement>> vals = resolver.resolveToList(ids);
         assert(vals.size() == solrDocs.getSize());
 
         return new GrebiFacetedResultsPage<>(vals, solrDocs.facetFieldToCounts, solrDocs.getPageable(), solrDocs.getTotalElements());
     }
 
     private Map<String,JsonElement> resolveNodeId(SolrDocument solrDoc)  {
-
-        Map<String,Map<String,JsonElement>> idToEntity = resolver.resolve(List.of(solrDoc.getFieldValue("grebi__nodeId").toString()));
-
-        return idToEntity.values().iterator().next();
+        return resolver.resolveToList(List.of(solrDoc.getFieldValue("grebi__nodeId").toString())).iterator().next();
     }
 
     private GrebiFacetedResultsPage<Map<String,JsonElement>> resolveEdgeIds(GrebiFacetedResultsPage<SolrDocument> solrDocs) {
 
         List<String> ids = solrDocs.map(doc -> doc.getFieldValue("grebi__edgeId").toString()).toList();
 
-        Map<String, Map<String,JsonElement>> idToEntity = resolver.resolve(ids);
-
-        List<Map<String,JsonElement>> vals = idToEntity.values().stream().collect(Collectors.toList());
+        List<Map<String,JsonElement>> vals = resolver.resolveToList(ids);
         assert(vals.size() == solrDocs.getSize());
 
         return new GrebiFacetedResultsPage<>(vals, solrDocs.facetFieldToCounts, solrDocs.getPageable(), solrDocs.getTotalElements());
@@ -67,9 +60,7 @@ public class GrebiSolrRepo {
 
     private Map<String,JsonElement> resolveEdgeId(SolrDocument solrDoc)  {
 
-        Map<String,Map<String,JsonElement>> idToEntity = resolver.resolve(List.of(solrDoc.getFieldValue("grebi__edgeId").toString()));
-
-        return idToEntity.values().iterator().next();
+        return resolver.resolveToList(List.of(solrDoc.getFieldValue("grebi__edgeId").toString())).iterator().next();
     }
 
 }

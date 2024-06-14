@@ -13,9 +13,26 @@ import Search from "./pages/search/Search";
 import NodePage from "./pages/node/NodePage";
 import DownloadsPage from "./pages/downloads/Downloads";
 
+
+import MuiThemeProvider from '@mui/styles/ThemeProvider'
+import createTheme from '@mui/material/styles/createTheme'
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#ff0000',
+    },
+    secondary: {
+      main: '#ff0000',
+    }
+  }
+});
+
+
 class App extends React.Component {
   render() {
     return (
+       <MuiThemeProvider theme={theme}>
       <Fragment>
         <Helmet>
           <meta charSet="utf-8" />
@@ -36,6 +53,7 @@ class App extends React.Component {
         {/* <Footer /> */}
       </BrowserRouter>
       </Fragment>
+      </MuiThemeProvider>
     );
   }
 }

@@ -65,7 +65,7 @@ public class GrebiNeoRepo {
             .withParameters(Map.of("nodeId", nodeId))
             .withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
 
-        var resolved = resolver.resolve(
+        var resolved = resolver.resolveToMap(
                 res.records().stream().flatMap(record -> {
                     var props = record.asMap();
                     return List.of((String) props.get("otherId"), (String) props.get("edgeId")).stream();

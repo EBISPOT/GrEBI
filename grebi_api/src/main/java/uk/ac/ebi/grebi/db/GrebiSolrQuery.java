@@ -45,8 +45,8 @@ public class GrebiSolrQuery {
         this.facetFields.add(propertyName);
     }
 
-    public void addFilter(String propertyName, Collection<String> propertyValues, SearchType searchType) {
-        this.filters.add(new Filter(propertyName, propertyValues, searchType));
+    public void addFilter(String propertyName, Collection<String> propertyValues, SearchType searchType, boolean negate) {
+        this.filters.add(new Filter(propertyName, propertyValues, searchType, negate));
     }
 
     public SolrQuery constructQuery() {
@@ -107,6 +107,10 @@ public class GrebiSolrQuery {
                 fq.append("{!tag=grebifacet}");
             }
 
+            if(f.negate) {
+                fq.append("-");
+            }
+
             fq.append( ClientUtils.escapeQueryChars(getSolrPropertyName(f.propertyName, f.searchType)) );
             fq.append(":(");
 
@@ -127,8 +131,9 @@ public class GrebiSolrQuery {
 
         if(facetFields.size() > 0) {
             for(String facetField : facetFields) {
-                query.addFacetField("{!ex=grebifacet}" + facetField);
+                query.addFacetField("{!ex=grebifacet}" + facetField.replace(":", "__"));
             }
+            query.setFacetMinCount(1);
         }
 
         return query;
@@ -139,11 +144,13 @@ public class GrebiSolrQuery {
         String propertyName;
         Collection<String> propertyValues; // all values to search for ("OR")
         SearchType searchType;
+        boolean negate;
 
-        public Filter(String propertyName, Collection<String> propertyValues, SearchType searchType) {
+        public Filter(String propertyName, Collection<String> propertyValues, SearchType searchType, boolean negate) {
             this.propertyName = propertyName;
             this.propertyValues = propertyValues;
             this.searchType = searchType;
+            this.negate = negate;
         }
     }
 
@@ -180,9 +187,9 @@ public class GrebiSolrQuery {
     private String getSolrPropertyName(String propertyName, SearchType searchType) {
         switch(searchType) {
             case CASE_INSENSITIVE_TOKENS:
-                return propertyName;
+                return propertyName.replace(":", "__");
             case WHOLE_FIELD:
-                return "str_" + propertyName;
+                return "str_" + propertyName.replace(":", "__");
             default:
                 throw new RuntimeException("unknown filter accuracy");
         }

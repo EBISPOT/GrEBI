@@ -1,4 +1,5 @@
 import { pickBestDisplayName } from "../app/util";
+import encodeNodeId from "../encodeNodeId";
 import PropVal from "./PropVal";
 import Refs from "./Refs";
 
@@ -14,20 +15,28 @@ export default class GraphNode {
         return PropVal.arrFrom(this.props['grebi:name'] || []);
     }
 
+    getSynonyms():PropVal[] {
+        return PropVal.arrFrom(this.props['grebi:synonym'] || []);
+    }
+
     getName():string {
         return pickBestDisplayName(this.getNames().map(n => n.value)) || this.getId().value
     }
 
     getDescriptions():PropVal[] {
-        return PropVal.arrFrom(this.props['rdfs:comment'])
+        return PropVal.arrFrom(this.props['grebi:description'])
     }
 
-    getDescription():PropVal|undefined {
-        return PropVal.arrFrom(this.getDescriptions())[0]
+    getDescription():string|undefined {
+        return PropVal.arrFrom(this.getDescriptions())[0]?.value
     }
 
     getNodeId():string {
         return this.props['grebi:nodeId']
+    }
+
+    getLinkUrl():string {
+        return `/nodes/${encodeNodeId(this.getNodeId())}`;
     }
 
     getId():PropVal {
@@ -62,6 +71,9 @@ export default class GraphNode {
         }
         if(types.indexOf('ols:Class') !== -1) {
             let ancestors:any[] = PropVal.arrFrom(this.props['ols:directAncestor']).map(a => a.value)
+            if(ancestors.indexOf("chebi:36080") !== -1) {
+                return {long:'Protein',short:'Protein'}
+            }
             if(ancestors.indexOf("chebi:24431") !== -1) {
                 return {long:'Chemical',short:'Chemical'}
             }
@@ -83,8 +95,13 @@ export default class GraphNode {
         return this.props['grebi:datasources'] || []
     }
 
-    isBold() { // idk yet
-        return false
+    isBoldForQuery(q:string) {
+        let allIdentifiers = [
+            ...this.getNames().map(p => p.value),
+            ...this.getSynonyms().map(p => p.value),
+            ...this.getIds().map(p => p.value),
+        ];
+        return allIdentifiers.indexOf(q) !== -1
     }
 
     isDeprecated() {
@@ -97,8 +114,23 @@ export default class GraphNode {
 
     getProps():{[key:string]:PropVal[]} {
         let res_props = {}
-        for(let k of Object.keys(this.props)) {
-            if( (k.startsWith('grebi:') || k === '_refs') && k !== 'grebi:type') {
+        let keys = Object.keys(this.props)
+
+        let sortOrder = [
+            'grebi:name',
+            'grebi:synonym',
+            'grebi:description',
+            'grebi:type'
+        ].filter(k => {
+            if(keys.indexOf(k) !== -1) {
+                keys.splice(keys.indexOf(k), 1)
+                return true
+            }
+        })
+        keys = sortOrder.concat(keys)
+        for(let k of keys) {
+            //if( (k.startsWith('grebi:') || k === '_refs') && k !== 'grebi:type') {
+            if(k === '_refs') {
                 continue;
             }
             res_props[k] = PropVal.arrFrom(this.props[k])
@@ -106,3 +138,4 @@ export default class GraphNode {
         return res_props
     }
 }
+

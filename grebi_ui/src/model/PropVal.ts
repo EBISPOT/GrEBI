@@ -18,6 +18,10 @@ class PropVal {
         if(!src)
             return src
 
+        if(src instanceof PropVal) {
+            return src
+        }
+
         if(typeof src !== 'object') {
             return new PropVal([], {}, src)
         }
