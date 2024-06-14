@@ -18,7 +18,7 @@
     "additional_equivalence_groups": [
         ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName"],
         ["grebi:description", "iao:definition", "monarch:description", "ols:definition"],
-        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym"],
+        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym"],
         ["mondo:0000001", "ogms:0000031"]
     ],
     "exclude_props": [
