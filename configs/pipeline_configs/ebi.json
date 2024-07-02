@@ -1,0 +1,7 @@
+{
+    "subgraphs": [
+        "ebi_full_monarch",
+        "monarch",
+        "hra_kg"
+    ]
+}

@@ -10,9 +10,9 @@ import time
 
 def main():
 
-    print("home is " + os.environ['GREBI_HOME'])
+    print("subgraph is " + os.environ['GREBI_SUBGRAPH'])
 
-    config_filename = os.path.abspath(os.path.join(os.environ['GREBI_HOME'], 'configs/pipeline_configs/', os.environ['GREBI_CONFIG'] + '.json'))
+    config_filename = os.path.abspath(os.path.join(os.environ['GREBI_HOME'], 'configs/subgraph_configs/', os.environ['GREBI_SUBGRAPH'] + '.json'))
 
     with open(config_filename, 'r') as f:
         config = json.load(f)

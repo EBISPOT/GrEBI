@@ -1,0 +1,54 @@
+{
+    "id": "EBI_MONARCH",
+    "name": "EBI Resources and MONARCH Initiative KG",
+    "bytes_per_merged_file": 1073741824,
+    "equivalence_props": [
+        "owl:equivalentClass",
+        "owl:equivalentProperty",
+        "owl:sameAs",
+        "grebi:equivalentTo",
+        "ols:iri",
+        "ols:shortForm",
+        "hgnc:ensembl_gene_id",
+        "obo:chebi/inchi",
+        "obo:chebi/inchikey",
+        "obo:chebi/smiles",
+        "impc:pmId",
+        "impc:humanGeneAccId",
+        "monarch:iri"
+    ],
+    "additional_equivalence_groups": [
+        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName"],
+        ["grebi:description", "iao:definition", "monarch:description", "ols:definition"],
+        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym"],
+        ["mondo:0000001", "ogms:0000031"]
+    ],
+    "exclude_props": [
+        "ols:curie",
+        "ols:shortForm",
+        "ols:ontologyPreferredPrefix",
+        "ols:iri",
+        "oboinowl:id",
+        "oboinowl:url",
+        "monarch:iri"
+    ],
+    "exclude_edges": [
+    ],
+    "_datasource_configs": [
+        "./configs/datasource_configs/gwas.json",
+        "./configs/datasource_configs/hgnc.json",
+        "./configs/datasource_configs/impc.json",
+        "./configs/datasource_configs/mp_hp.json",
+        "./configs/datasource_configs/ols.json",
+        "./configs/datasource_configs/reactome.json",
+        "./configs/datasource_configs/ubergraph.json",
+        "./configs/datasource_configs/otar.json",
+        "./configs/datasource_configs/monarch.json",
+        "./configs/datasource_configs/metabolights.json",
+        "./configs/datasource_configs/mondo_efo.json"
+    ],
+    "datasource_configs": [
+        "./configs/datasource_configs/gwas.json",
+        "./configs/datasource_configs/monarch.json"
+    ]
+}

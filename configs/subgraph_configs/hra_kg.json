@@ -1,4 +1,6 @@
 {
+    "id": "HRA_KG",
+    "name": "Human Reference Atlas KG",
     "bytes_per_merged_file": 1073741824,
     "equivalence_props": [
         "owl:equivalentClass",
@@ -33,16 +35,6 @@
     "exclude_edges": [
     ],
     "datasource_configs": [
-        "./configs/datasource_configs/gwas.json",
-        "./configs/datasource_configs/hgnc.json",
-        "./configs/datasource_configs/impc.json",
-        "./configs/datasource_configs/mp_hp.json",
-        "./configs/datasource_configs/ols.json",
-        "./configs/datasource_configs/reactome.json",
-        "./configs/datasource_configs/ubergraph.json",
-        "./configs/datasource_configs/otar.json",
-        "./configs/datasource_configs/monarch.json",
-        "./configs/datasource_configs/metabolights.json",
-        "./configs/datasource_configs/mondo_efo.json"
+        "./configs/datasource_configs/hra_kg.json"
     ]
 }

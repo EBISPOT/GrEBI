@@ -14,7 +14,7 @@ def main():
     parser.add_argument('--solr-config', type=str, help='Solr config dir', required=True)
     parser.add_argument('--core', type=str, help='Core to import', required=True)
     parser.add_argument('--port', type=str, help='Port to use for temp solr instance', required=True)
-    parser.add_argument('--in-names-txt', type=str, help='Path to names.txt', required=True)
+    parser.add_argument('--in-names-txt', type=str, help='Path to names.txt', required=False)
     parser.add_argument('--in-data', type=str, help='Path to jsonl files to import', required=True)
     parser.add_argument('--out-path', type=str, help='Path to use to store the solr database', required=True)
     args = parser.parse_args()
@@ -33,7 +33,7 @@ def main():
             '--env NO_PROXY=localhost',
         # ] + list(map(lambda f: "--bind " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_data + "/solr_*"))) + [
             '--bind ' + os.path.abspath(".") + ':/mnt',
-            '--bind ' + os.path.abspath(args.in_names_txt) + ':/names.txt',
+            ('--bind ' + os.path.abspath(args.in_names_txt) + ':/names.txt') if args.in_names_txt != None else '',
             '--bind ' + os.path.abspath(args.solr_config) + ':/config',
             '--bind ' + os.path.abspath(args.out_path) + ':/var/solr',
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_import.dockerpy')) + ':/import.py',
@@ -51,7 +51,7 @@ def main():
             '-e NO_PROXY=localhost',
         #] + list(map(lambda f: "-v " + os.path.abspath(f) + ":/mnt/" + os.path.basename(f), glob.glob(args.in_data + "/solr_*"))) + [
             '-v ' + os.path.abspath(".") + ':/mnt',
-            '-v ' + os.path.abspath(args.in_names_txt) + ':/names.txt',
+            ('-v ' + os.path.abspath(args.in_names_txt) + ':/names.txt') if args.in_names_txt != None else '',
             '-v ' + os.path.abspath(args.solr_config) + ':/config',
             '-v ' + os.path.abspath(args.out_path) + ':/var/solr',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_import.dockerpy')) + ':/import.py',
