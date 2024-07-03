@@ -42,8 +42,8 @@ workflow {
 
     solr_tgz = package_solr(
         solr_nodes_cores.collect(),
-        solr_edges_core.collect(),
-        solr_autocomplete_core.collect())
+        solr_edges_cores.collect(),
+        solr_autocomplete_cores.collect())
 
     neo_tgz = package_neo(neo_db)
     rocks_tgz = package_rocks(rocks_db)
@@ -54,7 +54,7 @@ workflow {
     copy_rocks_to_ftp(rocks_tgz, date)
 
     if(params.config == "ebi_full_monarch") {
-        copy_solr_to_staging(solr_nodes_core, solr_edges_core, solr_autocomplete_core, solr_config)
+        copy_solr_to_staging(solr_nodes_cores.collect(), solr_edges_cores.collect(), solr_autocomplete_cores.collect(), solr_config)
         copy_neo_to_staging(neo_db)
         copy_rocksdb_to_staging(rocks_db)
     }
@@ -405,9 +405,9 @@ process copy_solr_to_staging {
     queue "datamover"
 
     input: 
-    path("grebi_nodes")
-    path("grebi_edges")
-    path("grebi_autocomplete")
+    path(grebi_nodes)
+    path(grebi_edges)
+    path(grebi_autocomplete)
     path(solr_config)
 
     script:

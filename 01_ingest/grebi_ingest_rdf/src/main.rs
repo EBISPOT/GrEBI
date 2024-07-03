@@ -76,7 +76,7 @@ struct Args {
     #[arg(long)]
     exclude_objects_of_predicate:Vec<String>, // if an object is used with this predicate, ignore the object
 
-    #[arg(long), default_value_t = false]
+    #[arg(long, default_value_t = false)]
     rdf_types_are_grebi_types:bool 
 }
 
@@ -354,8 +354,8 @@ fn term_to_json(
         }
     }
 
-    if rdf_types_are_grebi_types && json.contains_key("rdf:type") {
-        json.insert("grebi:type".to_string(), json.get("rdf:type").unwrap().clone());
+    if rdf_types_are_grebi_types && json.contains_key("http://www.w3.org/1999/02/22-rdf-syntax-ns#type") {
+        json.insert("grebi:type".to_string(), json.get("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap().clone());
     }
     
     return Value::Object(json);

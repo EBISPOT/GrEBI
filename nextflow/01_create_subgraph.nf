@@ -177,6 +177,7 @@ process index {
 process materialise {
     cache "lenient"
     //memory { 80.GB + 30.GB * (task.attempt-1) }
+    //memory "32 GB"
     memory "96 GB"
     time "8h"
     //time { 1.hour + 8.hour * (task.attempt-1) }
