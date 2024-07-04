@@ -1,5 +1,7 @@
 {
-    "bytes_per_merged_file": 173741824,
+    "id": "MONARCH",
+    "name": "MONARCH Initiative KG",
+    "bytes_per_merged_file": 1073741824,
     "equivalence_props": [
         "owl:equivalentClass",
         "owl:equivalentProperty",
@@ -16,9 +18,10 @@
         "monarch:iri"
     ],
     "additional_equivalence_groups": [
-        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name"],
+        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName"],
         ["grebi:description", "iao:definition", "monarch:description", "ols:definition"],
-        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym"]
+        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym"],
+        ["mondo:0000001", "ogms:0000031"]
     ],
     "exclude_props": [
         "ols:curie",
@@ -32,6 +35,6 @@
     "exclude_edges": [
     ],
     "datasource_configs": [
-        "./configs/datasource_configs/gwas.json"
+        "./configs/datasource_configs/monarch.json"
     ]
 }

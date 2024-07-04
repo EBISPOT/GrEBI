@@ -58,7 +58,7 @@ def main():
                                 })
         print(response.text)
 
-    elif core in {"grebi_nodes", "grebi_edges"}:
+    else:
         filenames = glob.glob('/mnt/*.jsonl')
         with ThreadPoolExecutor(max_workers=WORKERS) as executor:
             futures = [executor.submit(upload_file, core, port, filename) for filename in filenames if os.path.exists(filename)]
@@ -67,10 +67,6 @@ def main():
         response = session.get(f"http://127.0.0.1:{port}/solr/{core}/update",
                                 params={'commit': 'true'})
         print(response.text)
-
-    else:
-        print("Invalid core")
-        sys.exit(1)
 
     os.environ['SOLR_STOP_WAIT'] = '500'
     subprocess.run(['solr', 'stop', '-p', port])

@@ -1,0 +1,14 @@
+{
+    "name": "HRA",
+    "enabled": true,
+    "ingests": [
+        {
+            "ingest_files": ["./00_fetch_data/hra_kg/hra.nq.gz"],
+            "ingest_script": "./target/release/grebi_ingest_rdf",
+            "ingest_args": [
+                { "name": "--rdf-type", "value": "rdf_quads_nq" },
+                { "name": "--rdf-types-are-grebi-types", "value": "" }
+            ]
+        }
+    ]
+}

@@ -266,7 +266,7 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
                         output_nodes.write_all(r#","#.as_bytes()).unwrap();
                     }
                     output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-                    output_nodes.write_all(name.as_bytes()).unwrap();
+                    write_escaped_string(&name.as_bytes(), output_nodes);
                     output_nodes.write_all(r#"""#.as_bytes()).unwrap();
                 }
                 output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
@@ -434,8 +434,17 @@ fn reprefix_predicate(pred:&str) -> String {
     }
 }
 
-
-
-
+fn write_escaped_string(str:&[u8], writer:&mut BufWriter<StdoutLock>) {
+    for c in str {
+        match c {
+            b'"' => { writer.write_all(b"\\\"").unwrap(); }
+            b'\\' => { writer.write_all(b"\\\\").unwrap(); }
+            b'\n' => { writer.write_all(b"\\n").unwrap(); }
+            b'\r' => { writer.write_all(b"\\r").unwrap(); }
+            b'\t' => { writer.write_all(b"\\t").unwrap(); }
+            _ => { writer.write_all([*c].as_slice()).unwrap(); }
+        }
+    }
+}
 
 

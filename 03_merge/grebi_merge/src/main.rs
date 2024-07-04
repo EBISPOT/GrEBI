@@ -29,6 +29,9 @@ struct Args {
     #[arg(long)]
     exclude_props: String,
 
+    #[arg(long)]
+    annotate_subgraph_name: Option<String>,
+
      #[arg(trailing_var_arg = true, allow_hyphen_values = true, required = true)]
     _files: Vec<String>,
 }
@@ -50,6 +53,8 @@ fn main() -> std::io::Result<()> {
     let mut input_filenames: Vec<String> = args._files.to_vec();
     input_filenames.sort();
     input_filenames.dedup();
+
+    let subgraph_name:Option<String> = args.annotate_subgraph_name;
 
     let mut inputs: Vec<Input> = input_filenames
         .iter()
@@ -110,7 +115,7 @@ fn main() -> std::io::Result<()> {
         if !id.eq(&cur_id) {
             // this is a new subject; we have finished the old one (if present)
             if cur_id.len() > 0 {
-                write_merged_entity(&lines_to_write, &mut writer, &inputs, &exclude_props);
+                write_merged_entity(&lines_to_write, &mut writer, &inputs, &exclude_props, &subgraph_name);
                 lines_to_write.clear();
             }
             cur_id = id.to_vec();
@@ -143,7 +148,7 @@ fn main() -> std::io::Result<()> {
     }
 
     if cur_id.len() > 0 {
-        write_merged_entity(&lines_to_write, &mut writer, &inputs, &exclude_props);
+        write_merged_entity(&lines_to_write, &mut writer, &inputs, &exclude_props, &subgraph_name);
         lines_to_write.clear();
     }
 
@@ -153,7 +158,7 @@ fn main() -> std::io::Result<()> {
 }
 
 #[inline(always)]
-fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWriter<std::io::StdoutLock>, inputs: &Vec<Input>, exclude_props:&BTreeSet<Vec<u8>>) {
+fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWriter<std::io::StdoutLock>, inputs: &Vec<Input>, exclude_props:&BTreeSet<Vec<u8>>, subgraph_name:&Option<String>) {
 
     if lines_to_write.len() == 0 {
         panic!();
@@ -219,6 +224,12 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         stdout.write_all(r#"""#.as_bytes()).unwrap();
     }
     stdout.write_all(r#"]"#.as_bytes()).unwrap();
+
+    if subgraph_name.is_some() {
+        stdout.write_all(r#","grebi:subgraph":""#.as_bytes()).unwrap();
+        stdout.write_all(&subgraph_name.as_ref().unwrap().as_bytes());
+        stdout.write_all(r#"""#.as_bytes()).unwrap();
+    }
 
     // sort by key, then value, then datasource
     merged_props.sort_by(|a, b| {

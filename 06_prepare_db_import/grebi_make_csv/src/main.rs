@@ -5,6 +5,7 @@ use std::io::BufWriter;
 use std::io::BufReader;
 use std::io::Write;
 use std::io::BufRead;
+use std::collections::HashSet;
 use clap::Parser;
 use grebi_shared::json_lexer::JsonTokenType;
 use grebi_shared::slice_materialised_edge::SlicedEdge;
@@ -28,7 +29,7 @@ struct Args {
     in_edges_jsonl: String,
 
     #[arg(long)]
-    in_summary_json: String,
+    in_summary_jsons: String,
 
     #[arg(long)]
     out_nodes_csv_path: String,
@@ -43,10 +44,21 @@ fn main() -> std::io::Result<()> {
 
     let start_time = std::time::Instant::now();
 
-    let summary:Value = serde_json::from_reader(File::open(args.in_summary_json).unwrap()).unwrap();
 
-    let all_entity_props: Vec<String> = summary["entity_props"].as_object().unwrap().keys().cloned().collect();
-    let all_edge_props: Vec<String> = summary["edge_props"].as_object().unwrap().keys().cloned().collect();
+    let mut all_entity_props: HashSet<String> = HashSet::new();
+    let mut all_edge_props: HashSet<String> = HashSet::new();
+
+
+    for f in args.in_summary_jsons.split(",") {
+        let summary:Value = serde_json::from_reader(File::open(f).unwrap()).unwrap();
+        for prop in summary["edge_props"].as_object().unwrap().keys() {
+            all_edge_props.insert(prop.to_string());
+        }
+        for prop in summary["entity_props"].as_object().unwrap().keys() {
+            all_entity_props.insert(prop.to_string());
+        }
+    }
+
 
 
     let mut nodes_reader = BufReader::new(File::open(args.in_nodes_jsonl).unwrap());
@@ -140,7 +152,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>, nodes_writer:&mut BufWriter<&File>) {
+fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<String>, nodes_writer:&mut BufWriter<&File>) {
 
     let refs:Map<String,Value> = serde_json::from_slice(entity._refs.unwrap()).unwrap();
 
@@ -214,7 +226,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&Vec<String>,
     nodes_writer.write_all(b"\n").unwrap();
 }
 
-fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&Vec<String>, edges_writer: &mut BufWriter<&File>) {
+fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, edges_writer: &mut BufWriter<&File>) {
 
     let refs:Map<String,Value> = serde_json::from_slice(edge._refs.unwrap()).unwrap();
 

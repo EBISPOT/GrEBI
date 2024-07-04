@@ -27,6 +27,9 @@ use serde_json::json;
 struct Args {
 
     #[arg(long)]
+    subgraph_name: String,
+
+    #[arg(long)]
     out_summary_json_path: String,
 
     #[arg(long)]
@@ -195,6 +198,7 @@ fn main() {
 
     summary_writer.write_all(
     serde_json::to_string_pretty(&json!({
+        "subgraph_name": args.subgraph_name,
         "entity_props": entity_props_to_count.iter().map(|(k,v)| {
                 return (String::from_utf8(k.to_vec()).unwrap(), json!({
                     "count": v
