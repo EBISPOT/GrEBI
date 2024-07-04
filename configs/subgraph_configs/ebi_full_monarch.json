@@ -34,7 +34,7 @@
     ],
     "exclude_edges": [
     ],
-    "_datasource_configs": [
+    "datasource_configs": [
         "./configs/datasource_configs/gwas.json",
         "./configs/datasource_configs/hgnc.json",
         "./configs/datasource_configs/impc.json",
@@ -46,9 +46,5 @@
         "./configs/datasource_configs/monarch.json",
         "./configs/datasource_configs/metabolights.json",
         "./configs/datasource_configs/mondo_efo.json"
-    ],
-    "datasource_configs": [
-        "./configs/datasource_configs/gwas.json",
-        "./configs/datasource_configs/monarch.json"
     ]
 }

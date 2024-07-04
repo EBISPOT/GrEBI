@@ -6,6 +6,7 @@ jsonSlurper = new JsonSlurper()
 
 params.tmp = "$GREBI_TMP"
 params.home = "$GREBI_HOME"
+params.config = "$GREBI_CONFIG"
 
 workflow {
 
@@ -54,7 +55,7 @@ workflow {
     copy_rocks_to_ftp(rocks_tgz, date)
 
     if(params.config == "ebi_full_monarch") {
-        copy_solr_to_staging(solr_nodes_cores.collect(), solr_edges_cores.collect(), solr_autocomplete_cores.collect(), solr_config)
+        copy_solr_to_staging(solr_nodes_cores.collect(), solr_edges_cores.collect(), solr_autocomplete_cores.collect())
         copy_neo_to_staging(neo_db)
         copy_rocksdb_to_staging(rocks_db)
     }
@@ -284,10 +285,9 @@ process package_solr {
     publishDir "${params.home}/release/${params.config}", overwrite: true
 
     input: 
-    path(solr_nodes_core)
-    path(solr_edges_core)
-    path(solr_autocomplete_core)
-    path(solr_config)
+    path(solr_nodes_cores)
+    path(solr_edges_cores)
+    path(solr_autocomplete_cores)
 
     output:
     path("solr.tgz")
@@ -296,10 +296,10 @@ process package_solr {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    cp -f ${solr_config}/*.xml .
-    cp -f ${solr_config}/*.cfg .
+    cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.xml .
+    cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.cfg .
     tar -chf solr.tgz --transform 's,^,solr/,' --use-compress-program="pigz --fast" \
-	*.xml *.cfg ${solr_nodes_core} ${solr_edges_core} ${solr_autocomplete_core}
+	*.xml *.cfg ${solr_nodes_cores} ${solr_edges_cores} ${solr_autocomplete_cores}
     """
 }
 
@@ -405,18 +405,17 @@ process copy_solr_to_staging {
     queue "datamover"
 
     input: 
-    path(grebi_nodes)
-    path(grebi_edges)
-    path(grebi_autocomplete)
-    path(solr_config)
+    path(solr_nodes_cores)
+    path(solr_edges_cores)
+    path(solr_autocomplete_cores)
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
     rm -rf /nfs/public/rw/ontoapps/grebi/staging/solr && mkdir /nfs/public/rw/ontoapps/grebi/staging/solr
-    cp -f ${solr_config}/*.xml .
-    cp -f ${solr_config}/*.cfg .
+    cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.xml .
+    cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.cfg .
     cp -LR * /nfs/public/rw/ontoapps/grebi/staging/solr/
     """
 }
