@@ -2,6 +2,7 @@
 import json
 import sys
 import os
+import subprocess
 
 GREBI_HOME = os.environ['GREBI_HOME']
 GREBI_CONFIG = os.environ['GREBI_CONFIG']
