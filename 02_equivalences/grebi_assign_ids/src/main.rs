@@ -18,8 +18,11 @@ use grebi_shared::find_strings;
 struct Args {
 
     #[arg(long)]
-    groups_txt: String,
+    add_prefix: String, // used to prepend the subgraph name like hra_kg:
 
+    #[arg(long)]
+    groups_txt: String,
+    
     #[arg(long)]
     preserve_field: Vec<String>
 
@@ -32,6 +35,8 @@ fn main() {
 
     let args = Args::parse();
     let preserve_fields:HashSet<Vec<u8>> = args.preserve_field.iter().map(|x| x.as_bytes().to_vec()).collect();
+
+    let add_prefix = args.add_prefix;
 
     let id_to_group:HashMap<Vec<u8>, Vec<u8>> = {
         
@@ -102,11 +107,13 @@ fn main() {
 
             // the subject mapped to an equivalence group
             writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
+            writer.write_all(add_prefix.as_bytes()).unwrap();
             writer.write_all(group.unwrap().as_slice()).unwrap();
             writer.write_all("\"".as_bytes()).unwrap();
         } else {
             // the subject did not map to an equivalence group
             writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
+            writer.write_all(add_prefix.as_bytes()).unwrap();
             writer.write_all(id.unwrap()).unwrap();
             writer.write_all("\"".as_bytes()).unwrap();
         }
@@ -122,6 +129,7 @@ fn main() {
             } else {
                 let name_group = id_to_group.get(name);
                 if name_group.is_some() {
+                    writer.write_all(add_prefix.as_bytes()).unwrap();
                     writer.write_all(name_group.unwrap()).unwrap();
                 } else {
                     writer.write_all(name).unwrap();
@@ -132,7 +140,7 @@ fn main() {
             if name.eq(b"id") || preserve_fields.contains(name) {
                 writer.write_all(json.value()).unwrap();
             } else {
-                write_value(&mut writer, json.value(), &id_to_group);
+                write_value(&mut writer, json.value(), &id_to_group, &add_prefix);
             }
         }
 
@@ -143,7 +151,7 @@ fn main() {
 
 }
 
-fn write_value(writer:&mut BufWriter<io::StdoutLock>, value:&[u8], id_to_group:&HashMap<Vec<u8>, Vec<u8>>) {
+fn write_value(writer:&mut BufWriter<io::StdoutLock>, value:&[u8], id_to_group:&HashMap<Vec<u8>, Vec<u8>>, add_prefix:&str) {
 
     let string_locations = find_strings(&value);
 
@@ -166,6 +174,7 @@ fn write_value(writer:&mut BufWriter<io::StdoutLock>, value:&[u8], id_to_group:&
 
         let pv_group = id_to_group.get(str);
         if pv_group.is_some() {
+            writer.write_all(add_prefix.as_bytes()).unwrap();
             writer.write_all(pv_group.unwrap()).unwrap();
         } else {
             writer.write_all(str).unwrap();
