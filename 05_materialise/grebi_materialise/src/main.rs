@@ -91,7 +91,7 @@ fn main() -> std::io::Result<()> {
 
         sliced.props.iter().for_each(|prop| {
             for val in &prop.values {
-                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &node_metadata, &val.datasources);
+                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &node_metadata, &val.datasources, sliced.subgraph);
             }
         });
 
@@ -123,7 +123,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8]) {
 
     if prop.key.eq(b"id") || prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
         return;
@@ -140,7 +140,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
                 let str = JsonParser::parse(&buf).string();
                 let exists = node_metadata.contains_key(str);
                 if exists {
-                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), edges_writer,  node_metadata, &datasources);
+                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), edges_writer,  node_metadata, &datasources, &subgraph);
                 }
             } else {
                 // panic!("unexpected kind: {:?}", reified_u.value_kind);
@@ -154,7 +154,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
         let exists = node_metadata.contains_key(str);
 
         if exists {
-            write_edge(from_id, str, prop.key, None, edges_writer, node_metadata, &datasources);
+            write_edge(from_id, str, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph);
         }
 
     } else if val.kind == JsonTokenType::StartArray {
@@ -169,12 +169,14 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, edges_writer: &mut BufWriter<File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>) {
+fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, edges_writer: &mut BufWriter<File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8]) {
 
     let mut buf = Vec::new();
 
     buf.extend(b"\"grebi:type\":\"");
     buf.extend(edge);
+    buf.extend(b"\",\"grebi:subgraph\":\"");
+    buf.extend(subgraph);
     buf.extend(b"\",\"grebi:from\":\"");
     buf.extend(from_id);
     buf.extend(b"\",\"grebi:to\":\"");
