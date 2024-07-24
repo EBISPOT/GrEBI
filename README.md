@@ -13,6 +13,7 @@ GrEBI also imports complementary datasets, so far:
 
 * [MONARCH Initiative KG](https://monarch-initiative.github.io/monarch-ingest/Sources/)
 * [Ubergraph](https://github.com/INCATools/ubergraph)
+* [Human Reference Atlas KG](https://humanatlas.io/)
 
 The resulting graphs can be downloaded from https://ftp.ebi.ac.uk/pub/databases/spot/kg/
 

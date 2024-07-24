@@ -21,6 +21,7 @@ pub struct SlicedProperty<'a> {
 pub struct SlicedEntity<'a> {
     pub id:&'a [u8],
     pub datasources:Vec<&'a [u8]>,
+    pub subgraph:&'a [u8],
     pub props:Vec<SlicedProperty<'a>>,
     pub _refs:Option<&'a [u8]>
 }
@@ -51,6 +52,11 @@ impl<'a> SlicedEntity<'a> {
                 entity_datasources.push(parser.string());
             }
         parser.end_array();
+
+        // "grebi:subgraph": ...
+        let k_subgraph = parser.name();
+        if k_subgraph != "grebi:subgraph".as_bytes() { panic!("expected grebi:subgraph as key, got {}", String::from_utf8( k_subgraph.to_vec() ).unwrap()); }
+        let subgraph = parser.string();
 
         while parser.peek().kind != JsonTokenType::EndObject {
 
@@ -100,7 +106,7 @@ impl<'a> SlicedEntity<'a> {
 
 
 
-        return SlicedEntity { id, datasources: entity_datasources, props, _refs };
+        return SlicedEntity { id, datasources: entity_datasources, subgraph, props, _refs };
 
     }
 

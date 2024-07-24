@@ -132,6 +132,7 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>) {
             k.eq("grebi:datasources") ||
             k.eq("grebi:from") ||
             k.eq("grebi:to") ||
+            k.eq("grebi:subgraph") ||
             ( k.eq("grebi:type") && !v.is_array() /* edge types are singular */ )
             {
             out_json.insert(escape_key(k), v.clone());

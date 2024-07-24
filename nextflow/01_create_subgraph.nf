@@ -6,7 +6,9 @@ jsonSlurper = new JsonSlurper()
 
 params.tmp = "$GREBI_TMP"
 params.home = "$GREBI_HOME"
+params.config = "$GREBI_CONFIG"
 params.subgraph = "$GREBI_SUBGRAPH"
+params.timestamp = "$GREBI_TIMESTAMP"
 
 workflow {
 
@@ -24,7 +26,31 @@ workflow {
         Channel.value(config.bytes_per_merged_file))
 
     indexed = index(merged.collect())
-    materialise(merged.flatten(), indexed, Channel.value(config.exclude_edges + config.equivalence_props))
+    materialised = materialise(merged.flatten(), indexed, Channel.value(config.exclude_edges + config.equivalence_props))
+
+    rocks_db = create_rocks(materialised.collect())
+
+    neo_input_dir = prepare_neo(indexed, materialised)
+    neo_db = create_neo(prepare_neo.out.nodes.collect() + prepare_neo.out.edges.collect())
+
+    solr_inputs = prepare_solr(materialised)
+    solr_nodes_core = create_solr_nodes_core(prepare_solr.out.nodes.collect(), indexed.map { it[2] })
+    solr_edges_core = create_solr_edges_core(prepare_solr.out.edges.collect(), indexed.map { it[2] })
+    solr_autocomplete_core = create_solr_autocomplete_core(indexed.map { it[2] })
+
+    solr_tgz = package_solr(solr_nodes_core, solr_edges_core, solr_autocomplete_core)
+    neo_tgz = package_neo(neo_db)
+    rocks_tgz = package_rocks(rocks_db)
+
+    copy_solr_to_ftp(solr_tgz)
+    copy_neo_to_ftp(neo_tgz)
+    copy_rocks_to_ftp(rocks_tgz)
+
+    if(params.config == "ebi") {
+        copy_solr_config_to_staging()
+        copy_solr_cores_to_staging(solr_nodes_core.concat(solr_edges_core).concat(solr_autocomplete_core))
+        copy_rocksdb_to_staging(rocks_db)
+    }
 }
 
 process prepare {
@@ -116,6 +142,7 @@ process assign_ids {
     set -Eeuo pipefail
     zcat ${nodes_jsonl} \
         | ${params.home}/target/release/grebi_assign_ids \
+            --add-prefix ${params.subgraph}:g: \
             --groups-txt ${groups_txt} \
         > nodes_with_ids.jsonl
     LC_ALL=C sort -o nodes_with_ids.sorted.jsonl nodes_with_ids.jsonl
@@ -143,6 +170,7 @@ process merge_ingests {
     set -Eeuo pipefail
     ${params.home}/target/release/grebi_merge \
         --exclude-props ${exclude_props.iterator().join(",")} \
+        --annotate-subgraph-name ${params.subgraph} \
         ${buildMergeArgs(assigned)} \
         | split -a 6 -d -C ${bytes_per_merged_file} - merged.jsonl.
     """
@@ -153,7 +181,7 @@ process index {
     memory "64 GB" 
     time "8h"
 
-    publishDir "${params.tmp}/${params.subgraph}", overwrite: true
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
 
     input:
     val(merged_filenames)
@@ -177,15 +205,11 @@ process index {
 process materialise {
     cache "lenient"
     //memory { 80.GB + 30.GB * (task.attempt-1) }
-    //memory "32 GB"
     memory "96 GB"
     time "8h"
     //time { 1.hour + 8.hour * (task.attempt-1) }
     //errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     //maxRetries 5
-
-    publishDir "${params.tmp}/${params.subgraph}/nodes", overwrite: true, pattern: 'nodes_*'
-    publishDir "${params.tmp}/${params.subgraph}/edges", overwrite: true, pattern: 'edges_*'
 
     input:
     path(merged_filename)
@@ -193,8 +217,7 @@ process materialise {
     val(exclude)
 
     output:
-    path("nodes_${task.index}.jsonl")
-    path("edges_${task.index}.jsonl")
+    tuple(path("nodes.jsonl"), path("edges.jsonl"))
 
     script:
     """
@@ -203,18 +226,386 @@ process materialise {
     cat ${merged_filename} \
         | ${params.home}/target/release/grebi_materialise \
           --in-metadata-jsonl ${metadata_jsonl} \
-          --out-edges-jsonl edges_${task.index}.jsonl \
+          --out-edges-jsonl edges.jsonl \
           --exclude ${exclude.iterator().join(",")} \
-        > nodes_${task.index}.jsonl
+        > nodes.jsonl
     """
 }
+
+process create_rocks {
+    cache "lenient"
+    memory "800 GB" 
+    time "23h"
+    cpus "8"
+    errorStrategy 'retry'
+    maxRetries 10
+
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
+
+    input:
+    val(materialised)
+
+    output:
+    path("${params.subgraph}_rocksdb")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    cat ${materialised.iterator().join(" ")} \
+        | ${params.home}/target/release/grebi_make_rocks \
+            --rocksdb-path /dev/shm/rocksdb && \
+    mv /dev/shm/rocksdb ${params.subgraph}_rocksdb
+    """
+}
+
+process prepare_neo {
+    cache "lenient"
+    memory "16 GB" 
+    time "1h"
+
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}/neo4j_csv", overwrite: true
+
+    input:
+    tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
+    tuple(path(nodes_jsonl), path(edges_jsonl))
+
+    output:
+    path("neo_nodes_${params.subgraph}_${task.index}.csv"), emit: nodes
+    path("neo_edges_${params.subgraph}_${task.index}.csv"), emit: edges
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    ${params.home}/target/release/grebi_make_csv \
+      --in-summary-jsons ${summary_json} \
+      --in-nodes-jsonl ${nodes_jsonl} \
+      --in-edges-jsonl ${edges_jsonl} \
+      --out-nodes-csv-path neo_nodes_${params.subgraph}_${task.index}.csv \
+      --out-edges-csv-path neo_edges_${params.subgraph}_${task.index}.csv \
+      --out-id-nodes-csv-path neo_nodes_ids_${params.subgraph}_${task.index}.csv \
+      --out-id-edges-csv-path neo_edges_ids_${params.subgraph}_${task.index}.csv
+    """
+}
+
+process prepare_solr {
+    cache "lenient"
+    memory "4 GB" 
+    time "1h"
+
+    input:
+    tuple(path(nodes_jsonl), path(edges_jsonl))
+
+    output:
+    path("solr_nodes_${params.subgraph}_${task.index}.jsonl"), emit: nodes
+    path("solr_edges_${params.subgraph}_${task.index}.jsonl"), emit: edges
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    ${params.home}/target/release/grebi_make_solr  \
+      --in-nodes-jsonl ${nodes_jsonl} \
+      --in-edges-jsonl ${edges_jsonl} \
+      --out-nodes-jsonl-path solr_nodes_${params.subgraph}_${task.index}.jsonl \
+      --out-edges-jsonl-path solr_edges_${params.subgraph}_${task.index}.jsonl
+    """
+}
+
+process create_neo {
+    cache "lenient"
+    memory "50 GB" 
+    time "8h"
+    cpus "32"
+
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
+
+    input:
+    path(neo_inputs)
+
+    output:
+    path("${params.subgraph}_neo4j")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    PYTHONUNBUFFERED=true python3 ${params.home}/07_create_db/neo4j/neo4j_import.slurm.py \
+        --in-csv-path . \
+        --out-db-path ${params.subgraph}_neo4j
+    """
+}
+
+process create_solr_nodes_core {
+    cache "lenient"
+    memory "150 GB" 
+    time "23h"
+    cpus "32"
+    
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}/solr_cores", overwrite: true, saveAs: { filename -> filename.replace("solr/data/", "") }
+
+    input:
+    path(solr_inputs)
+    path(names_txt)
+
+    output:
+    path("solr/data/grebi_nodes_${params.subgraph}")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    python3 ${params.home}/06_prepare_db_import/make_solr_config.py \
+        --subgraph-name ${params.subgraph} \
+        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/summary.json \
+        --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
+        --out-config-dir solr_config
+    python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
+        --solr-config solr_config --core grebi_nodes_${params.subgraph} --in-data . --out-path solr --port 8985
+    """
+}
+
+process create_solr_edges_core {
+    cache "lenient"
+    memory "150 GB" 
+    time "23h"
+    cpus "32"
+
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}/solr_cores", overwrite: true, saveAs: { filename -> filename.replace("solr/data/", "") }
+
+    input:
+    path(solr_inputs)
+    path(names_txt)
+
+    output:
+    path("solr/data/grebi_edges_${params.subgraph}")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    python3 ${params.home}/06_prepare_db_import/make_solr_config.py \
+        --subgraph-name ${params.subgraph} \
+        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/summary.json \
+        --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
+        --out-config-dir solr_config
+    python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
+        --solr-config solr_config --core grebi_edges_${params.subgraph} --in-data . --out-path solr --port 8986
+    """
+}
+
+process create_solr_autocomplete_core {
+    cache "lenient"
+    memory "150 GB" 
+    time "4h"
+    cpus "4"
+
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}/solr_cores", overwrite: true, saveAs: { filename -> filename.replace("solr/data/", "") }
+
+    input:
+    path(names_txt)
+
+    output:
+    path("solr/data/grebi_autocomplete_${params.subgraph}")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    python3 ${params.home}/06_prepare_db_import/make_solr_autocomplete_config.py \
+        --subgraph-name ${params.subgraph} \
+        --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
+        --out-config-dir solr_config
+    python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
+        --solr-config solr_config --core grebi_autocomplete_${params.subgraph} --in-data . --in-names-txt ${names_txt} --out-path solr --port 8987
+    """
+}
+
+process package_neo {
+    cache "lenient"
+    memory "32 GB" 
+    time "8h"
+    cpus "32"
+
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
+
+    input: 
+    path("${params.subgraph}_neo4j")
+
+    output:
+    path("${params.subgraph}_neo4j.tgz")
+
+    script:
+    """
+    tar -chf ${params.subgraph}_neo4j.tgz --use-compress-program="pigz --fast" ${params.subgraph}_neo4j
+    """
+}
+
+process package_rocks {
+    cache "lenient"
+    memory "32 GB" 
+    time "8h"
+    cpus "32"
+
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
+
+    input: 
+    path("${params.subgraph}_rocksdb")
+
+    output:
+    path("${params.subgraph}_rocksdb.tgz")
+
+    script:
+    """
+    tar -chf ${params.subgraph}_rocksdb.tgz --use-compress-program="pigz --fast" ${params.subgraph}_rocksdb
+    """
+}
+
+process package_solr {
+    cache "lenient"
+    memory "32 GB" 
+    time "8h"
+    cpus "32"
+
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
+
+    input: 
+    path(solr_nodes_core)
+    path(solr_edges_core)
+    path(solr_autocomplete_core)
+
+    output:
+    path("${params.subgraph}_solr.tgz")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.xml .
+    cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.cfg .
+    tar -chf ${params.subgraph}_solr.tgz --transform 's,^,solr/,' --use-compress-program="pigz --fast" \
+	*.xml *.cfg ${solr_nodes_core} ${solr_edges_core} ${solr_autocomplete_core}
+    """
+}
+
+process copy_neo_to_ftp {
+    
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    input: 
+    path("neo4j.tgz")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    mkdir -p /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}
+    cp -f neo4j.tgz /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}/${params.subgraph}_neo4j.tgz
+    """
+}
+
+process copy_solr_to_ftp {
+    
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    input: 
+    path("solr.tgz")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    mkdir -p /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}
+    cp -f solr.tgz /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}/${params.subgraph}_solr.tgz
+    """
+}
+
+process copy_rocks_to_ftp {
+    
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    input: 
+    path("rocksdb.tgz")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    mkdir -p /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}
+    cp -f rocksdb.tgz /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}/${params.subgraph}_rocksdb.tgz
+    """
+}
+
+process copy_solr_config_to_staging {
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.xml .
+    cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.cfg .
+    mkdir -p /nfs/public/rw/ontoapps/grebi/staging/solr
+    cp -LR * /nfs/public/rw/ontoapps/grebi/staging/solr/
+    """
+
+}
+
+process copy_solr_cores_to_staging {
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    input: 
+    path(solr_core)
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    mkdir -p /nfs/public/rw/ontoapps/grebi/staging/solr
+    cp -LR * /nfs/public/rw/ontoapps/grebi/staging/solr/
+    """
+}
+
+process copy_rocksdb_to_staging {
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    input: 
+    path(rocksdb)
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    mkdir -p /nfs/public/rw/ontoapps/grebi/staging/rocksdb
+    cp -LR * /nfs/public/rw/ontoapps/grebi/staging/rocksdb/
+    """
+}
+
 
 def parseJson(json) {
     return new JsonSlurper().parseText(json)
 }
 
 def getDecompressionCommand(filename) {
-    def f = ""
     if (filename.startsWith(".")) {
         f = new File(params.home, filename).toString()
     } else {
@@ -234,19 +625,19 @@ def getIngestCommand(script) {
 }
 
 def buildIngestArgs(ingestArgs) {
-    def res = ""
+    res = ""
     ingestArgs.each { arg -> res += "${arg.name} ${arg.value} " }
     return res
 }
 
 def buildAddEquivGroupArgs(equivGroups) {
-    def res = ""
+    res = ""
     equivGroups.each { arg -> res += "--add-group ${arg.iterator().join(",")} " }
     return res
 }
 
 def buildMergeArgs(assigned) {
-    def res = ""
+    res = ""
     assigned.each { a ->
         res += "${a[0]}:${a[1]} "
     }

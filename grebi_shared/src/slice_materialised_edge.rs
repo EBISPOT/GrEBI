@@ -7,6 +7,7 @@ use crate::slice_merged_entity::{SlicedProperty, SlicedPropertyValue};
 pub struct SlicedEdge<'a> {
     pub edge_id:&'a [u8],
     pub edge_type:&'a [u8],
+    pub subgraph:&'a [u8],
     pub from:&'a [u8],
     pub to:&'a [u8],
     pub datasources:Vec<&'a [u8]>,
@@ -36,6 +37,11 @@ impl<'a> SlicedEdge<'a> {
         let k_type = parser.name();
         if k_type != "grebi:type".as_bytes() { panic!("expected type as key, got {}", String::from_utf8( k_type.to_vec() ).unwrap()); }
         let edge_type = parser.string();
+
+        // "subgraph": ...
+        let k_subgraph = parser.name();
+        if k_subgraph != "grebi:subgraph".as_bytes() { panic!("expected subgraph as key, got {}", String::from_utf8( k_subgraph.to_vec() ).unwrap()); }
+        let edge_subgraph = parser.string();
 
         // "from": ...
         let k_from = parser.name();
@@ -85,7 +91,7 @@ impl<'a> SlicedEdge<'a> {
         parser.end_object();
 
 
-        return SlicedEdge { edge_id, edge_type, from, to, datasources: entity_datasources, props, _refs };
+        return SlicedEdge { edge_id, edge_type, subgraph: edge_subgraph, from, to, datasources: entity_datasources, props, _refs };
     }
 
 
