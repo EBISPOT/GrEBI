@@ -261,7 +261,7 @@ process create_rocks {
 
 process prepare_neo {
     cache "lenient"
-    memory "4 GB" 
+    memory "16 GB" 
     time "1h"
 
     publishDir "${params.tmp}/${params.config}/${params.subgraph}/neo4j_csv", overwrite: true
