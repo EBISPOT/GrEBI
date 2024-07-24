@@ -134,7 +134,7 @@ process copy_neo_to_ftp {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     mkdir -p /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}
-    cp -f neo4j.tgz /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}/
+    cp -f combined_neo4j.tgz /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}/
     """
 }
 

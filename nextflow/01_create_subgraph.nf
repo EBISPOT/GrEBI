@@ -142,6 +142,7 @@ process assign_ids {
     set -Eeuo pipefail
     zcat ${nodes_jsonl} \
         | ${params.home}/target/release/grebi_assign_ids \
+            --add-prefix ${params.subgraph}:g: \
             --groups-txt ${groups_txt} \
         > nodes_with_ids.jsonl
     LC_ALL=C sort -o nodes_with_ids.sorted.jsonl nodes_with_ids.jsonl
@@ -270,8 +271,8 @@ process prepare_neo {
     tuple(path(nodes_jsonl), path(edges_jsonl))
 
     output:
-    path("neo_nodes_${task.index}.csv"), emit: nodes
-    path("neo_edges_${task.index}.csv"), emit: edges
+    path("neo_nodes_${params.subgraph}_${task.index}.csv"), emit: nodes
+    path("neo_edges_${params.subgraph}_${task.index}.csv"), emit: edges
 
     script:
     """
@@ -281,8 +282,10 @@ process prepare_neo {
       --in-summary-jsons ${summary_json} \
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-edges-jsonl ${edges_jsonl} \
-      --out-nodes-csv-path neo_nodes_${task.index}.csv \
-      --out-edges-csv-path neo_edges_${task.index}.csv
+      --out-nodes-csv-path neo_nodes_${params.subgraph}_${task.index}.csv \
+      --out-edges-csv-path neo_edges_${params.subgraph}_${task.index}.csv \
+      --out-id-nodes-csv-path neo_nodes_ids_${params.subgraph}_${task.index}.csv \
+      --out-id-edges-csv-path neo_edges_ids_${params.subgraph}_${task.index}.csv
     """
 }
 
@@ -295,8 +298,8 @@ process prepare_solr {
     tuple(path(nodes_jsonl), path(edges_jsonl))
 
     output:
-    path("solr_nodes_${task.index}.jsonl"), emit: nodes
-    path("solr_edges_${task.index}.jsonl"), emit: edges
+    path("solr_nodes_${params.subgraph}_${task.index}.jsonl"), emit: nodes
+    path("solr_edges_${params.subgraph}_${task.index}.jsonl"), emit: edges
 
     script:
     """
@@ -305,8 +308,8 @@ process prepare_solr {
     ${params.home}/target/release/grebi_make_solr  \
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-edges-jsonl ${edges_jsonl} \
-      --out-nodes-jsonl-path solr_nodes_${task.index}.jsonl \
-      --out-edges-jsonl-path solr_edges_${task.index}.jsonl
+      --out-nodes-jsonl-path solr_nodes_${params.subgraph}_${task.index}.jsonl \
+      --out-edges-jsonl-path solr_edges_${params.subgraph}_${task.index}.jsonl
     """
 }
 
@@ -555,6 +558,7 @@ process copy_solr_config_to_staging {
     set -Eeuo pipefail
     cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.xml .
     cp -f ${params.home}/06_prepare_db_import/solr_config_template/*.cfg .
+    mkdir -p /nfs/public/rw/ontoapps/grebi/staging/solr
     cp -LR * /nfs/public/rw/ontoapps/grebi/staging/solr/
     """
 
