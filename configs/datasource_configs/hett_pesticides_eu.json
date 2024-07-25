@@ -4,7 +4,7 @@
     "ingests": [
         {
             "ingest_files": ["./00_fetch_data/hett_pesticides/ActiveSubstanceExport*"],
-            "ingest_script": "./01_ingest/hett_pesticides_gb.py",
+            "ingest_script": "./01_ingest/hett_pesticides_eu.py",
             "ingest_args": []
         }
     ]

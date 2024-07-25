@@ -606,10 +606,9 @@ def parseJson(json) {
 }
 
 def getDecompressionCommand(filename) {
+    def f = filename
     if (filename.startsWith(".")) {
         f = new File(params.home, filename).toString()
-    } else {
-        f = filename
     }
     if (f.endsWith(".gz")) {
         return "zcat ${f}"
@@ -625,19 +624,19 @@ def getIngestCommand(script) {
 }
 
 def buildIngestArgs(ingestArgs) {
-    res = ""
+    def res = ""
     ingestArgs.each { arg -> res += "${arg.name} ${arg.value} " }
     return res
 }
 
 def buildAddEquivGroupArgs(equivGroups) {
-    res = ""
+    def res = ""
     equivGroups.each { arg -> res += "--add-group ${arg.iterator().join(",")} " }
     return res
 }
 
 def buildMergeArgs(assigned) {
-    res = ""
+    def res = ""
     assigned.each { a ->
         res += "${a[0]}:${a[1]} "
     }

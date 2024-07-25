@@ -11,7 +11,12 @@ config = json.load(open(f'{GREBI_HOME}/configs/pipeline_configs/{GREBI_CONFIG}.j
 for subgraph in config['subgraphs']:
     print(f"===== LOADING SUBGRAPH: {subgraph} =====")
     os.environ['GREBI_SUBGRAPH'] = subgraph
-    os.system(f'nextflow {GREBI_HOME}/nextflow/01_create_subgraph.nf')
+    ret = os.system(f'nextflow {GREBI_HOME}/nextflow/01_create_subgraph.nf')
+    if ret != 0:
+        exit(ret)
     print(f"===== FINISHED LOADING SUBGRAPH: {subgraph} =====")
 
-os.system(f'nextflow {GREBI_HOME}/nextflow/02_create_dbs.nf')
+ret = os.system(f'nextflow {GREBI_HOME}/nextflow/02_create_dbs.nf')
+if ret != 0:
+    exit(ret)
+
