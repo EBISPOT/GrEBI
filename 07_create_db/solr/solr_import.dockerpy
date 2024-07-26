@@ -16,13 +16,14 @@ session = requests.Session()
 session.trust_env = False
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: {} <core> <tmp_port_to_use>".format(sys.argv[0]))
+    if len(sys.argv) != 4:
+        print("Usage: {} <core> <tmp_port_to_use> <mem>".format(sys.argv[0]))
         print("core: grebi_autocomplete, grebi_nodes, grebi_edges")
         sys.exit(1)
 
     core = sys.argv[1]
     port = sys.argv[2]
+    mem = sys.argv[3]
 
     os.chdir('/opt/solr')
 
@@ -38,7 +39,7 @@ def main():
     os.environ['SOLR_ENABLE_REMOTE_STREAMING'] = 'true'
     os.environ['SOLR_SECURITY_MANAGER_ENABLED'] = 'false'
 
-    subprocess.run(['solr', 'start', '-m', '128g', '-p', port, '-noprompt', '-force'])
+    subprocess.run(['solr', 'start', '-m', mem, '-p', port, '-noprompt', '-force'])
 
     time.sleep(5)
 

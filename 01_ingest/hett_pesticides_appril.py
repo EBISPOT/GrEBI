@@ -21,7 +21,7 @@ df['grebi:datasource'] = args.datasource_name
 df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
 for obj in df.to_dict(orient='records'):
-    obj = {k: v for k, v in obj.items() if pd.notna(v)}
+    obj = {re.sub(r'[^\w\s:]', '',k): v for k, v in obj.items() if pd.notna(v)}
 
     if 'PESTS' in obj:
         obj['PESTS'] = list(map(lambda p: p.strip(), obj['PESTS'].split(',')))

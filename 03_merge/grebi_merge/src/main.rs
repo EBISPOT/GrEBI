@@ -36,6 +36,7 @@ struct Args {
     _files: Vec<String>,
 }
 
+#[derive(Debug)]
 struct BufferedLine {
     input_index:usize,
     line:Vec<u8>
@@ -105,7 +106,10 @@ fn main() -> std::io::Result<()> {
 
     cur_lines.make_contiguous()
         .sort_by(|a, b| {
-            return get_id(&a.line).cmp(&get_id(&b.line)); });
+            return a.line.cmp(&b.line); });
+
+    //eprintln!("cur_lines: {:?}", cur_lines.iter().map(|line| String::from_utf8(line.line.clone()).unwrap()).collect::<Vec<_>>() );
+    //eprintln!("cur_lines values: {:?}", cur_lines);
 
     loop {
 
@@ -138,9 +142,7 @@ fn main() -> std::io::Result<()> {
                 break;
             }
         } else {
-            let new_id = get_id(&line_buf);
-
-            match cur_lines.binary_search_by(|probe| { return get_id(&probe.line).cmp(&new_id); }) {
+            match cur_lines.binary_search_by(|probe| { return probe.line.cmp(&line_buf); }) {
                 Ok(pos) => cur_lines.insert(pos, BufferedLine { input_index, line: line_buf }),
                 Err(pos) => cur_lines.insert(pos, BufferedLine { input_index, line: line_buf })
             }

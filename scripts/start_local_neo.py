@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 
 import json
 import os
@@ -8,8 +8,12 @@ import time
 import glob
 from subprocess import Popen, PIPE, STDOUT
 
+GREBI_HOME = os.environ['GREBI_HOME']
+GREBI_CONFIG = os.environ['GREBI_CONFIG']
+GREBI_TMP = os.environ['GREBI_TMP']
+
 def main():
-    neo_data_path = os.path.join(os.environ['GREBI_HPS_TMP'], os.environ['GREBI_CONFIG'], "07_create_db", "neo4j", "data")
+    neo_data_path = os.path.join( os.environ['GREBI_TMP'], os.environ['GREBI_CONFIG'], "combined_neo4j", "data")
 
     cmd = ' '.join([
         'docker run',
@@ -23,9 +27,6 @@ def main():
 
     os.system(cmd)
 
-
-def get_time():
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
 
 if __name__=="__main__":
     main()

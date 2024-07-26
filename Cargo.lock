@@ -579,7 +579,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "grebi_make_csv"
+name = "grebi_make_neo_csv"
 version = "0.1.0"
 dependencies = [
  "clap",
@@ -587,6 +587,14 @@ dependencies = [
  "grebi_shared",
  "jemallocator",
  "serde_json",
+]
+
+[[package]]
+name = "grebi_make_neo_ids_csv"
+version = "0.1.0"
+dependencies = [
+ "grebi_shared",
+ "jemallocator",
 ]
 
 [[package]]

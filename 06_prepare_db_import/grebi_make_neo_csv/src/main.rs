@@ -39,9 +39,6 @@ struct Args {
     out_edges_csv_path: String,
 
     #[arg(long)]
-    out_id_nodes_csv_path: String,
-
-    #[arg(long)]
     out_id_edges_csv_path: String,
 }
 
@@ -67,7 +64,6 @@ fn main() -> std::io::Result<()> {
     }
 
 
-
     let mut nodes_reader = BufReader::new(File::open(args.in_nodes_jsonl).unwrap());
     let mut edges_reader = BufReader::new(File::open(args.in_edges_jsonl).unwrap());
 
@@ -81,12 +77,6 @@ fn main() -> std::io::Result<()> {
     let mut edges_writer =
         BufWriter::with_capacity(1024*1024*32,
             &edges_file
-        );
-
-    let mut id_nodes_file = File::create(args.out_id_nodes_csv_path).unwrap();
-    let mut id_nodes_writer =
-        BufWriter::with_capacity(1024*1024*32,
-            &id_nodes_file
         );
 
     let mut id_edges_file = File::create(args.out_id_edges_csv_path).unwrap();
@@ -115,7 +105,6 @@ fn main() -> std::io::Result<()> {
     edges_writer.write_all("\n".as_bytes()).unwrap();
 
 
-    id_nodes_writer.write_all("id:ID,:LABEL\n".as_bytes()).unwrap();
     id_edges_writer.write_all(":START_ID,:TYPE,:END_ID\n".as_bytes()).unwrap();
 
 
@@ -134,7 +123,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEntity::from_json(&line);
 
-        write_node(&line, &sliced, &all_entity_props, &mut nodes_writer, &mut id_nodes_writer, &mut id_edges_writer);
+        write_node(&line, &sliced, &all_entity_props, &mut nodes_writer, &mut id_edges_writer);
 
         n_nodes = n_nodes + 1;
         if n_nodes % 1000000 == 0 {
@@ -176,7 +165,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<String>, nodes_writer:&mut BufWriter<&File>, id_nodes_writer:&mut BufWriter<&File>, id_edges_writer:&mut BufWriter<&File>) {
+fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<String>, nodes_writer:&mut BufWriter<&File>, id_edges_writer:&mut BufWriter<&File>) {
 
     let refs:Map<String,Value> = serde_json::from_slice(entity._refs.unwrap()).unwrap();
 
@@ -225,7 +214,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
                 }
                 if row_prop.key == "id".as_bytes() {
                     for val in row_prop.values.iter() {
-                        write_id_row(val, id_nodes_writer, id_edges_writer, &entity.id);
+                        write_id_row(val, id_edges_writer, &entity.id);
                     }
                 }
                 if header_prop.as_bytes() == row_prop.key {
@@ -351,7 +340,7 @@ fn parse_json_and_write(buf:&[u8], refs:&Map<String,Value>, writer:&mut BufWrite
     }
 }
 
-fn write_id_row(val:&SlicedPropertyValue, id_nodes_writer:&mut BufWriter<&File>, id_edges_writer:&mut BufWriter<&File>, grebi_node_id:&[u8]) {
+fn write_id_row(val:&SlicedPropertyValue, id_edges_writer:&mut BufWriter<&File>, grebi_node_id:&[u8]) {
 
     let actual_id = {
         if val.kind == JsonTokenType::StartObject {
@@ -366,20 +355,12 @@ fn write_id_row(val:&SlicedPropertyValue, id_nodes_writer:&mut BufWriter<&File>,
         }
     };
 
-    id_nodes_writer.write_all(b"\"").unwrap();
-    write_escaped_value(actual_id, id_nodes_writer);
-    id_nodes_writer.write_all(b"\",\"").unwrap();
-    write_escaped_value(b"Id", id_nodes_writer);
-    id_nodes_writer.write_all(b"\"\n").unwrap();
-
-
-    id_nodes_writer.write_all(b"\"").unwrap();
+    id_edges_writer.write_all(b"\"").unwrap();
     write_escaped_value(grebi_node_id, id_edges_writer);
-    id_nodes_writer.write_all(b"\",\"").unwrap();
-    write_escaped_value(b"id", id_nodes_writer);
-    id_nodes_writer.write_all(b"\",\"").unwrap();
-    write_escaped_value(actual_id, id_nodes_writer);
-    id_nodes_writer.write_all(b"\"\n").unwrap();
-
+    id_edges_writer.write_all(b"\",\"").unwrap();
+    write_escaped_value(b"id", id_edges_writer);
+    id_edges_writer.write_all(b"\",\"").unwrap();
+    write_escaped_value(actual_id, id_edges_writer);
+    id_edges_writer.write_all(b"\"\n").unwrap();
 }
 

@@ -17,6 +17,7 @@ def main():
     parser.add_argument('--in-names-txt', type=str, help='Path to names.txt', required=False)
     parser.add_argument('--in-data', type=str, help='Path to jsonl files to import', required=True)
     parser.add_argument('--out-path', type=str, help='Path to use to store the solr database', required=True)
+    parser.add_argument('--mem', type=str, help='Memory to allocate to temp solr instance', required=True)
     args = parser.parse_args()
 
     has_singularity = os.system('which singularity') == 0
@@ -40,7 +41,7 @@ def main():
             #'--writable-tmpfs',
             '--net --network=none',
             'docker://ghcr.io/ebispot/grebi_solr_with_python:9.5.0',
-            'python3 /import.py', args.core, args.port
+            'python3 /import.py', args.core, args.port, args.mem
         ])
     else:
         os.system("chmod 777 " + shlex.quote(args.out_path))
@@ -56,7 +57,7 @@ def main():
             '-v ' + os.path.abspath(args.out_path) + ':/var/solr',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_HOME'], '07_create_db/solr/solr_import.dockerpy')) + ':/import.py',
             'ghcr.io/ebispot/grebi_solr_with_python:9.5.0',
-            'python3 /import.py', args.core, args.port
+            'python3 /import.py', args.core, args.port, args.mem
         ])
 
     print(cmd)

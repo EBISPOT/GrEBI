@@ -1,0 +1,9 @@
+[package]
+name = "grebi_make_neo_ids_csv"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jemallocator = "0.5.4"
+grebi_shared = { path = "../../grebi_shared" }
+

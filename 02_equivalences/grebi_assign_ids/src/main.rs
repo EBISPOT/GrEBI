@@ -18,7 +18,7 @@ use grebi_shared::find_strings;
 struct Args {
 
     #[arg(long)]
-    add_prefix: String, // used to prepend the subgraph name like hra_kg:
+    add_prefix: String, // used to prepend the subgraph name like hra_kg:g:
 
     #[arg(long)]
     groups_txt: String,

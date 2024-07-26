@@ -24,7 +24,7 @@ df['grebi:datasource'] = args.datasource_name
 df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
 for obj in df.to_dict(orient='records'):
-    obj = {k: v for k, v in obj.items() if pd.notna(v)}
+    obj = {re.sub(r'[^\w\s:]', '',k): v for k, v in obj.items() if pd.notna(v)}
 
     if 'Authorised' in obj:
         obj['Authorised'] = list(map(lambda p: p.strip(), obj['Authorised'].split(',')))

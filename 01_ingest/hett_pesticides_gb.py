@@ -17,6 +17,10 @@ df.columns = df.columns.astype(str)
 df.rename(columns={col: 'Category' for col in df.columns if col.startswith('Category')}, inplace=True)
 
 df['id'] = df['Substance Name']
+
+# remove any rows with empty id (in this case substance name)
+df = df[df['id'].notna() & df['id'].str.strip().ne('')]
+
 df.rename(columns={col: 'grebi:name' for col in df.columns if col == 'Substance Name'}, inplace=True)
 
 df['grebi:type'] = 'hett:AgroSubstance'
@@ -25,7 +29,7 @@ df['grebi:datasource'] = args.datasource_name
 df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
 for obj in df.to_dict(orient='records'):
-    obj = {k: v for k, v in obj.items() if pd.notna(v)}
+    obj = { re.sub(r'[^\w\s:]', '',k): v for k, v in obj.items() if pd.notna(v)}
 
     if 'Category' in obj:
         obj['Category'] = obj['Category'].split(',')

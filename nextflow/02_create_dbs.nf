@@ -8,6 +8,7 @@ params.tmp = "$GREBI_TMP"
 params.home = "$GREBI_HOME"
 params.config = "$GREBI_CONFIG"
 params.timestamp = "$GREBI_TIMESTAMP"
+params.is_ebi = "$GREBI_IS_EBI"
 
 workflow {
 
@@ -15,14 +16,17 @@ workflow {
 
     neo_nodes_files = Channel.fromPath("${params.tmp}/${params.config}/*/neo4j_csv/neo_nodes_*.csv").collect()
     neo_edges_files = Channel.fromPath("${params.tmp}/${params.config}/*/neo4j_csv/neo_edges_*.csv").collect()
+    id_txts = Channel.fromPath("${params.tmp}/${params.config}/*/ids.txt").collect()
+    ids_csv = create_combined_neo_ids_csv(id_txts).collect()
 
-    neo_db = create_neo(neo_nodes_files.collect() + neo_edges_files.collect())
+    neo_db = create_neo(neo_nodes_files.collect() + neo_edges_files.collect() + ids_csv)
 
     solr_tgz = package_solr( Channel.fromPath("${params.tmp}/${params.config}/*/solr_cores/*").collect())
     rocks_tgz = package_rocks( Channel.fromPath("${params.tmp}/${params.config}/*/*_rocksdb").collect())
 
     neo_tgz = package_neo(neo_db)
 
+    if(params.is_ebi == "true") {
     copy_solr_to_ftp(solr_tgz)
     copy_neo_to_ftp(neo_tgz)
     copy_rocks_to_ftp(rocks_tgz)
@@ -30,19 +34,44 @@ workflow {
     if(params.config == "ebi") {
         copy_neo_to_staging(neo_db)
     }
+    }
+}
+
+process create_combined_neo_ids_csv {
+    cache "lenient"
+    memory "8 GB" 
+    time "8h"
+    cpus "8"
+
+    input:
+    path(ids_txts)
+
+    output:
+    path("neo_nodes_ids_combined.csv")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    cat ${ids_txts} > combined_ids.txt
+    LC_ALL=C sort -u combined_ids.txt 
+    cat combined_ids.txt | ${params.home}/target/release/grebi_make_neo_ids_csv > neo_nodes_ids_combined.csv
+    """
 }
 
 process create_neo {
     cache "lenient"
     memory "50 GB" 
     time "8h"
-    cpus "32"
+    cpus "16"
+
+    publishDir "${params.tmp}/${params.config}", overwrite: true
 
     input:
     path(neo_inputs)
 
     output:
-    path("neo4j")
+    path("combined_neo4j")
 
     script:
     """
@@ -50,7 +79,7 @@ process create_neo {
     set -Eeuo pipefail
     PYTHONUNBUFFERED=true python3 ${params.home}/07_create_db/neo4j/neo4j_import.slurm.py \
         --in-csv-path . \
-        --out-db-path neo4j
+        --out-db-path combined_neo4j
     """
 }
 
@@ -58,19 +87,19 @@ process package_neo {
     cache "lenient"
     memory "32 GB" 
     time "8h"
-    cpus "32"
+    cpus "16"
 
     publishDir "${params.tmp}/${params.config}", overwrite: true
 
     input: 
-    path(neo4j)
+    path("combined_neo4j")
 
     output:
     path("combined_neo4j.tgz")
 
     script:
     """
-    tar -chf combined_neo4j.tgz --use-compress-program="pigz --fast" neo4j
+    tar -chf combined_neo4j.tgz --use-compress-program="pigz --fast" combined_neo4j
     """
 }
 
@@ -78,7 +107,7 @@ process package_rocks {
     cache "lenient"
     memory "32 GB" 
     time "8h"
-    cpus "32"
+    cpus "16"
 
     publishDir "${params.tmp}/${params.config}", overwrite: true
 
@@ -98,7 +127,7 @@ process package_solr {
     cache "lenient"
     memory "32 GB" 
     time "8h"
-    cpus "32"
+    cpus "16"
 
     publishDir "${params.tmp}/${params.config}", overwrite: true
 

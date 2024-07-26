@@ -37,6 +37,9 @@ struct Args {
 
     #[arg(long)]
     out_names_txt: String,
+
+    #[arg(long)]
+    out_ids_txt: String
 }
 
 fn main() {
@@ -51,10 +54,12 @@ fn main() {
     let mut entity_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut edge_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut all_names:BTreeSet<Vec<u8>> = BTreeSet::new();
+    let mut all_ids:BTreeSet<Vec<u8>> = BTreeSet::new();
 
     let mut summary_writer = BufWriter::new(File::create(&args.out_summary_json_path).unwrap());
     let mut metadata_writer = BufWriter::new(File::create(&args.out_metadata_jsonl_path).unwrap());
     let mut names_writer = BufWriter::new(File::create(&args.out_names_txt).unwrap());
+    let mut ids_writer = BufWriter::new(File::create(&args.out_ids_txt).unwrap());
 
     let mut line:Vec<u8> = Vec::new();
     let mut n:i64 = 0;
@@ -169,12 +174,17 @@ fn main() {
                             if reified_u.value_kind == JsonTokenType::StartString {
                                 all_names.insert(reified_u.value[1..reified_u.value.len()-1].to_vec());
                             }
+                        } else if prop_key.eq(b"id") {
+                            if reified_u.value_kind == JsonTokenType::StartString {
+                                all_ids.insert(reified_u.value[1..reified_u.value.len()-1].to_vec());
+                            }
                         }
-
                     }
                 } else if val.kind == JsonTokenType::StartString {
                     if prop_key.eq(b"grebi:name") || prop.key.eq(b"grebi:synonym") {
                         all_names.insert(val.value[1..val.value.len()-1].to_vec());
+                    } else if prop_key.eq(b"id") {
+                        all_ids.insert(val.value[1..val.value.len()-1].to_vec());
                     }
                 }
             }
@@ -214,6 +224,11 @@ fn main() {
     for name in all_names {
         names_writer.write_all(&name).unwrap();
         names_writer.write_all(b"\n").unwrap();
+    }
+
+    for id in all_ids {
+        ids_writer.write_all(&id).unwrap();
+        ids_writer.write_all(b"\n").unwrap();
     }
     
     eprintln!("Building metadata took {} seconds", start_time3.elapsed().as_secs());

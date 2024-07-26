@@ -23,7 +23,8 @@ pub fn get_id<'a>(json:&'a [u8])->&'a [u8] {
 
     while json[end] != b'"' {
         if json[end] == b'\\' {
-            todo!("Found escape sequence in ID in {}", String::from_utf8(json.to_vec()).unwrap());
+            end += 1;
+            //todo!("Found escape sequence in ID in {}", String::from_utf8(json.to_vec()).unwrap());
         }
         end += 1;
     }

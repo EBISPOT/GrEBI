@@ -8,7 +8,7 @@ params.tmp = "$GREBI_TMP"
 params.home = "$GREBI_HOME"
 params.config = "$GREBI_CONFIG"
 params.subgraph = "$GREBI_SUBGRAPH"
-params.timestamp = "$GREBI_TIMESTAMP"
+params.is_ebi = "$GREBI_IS_EBI"
 
 workflow {
 
@@ -26,22 +26,30 @@ workflow {
         Channel.value(config.bytes_per_merged_file))
 
     indexed = index(merged.collect())
-    materialised = materialise(merged.flatten(), indexed, Channel.value(config.exclude_edges + config.equivalence_props))
+    materialised = materialise(merged.flatten(), indexed.metadata_jsonl, Channel.value(config.exclude_edges + config.equivalence_props))
 
     rocks_db = create_rocks(materialised.collect())
 
-    neo_input_dir = prepare_neo(indexed, materialised)
-    neo_db = create_neo(prepare_neo.out.nodes.collect() + prepare_neo.out.edges.collect())
+    neo_input_dir = prepare_neo(indexed.summary_json, materialised)
+
+    ids_csv = create_neo_ids_csv(indexed.ids_txt)
+    neo_db = create_neo(
+        prepare_neo.out.nodes.collect() +
+        prepare_neo.out.edges.collect() +
+        prepare_neo.out.id_edges.collect() +
+	ids_csv.collect()
+)
 
     solr_inputs = prepare_solr(materialised)
-    solr_nodes_core = create_solr_nodes_core(prepare_solr.out.nodes.collect(), indexed.map { it[2] })
-    solr_edges_core = create_solr_edges_core(prepare_solr.out.edges.collect(), indexed.map { it[2] })
-    solr_autocomplete_core = create_solr_autocomplete_core(indexed.map { it[2] })
+    solr_nodes_core = create_solr_nodes_core(prepare_solr.out.nodes.collect(), indexed.names_txt)
+    solr_edges_core = create_solr_edges_core(prepare_solr.out.edges.collect(), indexed.names_txt)
+    solr_autocomplete_core = create_solr_autocomplete_core(indexed.names_txt)
 
     solr_tgz = package_solr(solr_nodes_core, solr_edges_core, solr_autocomplete_core)
     neo_tgz = package_neo(neo_db)
     rocks_tgz = package_rocks(rocks_db)
 
+    if(params.is_ebi == "true") {
     copy_solr_to_ftp(solr_tgz)
     copy_neo_to_ftp(neo_tgz)
     copy_rocks_to_ftp(rocks_tgz)
@@ -50,6 +58,7 @@ workflow {
         copy_solr_config_to_staging()
         copy_solr_cores_to_staging(solr_nodes_core.concat(solr_edges_core).concat(solr_autocomplete_core))
         copy_rocksdb_to_staging(rocks_db)
+    }
     }
 }
 
@@ -187,7 +196,10 @@ process index {
     val(merged_filenames)
 
     output:
-    tuple(path("metadata.jsonl"), path("summary.json"), path("names.txt"))
+    path("metadata.jsonl"), emit: metadata_jsonl
+    path("summary.json"), emit: summary_json
+    path("names.txt"), emit: names_txt
+    path("ids.txt"), emit: ids_txt
 
     script:
     """
@@ -198,14 +210,14 @@ process index {
         --subgraph-name {params.subgraph} \
         --out-metadata-jsonl-path metadata.jsonl \
         --out-summary-json-path summary.json \
-        --out-names-txt names.txt
+        --out-names-txt names.txt \
+        --out-ids-txt ids.txt
     """
 }
 
 process materialise {
     cache "lenient"
-    //memory { 80.GB + 30.GB * (task.attempt-1) }
-    memory "96 GB"
+    memory "64 GB"
     time "8h"
     //time { 1.hour + 8.hour * (task.attempt-1) }
     //errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
@@ -213,7 +225,7 @@ process materialise {
 
     input:
     path(merged_filename)
-    tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
+    path(metadata_jsonl)
     val(exclude)
 
     output:
@@ -234,7 +246,7 @@ process materialise {
 
 process create_rocks {
     cache "lenient"
-    memory "800 GB" 
+    memory "64 GB" 
     time "23h"
     cpus "8"
     errorStrategy 'retry'
@@ -267,24 +279,24 @@ process prepare_neo {
     publishDir "${params.tmp}/${params.config}/${params.subgraph}/neo4j_csv", overwrite: true
 
     input:
-    tuple(path(metadata_jsonl), path(summary_json), path(names_txt))
+    path(summary_json)
     tuple(path(nodes_jsonl), path(edges_jsonl))
 
     output:
     path("neo_nodes_${params.subgraph}_${task.index}.csv"), emit: nodes
     path("neo_edges_${params.subgraph}_${task.index}.csv"), emit: edges
+    path("neo_edges_ids_${params.subgraph}_${task.index}.csv"), emit: id_edges
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    ${params.home}/target/release/grebi_make_csv \
+    ${params.home}/target/release/grebi_make_neo_csv \
       --in-summary-jsons ${summary_json} \
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-edges-jsonl ${edges_jsonl} \
       --out-nodes-csv-path neo_nodes_${params.subgraph}_${task.index}.csv \
       --out-edges-csv-path neo_edges_${params.subgraph}_${task.index}.csv \
-      --out-id-nodes-csv-path neo_nodes_ids_${params.subgraph}_${task.index}.csv \
       --out-id-edges-csv-path neo_edges_ids_${params.subgraph}_${task.index}.csv
     """
 }
@@ -313,11 +325,31 @@ process prepare_solr {
     """
 }
 
+process create_neo_ids_csv {
+    cache "lenient"
+    memory "8 GB" 
+    time "8h"
+    cpus "8"
+
+    input:
+    path(ids_txt)
+
+    output:
+    path("neo_nodes_ids_${params.subgraph}.csv")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    cat ${ids_txt} | ${params.home}/target/release/grebi_make_neo_ids_csv > neo_nodes_ids_${params.subgraph}.csv
+    """
+}
+
 process create_neo {
     cache "lenient"
     memory "50 GB" 
     time "8h"
-    cpus "32"
+    cpus "16"
 
     publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
 
@@ -339,9 +371,9 @@ process create_neo {
 
 process create_solr_nodes_core {
     cache "lenient"
-    memory "150 GB" 
+    memory "64 GB" 
     time "23h"
-    cpus "32"
+    cpus "16"
     
     publishDir "${params.tmp}/${params.config}/${params.subgraph}/solr_cores", overwrite: true, saveAs: { filename -> filename.replace("solr/data/", "") }
 
@@ -362,15 +394,15 @@ process create_solr_nodes_core {
         --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
         --out-config-dir solr_config
     python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
-        --solr-config solr_config --core grebi_nodes_${params.subgraph} --in-data . --out-path solr --port 8985
+        --solr-config solr_config --core grebi_nodes_${params.subgraph} --in-data . --out-path solr --port 8985 --mem ${task.memory.toGiga()-8}g
     """
 }
 
 process create_solr_edges_core {
     cache "lenient"
-    memory "150 GB" 
+    memory "64 GB" 
     time "23h"
-    cpus "32"
+    cpus "16"
 
     publishDir "${params.tmp}/${params.config}/${params.subgraph}/solr_cores", overwrite: true, saveAs: { filename -> filename.replace("solr/data/", "") }
 
@@ -391,13 +423,13 @@ process create_solr_edges_core {
         --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
         --out-config-dir solr_config
     python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
-        --solr-config solr_config --core grebi_edges_${params.subgraph} --in-data . --out-path solr --port 8986
+        --solr-config solr_config --core grebi_edges_${params.subgraph} --in-data . --out-path solr --port 8986 --mem ${task.memory.toGiga()-8}g
     """
 }
 
 process create_solr_autocomplete_core {
     cache "lenient"
-    memory "150 GB" 
+    memory "64 GB" 
     time "4h"
     cpus "4"
 
@@ -418,7 +450,7 @@ process create_solr_autocomplete_core {
         --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
         --out-config-dir solr_config
     python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
-        --solr-config solr_config --core grebi_autocomplete_${params.subgraph} --in-data . --in-names-txt ${names_txt} --out-path solr --port 8987
+        --solr-config solr_config --core grebi_autocomplete_${params.subgraph} --in-data . --in-names-txt ${names_txt} --out-path solr --port 8987 --mem ${task.memory.toGiga()-8}g
     """
 }
 
@@ -426,7 +458,7 @@ process package_neo {
     cache "lenient"
     memory "32 GB" 
     time "8h"
-    cpus "32"
+    cpus "16"
 
     publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
 
@@ -446,7 +478,7 @@ process package_rocks {
     cache "lenient"
     memory "32 GB" 
     time "8h"
-    cpus "32"
+    cpus "16"
 
     publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
 
@@ -466,7 +498,7 @@ process package_solr {
     cache "lenient"
     memory "32 GB" 
     time "8h"
-    cpus "32"
+    cpus "16"
 
     publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
 
