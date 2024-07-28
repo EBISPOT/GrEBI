@@ -1,5 +1,5 @@
 [package]
-name = "grebi_extract_equivalences"
+name = "grebi_extract_identifiers"
 version = "0.1.0"
 edition = "2021"
 

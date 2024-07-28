@@ -2,7 +2,7 @@
     "id": "EBI_MONARCH",
     "name": "EBI Resources and MONARCH Initiative KG",
     "bytes_per_merged_file": 1073741824,
-    "equivalence_props": [
+    "identifier_props": [
         "owl:equivalentClass",
         "owl:equivalentProperty",
         "owl:sameAs",

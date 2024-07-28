@@ -2,7 +2,7 @@
     "id": "HETT",
     "name": "EMBL Human Ecosystems",
     "bytes_per_merged_file": 1073741824,
-    "equivalence_props": [
+    "identifier_props": [
         "owl:equivalentClass",
         "owl:equivalentProperty",
         "owl:sameAs",

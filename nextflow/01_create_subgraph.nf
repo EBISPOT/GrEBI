@@ -16,7 +16,7 @@ workflow {
 
     files_listing = prepare() | splitText | map { row -> parseJson(row) }
 
-    ingest(files_listing, Channel.value(config.equivalence_props))
+    ingest(files_listing, Channel.value(config.identifier_props))
     groups_txt = build_equiv_groups(ingest.out.equivalences.collect(), Channel.value(config.additional_equivalence_groups))
     assigned = assign_ids(ingest.out.nodes, groups_txt).collect(flat: false)
 
@@ -26,7 +26,7 @@ workflow {
         Channel.value(config.bytes_per_merged_file))
 
     indexed = index(merged.collect())
-    materialised = materialise(merged.flatten(), indexed.metadata_jsonl, Channel.value(config.exclude_edges + config.equivalence_props))
+    materialised = materialise(merged.flatten(), indexed.metadata_jsonl, Channel.value(config.exclude_edges + config.identifier_props))
 
     rocks_db = create_rocks(materialised.collect())
 
@@ -85,7 +85,7 @@ process ingest {
     
     input:
     val(file_listing)
-    val(equivalence_props)
+    val(identifier_props)
 
     output:
     tuple val(file_listing.datasource.name), path("nodes_${task.index}.jsonl.gz"), emit: nodes
@@ -101,9 +101,9 @@ process ingest {
             --filename "${basename(file_listing.filename)}" \
             ${buildIngestArgs(file_listing.ingest.ingest_args)} \
         | ${params.home}/target/release/grebi_normalise_prefixes ${params.home}/prefix_maps/prefix_map_normalise.json \
-        | tee >(${params.home}/target/release/grebi_extract_equivalences \
-                --equivalence-properties ${equivalence_props.iterator().join(",")} \
-                    > equivalences_${task.index}.tsv) \
+        | tee >(${params.home}/target/release/grebi_extract_identifiers \
+                --identifier-properties ${identifier_props.iterator().join(",")} \
+                    > identifiers_${task.index}.tsv) \
         | pigz --fast > nodes_${task.index}.jsonl.gz
     """
 }
@@ -114,7 +114,7 @@ process build_equiv_groups {
     time '23h'
 
     input:
-    path(equivalences_tsv)
+    path(identifiers_tsv)
     val(additional_equivalence_groups)
 
     output:
@@ -124,8 +124,9 @@ process build_equiv_groups {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    cat ${equivalences_tsv} \
-        | ${params.home}/target/release/grebi_equivalences2groups \
+    cat ${identifiers_tsv} \
+        | ${params.home}/target/release/grebi_identifiers2groups \
+            --add-prefix ${params.subgraph}:g: \
             ${buildAddEquivGroupArgs(additional_equivalence_groups)} \
         > groups.txt
     """
@@ -151,7 +152,6 @@ process assign_ids {
     set -Eeuo pipefail
     zcat ${nodes_jsonl} \
         | ${params.home}/target/release/grebi_assign_ids \
-            --add-prefix ${params.subgraph}:g: \
             --groups-txt ${groups_txt} \
         > nodes_with_ids.jsonl
     LC_ALL=C sort -o nodes_with_ids.sorted.jsonl nodes_with_ids.jsonl

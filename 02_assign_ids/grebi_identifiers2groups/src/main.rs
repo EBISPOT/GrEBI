@@ -15,6 +15,9 @@ struct Args {
 
     #[arg(long)]
     add_group: Vec<String>
+
+    #[arg(long)]
+    add_prefix: String, // used to prepend the subgraph name like hra_kg:g:
 }
 
 
@@ -143,6 +146,7 @@ fn main() {
 
         for entity in sorted_ids {
             if is_first_value {
+                writer.write_all(&args.add_prefix.as_bytes()).unwrap();
                 is_first_value = false;
             } else {
                 writer.write_all("\t".as_bytes()).unwrap();

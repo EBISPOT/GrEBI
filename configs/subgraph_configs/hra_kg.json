@@ -2,7 +2,7 @@
     "id": "HRA_KG",
     "name": "Human Reference Atlas KG",
     "bytes_per_merged_file": 1073741824,
-    "equivalence_props": [
+    "identifier_props": [
         "owl:equivalentClass",
         "owl:equivalentProperty",
         "owl:sameAs",
