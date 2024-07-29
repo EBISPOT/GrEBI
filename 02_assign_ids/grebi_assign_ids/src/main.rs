@@ -18,6 +18,9 @@ use grebi_shared::find_strings;
 struct Args {
 
     #[arg(long)]
+    identifier_properties:String,
+
+    #[arg(long)]
     groups_txt: String,
     
     #[arg(long)]
@@ -31,6 +34,14 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 fn main() {
 
     let args = Args::parse();
+
+
+    let mut id_props:HashSet<Vec<u8>> = HashSet::new();
+    for prop in args.identifier_properties.split(",") {
+        id_props.insert(prop.as_bytes().to_vec());
+    }
+
+
     let preserve_fields:HashSet<Vec<u8>> = args.preserve_field.iter().map(|x| x.as_bytes().to_vec()).collect();
 
     let id_to_group:HashMap<Vec<u8>, Vec<u8>> = {
@@ -90,7 +101,10 @@ fn main() {
         while json.peek().kind != JsonTokenType::EndObject {
             let prop_key = json.name();
 
-            if prop_key == b"id" {
+            // any of the IDs will do, we only need one
+            // as all identifiers map to the same group
+            //
+            if id_props.contains(prop_key) {
                 id = Some(json.string());
             } else {
                 json.value(); // skip
@@ -98,18 +112,13 @@ fn main() {
         }
 
         let group = id_to_group.get(id.unwrap());
-        if group.is_some() {
-
-            // the subject mapped to an equivalence group
-            writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
-            writer.write_all(group.unwrap().as_slice()).unwrap();
-            writer.write_all("\"".as_bytes()).unwrap();
-        } else {
-            // the subject did not map to an equivalence group
-            writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
-            writer.write_all(id.unwrap()).unwrap();
-            writer.write_all("\"".as_bytes()).unwrap();
+        if !group.is_some() {
+            panic!("could not find identifier group for id: {}", String::from_utf8(id.unwrap().to_vec()).unwrap());
         }
+
+        writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
+        writer.write_all(group.unwrap().as_slice()).unwrap();
+        writer.write_all("\"".as_bytes()).unwrap();
 
         json.rewind();
         while json.peek().kind != JsonTokenType::EndObject {
