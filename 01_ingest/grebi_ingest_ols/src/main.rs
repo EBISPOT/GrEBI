@@ -6,7 +6,6 @@ use std::ptr::eq;
 use clap::Parser;
 use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
-use grebi_shared::serialize_equivalence;
 use struson::reader::{JsonReader, JsonStreamReader, ValueType};
 use serde_json::Value;
 use serde_json::Map;
@@ -145,16 +144,6 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
     json.end_object().unwrap();
 
 }
-
-const EQUIV_PREDICATES :[&str;2]= [
-    "owl:equivalentClass",
-    "owl:equivalentProperty",
-    // "owl:sameAs",
-    // "skos:exactMatch",
-    // "oboinowl:hasAlternativeId",
-    // "uniprot:replaces",
-    // "iao:0100001" // -> replacement term
-];
 
 fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource:&String, grebitype:&str, defining_only:bool) {
     json.begin_array().unwrap();

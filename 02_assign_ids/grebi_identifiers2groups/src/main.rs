@@ -14,10 +14,10 @@ use std::io::{Write, BufWriter};
 struct Args {
 
     #[arg(long)]
-    add_group: Vec<String>
+    add_group: Vec<String>,
 
     #[arg(long)]
-    add_prefix: String, // used to prepend the subgraph name like hra_kg:g:
+    add_prefix: String // used to prepend the subgraph name like hra_kg:g:
 }
 
 
@@ -51,20 +51,21 @@ fn main() {
     let mut writer = BufWriter::new(stdout);
 
     loop {
-        let mut subject: Vec<u8> = Vec::new();
-        reader.read_until(b'\t', &mut subject).unwrap();
+        let mut line: Vec<u8> = Vec::new();
+        reader.read_until(b'\n', &mut line).unwrap();
 
-        if subject.len() == 0 {
-            break;
-        }
+	if line.len() == 0 {
+		break;
+	}
+	if line[line.len() - 1] == b'\n' {
+		line.pop();
+	}
 
-        subject.pop(); // remove \t
+        let mut ids = line.split(|&byte| byte == b'\t');
 
-        let mut object: Vec<u8> = Vec::new();
-        reader.read_until(b'\n', &mut object).unwrap();
+        let subject = ids.next().unwrap();
 
-        object.pop(); // remove \n
-
+        while let Some(object) = ids.next() {
 
         n = n + 1;
         if n % 1000000 == 0 {
@@ -75,8 +76,8 @@ fn main() {
             continue;
         }
 
-        let group_a:Option<u64> = entity_to_group.get(&subject).cloned();
-        let group_b:Option<u64> = entity_to_group.get(&object).cloned();
+        let group_a:Option<u64> = entity_to_group.get(subject).cloned();
+        let group_b:Option<u64> = entity_to_group.get(object).cloned();
 
         if group_a.is_some() {
             // A has a group
@@ -100,8 +101,8 @@ fn main() {
             } else {
                 // A has a group and B doesn't
                 // Put B in A's group
-                entity_to_group.insert(object.clone(), gA);
-                group_to_entities.get_mut(&gA).unwrap().insert(object);
+                entity_to_group.insert(object.to_vec(), gA);
+                group_to_entities.get_mut(&gA).unwrap().insert(object.to_vec());
             }
         } else {
             // A does not have a group
@@ -109,8 +110,8 @@ fn main() {
                 let gB = group_b.unwrap();
                 // B has a group but A does not
                 // Put A in B's group
-                entity_to_group.insert(subject.clone(), gB);
-                group_to_entities.get_mut(&gB).unwrap().insert(subject);
+                entity_to_group.insert(subject.to_vec(), gB);
+                group_to_entities.get_mut(&gB).unwrap().insert(subject.to_vec());
             } else {
                 // Neither A nor B have a group.
                 // Put both into a new group.
@@ -118,11 +119,12 @@ fn main() {
                 let group_id = next_group_id;
                 next_group_id = next_group_id + 1;
 
-                entity_to_group.insert(subject.clone(), group_id);
-                entity_to_group.insert(object.clone(), group_id);
-                group_to_entities.insert(group_id, HashSet::from([subject, object]));
+                entity_to_group.insert(subject.to_vec(), group_id);
+                entity_to_group.insert(object.to_vec(), group_id);
+                group_to_entities.insert(group_id, HashSet::from([subject.to_vec(), object.to_vec()]));
             }
         }
+}
     }
 
     eprintln!("Loaded {} equivalences in {} seconds", n, start_time.elapsed().as_secs());
@@ -147,6 +149,8 @@ fn main() {
         for entity in sorted_ids {
             if is_first_value {
                 writer.write_all(&args.add_prefix.as_bytes()).unwrap();
+                writer.write_all(entity.as_slice()).unwrap();
+                writer.write_all("\t".as_bytes()).unwrap();
                 is_first_value = false;
             } else {
                 writer.write_all("\t".as_bytes()).unwrap();
@@ -183,7 +187,7 @@ fn id_score(id:&[u8]) -> i32 {
 
     for c in id {
         if c.is_ascii_alphabetic() {
-            score = score - 1;
+            score = score + 1;
         }
     }
 

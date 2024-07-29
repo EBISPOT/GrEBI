@@ -7,7 +7,7 @@ use std::{env, io};
 use std::io::{BufRead, BufReader };
 use std::io::{Write, BufWriter};
 
-use grebi_shared::{get_subject, find_strings, serialize_equivalence, json_parser, json_lexer};
+use grebi_shared::{get_subject, find_strings, json_parser, json_lexer};
 
 use clap::Parser;
 
@@ -76,7 +76,7 @@ fn main() {
                         } else {
                             wrote_any = true;
                         }
-                        writer.write_all(&json.string().as_bytes()).unwrap();
+                        writer.write_all(&json.string()).unwrap();
                     } else {
                         json.value(); // skip
                     }
@@ -88,7 +88,7 @@ fn main() {
                 } else {
                     wrote_any = true;
                 }
-                writer.write_all(&json.string().as_bytes()).unwrap();
+                writer.write_all(&json.string()).unwrap();
             } else {
                 json.value(); // skip
             }

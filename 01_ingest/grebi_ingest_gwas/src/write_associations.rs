@@ -5,7 +5,6 @@ use std::io::{BufWriter, self, BufReader, StdinLock, StdoutLock, Write};
 use std::ptr::eq;
 use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
-use grebi_shared::serialize_equivalence;
 use serde_json::{json, Value};
 
 use crate::check_headers::check_headers;

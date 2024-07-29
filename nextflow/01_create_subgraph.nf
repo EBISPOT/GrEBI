@@ -17,7 +17,7 @@ workflow {
     files_listing = prepare() | splitText | map { row -> parseJson(row) }
 
     ingest(files_listing, Channel.value(config.identifier_props))
-    groups_txt = build_equiv_groups(ingest.out.equivalences.collect(), Channel.value(config.additional_equivalence_groups))
+    groups_txt = build_equiv_groups(ingest.out.identifiers.collect(), Channel.value(config.additional_equivalence_groups))
     assigned = assign_ids(ingest.out.nodes, groups_txt).collect(flat: false)
 
     merged = merge_ingests(
@@ -89,7 +89,7 @@ process ingest {
 
     output:
     tuple val(file_listing.datasource.name), path("nodes_${task.index}.jsonl.gz"), emit: nodes
-    path("equivalences_${task.index}.tsv"), emit: equivalences
+    path("identifiers_${task.index}.tsv"), emit: identifiers
 
     script:
     """

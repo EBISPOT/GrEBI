@@ -3,6 +3,7 @@
     "name": "EMBL Human Ecosystems",
     "bytes_per_merged_file": 1073741824,
     "identifier_props": [
+        "id",
         "owl:equivalentClass",
         "owl:equivalentProperty",
         "owl:sameAs",
