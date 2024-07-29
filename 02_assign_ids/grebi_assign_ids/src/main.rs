@@ -105,7 +105,14 @@ fn main() {
             // as all identifiers map to the same group
             //
             if id_props.contains(prop_key) {
-                id = Some(json.string());
+		// TODO handle the same cases as the id extraction does
+		if json.peek().kind == JsonTokenType::StartArray {
+			json.begin_array();
+			id = Some(json.string());
+		} else {
+			id = Some(json.string());
+		}
+		break;
             } else {
                 json.value(); // skip
             }
