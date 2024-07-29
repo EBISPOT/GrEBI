@@ -1,5 +1,5 @@
 [package]
-name = "grebi_equivalences2groups"
+name = "grebi_identifiers2groups"
 version = "0.1.0"
 edition = "2021"
 

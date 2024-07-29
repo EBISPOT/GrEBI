@@ -7,7 +7,7 @@ use std::{env, io};
 use std::io::{BufRead, BufReader };
 use std::io::{Write, BufWriter};
 
-use grebi_shared::{get_subject, find_strings, serialize_equivalence, json_parser, json_lexer};
+use grebi_shared::{get_subject, find_strings, json_parser, json_lexer};
 use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
 

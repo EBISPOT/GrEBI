@@ -7,7 +7,7 @@ use std::{env, io};
 use std::io::{BufRead, BufReader };
 use std::io::{Write, BufWriter};
 
-use grebi_shared::{get_subject, find_strings, serialize_equivalence, json_parser, json_lexer};
+use grebi_shared::{get_subject, find_strings, json_parser, json_lexer};
 
 use clap::Parser;
 
@@ -22,7 +22,7 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 struct Args {
 
     #[arg(long)]
-    equivalence_properties:String
+    identifier_properties:String
 }
 
 fn main() {
@@ -36,13 +36,13 @@ fn main() {
     let stdout = io::stdout().lock();
     let mut writer = BufWriter::new(stdout);
 
-    let mut equiv_props:HashSet<Vec<u8>> = HashSet::new();
+    let mut id_props:HashSet<Vec<u8>> = HashSet::new();
 
     let mut n_total = 0;
 
     let args = Args::parse();
-    for prop in args.equivalence_properties.split(",") {
-        equiv_props.insert(prop.as_bytes().to_vec());
+    for prop in args.identifier_properties.split(",") {
+        id_props.insert(prop.as_bytes().to_vec());
     }
 
     loop {
@@ -54,32 +54,15 @@ fn main() {
         }
 
         let mut json = JsonParser::parse(&line);
-
-
-        let mut id:Option<&[u8]> = None;
         json.begin_object();
-        json.mark();
 
-        while json.peek().kind != JsonTokenType::EndObject {
-            let name = json.name();
-            if name.eq("id".as_bytes()) {
-                id = Some(json.string());
-                break;
-            } else {
-                json.value(); // skip
-            }
-        }
-        json.rewind();
-
-        if id.is_none() {
-            panic!("Missing id field in JSON: {}", String::from_utf8(line).unwrap());
-        }
+        let mut wrote_any = false;
 
         while json.peek().kind != JsonTokenType::EndObject {
 
             let k = json.name();
 
-            if !equiv_props.contains(k) {
+            if !id_props.contains(k) {
                 json.value(); // skip
                 continue;
             }
@@ -88,24 +71,33 @@ fn main() {
                 json.begin_array();
                 while json.peek().kind != JsonTokenType::EndArray {
                     if json.peek().kind == JsonTokenType::StartString {
-                        let serialized = serialize_equivalence(id.unwrap(), json.string());
-                        if serialized.is_some() {
-                            writer.write_all(&serialized.unwrap()).unwrap();
+                        if wrote_any {
+                            writer.write_all(b"\t").unwrap();
+                        } else {
+                            wrote_any = true;
                         }
+                        writer.write_all(&json.string()).unwrap();
                     } else {
                         json.value(); // skip
                     }
                 }
                 json.end_array();
             } else if json.peek().kind == JsonTokenType::StartString {
-                let serialized = serialize_equivalence(id.unwrap(), json.string());
-                if serialized.is_some() {
-                    writer.write_all(&serialized.unwrap()).unwrap();
+                if wrote_any {
+                    writer.write_all(b"\t").unwrap();
+                } else {
+                    wrote_any = true;
                 }
+                writer.write_all(&json.string()).unwrap();
             } else {
                 json.value(); // skip
             }
         }
+        if !wrote_any {
+            panic!("no identifiers found in object {}", String::from_utf8_lossy(&line));
+        }
+
+        writer.write_all(b"\n").unwrap();
 
         n_total = n_total + 1;
 

@@ -6,7 +6,6 @@ use std::ptr::eq;
 use clap::Parser;
 use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
-use grebi_shared::serialize_equivalence;
 use serde_json::json;
 use serde_yaml;
 

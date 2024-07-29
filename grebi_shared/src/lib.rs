@@ -130,28 +130,6 @@ pub fn get_subjects<'a>(json:&'a [u8])->Vec<&'a [u8]> {
 }
 
 
-pub fn serialize_equivalence(subject:&[u8], object:&[u8]) -> Option<Vec<u8>> {
-
-    if subject.eq(object) {
-        return None;
-    }
-
-    let mut buf = Vec::with_capacity(subject.len() + object.len() + 2);
-
-    if subject < object {
-        buf.extend(subject.iter().map(filter_newlines));
-        buf.push(b'\t');
-        buf.extend(object.iter().map(filter_newlines));
-    } else {
-        buf.extend(object.iter().map(filter_newlines));
-        buf.push(b'\t');
-        buf.extend(subject.iter().map(filter_newlines));
-    }
-
-    buf.push(b'\n');
-    return Some(buf);
-}
-
 fn filter_newlines(ch:&u8)->u8 {
     if *ch == b'\n' || *ch == b'\t' {
         return b' ';
