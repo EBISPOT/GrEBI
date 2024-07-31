@@ -1,5 +1,5 @@
 
-use std::collections::{HashSet, HashMap, BTreeMap};
+use std::collections::{BTreeSet, BTreeMap};
 use std::{env, io};
 use csv;
 use bloomfilter::Bloom;
@@ -21,7 +21,7 @@ struct Args {
 
 fn main() {
 
-	let mut group_to_entities:BTreeMap<u64, HashSet<Vec<u8>>> = BTreeMap::new();
+	let mut group_to_entities:BTreeMap<u64, BTreeSet<Vec<u8>>> = BTreeMap::new();
 	let mut entity_to_group:BTreeMap<Vec<u8>, u64> = BTreeMap::new();
 
 	let mut next_group_id:u64 = 1;
@@ -29,7 +29,7 @@ fn main() {
 	let args = Args::parse();
 	let add_group:Vec<String> = args.add_group;
 	for group in add_group {
-		let entries:HashSet<Vec<u8>> = group.split(",").map(|s| s.as_bytes().to_vec()).collect();
+		let entries:BTreeSet<Vec<u8>> = group.split(",").map(|s| s.as_bytes().to_vec()).collect();
 		let gid = next_group_id;
 		next_group_id = next_group_id + 1;
 		for id in &entries {
@@ -103,7 +103,7 @@ fn main() {
 			for id in &ids {
 				entity_to_group.insert(id.to_vec(), target_group);
 			} 
-			group_to_entities.insert(target_group, ids.iter().map(|id| id.to_vec()).collect::<HashSet<_>>());
+			group_to_entities.insert(target_group, ids.iter().map(|id| id.to_vec()).collect::<BTreeSet<_>>());
 		}
 	}
 

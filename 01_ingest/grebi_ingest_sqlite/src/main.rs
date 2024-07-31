@@ -75,7 +75,6 @@ fn main() -> Result<()> {
 
                 if fk_info.is_some() {
                     json_obj[&col_name] = json!(format!("{}:{}:{}", prefix, fk_info.unwrap().0.to_singular(), v));
-                    ids.push(format!("{}:{}:{}", fk_info.unwrap().0.to_singular(), prefix, v));
                 } else {
                     json_obj[&col_name] = json!(v);
                 }
