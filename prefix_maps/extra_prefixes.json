@@ -186,5 +186,8 @@
 "rouge:": "http://purl.uniprot.org/rouge/",
 "source:": "http://purl.uniprot.org/source/",
 "swiss-model-workspace:": "http://purl.uniprot.org/swiss-model-workspace/",
-"unipathway:": "http://purl.uniprot.org/unipathway/"
+"unipathway:": "http://purl.uniprot.org/unipathway/",
+"EFO_": "efo:",
+"GO_": "go:",
+"BAO_": "bao:"
 }

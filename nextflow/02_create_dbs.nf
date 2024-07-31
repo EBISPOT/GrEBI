@@ -16,7 +16,7 @@ workflow {
 
     neo_nodes_files = Channel.fromPath("${params.tmp}/${params.config}/*/neo4j_csv/neo_nodes_*.csv").collect()
     neo_edges_files = Channel.fromPath("${params.tmp}/${params.config}/*/neo4j_csv/neo_edges_*.csv").collect()
-    id_txts = Channel.fromPath("${params.tmp}/${params.config}/*/ids.txt").collect()
+    id_txts = Channel.fromPath("${params.tmp}/${params.config}/*/ids_*.txt").collect()
     ids_csv = create_combined_neo_ids_csv(id_txts).collect()
 
     neo_db = create_neo(neo_nodes_files.collect() + neo_edges_files.collect() + ids_csv)

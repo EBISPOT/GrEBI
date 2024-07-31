@@ -10,6 +10,7 @@ members = [
 	"01_ingest/grebi_ingest_json",
 	"01_ingest/grebi_ingest_reactome",
 	"01_ingest/grebi_ingest_kgx_edges",
+	"01_ingest/grebi_ingest_sqlite",
 	"01_ingest/grebi_normalise_prefixes",
 	"02_assign_ids/grebi_extract_identifiers",
 	"02_assign_ids/grebi_identifiers2groups",

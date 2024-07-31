@@ -1,0 +1,13 @@
+[package]
+name = "grebi_ingest_sqlite"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+Inflector = "0.11.4"
+clap = { version = "4.4.11", features = ["derive"] }
+hex = "0.4.3"
+rusqlite = "0.31.0"
+serde_json = { version = "1.0.108", features=["preserve_order"] }
+jemallocator = "0.5.4"
+

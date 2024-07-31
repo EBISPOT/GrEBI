@@ -38,10 +38,10 @@ fn main() {
         .trim(csv::Trim::All)
         .from_reader(reader);
 
-    if args.filename.starts_with("gwas-catalog-associations") {
+    if args.filename.contains("gwas-catalog-associations") {
         eprintln!("GWAS ingest: writing associations");
         write_associations(&mut csv_reader, &mut output_nodes, &args.datasource_name);
-    } else if args.filename.starts_with("gwas-catalog-studies") {
+    } else if args.filename.contains("gwas-catalog-studies") {
         eprintln!("GWAS ingest: writing studies");
         write_studies(&mut csv_reader, &mut output_nodes, &args.datasource_name);
     } else {

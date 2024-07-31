@@ -1,0 +1,13 @@
+{
+    "name": "ChEMBL",
+    "enabled": true,
+    "ingests": [
+        {
+            "ingest_files": ["./00_fetch_data/chembl/chembl_34/chembl_34_sqlite/chembl_34.db"],
+            "ingest_script": "./target/release/grebi_ingest_sqlite",
+            "stdin": false,
+            "ingest_args": [
+            ]
+        }
+    ]
+}

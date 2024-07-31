@@ -2,7 +2,6 @@
 use std::collections::{HashSet, HashMap, BTreeMap};
 use std::{env, io};
 use csv;
-use rusqlite::Connection;
 use bloomfilter::Bloom;
 use clap::Parser;
 use std::io::{BufRead, BufReader };

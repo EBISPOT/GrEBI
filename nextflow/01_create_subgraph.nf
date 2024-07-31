@@ -8,6 +8,7 @@ params.tmp = "$GREBI_TMP"
 params.home = "$GREBI_HOME"
 params.config = "$GREBI_CONFIG"
 params.subgraph = "$GREBI_SUBGRAPH"
+params.timestamp = "$GREBI_TIMESTAMP"
 params.is_ebi = "$GREBI_IS_EBI"
 
 workflow {
@@ -95,10 +96,10 @@ process ingest {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    ${getDecompressionCommand(file_listing.filename)} \
-        | ${getIngestCommand(file_listing.ingest.ingest_script)} \
+    ${getStdinCommand(file_listing.ingest, file_listing.filename)} \
+        ${getIngestCommand(file_listing.ingest.ingest_script)} \
             --datasource-name ${file_listing.datasource.name} \
-            --filename "${basename(file_listing.filename)}" \
+            --filename "${file_listing.filename}" \
             ${buildIngestArgs(file_listing.ingest.ingest_args)} \
         | ${params.home}/target/release/grebi_normalise_prefixes ${params.home}/prefix_maps/prefix_map_normalise.json \
         | tee >(${params.home}/target/release/grebi_extract_identifiers \
@@ -201,7 +202,7 @@ process index {
     path("metadata.jsonl"), emit: metadata_jsonl
     path("summary.json"), emit: summary_json
     path("names.txt"), emit: names_txt
-    path("ids.txt"), emit: ids_txt
+    path("ids_${params.subgraph}.txt"), emit: ids_txt
 
     script:
     """
@@ -209,11 +210,11 @@ process index {
     set -Eeuo pipefail
     cat ${merged_filenames.iterator().join(" ")} \
         | ${params.home}/target/release/grebi_index \
-        --subgraph-name {params.subgraph} \
+        --subgraph-name ${params.subgraph} \
         --out-metadata-jsonl-path metadata.jsonl \
         --out-summary-json-path summary.json \
         --out-names-txt names.txt \
-        --out-ids-txt ids.txt
+        --out-ids-txt ids_${params.subgraph}.txt
     """
 }
 
@@ -639,17 +640,20 @@ def parseJson(json) {
     return new JsonSlurper().parseText(json)
 }
 
-def getDecompressionCommand(filename) {
+def getStdinCommand(ingest, filename) {
+    if (ingest.stdin == false) {
+        return ""
+    }
     def f = filename
     if (filename.startsWith(".")) {
         f = new File(params.home, filename).toString()
     }
     if (f.endsWith(".gz")) {
-        return "zcat ${f}"
+        return "zcat ${f} |"
     } else if (f.endsWith(".xz")) {
-        return "xzcat ${f}"
+        return "xzcat ${f} |"
     } else {
-        return "cat ${f}"
+        return "cat ${f} |"
     }
 }
 

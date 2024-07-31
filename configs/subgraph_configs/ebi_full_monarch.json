@@ -49,6 +49,7 @@
         "./configs/datasource_configs/mondo_efo.json",
         "./configs/datasource_configs/hett_pesticides_appril.json",
         "./configs/datasource_configs/hett_pesticides_eu.json",
-        "./configs/datasource_configs/hett_pesticides_gb.json"
+        "./configs/datasource_configs/hett_pesticides_gb.json",
+        "./configs/datasource_configs/chembl.json"
     ]
 }
