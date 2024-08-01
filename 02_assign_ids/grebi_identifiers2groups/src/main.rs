@@ -1,11 +1,15 @@
 
-use std::collections::{BTreeSet, BTreeMap};
 use std::{env, io};
+use hashbrown::HashMap;
+use hashbrown::HashSet;
 use csv;
 use bloomfilter::Bloom;
 use clap::Parser;
 use std::io::{BufRead, BufReader };
 use std::io::{Write, BufWriter};
+
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -15,21 +19,25 @@ struct Args {
     add_group: Vec<String>,
 
     #[arg(long)]
-    add_prefix: String // used to prepend the subgraph name like hra_kg:g:
+    add_prefix: String, // used to prepend the subgraph name like hra_kg:g:
+
+    #[arg(long)]
+    prealloc_size: usize
 }
 
 
 fn main() {
 
-	let mut group_to_entities:BTreeMap<u64, BTreeSet<Vec<u8>>> = BTreeMap::new();
-	let mut entity_to_group:BTreeMap<Vec<u8>, u64> = BTreeMap::new();
+	let args = Args::parse();
+
+	let mut group_to_entities:HashMap<u64, HashSet<Vec<u8>>> = HashMap::with_capacity(args.prealloc_size);
+	let mut entity_to_group:HashMap<Vec<u8>, u64> = HashMap::with_capacity(args.prealloc_size);
 
 	let mut next_group_id:u64 = 1;
 
-	let args = Args::parse();
 	let add_group:Vec<String> = args.add_group;
 	for group in add_group {
-		let entries:BTreeSet<Vec<u8>> = group.split(",").map(|s| s.as_bytes().to_vec()).collect();
+		let entries:HashSet<Vec<u8>> = group.split(",").map(|s| s.as_bytes().to_vec()).collect();
 		let gid = next_group_id;
 		next_group_id = next_group_id + 1;
 		for id in &entries {
@@ -51,10 +59,13 @@ fn main() {
 	loop {
 		let mut line: Vec<u8> = Vec::new();
 		reader.read_until(b'\n', &mut line).unwrap();
+		//if line.len() > 1000 {
+			//eprintln!("warn: super long line: {}", String::from_utf8_lossy(&line));
+		//}
 
 		n = n + 1;
 		if n % 1000000 == 0 {
-			eprintln!("...{} lines in {} seconds", n, start_time.elapsed().as_secs());
+			eprintln!("...{} lines in {} seconds  [{} groups, {} entities, next group id {}]", n, start_time.elapsed().as_secs(), group_to_entities.len(), entity_to_group.len(), next_group_id);
 		}
 
 
@@ -65,11 +76,12 @@ fn main() {
 			line.pop();
 		}
 
-		let mut ids:Vec<Vec<u8>> = line.split(|&byte| byte == b'\t').map(|id| id.to_vec()).collect();
+		//let mut ids:Vec<Vec<u8>> = line.split(|&byte| byte == b'\t').map(|id| id.to_vec()).collect();
+		//let mut ids:Vec<&[u8]> = line.split(|&byte| byte == b'\t').collect();
 
 		let mut target_group:u64 = 0;
-		for id in &ids {
-			let g = entity_to_group.get(id);
+		for id in line.split(|&byte| byte == b'\t') {
+			let g = entity_to_group.get::<[u8]>(&id);
 			if g.is_some() {
 				target_group = *g.unwrap();
 				break;
@@ -79,11 +91,11 @@ fn main() {
 		if target_group != 0 {
 			// at least one of the ids already had a group;
 			// put everything else into it
-			for id in &ids {
-				let g2 = entity_to_group.get(id);
+			for id in line.split(|&byte| byte == b'\t') {
+				let g2 = entity_to_group.get::<[u8]>(id);
 				if g2.is_some() && *g2.unwrap() != target_group {
 					// this id already had a group different to ours
-					let entities_in_b = group_to_entities.remove(&g2.unwrap()).unwrap();
+					let entities_in_b = group_to_entities.remove(g2.unwrap()).unwrap();
 					for e in entities_in_b.clone() {
 						entity_to_group.insert(e, target_group);
 					}
@@ -100,10 +112,10 @@ fn main() {
 			// none of the ids had a group so we make a new one
 			target_group = next_group_id;
 			next_group_id = next_group_id + 1;
-			for id in &ids {
+			for id in line.split(|&byte| byte == b'\t') {
 				entity_to_group.insert(id.to_vec(), target_group);
 			} 
-			group_to_entities.insert(target_group, ids.iter().map(|id| id.to_vec()).collect::<BTreeSet<_>>());
+			group_to_entities.insert(target_group, line.split(|&byte| byte == b'\t').map(|id| id.to_vec()).collect::<HashSet<_>>());
 		}
 	}
 
