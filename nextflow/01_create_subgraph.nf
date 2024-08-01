@@ -10,6 +10,7 @@ params.config = "$GREBI_CONFIG"
 params.subgraph = "$GREBI_SUBGRAPH"
 params.timestamp = "$GREBI_TIMESTAMP"
 params.is_ebi = "$GREBI_IS_EBI"
+params.max_entities = "$GREBI_MAX_ENTITIES"
 
 workflow {
 
@@ -128,6 +129,7 @@ process build_equiv_groups {
     cat ${identifiers_tsv} \
         | ${params.home}/target/release/grebi_identifiers2groups \
             --add-prefix ${params.subgraph}:g: \
+            --prealloc-size ${params.max_entities} \
             ${buildAddEquivGroupArgs(additional_equivalence_groups)} \
         > groups.txt
     """
