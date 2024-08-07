@@ -212,12 +212,12 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
                 if row_prop.key == "grebi:type".as_bytes() {
                     continue; // already put in :LABEL column
                 }
-                if row_prop.key == "id".as_bytes() {
-                    for val in row_prop.values.iter() {
-                        write_id_row(val, id_edges_writer, &entity.id);
-                    }
-                }
                 if header_prop.as_bytes() == row_prop.key {
+                    if row_prop.key == "id".as_bytes() {
+                        for val in row_prop.values.iter() {
+                            write_id_row(val, id_edges_writer, &entity.id);
+                        }
+                    }
                     for val in row_prop.values.iter() {
                         if !wrote_any {
                             nodes_writer.write_all(b"\"").unwrap();
