@@ -406,7 +406,7 @@ process create_solr_nodes_core {
 process create_solr_edges_core {
     cache "lenient"
     memory "64 GB" 
-    time "23h"
+    time "3d"
     cpus "16"
 
     publishDir "${params.tmp}/${params.config}/${params.subgraph}/solr_cores", overwrite: true, saveAs: { filename -> filename.replace("solr/data/", "") }
