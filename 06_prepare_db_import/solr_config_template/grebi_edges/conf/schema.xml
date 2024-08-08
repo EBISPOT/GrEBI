@@ -120,6 +120,9 @@
     <field name="grebi__datasources" type="string" indexed="true" stored="true" required="false" multiValued="true" />
     <copyField source="grebi__datasources" dest="str_grebi__datasources"/>
     <copyField source="grebi__datasources" dest="lowercase_grebi__datasources"/>
+    <field name="grebi__subgraph" type="string" indexed="true" stored="true" required="false" multiValued="false" />
+    <copyField source="grebi__subgraph" dest="str_grebi__subgraph"/>
+    <copyField source="grebi__subgraph" dest="lowercase_grebi__subgraph"/>
 
     <field name="_json" type="grebi_json" indexed="false" stored="true" multiValued="false" />
 
