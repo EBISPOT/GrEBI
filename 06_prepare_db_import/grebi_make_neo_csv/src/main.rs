@@ -40,11 +40,16 @@ struct Args {
 
     #[arg(long)]
     out_id_edges_csv_path: String,
+
+    #[arg(long)]
+    add_prefix: String, // used to prepend the subgraph name like hra_kg:g:
 }
 
 fn main() -> std::io::Result<()> {
 
     let args = Args::parse();
+
+    let add_prefix = args.add_prefix.as_bytes();
 
     let start_time = std::time::Instant::now();
 
@@ -123,7 +128,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEntity::from_json(&line);
 
-        write_node(&line, &sliced, &all_entity_props, &mut nodes_writer, &mut id_edges_writer);
+        write_node(&line, &sliced, &all_entity_props, &mut nodes_writer, &mut id_edges_writer, &add_prefix);
 
         n_nodes = n_nodes + 1;
         if n_nodes % 1000000 == 0 {
@@ -146,7 +151,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEdge::from_json(&line);
 
-        write_edge(&line, sliced, &all_edge_props, &mut edges_writer);
+        write_edge(&line, sliced, &all_edge_props, &mut edges_writer, &add_prefix);
 
         n_edges = n_edges + 1;
         if n_edges % 1000000 == 0 {
@@ -165,12 +170,13 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<String>, nodes_writer:&mut BufWriter<&File>, id_edges_writer:&mut BufWriter<&File>) {
+fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<String>, nodes_writer:&mut BufWriter<&File>, id_edges_writer:&mut BufWriter<&File>, add_prefix:&[u8]) {
 
     let refs:Map<String,Value> = serde_json::from_slice(entity._refs.unwrap()).unwrap();
 
     // grebi:nodeId
     nodes_writer.write_all(b"\"").unwrap();
+    nodes_writer.write_all(&add_prefix).unwrap();
     write_escaped_value(entity.id, nodes_writer);
     nodes_writer.write_all(b"\",\"").unwrap();
 
@@ -215,7 +221,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
                 if header_prop.as_bytes() == row_prop.key {
                     if row_prop.key == "id".as_bytes() {
                         for val in row_prop.values.iter() {
-                            write_id_row(val, id_edges_writer, &entity.id);
+                            write_id_row(val, id_edges_writer, &entity.id, &add_prefix);
                         }
                     }
                     for val in row_prop.values.iter() {
@@ -246,17 +252,20 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
     nodes_writer.write_all(b"\n").unwrap();
 }
 
-fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, edges_writer: &mut BufWriter<&File>) {
+fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, edges_writer: &mut BufWriter<&File>, add_prefix:&[u8]) {
 
     let refs:Map<String,Value> = serde_json::from_slice(edge._refs.unwrap()).unwrap();
 
     edges_writer.write_all(b"\"").unwrap();
+    write_escaped_value(&add_prefix, edges_writer);
     write_escaped_value(edge.from, edges_writer);
     edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(edge.edge_type, edges_writer);
     edges_writer.write_all(b"\",\"").unwrap();
+    write_escaped_value(&add_prefix, edges_writer);
     write_escaped_value(edge.to, edges_writer);
     edges_writer.write_all(b"\",\"").unwrap();
+    write_escaped_value(&add_prefix, edges_writer);
     write_escaped_value(edge.edge_id, edges_writer);
     edges_writer.write_all(b"\",\"").unwrap();
 
@@ -340,7 +349,7 @@ fn parse_json_and_write(buf:&[u8], refs:&Map<String,Value>, writer:&mut BufWrite
     }
 }
 
-fn write_id_row(val:&SlicedPropertyValue, id_edges_writer:&mut BufWriter<&File>, grebi_node_id:&[u8]) {
+fn write_id_row(val:&SlicedPropertyValue, id_edges_writer:&mut BufWriter<&File>, grebi_node_id:&[u8], add_prefix:&[u8]) {
 
     let actual_id = {
         if val.kind == JsonTokenType::StartObject {
@@ -356,6 +365,7 @@ fn write_id_row(val:&SlicedPropertyValue, id_edges_writer:&mut BufWriter<&File>,
     };
 
     id_edges_writer.write_all(b"\"").unwrap();
+    write_escaped_value(&add_prefix, id_edges_writer);
     write_escaped_value(grebi_node_id, id_edges_writer);
     id_edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(b"id", id_edges_writer);

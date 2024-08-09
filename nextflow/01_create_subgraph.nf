@@ -10,7 +10,6 @@ params.config = "$GREBI_CONFIG"
 params.subgraph = "$GREBI_SUBGRAPH"
 params.timestamp = "$GREBI_TIMESTAMP"
 params.is_ebi = "$GREBI_IS_EBI"
-params.max_entities = "$GREBI_MAX_ENTITIES"
 
 workflow {
 
@@ -128,8 +127,6 @@ process build_equiv_groups {
     set -Eeuo pipefail
     cat ${identifiers_tsv} \
         | ${params.home}/target/release/grebi_identifiers2groups \
-            --add-prefix ${params.subgraph}:g: \
-            --prealloc-size ${params.max_entities} \
             ${buildAddEquivGroupArgs(additional_equivalence_groups)} \
         > groups.txt
     """
@@ -302,7 +299,8 @@ process prepare_neo {
       --in-edges-jsonl ${edges_jsonl} \
       --out-nodes-csv-path neo_nodes_${params.subgraph}_${task.index}.csv \
       --out-edges-csv-path neo_edges_${params.subgraph}_${task.index}.csv \
-      --out-id-edges-csv-path neo_edges_ids_${params.subgraph}_${task.index}.csv
+      --out-id-edges-csv-path neo_edges_ids_${params.subgraph}_${task.index}.csv \
+      --add-prefix ${params.subgraph}:
     """
 }
 
@@ -406,7 +404,7 @@ process create_solr_nodes_core {
 process create_solr_edges_core {
     cache "lenient"
     memory "64 GB" 
-    time "3d"
+    time "23h"
     cpus "16"
 
     publishDir "${params.tmp}/${params.config}/${params.subgraph}/solr_cores", overwrite: true, saveAs: { filename -> filename.replace("solr/data/", "") }

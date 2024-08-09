@@ -118,14 +118,17 @@ fn main() {
             }
         }
 
+        writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
+
         let group = id_to_group.get(id.unwrap());
-        if !group.is_some() {
-            panic!("could not find identifier group for id: {}", String::from_utf8(id.unwrap().to_vec()).unwrap());
+        if group.is_some() {
+            writer.write_all(group.unwrap().as_slice()).unwrap();
+        } else {
+            writer.write_all(id.unwrap()).unwrap();
         }
 
-        writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
-        writer.write_all(group.unwrap().as_slice()).unwrap();
         writer.write_all("\"".as_bytes()).unwrap();
+
 
         json.rewind();
         while json.peek().kind != JsonTokenType::EndObject {

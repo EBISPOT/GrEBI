@@ -18,11 +18,6 @@ struct Args {
     #[arg(long)]
     add_group: Vec<String>,
 
-    #[arg(long)]
-    add_prefix: String, // used to prepend the subgraph name like hra_kg:g:
-
-    #[arg(long)]
-    prealloc_size: usize
 }
 
 
@@ -30,8 +25,8 @@ fn main() {
 
 	let args = Args::parse();
 
-	let mut group_to_entities:HashMap<u64, HashSet<Vec<u8>>> = HashMap::with_capacity(args.prealloc_size);
-	let mut entity_to_group:HashMap<Vec<u8>, u64> = HashMap::with_capacity(args.prealloc_size);
+	let mut group_to_entities:HashMap<u64, HashSet<Vec<u8>>> = HashMap::new();
+	let mut entity_to_group:HashMap<Vec<u8>, u64> = HashMap::new();
 
 	let mut next_group_id:u64 = 1;
 
@@ -127,6 +122,12 @@ fn main() {
 
 	for group in group_to_entities {
 
+		if group.1.len() == 1 {
+			// this is a unique id with no equivalences, no need to
+			// write it as a group.
+			continue;
+		}
+
 		n2 = n2 + 1;
 
 		// writer.write_all("group_".as_bytes()).unwrap();
@@ -140,7 +141,6 @@ fn main() {
 
 		for entity in sorted_ids {
 			if is_first_value {
-				writer.write_all(&args.add_prefix.as_bytes()).unwrap();
 				writer.write_all(entity.as_slice()).unwrap();
 				writer.write_all("\t".as_bytes()).unwrap();
 				is_first_value = false;
