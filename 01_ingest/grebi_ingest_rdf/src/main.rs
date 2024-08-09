@@ -6,6 +6,7 @@ use sophia::graph::Graph;
 use sophia::graph::inmem::{SpoWrapper, GenericGraph, GraphWrapper};
 use sophia::parser::xml::RdfXmlParser;
 use sophia::parser::nq::NQuadsParser;
+use sophia::parser::turtle::TurtleParser;
 use sophia::graph::MutableGraph;
 use sophia::term::factory::RcTermFactory;
 use sophia_api::term::matcher::ANY;
@@ -101,6 +102,11 @@ fn main() -> std::io::Result<()> {
     let gr:CustomGraph = match args.rdf_type.as_str() {
         "rdf_triples_xml" => {
             let parser = RdfXmlParser { base: Some("http://www.ebi.ac.uk/kg/".into()) };
+            let g:CustomGraph = parser.parse(reader).collect_triples::<CustomGraph>().unwrap();
+            Ok::<CustomGraph, io::Error>(g)
+        },
+        "rdf_triples_turtle" => {
+            let parser = TurtleParser { base: Some("http://www.ebi.ac.uk/kg/".into()) };
             let g:CustomGraph = parser.parse(reader).collect_triples::<CustomGraph>().unwrap();
             Ok::<CustomGraph, io::Error>(g)
         },
