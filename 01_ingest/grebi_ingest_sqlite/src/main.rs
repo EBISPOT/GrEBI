@@ -67,7 +67,7 @@ fn main() -> Result<()> {
 
                 let col_name = format!("{}:{}", prefix, column);
 
-                if primary_keys.contains(column) {
+                if primary_keys.len() == 1 && &primary_keys[0] == column {
                     ids.push(format!("{}:{}:{}", prefix, table.to_singular(), v.clone()));
                 }
 
