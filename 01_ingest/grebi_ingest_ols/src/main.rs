@@ -216,8 +216,9 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         if obj.contains_key("ols:directAncestor") {
             for ancestor in get_string_values(obj.get("ols:directAncestor").unwrap()) { 
                 if type_superclasses.contains(ancestor) {
-                    output_nodes.write_all(r#","#.as_bytes()).unwrap();
-                    output_nodes.write_all(ancestor.to_string().as_bytes()).unwrap();
+                    output_nodes.write_all(r#",""#.as_bytes()).unwrap();
+                    write_escaped_string(&ancestor.as_bytes(), output_nodes);
+                    output_nodes.write_all(r#"""#.as_bytes()).unwrap();
                 }
             }
         }
