@@ -213,6 +213,7 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         output_nodes.write_all(datasource.as_bytes()).unwrap();
         output_nodes.write_all(r#"","grebi:type":[""#.as_bytes()).unwrap();
         output_nodes.write_all(grebitype.as_bytes()).unwrap();
+        output_nodes.write_all(r#"""#.as_bytes()).unwrap();
         if obj.contains_key("ols:directAncestor") {
             for ancestor in get_string_values(obj.get("ols:directAncestor").unwrap()) { 
                 if type_superclasses.contains(ancestor) {
@@ -222,7 +223,7 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
                 }
             }
         }
-        output_nodes.write_all(r#""]"#.as_bytes()).unwrap();
+        output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
 
         for k in obj.keys() {
 
