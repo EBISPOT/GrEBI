@@ -16,7 +16,8 @@
         "obo:chebi/smiles",
         "impc:pmId",
         "impc:humanGeneAccId",
-        "monarch:iri"
+        "monarch:iri",
+        "skos:exactMatch"
     ],
     "additional_equivalence_groups": [
         ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName"],
