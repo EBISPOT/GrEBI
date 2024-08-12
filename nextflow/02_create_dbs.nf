@@ -54,8 +54,8 @@ process create_combined_neo_ids_csv {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cat ${ids_txts} > combined_ids.txt
-    LC_ALL=C sort -u combined_ids.txt 
-    cat combined_ids.txt | ${params.home}/target/release/grebi_make_neo_ids_csv > neo_nodes_ids_combined.csv
+    LC_ALL=C sort -u combined_ids.txt -o combined_ids_uniq.txt
+    cat combined_ids_uniq.txt | ${params.home}/target/release/grebi_make_neo_ids_csv > neo_nodes_ids_combined.csv
     """
 }
 

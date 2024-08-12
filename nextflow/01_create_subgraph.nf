@@ -27,11 +27,14 @@ workflow {
         Channel.value(config.bytes_per_merged_file))
 
     indexed = index(merged.collect())
-    materialised = materialise(merged.flatten(), indexed.metadata_jsonl, Channel.value(config.exclude_edges + config.identifier_props))
+    materialise(merged.flatten(), indexed.metadata_jsonl, Channel.value(config.exclude_edges + config.identifier_props))
+    merge_summary_jsons(indexed.prop_summary_json.collect() + materialise.out.edge_summary.collect())
 
-    rocks_db = create_rocks(materialised.collect())
+    materialised_nodes_and_edges = materialise.out.nodes.collect() + materialise.out.edges.collect()
 
-    neo_input_dir = prepare_neo(indexed.summary_json, materialised)
+    rocks_db = create_rocks(materialised_nodes_and_edges)
+
+    neo_input_dir = prepare_neo(indexed.prop_summary_json, materialise.out.nodes, materialise.out.edges)
 
     ids_csv = create_neo_ids_csv(indexed.ids_txt)
     neo_db = create_neo(
@@ -41,7 +44,7 @@ workflow {
 	ids_csv.collect()
 )
 
-    solr_inputs = prepare_solr(materialised)
+    solr_inputs = prepare_solr(materialise.out.nodes, materialise.out.edges)
     solr_nodes_core = create_solr_nodes_core(prepare_solr.out.nodes.collect(), indexed.names_txt)
     solr_edges_core = create_solr_edges_core(prepare_solr.out.edges.collect(), indexed.names_txt)
     solr_autocomplete_core = create_solr_autocomplete_core(indexed.names_txt)
@@ -51,6 +54,7 @@ workflow {
     rocks_tgz = package_rocks(rocks_db)
 
     if(params.is_ebi == "true") {
+    copy_summary_to_ftp(merge_summary_jsons.out)
     copy_solr_to_ftp(solr_tgz)
     copy_neo_to_ftp(neo_tgz)
     copy_rocks_to_ftp(rocks_tgz)
@@ -199,7 +203,7 @@ process index {
 
     output:
     path("metadata.jsonl"), emit: metadata_jsonl
-    path("summary.json"), emit: summary_json
+    path("prop_summary.json"), emit: prop_summary_json
     path("names.txt"), emit: names_txt
     path("ids_${params.subgraph}.txt"), emit: ids_txt
 
@@ -211,7 +215,7 @@ process index {
         | ${params.home}/target/release/grebi_index \
         --subgraph-name ${params.subgraph} \
         --out-metadata-jsonl-path metadata.jsonl \
-        --out-summary-json-path summary.json \
+        --out-summary-json-path prop_summary.json \
         --out-names-txt names.txt \
         --out-ids-txt ids_${params.subgraph}.txt
     """
@@ -231,7 +235,9 @@ process materialise {
     val(exclude)
 
     output:
-    tuple(path("nodes.jsonl"), path("edges.jsonl"))
+    path("materialised_nodes_${task.index}.jsonl"), emit: nodes
+    path("materialised_edges_${task.index}.jsonl"), emit: edges
+    path("edge_summary_${task.index}.json"), emit: edge_summary
 
     script:
     """
@@ -240,9 +246,34 @@ process materialise {
     cat ${merged_filename} \
         | ${params.home}/target/release/grebi_materialise \
           --in-metadata-jsonl ${metadata_jsonl} \
-          --out-edges-jsonl edges.jsonl \
+          --out-edges-jsonl materialised_edges_${task.index}.jsonl \
+          --out-edge-summary-json edge_summary_${task.index}.json \
           --exclude ${exclude.iterator().join(",")} \
-        > nodes.jsonl
+        > materialised_nodes_${task.index}.jsonl
+    """
+}
+
+process merge_summary_jsons {
+    cache "lenient"
+    memory "8 GB"
+    time "1h"
+    //time { 1.hour + 8.hour * (task.attempt-1) }
+    //errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    //maxRetries 5
+
+    publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
+
+    input:
+    path(summary_jsons)
+
+    output:
+    path("${params.subgraph}_summary.json")
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    python3 ${params.home}/05_materialise/merge_summary_jsons.py ${summary_jsons} > ${params.subgraph}_summary.json
     """
 }
 
@@ -281,8 +312,9 @@ process prepare_neo {
     publishDir "${params.tmp}/${params.config}/${params.subgraph}/neo4j_csv", overwrite: true
 
     input:
-    path(summary_json)
-    tuple(path(nodes_jsonl), path(edges_jsonl))
+    path(prop_summary_json)
+    path(nodes_jsonl)
+    path(edges_jsonl)
 
     output:
     path("neo_nodes_${params.subgraph}_${task.index}.csv"), emit: nodes
@@ -294,7 +326,7 @@ process prepare_neo {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     ${params.home}/target/release/grebi_make_neo_csv \
-      --in-summary-jsons ${summary_json} \
+      --in-summary-jsons ${prop_summary_json} \
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-edges-jsonl ${edges_jsonl} \
       --out-nodes-csv-path neo_nodes_${params.subgraph}_${task.index}.csv \
@@ -310,7 +342,8 @@ process prepare_solr {
     time "1h"
 
     input:
-    tuple(path(nodes_jsonl), path(edges_jsonl))
+    path(nodes_jsonl)
+    path(edges_jsonl)
 
     output:
     path("solr_nodes_${params.subgraph}_${task.index}.jsonl"), emit: nodes
@@ -393,7 +426,7 @@ process create_solr_nodes_core {
     set -Eeuo pipefail
     python3 ${params.home}/06_prepare_db_import/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
-        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/summary.json \
+        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/prop_summary.json \
         --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
         --out-config-dir solr_config
     python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
@@ -422,7 +455,7 @@ process create_solr_edges_core {
     set -Eeuo pipefail
     python3 ${params.home}/06_prepare_db_import/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
-        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/summary.json \
+        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/prop_summary.json \
         --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
         --out-config-dir solr_config
     python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
@@ -540,6 +573,25 @@ process copy_neo_to_ftp {
     set -Eeuo pipefail
     mkdir -p /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}
     cp -f neo4j.tgz /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}/${params.subgraph}_neo4j.tgz
+    """
+}
+
+process copy_summary_to_ftp {
+    
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    input: 
+    path(summary_json)
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    mkdir -p /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}
+    cp -f ${summary_json} /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}/
     """
 }
 

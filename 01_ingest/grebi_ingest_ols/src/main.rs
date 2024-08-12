@@ -24,7 +24,10 @@ struct Args {
     ontologies:String,
 
     #[arg(long)]
-    defining_only:bool
+    defining_only:bool,
+
+    #[arg(long)]
+    superclass_is_type:Vec<String>,
 }
 
 fn main() {
@@ -46,6 +49,8 @@ fn main() {
         ontology_whitelist.insert(ontology.to_string());
     }
 
+    let mut type_superclasses:HashSet<String> = args.superclass_is_type.iter().map(|x| x.to_string()).collect();
+
     let mut json = JsonStreamReader::new(reader);
 
     json.begin_object().unwrap();
@@ -55,14 +60,14 @@ fn main() {
     }
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
-        read_ontology(&mut json, &mut output_nodes, &datasource_name, &ontology_whitelist, args.defining_only);
+        read_ontology(&mut json, &mut output_nodes, &datasource_name, &ontology_whitelist, args.defining_only, &type_superclasses);
     }
     json.end_array().unwrap();
     json.end_object().unwrap();
 
 }
 
-fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource_name: &str, ontology_whitelist:&HashSet<String>, defining_only:bool) {
+fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource_name: &str, ontology_whitelist:&HashSet<String>, defining_only:bool, type_superclasses:&HashSet<String>) {
 
     json.begin_object().unwrap();
 
@@ -126,11 +131,11 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
     loop {
         if key.eq("classes") {
-            read_entities(json, output_nodes, &datasource, "ols:Class", defining_only);
+            read_entities(json, output_nodes, &datasource, "ols:Class", defining_only, &type_superclasses);
         } else if key.eq("properties") {
-            read_entities(json, output_nodes, &datasource, "ols:Property", defining_only);
+            read_entities(json, output_nodes, &datasource, "ols:Property", defining_only, &type_superclasses);
         } else if key.eq("individuals") {
-            read_entities(json, output_nodes, &datasource, "ols:Individual", defining_only);
+            read_entities(json, output_nodes, &datasource, "ols:Individual", defining_only, &type_superclasses);
         } else {
             panic!();
         }
@@ -145,7 +150,7 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
 }
 
-fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource:&String, grebitype:&str, defining_only:bool) {
+fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource:&String, grebitype:&str, defining_only:bool, type_superclasses:&HashSet<String>) {
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
         let mut val:Value = read_value(json);
@@ -208,6 +213,14 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         output_nodes.write_all(datasource.as_bytes()).unwrap();
         output_nodes.write_all(r#"","grebi:type":[""#.as_bytes()).unwrap();
         output_nodes.write_all(grebitype.as_bytes()).unwrap();
+        if obj.contains_key("ols:directAncestor") {
+            for ancestor in obj.get("ols:directAncestor").unwrap().as_array().unwrap() {
+                if type_superclasses.contains(ancestor.as_str().unwrap()) {
+                    output_nodes.write_all(r#","#.as_bytes()).unwrap();
+                    output_nodes.write_all(ancestor.to_string().as_bytes()).unwrap();
+                }
+            }
+        }
         output_nodes.write_all(r#""]"#.as_bytes()).unwrap();
 
         for k in obj.keys() {
@@ -328,8 +341,12 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
                     output_nodes.write_all(r#"}}"#.as_bytes()).unwrap();
                 }
             } else {
-                let value = obj.get("ols:value").unwrap();
-                write_value(&value, output_nodes);
+                if obj.contains_key("ols:value") {
+                    let value = obj.get("ols:value").unwrap();
+                    write_value(&value, output_nodes);
+                } else {
+                    panic!("Unknown value: {:?}", serde_json::to_string(obj));
+                }
             }
             return;
         } else {

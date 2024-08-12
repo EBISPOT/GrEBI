@@ -2,7 +2,9 @@
 use std::ascii::escape_default;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::fs::File;
+use std::hash::Hash;
 use std::io::BufWriter;
 use std::io::BufReader;
 use std::io::Write;
@@ -11,6 +13,7 @@ use std::io::BufRead;
 use std::io::StdoutLock;
 use std::mem::transmute;
 use sha1::{Sha1, Digest};
+use serde_json::json;
 
 use clap::Parser;
 use flate2::write::GzEncoder;
@@ -46,8 +49,26 @@ struct Args {
     out_edges_jsonl: String,
 
     #[arg(long)]
+    out_edge_summary_json: String,
+
+    #[arg(long)]
     exclude: String
 }
+
+
+type EdgeSummaryTable = HashMap<
+    String, /* src node type signature */
+    HashMap<
+        String /* edge type */,
+        HashMap<
+            String, /* dest node type signature */
+            HashMap<
+                String, /* set of datasources */
+                u64 /* count */
+            >
+        >
+    >
+>;
 
 fn main() -> std::io::Result<()> {
 
@@ -59,7 +80,6 @@ fn main() -> std::io::Result<()> {
 
     let exclude:BTreeSet<Vec<u8>> = args.exclude.split(",").map(|s| s.to_string().as_bytes().to_vec()).collect();
 
-
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
 
@@ -68,6 +88,11 @@ fn main() -> std::io::Result<()> {
 
     let stdout = io::stdout().lock();
     let mut nodes_writer = BufWriter::new(stdout);
+
+    let edge_summary_file = File::create(args.out_edge_summary_json).unwrap();
+    let mut edge_summary_writer = BufWriter::new(edge_summary_file);
+
+    let mut edge_summary:EdgeSummaryTable = HashMap::new();
 
     let mut n_nodes:i64 = 0;
 
@@ -91,7 +116,7 @@ fn main() -> std::io::Result<()> {
 
         sliced.props.iter().for_each(|prop| {
             for val in &prop.values {
-                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &node_metadata, &val.datasources, sliced.subgraph);
+                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &node_metadata, &val.datasources, sliced.subgraph, &mut edge_summary);
             }
         });
 
@@ -120,10 +145,16 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("materialise took {} seconds", start_time.elapsed().as_secs());
 
+    edge_summary_writer.write_all(serde_json::to_string_pretty(&json!({
+        "edges": edge_summary
+    })).unwrap().as_bytes()).unwrap();
+
+    edge_summary_writer.flush().unwrap();
+
     Ok(())
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8]) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable) {
 
     if prop.key.eq(b"id") || prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
         return;
@@ -140,7 +171,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
                 let str = JsonParser::parse(&buf).string();
                 let exists = node_metadata.contains_key(str);
                 if exists {
-                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), edges_writer,  node_metadata, &datasources, &subgraph);
+                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), edges_writer,  node_metadata, &datasources, &subgraph, edge_summary);
                 }
             } else {
                 // panic!("unexpected kind: {:?}", reified_u.value_kind);
@@ -154,7 +185,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
         let exists = node_metadata.contains_key(str);
 
         if exists {
-            write_edge(from_id, str, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph);
+            write_edge(from_id, str, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph, edge_summary);
         }
 
     } else if val.kind == JsonTokenType::StartArray {
@@ -169,8 +200,8 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, edges_writer: &mut BufWriter<File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8]) {
-
+fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, edges_writer: &mut BufWriter<File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary:&mut EdgeSummaryTable) {
+ 
     let mut buf = Vec::new();
 
     buf.extend(b"\"grebi:type\":\"");
@@ -206,7 +237,7 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
         }
     }
 
-    let _refs = {
+    let _refs:Map<String,Value> = {
         let mut res:Map<String,Value> = Map::new();
         for (start,end) in find_strings(&buf) {
             let maybe_id = &buf[start..end];
@@ -220,6 +251,21 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
         }
         res
     };
+
+    let from_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(from_id).to_string()).unwrap());
+    let to_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(to_id).to_string()).unwrap());
+    let datasources_signature:String =  datasources.iter().map(|ds| String::from_utf8_lossy(ds).to_string()).collect::<Vec<String>>().join(",");
+
+    let edge_summary_edges = edge_summary.entry(from_type_signature).or_insert(HashMap::new());
+    let count:&mut u64 = edge_summary_edges
+        .entry(String::from_utf8_lossy(edge).to_string())
+        .or_insert(HashMap::new())
+            .entry(to_type_signature)
+            .or_insert(HashMap::new())
+                .entry(datasources_signature)
+                .or_insert(0);
+
+    *count = *count + 1;
 
     // sha1 not for security, just as a simple way to assign a unique
     // id to the edge that will be reproducible between dataloads
@@ -238,3 +284,15 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
 }
 
 
+
+
+fn get_type_signature_from_metadata_json(json:&Value) -> String {
+    let mut t:Vec<&str> = json.as_object().unwrap()
+        .get("grebi:type").unwrap()
+        .as_array().unwrap()
+        .iter()
+        .map(|val| val.as_str().unwrap())
+        .collect();
+    t.sort();
+    return t.join(",").to_string();
+}

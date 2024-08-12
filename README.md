@@ -15,7 +15,7 @@ GrEBI also imports complementary datasets, so far:
 * [Ubergraph](https://github.com/INCATools/ubergraph)
 * [Human Reference Atlas KG](https://humanatlas.io/)
 
-The resulting graphs can be downloaded from https://ftp.ebi.ac.uk/pub/databases/spot/kg/
+The resulting graphs can be downloaded from https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi/
 
 ## Implementation
 
