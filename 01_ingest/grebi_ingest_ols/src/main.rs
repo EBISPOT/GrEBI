@@ -24,10 +24,8 @@ struct Args {
     ontologies:String,
 
     #[arg(long)]
-    defining_only:bool,
+    defining_only:bool
 
-    #[arg(long)]
-    superclass_is_type:Vec<String>,
 }
 
 fn main() {
@@ -49,7 +47,6 @@ fn main() {
         ontology_whitelist.insert(ontology.to_string());
     }
 
-    let mut type_superclasses:HashSet<String> = args.superclass_is_type.iter().map(|x| x.to_string()).collect();
 
     let mut json = JsonStreamReader::new(reader);
 
@@ -60,14 +57,14 @@ fn main() {
     }
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
-        read_ontology(&mut json, &mut output_nodes, &datasource_name, &ontology_whitelist, args.defining_only, &type_superclasses);
+        read_ontology(&mut json, &mut output_nodes, &datasource_name, &ontology_whitelist, args.defining_only);
     }
     json.end_array().unwrap();
     json.end_object().unwrap();
 
 }
 
-fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource_name: &str, ontology_whitelist:&HashSet<String>, defining_only:bool, type_superclasses:&HashSet<String>) {
+fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource_name: &str, ontology_whitelist:&HashSet<String>, defining_only:bool) {
 
     json.begin_object().unwrap();
 
@@ -131,11 +128,11 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
     loop {
         if key.eq("classes") {
-            read_entities(json, output_nodes, &datasource, "ols:Class", defining_only, &type_superclasses);
+            read_entities(json, output_nodes, &datasource, "ols:Class", defining_only);
         } else if key.eq("properties") {
-            read_entities(json, output_nodes, &datasource, "ols:Property", defining_only, &type_superclasses);
+            read_entities(json, output_nodes, &datasource, "ols:Property", defining_only);
         } else if key.eq("individuals") {
-            read_entities(json, output_nodes, &datasource, "ols:Individual", defining_only, &type_superclasses);
+            read_entities(json, output_nodes, &datasource, "ols:Individual", defining_only);
         } else {
             panic!();
         }
@@ -150,7 +147,7 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
 }
 
-fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource:&String, grebitype:&str, defining_only:bool, type_superclasses:&HashSet<String>) {
+fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource:&String, grebitype:&str, defining_only:bool) {
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
         let mut val:Value = read_value(json);
@@ -214,15 +211,6 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         output_nodes.write_all(r#"","grebi:type":[""#.as_bytes()).unwrap();
         output_nodes.write_all(grebitype.as_bytes()).unwrap();
         output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-        if obj.contains_key("ols:directAncestor") {
-            for ancestor in get_string_values(obj.get("ols:directAncestor").unwrap()) { 
-                if type_superclasses.contains(ancestor) {
-                    output_nodes.write_all(r#",""#.as_bytes()).unwrap();
-                    write_escaped_string(&ancestor.as_bytes(), output_nodes);
-                    output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-                }
-            }
-        }
         output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
 
         for k in obj.keys() {

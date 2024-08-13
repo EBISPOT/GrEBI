@@ -11,6 +11,7 @@ use grebi_shared::json_parser::JsonParser;
 use clap::Parser;
 
 use grebi_shared::find_strings;
+use grebi_shared::load_groups_txt::load_groups_txt;
 
 
 #[derive(clap::Parser, Debug)]
@@ -44,35 +45,7 @@ fn main() {
 
     let preserve_fields:HashSet<Vec<u8>> = args.preserve_field.iter().map(|x| x.as_bytes().to_vec()).collect();
 
-    let id_to_group:HashMap<Vec<u8>, Vec<u8>> = {
-        
-        let start_time = std::time::Instant::now();
-        let mut reader = BufReader::new(File::open( args.groups_txt ).unwrap() );
-        let mut mapping:HashMap<Vec<u8>, Vec<u8>> = HashMap::new();
-
-        loop {
-            let mut line: Vec<u8> = Vec::new();
-            reader.read_until(b'\n', &mut line).unwrap();
-
-            if line.len() == 0 {
-                break;
-            }
-            if line[line.len() - 1] == b'\n' {
-                line.pop();
-            }
-
-            let tokens:Vec<&[u8]> = line.split(|&x| x == b'\t').collect();
-
-            for i in 1..tokens.len() {
-                mapping.insert(tokens[i].to_vec(), tokens[0].to_vec());
-            }
-        }
-
-        eprintln!("loaded {} id->group mappings in {} seconds", mapping.len(), start_time.elapsed().as_secs());
-
-        mapping
-    };
-
+    let id_to_group:HashMap<Vec<u8>, Vec<u8>> = load_groups_txt(&args.groups_txt);
 
     let start_time = std::time::Instant::now();
 

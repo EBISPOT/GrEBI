@@ -69,7 +69,7 @@ impl<'a> JsonParser<'a> {
         }
         let colon = self.next();
         if colon.kind != JsonTokenType::Colon {
-            panic!("Expected Colon, found {:?}", colon.kind);
+            panic!("Expected Colon, found {:?} in {}", colon.kind, String::from_utf8(self.slice.to_vec()).unwrap());
         }
         return &self.slice[start_token.index + 1..end_token.index];
     }

@@ -1,0 +1,14 @@
+[package]
+name = "grebi_superclasses2types"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde_json = { version = "1.0.108", features=["preserve_order"] }
+grebi_shared = { path = "../../grebi_shared" }
+csv = "1.3.0"
+fasthash = "0.4.0"
+lmdb-zero = "0.4.4"
+bloomfilter = "1.0.13"
+jemallocator = "0.5.4"
+clap = { version = "4.4.11", features = ["derive"] }

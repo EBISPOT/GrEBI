@@ -19,7 +19,7 @@ workflow {
 
     ingest(files_listing, Channel.value(config.identifier_props))
     groups_txt = build_equiv_groups(ingest.out.identifiers.collect(), Channel.value(config.additional_equivalence_groups))
-    assigned = assign_ids(ingest.out.nodes, groups_txt, Channel.value(config.identifier_props)).collect(flat: false)
+    assigned = assign_ids(ingest.out.nodes, groups_txt, Channel.value(config.identifier_props), Channel.value(config.type_superclasses)).collect(flat: false)
 
     merged = merge_ingests(
         assigned,
@@ -147,6 +147,7 @@ process assign_ids {
     tuple(val(datasource_name), path(nodes_jsonl))
     path groups_txt
     val(identifier_props)
+    val(type_superclasses)
 
     output:
     tuple(val(datasource_name), path("nodes_with_ids.sorted.jsonl.gz"))
@@ -158,6 +159,9 @@ process assign_ids {
     zcat ${nodes_jsonl} \
         | ${params.home}/target/release/grebi_assign_ids \
             --identifier-properties ${identifier_props.iterator().join(",")} \
+            --groups-txt ${groups_txt} \
+        | ${params.home}/target/release/grebi_superclasses2types \
+            --type-superclasses ${type_superclasses.iterator().join(",")} \
             --groups-txt ${groups_txt} \
         > nodes_with_ids.jsonl
     LC_ALL=C sort -o nodes_with_ids.sorted.jsonl nodes_with_ids.jsonl

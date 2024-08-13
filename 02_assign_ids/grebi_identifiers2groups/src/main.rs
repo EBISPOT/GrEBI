@@ -163,12 +163,16 @@ fn main() {
 //      - CURIEs
 //      - textual (readable) IDs rather than numeric
 //      - "grebi:" IDs always win (used to consolidate names on grebi:name etc.)
+//      - "biolink:" IDs are a second best
 // lower score is better
 //
 fn id_score(id:&[u8]) -> i32 {
 
 	if id.starts_with(b"grebi:") {
 		return i32::MIN;
+	}
+	if id.starts_with(b"biolink:") {
+		return i32::MIN+1000;
 	}
 
 	let mut score = 0;

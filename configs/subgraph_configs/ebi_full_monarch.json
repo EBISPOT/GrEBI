@@ -19,11 +19,17 @@
         "monarch:iri",
         "skos:exactMatch"
     ],
+    "type_superclasses": [
+        "mondo:0000001",
+        "efo:0000408",
+        "chebi:36080",
+        "chebi:24431"
+    ],
     "additional_equivalence_groups": [
         ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName"],
         ["grebi:description", "iao:definition", "monarch:description", "ols:definition"],
         ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym"],
-        ["mondo:0000001", "ogms:0000031"]
+        ["biolink:Disease", "mondo:0000001", "ogms:0000031"]
     ],
     "exclude_props": [
         "ols:curie",

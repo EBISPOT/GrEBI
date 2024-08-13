@@ -5,6 +5,7 @@ pub mod prefix_map;
 pub mod slice_merged_entity;
 pub mod slice_materialised_edge;
 pub mod load_metadata_mapping_table;
+pub mod load_groups_txt;
 
 // get the id without parsing json
 pub fn get_id<'a>(json:&'a [u8])->&'a [u8] {
