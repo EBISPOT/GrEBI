@@ -361,7 +361,12 @@ fn term_to_json(
     }
 
     if rdf_types_are_grebi_types && json.contains_key("http://www.w3.org/1999/02/22-rdf-syntax-ns#type") {
-        json.insert("grebi:type".to_string(), json.get("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap().clone());
+        let types = json.get("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap().as_array().unwrap();
+        json.insert("grebi:type".to_string(), Value::Array(
+            types.iter().filter(|t| t.is_string()).map(|t| {
+                Value::String(t.as_str().unwrap().to_string())
+            }).collect()
+        ));
     }
     
     return Value::Object(json);
