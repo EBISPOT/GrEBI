@@ -141,8 +141,6 @@ fn main() {
 
 		for entity in sorted_ids {
 			if is_first_value {
-				writer.write_all(entity.as_slice()).unwrap();
-				writer.write_all("\t".as_bytes()).unwrap();
 				is_first_value = false;
 			} else {
 				writer.write_all("\t".as_bytes()).unwrap();
@@ -183,7 +181,7 @@ fn id_score(id:&[u8]) -> i32 {
 
 	for c in id {
 		if c.is_ascii_alphabetic() {
-			score = score + 1;
+			score = score - 1;
 		}
 	}
 
