@@ -33,7 +33,8 @@ export default function Header({ section }: { section?: string }) {
         <div className="py-6 self-center">
           <a href={urlJoin(process.env.PUBLIC_URL!, "/")}>
             <img
-              alt="OLS logo"
+              style={{height:'80px'}}
+              alt="GrEBI logo"
               className="h-8 inline-block"
               src={urlJoin(process.env.PUBLIC_URL!, "/logo.svg")}
             />
