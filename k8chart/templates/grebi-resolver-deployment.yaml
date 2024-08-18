@@ -32,8 +32,8 @@ spec:
               memory: 8Gi
               cpu: 2
           env:
-            - name: GREBI_ROCKSDB_PATH
+            - name: GREBI_ROCKSDB_SEARCH_PATH
               value: /data
           ports:
-            - containerPort: 8983
+            - containerPort: 8080
 

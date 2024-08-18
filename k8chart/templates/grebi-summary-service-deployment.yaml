@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-summary-service
+  labels:
+    app: {{ .Release.Name }}-summary-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-summary-service
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-summary-service
+    spec:
+      volumes:
+        - name: {{ .Release.Name }}-summary-service-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-summary-service-pvc
+      containers:
+        - name: summary-service
+          image: ghcr.io/ebispot/grebi_summary_service_service:{{.Values.imageTag}}
+          volumeMounts:
+            - mountPath: "/data"
+              name: {{ .Release.Name }}-summary-service-storage
+          resources:
+            requests:
+              memory: 2Gi
+              cpu: 2
+            limits:
+              memory: 2Gi
+              cpu: 2
+          env:
+            - name: GREBI_SUMMARY_JSON_SEARCH_PATH
+              value: /data
+          ports:
+            - containerPort: 8081
+
