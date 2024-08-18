@@ -1,6 +1,6 @@
 import { Close, KeyboardArrowDown } from "@mui/icons-material";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { copyToClipboard, randomString, usePrevious } from "../../app/util";
 import Header from "../../components/Header";
 import LoadingOverlay from "../../components/LoadingOverlay";
@@ -15,6 +15,9 @@ import { DatasourceTags } from "../../components/DatasourceTag";
 export default function Search() {
   const [searchParams] = useSearchParams();
   const search = searchParams.get("q") || "";
+
+  const params = useParams();
+  const subgraph: string = params.subgraph as string;
 
   let [loadingResults, setLoadingResults] = useState<boolean>(false);
   let [results, setResults] = useState<GraphNode[]>([]);
@@ -93,7 +96,7 @@ export default function Search() {
   useEffect(() => {
 
     async function doSearch() {
-      let res = (await getPaginated<any>('api/v1/search', {
+      let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, {
         page: page.toString(), size: rowsPerPage.toString(), q: search,
         facet: ['grebi:datasources','grebi:type']
         /*grebi__datasource: datasourceFacetselected,
@@ -123,7 +126,7 @@ export default function Search() {
       <Header section="home" />
       <main className="container mx-auto px-4 h-fit my-8">
         <div className="flex flex-nowrap gap-4 mb-6">
-          <SearchBox initialQuery={search} />
+          <SearchBox subgraph={subgraph} initialQuery={search} />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-8">
           <div

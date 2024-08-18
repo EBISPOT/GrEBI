@@ -31,12 +31,16 @@ export default class GraphNode {
         return PropVal.arrFrom(this.getDescriptions())[0]?.value
     }
 
+    getSubgraph():string {
+        return this.props['grebi:subgraph']
+    }
+
     getNodeId():string {
         return this.props['grebi:nodeId']
     }
 
     getLinkUrl():string {
-        return `/nodes/${encodeNodeId(this.getNodeId())}`;
+        return `/subgraphs/${this.getSubgraph()}/nodes/${encodeNodeId(this.getNodeId())}`;
     }
 
     getId():PropVal {

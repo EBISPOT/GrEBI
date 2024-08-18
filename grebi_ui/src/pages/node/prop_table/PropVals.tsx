@@ -40,9 +40,9 @@ export default function PropVals(params:{ node:GraphNode,prop:string,values:Prop
 
 }
 
-function PropValue(params:{node:GraphNode,prop:string,value:PropVal,monospace:boolean,separator:string}) {
+function PropValue(params:{subgraph:string,node:GraphNode,prop:string,value:PropVal,monospace:boolean,separator:string}) {
 
-    let { node, prop, value, monospace, separator } = params;
+    let { subgraph, node, prop, value, monospace, separator } = params;
 
     if(typeof value.value === 'object') {
         if(value.value["rdf:type"] !== undefined) {
@@ -58,7 +58,7 @@ function PropValue(params:{node:GraphNode,prop:string,value:PropVal,monospace:bo
     if(mapped_value) {
       return (
         <span className="mr-0">
-          {separator} <Link className="link-default" to={"/nodes/" + encodeNodeId(value.value)}>{
+          {separator} <Link className="link-default" to={"/subgraphs/" + subgraph + "/nodes/" + encodeNodeId(value.value)}>{
             (mapped_value.name && pickBestDisplayName(mapped_value.name)) || value.value
           }</Link>
         </span>

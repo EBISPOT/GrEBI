@@ -11,7 +11,6 @@ import React from "react";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import GraphNode from "../../model/GraphNode";
 import { get } from "../../app/api";
-import NodeProperties from "./NodeProperties";
 import { AccountTree, Share, Visibility, VisibilityOff } from "@mui/icons-material";
 import Header from "../../components/Header";
 import LanguagePicker from "../../components/LanguagePicker";
@@ -29,6 +28,7 @@ import PropTable from "./prop_table/PropTable";
 export default function NodePage() {
   const params = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const subgraph: string = params.subgraph as string;
   const nodeId: string = atob(params.nodeId as string);
   const lang = searchParams.get("lang") || "en";
 
@@ -49,7 +49,7 @@ export default function NodePage() {
 
   useEffect(() => {
     async function getNode() {
-      let graphNode = new GraphNode(await get<any>(`api/v1/nodes/${nodeId}?lang=${lang}`))
+      let graphNode = new GraphNode(await get<any>(`api/v1/subgraphs/${subgraph}/nodes/${nodeId}?lang=${lang}`))
       setNode(graphNode)
 
       let datasources = graphNode.getDatasources();
@@ -79,7 +79,7 @@ export default function NodePage() {
           {pageDesc && <meta name="description" content={pageDesc}/>}
         </Helmet>
       <main className="container mx-auto px-4 pt-1">
-        <SearchBox/>
+        <SearchBox subgraph={subgraph} />
         <div className="text-center">
         <Typography variant="h5">{pageTitle} {
           node.extractType()?.long && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.long}</span>}</Typography>

@@ -14,7 +14,10 @@ import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.springframework.data.domain.PageRequest;
 import uk.ac.ebi.grebi.repo.GrebiNeoRepo;
 import uk.ac.ebi.grebi.db.GrebiSolrQuery;
+import uk.ac.ebi.grebi.db.ResolverClient;
+import uk.ac.ebi.grebi.db.SummaryClient;
 import uk.ac.ebi.grebi.repo.GrebiSolrRepo;
+import uk.ac.ebi.grebi.repo.GrebiSummaryRepo;
 
 
 public class GrebiApi {
@@ -23,11 +26,21 @@ public class GrebiApi {
 
         final GrebiNeoRepo neo = new GrebiNeoRepo();
         final GrebiSolrRepo solr = new GrebiSolrRepo();
+        final GrebiSummaryRepo summary = new GrebiSummaryRepo();
 
         Gson gson = new Gson();
 
-        var edgeTypes = neo.getEdgeTypes();
         var stats = neo.getStats();
+
+        var rocksDbSubgraphs = (new ResolverClient()).getSubgraphs();
+        var solrSubgraphs = solr.getSubgraphs();
+        var summarySubgraphs = summary.getSubgraphs();
+
+        if(new HashSet<>(List.of(rocksDbSubgraphs, solrSubgraphs, summarySubgraphs)).size() != 1) {
+            throw new RuntimeException("RocksDB/Solr/the summary jsons do not seem to contain the same subgraphs. Found: " + String.join(",", rocksDbSubgraphs) + " for RocksDB (from resolver service) and " + String.join(",", solrSubgraphs) + " for Solr (from list of solr cores) and " + String.join(",", summarySubgraphs) + " for the summary jsons (from summary server)");
+        }
+
+        System.out.println("Found subgraphs: " + String.join(",", solrSubgraphs));
 
         Javalin.create(config -> {
                     config.bundledPlugins.enableCors(cors -> {
@@ -42,31 +55,39 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(stats));
                 })
-                .get("/api/v1/nodes/{nodeId}", ctx -> {
+                .get("/api/v1/subgraphs", ctx -> {
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(solrSubgraphs));
+                })
+                .get("/api/v1/subgraphs/{subgraph}", ctx -> {
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(summary.getSummary(ctx.pathParam("subgraph"))));
+                })
+                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result("{}");
 
                     var q = new GrebiSolrQuery();
                     q.addFilter("grebi:nodeId", List.of(ctx.pathParam("nodeId")), SearchType.WHOLE_FIELD, false);
 
-                    var res = solr.getFirstNode(q);
+                    var res = solr.getFirstNode(ctx.pathParam("subgraph"), q);
 
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/nodes/{nodeId}/incoming_edges", ctx -> {
+                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/incoming_edges", ctx -> {
                    ctx.contentType("application/json");
-                   ctx.result(gson.toJson(neo.getIncomingEdges(ctx.pathParam("nodeId"))));
+                   ctx.result(gson.toJson(neo.getIncomingEdges(ctx.pathParam("subgraph"), ctx.pathParam("nodeId"))));
                 })
-                .get("/api/v1/edge_types", ctx -> {
-                    ctx.contentType("application/json");
-                    ctx.result(gson.toJson(edgeTypes));
-                })
+//                .get("/api/v1/edge_types", ctx -> {
+//                    ctx.contentType("application/json");
+//                    ctx.result(gson.toJson(edgeTypes));
+//                })
                 .get("/api/v1/collections", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result("{}");
                 })
-                .get("/api/v1/search", ctx -> {
+                .get("/api/v1/subgraphs/{subgraph}/search", ctx -> {
                     var q = new GrebiSolrQuery();
                     q.setSearchText(ctx.queryParam("q"));
                     q.setExactMatch(false);
@@ -105,12 +126,12 @@ public class GrebiApi {
                         size = "10";
                     }
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
-                    var res = solr.searchNodesPaginated(q, page);
+                    var res = solr.searchNodesPaginated(ctx.pathParam("subgraph"), q, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/suggest", ctx -> {
-                    var res = solr.autocomplete(ctx.queryParam("q"));
+                .get("/api/v1/subgraphs/{subgraph}/suggest", ctx -> {
+                    var res = solr.autocomplete(ctx.pathParam("subgraph"), ctx.queryParam("q"));
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })

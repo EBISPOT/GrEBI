@@ -17,10 +17,12 @@ interface SearchBoxEntry {
 }
 
 export default function SearchBox({
+  subgraph,
   initialQuery,
   placeholder,
   collectionId,
 }: {
+  subgraph:string,
   initialQuery?: string;
   placeholder?: string;
   collectionId?: string;
@@ -78,7 +80,7 @@ export default function SearchBox({
 
       const [nodes, autocomplete] = await Promise.all([
         getPaginated<any>(
-          `api/v1/search?${new URLSearchParams({
+          `api/v1/subgraphs/${subgraph}/search?${new URLSearchParams({
             q: query,
             size: "5",
             lang: "en",
@@ -90,7 +92,7 @@ export default function SearchBox({
         ),
         showSuggestions
           ? get<string[]>(
-              `api/v1/suggest?${new URLSearchParams({
+              `api/v1/subgraphs/${subgraph}/suggest?${new URLSearchParams({
                 q: query,
                 exactMatch: exact.toString(),
                 includeObsoleteEntries: obsolete.toString(),

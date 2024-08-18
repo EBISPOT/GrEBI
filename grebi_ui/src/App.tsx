@@ -44,9 +44,8 @@ class App extends React.Component {
           <Route path={`/error`} element={<Error />} />
 
           <Route path={`/`} element={<Home />} />
-          <Route path={`/search`} element={<Search />} />
-
-          <Route path={`/nodes/:nodeId`} element={<NodePage />} />
+          <Route path={`/subgraphs/:subgraph/search`} element={<Search />} />
+          <Route path={`/subgraphs/:subgraph/nodes/:nodeId`} element={<NodePage />} />
 
           <Route path={`/downloads`} element={<DownloadsPage />} />
         </Routes>

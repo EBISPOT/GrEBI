@@ -6,15 +6,24 @@ import React, { Fragment } from "react";
 import SearchBox from "../../components/SearchBox";
 import { get } from "../../app/api";
 import Stats from "../../model/Stats";
+import { MenuItem, Select } from "@mui/material";
 
 export default function Home() {
 
   document.title = "EMBL-EBI Knowledge Graph";
 
   let [stats, setStats] = useState<Stats|null>(null);
+  let [subgraphs, setSubgraphs] = useState<string[]|null>(null);
+  let [subgraph, setSubgraph] = useState<string|null>(null);
   
   useEffect(() => {
     get<Stats>("api/v1/stats").then(r => setStats(r));
+  }, []);
+  useEffect(() => {
+    get<string[]>("api/v1/subgraphs").then(r => {
+      setSubgraphs(r)
+      setSubgraph(r[0])
+    });
   }, []);
 
   return (
@@ -27,18 +36,37 @@ export default function Home() {
               <div className="text-3xl mb-4 text-neutral-black font-bold">
                 Welcome to the EMBL-EBI Knowledge Graph
               </div>
-              <div className="flex flex-nowrap gap-4 mb-4">
-                <SearchBox />
-              </div>
+              {subgraphs && subgraph ?
+                <Fragment>
+                  <div className="flex flex-nowrap gap-4 mb-4">
+                    <Select
+                      value={subgraph}
+                      label="Subgraph"
+                      onChange={(e) => setSubgraph(e.target.value)}
+                    >
+                      {subgraphs.map((s) => (
+                        <MenuItem key={s} value={s}>{s}</MenuItem>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="flex flex-nowrap gap-4 mb-4">
+                    <SearchBox subgraph={subgraph} />
+                  </div>
+                </Fragment>
+                :
+                <div className="flex flex-nowrap gap-4 mb-4">
+                  Loading graphs...
+                </div>
+              }
               <div className="grid md:grid-cols-2 grid-cols-1 gap-2">
                 <div className="text-neutral-black">
                   <span>
                     Examples:&nbsp;
-                    <Link to={"/search?q=diabetes"} className="link-default">
+                    <Link to={"/subgraphs/" + subgraph + "/search?q=diabetes"} className="link-default">
                       diabetes
                     </Link>
                     &#44;&nbsp;
-                    <Link to={"/search?q=BRCA1"} className="link-default">
+                    <Link to={"/subgraphs/" + subgraph + "/search?q=BRCA1"} className="link-default">
                       BRCA1
                     </Link>
                   </span>

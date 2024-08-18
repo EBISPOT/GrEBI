@@ -27,21 +27,7 @@ public class GrebiNeoRepo {
     public GrebiNeoRepo() throws IOException {}
 
     final String STATS_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/stats.cypher").readAllBytes(), StandardCharsets.UTF_8);
-    final String SEARCH_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/search.cypher").readAllBytes(), StandardCharsets.UTF_8);
-    final String PROPS_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/props.cypher").readAllBytes(), StandardCharsets.UTF_8);
     final String INCOMING_EDGES_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/incoming_edges.cypher").readAllBytes(), StandardCharsets.UTF_8);
-
-    public Map<String,JsonElement> getEdgeTypes() {
-        EagerResult props_res = neo4jClient.getDriver().executableQuery(PROPS_QUERY).withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
-        Map<String,JsonElement> edgeTypes = new TreeMap<>();
-        for(var r : props_res.records().get(0).values()) {
-            //JsonObject prop_def = gson.fromJson(r.asString(), JsonElement.class).getAsJsonObject();
-            //edgeTypes.put(prop_def.get("grebi:nodeId").getAsString(), prop_def);
-            //Map<String,Object> o = (Map<String,Object>)r.get("n").asObject();
-            //edgeTypes.put((String)o.get("grebi:nodeId"), gson.toJsonTree(o));
-        }
-        return edgeTypes;
-    }
 
     public Map<String,Object> getStats() {
         EagerResult props_res = neo4jClient.getDriver().executableQuery(STATS_QUERY).withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
@@ -60,12 +46,13 @@ public class GrebiNeoRepo {
         }
     }
 
-    public List<EdgeAndNode> getIncomingEdges(String nodeId) {
+    public List<EdgeAndNode> getIncomingEdges(String subgraph, String nodeId) {
         EagerResult res = neo4jClient.getDriver().executableQuery(INCOMING_EDGES_QUERY)
             .withParameters(Map.of("nodeId", nodeId))
             .withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
 
         var resolved = resolver.resolveToMap(
+                subgraph,
                 res.records().stream().flatMap(record -> {
                     var props = record.asMap();
                     return List.of((String) props.get("otherId"), (String) props.get("edgeId")).stream();
