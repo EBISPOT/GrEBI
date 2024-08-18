@@ -60,6 +60,7 @@ workflow {
     copy_rocks_to_ftp(rocks_tgz)
 
     if(params.config == "ebi") {
+        copy_summary_to_staging(merge_summary_jsons.out)
         copy_solr_config_to_staging()
         copy_solr_cores_to_staging(solr_nodes_core.concat(solr_edges_core).concat(solr_autocomplete_core))
         copy_rocksdb_to_staging(rocks_db)
@@ -634,6 +635,25 @@ process copy_rocks_to_ftp {
     set -Eeuo pipefail
     mkdir -p /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}
     cp -f rocksdb.tgz /nfs/ftp/public/databases/spot/kg/${params.config}/${params.timestamp.trim()}/${params.subgraph}_rocksdb.tgz
+    """
+}
+
+process copy_summary_to_staging {
+    
+    cache "lenient"
+    memory "4 GB" 
+    time "8h"
+    queue "datamover"
+
+    input: 
+    path(summary_json)
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    mkdir -p /nfs/public/rw/ontoapps/grebi/staging/summaries
+    cp -f ${summary_json} /nfs/public/rw/ontoapps/grebi/staging/summaries/
     """
 }
 
