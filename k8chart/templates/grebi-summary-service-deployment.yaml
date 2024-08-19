@@ -20,7 +20,7 @@ spec:
             claimName: {{ .Release.Name }}-summary-service-pvc
       containers:
         - name: summary-service
-          image: ghcr.io/ebispot/grebi_summary_service_service:{{.Values.imageTag}}
+          image: ghcr.io/ebispot/grebi_summary_service:{{.Values.imageTag}}
           volumeMounts:
             - mountPath: "/data"
               name: {{ .Release.Name }}-summary-service-storage
