@@ -54,6 +54,7 @@ public class GrebiSolrQuery {
         SolrQuery query = new SolrQuery();
         query.set("defType", "edismax");
         //query.setFields("grebi:nodeId");
+        query.set("q.op", "AND");
 
         if(searchText != null) {
 

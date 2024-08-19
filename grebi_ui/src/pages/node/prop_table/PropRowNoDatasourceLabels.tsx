@@ -7,9 +7,9 @@ import PropVals from "./PropVals";
 import { DatasourceTag, DatasourceTags } from "../../../components/DatasourceTag";
 import PropLabel from "./PropLabel";
 
-export default function PropRowNoDatasourceLabels(params:{node:GraphNode,prop:string,values:PropVal[]}) {
+export default function PropRowNoDatasourceLabels(params:{subgraph:string, node:GraphNode,prop:string,values:PropVal[]}) {
 
-    let {node,prop,values } = params
+    let {subgraph,node,prop,values } = params
 
     return (
         <Fragment>
@@ -18,7 +18,7 @@ export default function PropRowNoDatasourceLabels(params:{node:GraphNode,prop:st
               </Grid>
               <Grid item xs={12}>
                 <div className="pl-2 mb-2">
-                <PropVals node={node} prop={prop} values={values} />
+                <PropVals subgraph={subgraph} node={node} prop={prop} values={values} />
                 </div>
               </Grid>
            </Fragment>

@@ -52,7 +52,7 @@ export default function Header({ section }: { section?: string }) {
                 role="menuitem"
                 className={`rounded-l-md px-4 py-3  ${
                   section === "home"
-                    ? "bg-opacity-75 bg-neutral-500"
+                    ? "bg-opacity-30 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
                 }`}
               >
@@ -67,44 +67,13 @@ export default function Header({ section }: { section?: string }) {
                 role="menuitem"
                 className={`px-4 py-3 ${
                   section === "ontologies"
-                    ? " bg-opacity-75 bg-neutral-500"
+                    ? " bg-opacity-30 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500 "
                 }`}
               >
                 <Stack alignItems="center" direction="row" gap={1}>
-                  <MediationIcon />
-                  Datasources
-                </Stack>
-              </li>
-            </Link>
-            <Link to="/collections">
-              <li
-                role="menuitem"
-                className={`px-4 py-3 ${
-                  section === "ontologies"
-                    ? " bg-opacity-75 bg-neutral-500"
-                    : "hover:bg-opacity-50 hover:bg-neutral-500 "
-                }`}
-              >
-                <Stack alignItems="center" direction="row" gap={1}>
-                  {/* <JoinRightIcon /> good for collections */}
-                  <ViewList/>
-                  Collections
-                </Stack>
-              </li>
-            </Link>
-            <Link to={`/analyses`}>
-              <li
-                role="menuitem"
-                className={`px-4 py-3  ${
-                  section === "help"
-                    ? " bg-opacity-75 bg-neutral-500"
-                    : "hover:bg-opacity-50 hover:bg-neutral-500"
-                }`}
-              >
-                <Stack alignItems="center" direction="row" gap={1}>
-                  <Science />
-                  Analyses
+                  <JoinRightIcon />
+                  Subgraphs
                 </Stack>
               </li>
             </Link>
@@ -113,7 +82,7 @@ export default function Header({ section }: { section?: string }) {
                 role="menuitem"
                 className={`rounded-r-md px-4 py-3 ${
                   section === "downloads"
-                    ? " bg-opacity-75 bg-neutral-500"
+                    ? " bg-opacity-30 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
                 }`}
               >

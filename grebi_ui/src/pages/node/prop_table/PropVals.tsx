@@ -7,9 +7,9 @@ import Refs from "../../../model/Refs";
 import ClassExpression from "../../../components/ClassExpression";
 import { pickBestDisplayName } from "../../../app/util";
 
-export default function PropVals(params:{ node:GraphNode,prop:string,values:PropVal[] }) {
+export default function PropVals(params:{ subgraph:string,node:GraphNode,prop:string,values:PropVal[] }) {
 
-    let { node, prop, values } = params;
+    let { subgraph,node, prop, values } = params;
 
     // if all values are <= 32 characters use one line and possibly monospace (if not links)
     let oneLine = values.filter(v => v.value.toString().length > 48).length == 0;
@@ -19,7 +19,7 @@ export default function PropVals(params:{ node:GraphNode,prop:string,values:Prop
         <span>
             {
                 values.map( (value,i) => <Fragment>
-                    <PropValue node={node} prop={prop} value={value} monospace={false} separator={i > 0 ? ";" : ""} />
+                    <PropValue subgraph={subgraph} node={node} prop={prop} value={value} monospace={false} separator={i > 0 ? ";" : ""} />
                     </Fragment>
                 )
             }
@@ -30,7 +30,7 @@ export default function PropVals(params:{ node:GraphNode,prop:string,values:Prop
             <div>
                 {
                     values.map( (value,i) => <p>
-                        <PropValue node={node} prop={prop} value={value} monospace={false} separator="" />
+                        <PropValue subgraph={subgraph} node={node} prop={prop} value={value} monospace={false} separator="" />
                         </p>
                     )
                 }
@@ -46,7 +46,7 @@ function PropValue(params:{subgraph:string,node:GraphNode,prop:string,value:Prop
 
     if(typeof value.value === 'object') {
         if(value.value["rdf:type"] !== undefined) {
-            return <ClassExpression node={node} expr={value.value} />
+            return <ClassExpression subgraph={subgraph} node={node} expr={value.value} />
         } else {
             return <span>{JSON.stringify(value.value)}</span>
         }

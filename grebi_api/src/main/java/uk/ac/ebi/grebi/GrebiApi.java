@@ -76,8 +76,17 @@ public class GrebiApi {
                     ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/incoming_edges", ctx -> {
+                    var page_num = ctx.queryParam("page");
+                    if(page_num == null) {
+                        page_num = "0";
+                    }
+                    var size = ctx.queryParam("size");
+                    if(size == null) {
+                        size = "10";
+                    }
+                   var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
                    ctx.contentType("application/json");
-                   ctx.result(gson.toJson(neo.getIncomingEdges(ctx.pathParam("subgraph"), ctx.pathParam("nodeId"))));
+                   ctx.result(gson.toJson( neo.getIncomingEdges( ctx.pathParam("subgraph"), ctx.pathParam("nodeId"), page )));
                 })
 //                .get("/api/v1/edge_types", ctx -> {
 //                    ctx.contentType("application/json");

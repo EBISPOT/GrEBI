@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import org.neo4j.driver.EagerResult;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Value;
+import org.springframework.data.domain.Pageable;
 import uk.ac.ebi.grebi.GrebiApi;
 import uk.ac.ebi.grebi.db.Neo4jClient;
 import uk.ac.ebi.grebi.db.ResolverClient;
@@ -46,16 +47,23 @@ public class GrebiNeoRepo {
         }
     }
 
-    public List<EdgeAndNode> getIncomingEdges(String subgraph, String nodeId) {
+    public List<EdgeAndNode> getIncomingEdges(String subgraph, String nodeId, Pageable pageable) {
         EagerResult res = neo4jClient.getDriver().executableQuery(INCOMING_EDGES_QUERY)
-            .withParameters(Map.of("nodeId", nodeId))
+            .withParameters(Map.of(
+                    "nodeId", subgraph + ":" + nodeId,
+                    "offset", pageable.getOffset(),
+                    "limit", pageable.getPageSize()
+            ))
             .withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
 
         var resolved = resolver.resolveToMap(
                 subgraph,
                 res.records().stream().flatMap(record -> {
                     var props = record.asMap();
-                    return List.of((String) props.get("otherId"), (String) props.get("edgeId")).stream();
+                    return List.of(
+                            removeSubgraphPrefix((String) props.get("otherId"), subgraph),
+                            removeSubgraphPrefix((String) props.get("edgeId"), subgraph)
+                    ).stream();
                 }).collect(Collectors.toSet()));
 
         return res.records().stream().map(record -> {
@@ -64,6 +72,13 @@ public class GrebiNeoRepo {
             var edgeId = (String)props.get("edgeId");
             return new EdgeAndNode(resolved.get(edgeId), resolved.get(otherId));
         }).collect(Collectors.toList());
+    }
+
+    private String removeSubgraphPrefix(String id, String subgraph) {
+        if(!id.startsWith(subgraph + ":")) {
+            throw new RuntimeException();
+        }
+        return id.substring(subgraph.length() + 1);
     }
 
     static Map<String, Object> mapValue(Value value) {

@@ -11,9 +11,8 @@ import React from "react";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import GraphNode from "../../model/GraphNode";
 import { get } from "../../app/api";
-import { AccountTree, Share, Visibility, VisibilityOff } from "@mui/icons-material";
+import { AccountTree, ArrowOutward, CallMade, CallReceived, FormatListBulleted, Share, Visibility, VisibilityOff } from "@mui/icons-material";
 import Header from "../../components/Header";
-import LanguagePicker from "../../components/LanguagePicker";
 import ApiLinks from "../../components/ApiLinks";
 import { Box, Checkbox, Grid, Tab, Tabs, Tooltip, Typography } from "@mui/material";
 import Refs from "../../model/Refs";
@@ -23,6 +22,8 @@ import { DatasourceTags } from '../../components/DatasourceTag'
 import { copyToClipboard } from "../../app/util";
 import SearchBox from "../../components/SearchBox";
 import PropTable from "./prop_table/PropTable";
+import EdgesInList from "./edge_list/EdgesInList";
+import EdgesOutList from "./edge_list/EdgesOutList";
 
 
 export default function NodePage() {
@@ -33,7 +34,7 @@ export default function NodePage() {
   const lang = searchParams.get("lang") || "en";
 
   let [node, setNode] = useState<GraphNode|null>(null);
-  let [tab, setTab] = useState("properties");
+  const tab = searchParams.get("tab") || "properties";
 
   let [datasources,setDatasources] = useState<string[]>([])
   let [dsEnabled,setDsEnabled] = useState<string[]>([])
@@ -119,18 +120,21 @@ className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 mb-2 text-sm
         </div>
         <Grid container spacing={1} direction="row">
             <Grid item xs={2}>
-          <Tabs orientation="vertical" variant="scrollable" value={tab} aria-label="basic tabs example" className="border-green" sx={{ borderRight: 1, borderColor: 'divider' }}>
-            <Tab label="Properties" value="properties" />
-            <Tab label="Edges" value="edges" />
-            <Tab label="Mappings" value="mappings" />
+          <Tabs orientation="vertical" variant="scrollable" value={tab} aria-label="basic tabs example" className="border-green" sx={{ borderRight: 1, borderColor: 'divider' }} onChange={(e, tab) => setSearchParams({tab})}>
+            <Tab label="Properties" icon={<FormatListBulleted/>} value="properties" />
+            <Tab label="Edges In" icon={<CallReceived/>} value="edges_in" />
+            <Tab label="Edges Out" icon={<CallMade/>} value="edges_out" />
           </Tabs>
           </Grid>
           <Grid item xs={10}>
         <TabPanel value={tab} index={"properties"}>
-          <PropTable node={node} datasources={datasources} dsEnabled={dsEnabled} />
+          <PropTable subgraph={subgraph} node={node} datasources={datasources} dsEnabled={dsEnabled} />
         </TabPanel>
-        <TabPanel value={tab} index={"edges"}>
-          Item Two
+        <TabPanel value={tab} index={"edges_in"}>
+          <EdgesInList subgraph={subgraph} node={node} datasources={datasources} dsEnabled={dsEnabled} />
+        </TabPanel>
+        <TabPanel value={tab} index={"edges_out"}>
+          <EdgesOutList subgraph={subgraph} node={node} datasources={datasources} dsEnabled={dsEnabled} />
         </TabPanel>
         <TabPanel value={tab} index={"mappings"}>
           Item Three

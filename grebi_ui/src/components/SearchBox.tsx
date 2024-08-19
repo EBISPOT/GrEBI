@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { get, getPaginated } from "../app/api";
 import { theme } from "../app/mui";
 import { randomString } from "../app/util";
-import React, { Fragment } from "react";
+import React from "react";
 import GraphNode from "../model/GraphNode";
 import encodeNodeId from "../encodeNodeId";
 import { DatasourceTags } from "./DatasourceTag";
@@ -124,7 +124,7 @@ export default function SearchBox({
     (text, i): SearchBoxEntry => {
       searchParams.set("q", text);
       if (collectionId) searchParams.set("collection", collectionId);
-      const linkUrl = `/search?${new URLSearchParams(searchParams)}`;
+      const linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
       return {
         linkUrl,
         li: (
@@ -238,7 +238,7 @@ export default function SearchBox({
                   } else if (query) {
                     searchParams.set("q", query);
                     if (collectionId) searchParams.set("collection", collectionId);
-                    navigate(`/search?${new URLSearchParams(searchParams)}`);
+                    navigate(`/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`);
                   }
                 } else if (ev.key === "ArrowDown") {
                   setArrowKeySelectedN(
@@ -292,7 +292,7 @@ export default function SearchBox({
                       searchParams.set("q", query);
                       if (collectionId)
                         searchParams.set("collection", collectionId);
-                      navigate(`/search?${new URLSearchParams(searchParams)}`);
+                      navigate(`/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`);
                     }
                   }}
                 >
@@ -309,7 +309,7 @@ export default function SearchBox({
                 if (query) {
                   searchParams.set("q", query);
                   if (collectionId) searchParams.set("collection", collectionId);
-                  navigate(`/search?${new URLSearchParams(searchParams)}`);
+                  navigate(`/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`);
                 }
               }}
             >

@@ -6,9 +6,9 @@ import PropRowOneDatasourceSet from "./PropRowOneDatasourceSet";
 import PropRowManyDatasourceSets from "./PropRowManyDatasourceSets";
 import PropRowNoDatasourceLabels from "./PropRowNoDatasourceLabels";
 
-export default function PropRow(params:{node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
+export default function PropRow(params:{subgraph:string,node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
 
-    let { node, prop, values, datasources, dsEnabled } = params
+    let { subgraph, node, prop, values, datasources, dsEnabled } = params
 
     // remove any values that don't aren't asserted by at least 1 of our enabled datasources
     values = values.filter(v => {
@@ -26,7 +26,7 @@ export default function PropRow(params:{node:GraphNode,prop:string,values:PropVa
 
       // if only 1 datasource is enabled, no need to display datasource labels anywhere
       if(dsEnabled.length === 1) {
-        return <PropRowNoDatasourceLabels node={node} prop={prop} values={values} />
+        return <PropRowNoDatasourceLabels subgraph={subgraph} node={node} prop={prop} values={values} />
       }
 
       let ds_sets = new Set()
@@ -38,7 +38,7 @@ export default function PropRow(params:{node:GraphNode,prop:string,values:PropVa
         // [prop name] [datasources]
         //   [value]
         //
-        return <PropRowOneDatasourceSet node={node} prop={prop} values={values} datasources={datasources} dsEnabled={dsEnabled} />
+        return <PropRowOneDatasourceSet subgraph={subgraph} node={node} prop={prop} values={values} datasources={datasources} dsEnabled={dsEnabled} />
       } else {
         // [prop name]
         //    [datasources1]
@@ -46,6 +46,6 @@ export default function PropRow(params:{node:GraphNode,prop:string,values:PropVa
         //    [datasources2]
         //      [value2]
         //
-        return <PropRowManyDatasourceSets node={node} prop={prop} values={values} datasources={datasources} dsEnabled={dsEnabled} />
+        return <PropRowManyDatasourceSets subgraph={subgraph} node={node} prop={prop} values={values} datasources={datasources} dsEnabled={dsEnabled} />
       }
     }

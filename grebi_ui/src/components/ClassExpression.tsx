@@ -33,7 +33,7 @@ export default function ClassExpression({
     if(equivClass) {
       return <Fragment>
         { expr['label'] && <span>{expr['label']} </span> }
-        <ClassExpression node={node} expr={equivClass}  />
+        <ClassExpression subgraph={subgraph} node={node} expr={equivClass}  />
         </Fragment>
     }
   }
@@ -65,6 +65,7 @@ export default function ClassExpression({
       }
       nodes.push(
         <ClassExpression
+        subgraph={subgraph}
           key={randomString()}
 	  node={node}
           expr={subExpr}
@@ -103,6 +104,7 @@ export default function ClassExpression({
       }
       nodes.push(
         <ClassExpression
+        subgraph={subgraph}
           key={randomString()}
 	  node={node}
           expr={subExpr}
@@ -128,6 +130,7 @@ export default function ClassExpression({
       <span>
         <span className="pr-1 text-neutral-default italic">not</span>
         <ClassExpression
+        subgraph={subgraph}
 	  node={node}
 	  expr={complementOf}
 	   />
@@ -153,6 +156,7 @@ export default function ClassExpression({
       }
       nodes.push(
         <ClassExpression
+        subgraph={subgraph}
           key={randomString()}
 	  node={node}
           expr={subExpr}
@@ -178,7 +182,7 @@ export default function ClassExpression({
 		<span className="px-1 text-embl-purple-default italic">inverse</span>
 		<span>
 		{"("}
-		<ClassExpression node={node} expr={inverseOf}  />
+		<ClassExpression subgraph={subgraph} node={node} expr={inverseOf}  />
 		{")"}
 		</span>
 		</span>
@@ -195,7 +199,7 @@ export default function ClassExpression({
 	const withRestrictions = asArray(expr["owl:withRestrictions"]);
 
 	let res:JSX.Element[] = [
-		<ClassExpression node={node} expr={onDatatype}  />
+		<ClassExpression subgraph={subgraph} node={node} expr={onDatatype}  />
 	]
 
 	if(withRestrictions.length > 0) {
@@ -261,9 +265,9 @@ export default function ClassExpression({
   if (someValuesFrom) {
     return (
       <span>
-        <ClassExpression  node={node}  expr={onProperty} />
+        <ClassExpression subgraph={subgraph}  node={node}  expr={onProperty} />
         <span className="px-1 text-embl-purple-default italic">some</span>
-        <ClassExpression  node={node}  expr={someValuesFrom} />
+        <ClassExpression subgraph={subgraph}  node={node}  expr={someValuesFrom} />
       </span>
     );
   }
@@ -274,9 +278,9 @@ export default function ClassExpression({
   if (allValuesFrom) {
     return (
       <span>
-        <ClassExpression  node={node}  expr={onProperty} />
+        <ClassExpression subgraph={subgraph}  node={node}  expr={onProperty} />
         <span className="px-1 text-embl-purple-default italic">only</span>
-        <ClassExpression  node={node}  expr={allValuesFrom} />
+        <ClassExpression subgraph={subgraph}  node={node}  expr={allValuesFrom} />
       </span>
     );
   }
@@ -285,9 +289,9 @@ export default function ClassExpression({
   if (hasValue) {
     return (
       <span>
-        <ClassExpression   node={node}  expr={onProperty} />
+        <ClassExpression subgraph={subgraph}   node={node}  expr={onProperty} />
         <span className="px-1 text-embl-purple-default italic">value</span>
-        <ClassExpression   node={node}  expr={hasValue} />
+        <ClassExpression subgraph={subgraph}   node={node}  expr={hasValue} />
       </span>
     );
   }
@@ -298,9 +302,9 @@ export default function ClassExpression({
   if (minCardinality) {
     return (
       <span>
-        <ClassExpression   node={node}  expr={onProperty} />
+        <ClassExpression subgraph={subgraph}   node={node}  expr={onProperty} />
         <span className="px-1 text-embl-purple-default italic">min</span>
-        <ClassExpression   node={node}  expr={minCardinality} />
+        <ClassExpression subgraph={subgraph}   node={node}  expr={minCardinality} />
       </span>
     );
   }
@@ -311,9 +315,9 @@ export default function ClassExpression({
   if (maxCardinality) {
     return (
       <span>
-        <ClassExpression   node={node}  expr={onProperty} />
+        <ClassExpression subgraph={subgraph}   node={node}  expr={onProperty} />
         <span className="px-1 text-embl-purple-default italic">max</span>
-        <ClassExpression   node={node}  expr={maxCardinality} />
+        <ClassExpression subgraph={subgraph}   node={node}  expr={maxCardinality} />
       </span>
     );
   }
@@ -323,9 +327,9 @@ export default function ClassExpression({
   if (exactCardinality) {
     return (
       <span>
-        <ClassExpression   node={node}  expr={onProperty} />
+        <ClassExpression subgraph={subgraph}   node={node}  expr={onProperty} />
         <span className="px-1 text-embl-purple-default italic">exactly</span>
-        <ClassExpression   node={node}  expr={exactCardinality} />
+        <ClassExpression subgraph={subgraph}   node={node}  expr={exactCardinality} />
       </span>
     );
   }
@@ -334,7 +338,7 @@ export default function ClassExpression({
   if (hasSelf) {
     return (
       <span>
-        <ClassExpression node={node}     expr={onProperty} />
+        <ClassExpression subgraph={subgraph} node={node}     expr={onProperty} />
         <span className="px-1 text-embl-purple-default italic">Self</span>
       </span>
     );
@@ -353,16 +357,16 @@ export default function ClassExpression({
     if (minQualifiedCardinality) {
       return (
         <span>
-          <ClassExpression   node={node}  expr={onProperty} />
+          <ClassExpression subgraph={subgraph}   node={node}  expr={onProperty} />
           <span className="px-1 text-embl-purple-default italic">min</span>
-          <ClassExpression
+          <ClassExpression subgraph={subgraph}
     node={node} 
      
             expr={minQualifiedCardinality}
             
           />
           &nbsp;
-          <ClassExpression
+          <ClassExpression subgraph={subgraph}
     node={node} 
      
             expr={onClass}
@@ -378,16 +382,16 @@ export default function ClassExpression({
     if (maxQualifiedCardinality) {
       return (
         <span>
-          <ClassExpression   node={node}  expr={onProperty} />
+          <ClassExpression subgraph={subgraph}   node={node}  expr={onProperty} />
           <span className="px-1 text-embl-purple-default italic">max</span>
-          <ClassExpression
+          <ClassExpression subgraph={subgraph}
     node={node} 
      
             expr={maxQualifiedCardinality}
             
           />
           &nbsp;
-          <ClassExpression
+          <ClassExpression subgraph={subgraph}
     node={node} 
      
             expr={onClass}
@@ -403,16 +407,16 @@ export default function ClassExpression({
     if (exactQualifiedCardinality) {
       return (
         <span>
-          <ClassExpression   node={node}  expr={onProperty} />
+          <ClassExpression subgraph={subgraph}   node={node}  expr={onProperty} />
           <span className="px-1 text-embl-purple-default italic">exactly</span>
-          <ClassExpression
+          <ClassExpression subgraph={subgraph}
      
     node={node} 
             expr={exactQualifiedCardinality}
             
           />
           &nbsp;
-          <ClassExpression
+          <ClassExpression subgraph={subgraph}
     node={node} 
      
             expr={onClass}

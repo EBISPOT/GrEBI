@@ -16,25 +16,17 @@ export default function Downloads() {
         </div>
         <div>
           <p className="px-1 mb-2 text-justify">
-            Neo4j and Solr databases of the KG can be downloaded from&thinsp;
+            Neo4j, Solr, and RocksDB databases of the KG can be downloaded from&thinsp;
             <a
               className="link-default"
-              href="https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/"
+              href="https://ftp.ebi.ac.uk/pub/databases/spot/kg/"
               rel="noopener noreferrer"
               target="_blank"
             >
-            https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/
-            </a>
-            . And the latest snapshot can be found at&thinsp;
-            <a
-              className="link-default"
-              href="https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/latest/"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-            </a>
+            https://ftp.ebi.ac.uk/pub/databases/spot/kg/
+            </a>.
           </p>
-          <DataTable columns={columns} data={data} />
+          {/* <DataTable columns={columns} data={data} /> */}
         </div>
       </main>
     </Fragment>
@@ -74,7 +66,7 @@ const data: any[] = [
       "Neo4j database with all datasources (~700 GB uncompressed)",
     downloadLabel: "neo4j.tgz",
     downloadLink:
-      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/latest/neo4j.tgz",
+      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi/latest/ebi_full_monarch_neo4j.tgz",
     format: "Neo4j database",
   },
   {

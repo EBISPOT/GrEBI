@@ -7,9 +7,9 @@ import PropVals from "./PropVals";
 import { DatasourceTag, DatasourceTags } from "../../../components/DatasourceTag";
 import PropLabel from "./PropLabel";
 
-export default function PropRowManyDatasourceSets(params:{node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
+export default function PropRowManyDatasourceSets(params:{subgraph:string,node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
 
-    let {node,prop,values,dsEnabled } = params
+    let {subgraph,node,prop,values,dsEnabled } = params
 
     let dsSetToVals:Map<string,PropVal[]> = new Map()
     for(let v of values) {
@@ -33,7 +33,7 @@ export default function PropRowManyDatasourceSets(params:{node:GraphNode,prop:st
                       <Grid item xs={12} style={{padding:'8px'}}>
                         <div className="pl-2">
                         <DatasourceTags dss={values[0].datasources} />
-                        <PropVals node={node} prop={prop} values={values} />
+                        <PropVals subgraph={subgraph} node={node} prop={prop} values={values} />
                         </div>
                       </Grid>
                     </Fragment>
@@ -58,7 +58,7 @@ export default function PropRowManyDatasourceSets(params:{node:GraphNode,prop:st
                         </Grid>
                         <Grid item xs={12}>
                         <div className={"pl-4" + (i == dsSetsSorted.length-1 ? " mb-2" : "")}>
-                          <PropVals node={node} prop={prop} values={values} />
+                          <PropVals subgraph={subgraph} node={node} prop={prop} values={values} />
                           </div>
                         </Grid>
                       </Fragment>

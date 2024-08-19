@@ -1,4 +1,3 @@
-import Reified from "./Reified"
 
 export class Ref {
 	nodeId:string

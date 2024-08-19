@@ -7,7 +7,6 @@ import LoadingOverlay from "../../components/LoadingOverlay";
 import { Pagination } from "../../components/Pagination";
 import SearchBox from "../../components/SearchBox";
 import GraphNode from "../../model/GraphNode";
-import { getSearchResults } from "./searchSlice";
 import React from "react";
 import { get, getPaginated } from "../../app/api";
 import { DatasourceTags } from "../../components/DatasourceTag";
