@@ -45,7 +45,7 @@ public class GrebiResolverSvc {
         }
 
         Javalin app = Javalin.create(config -> {
-        }).start(8080);
+        }).start("0.0.0.0", 8080);
 
         app.get("/subgraphs", ctx -> {
             ctx.contentType("application/json");

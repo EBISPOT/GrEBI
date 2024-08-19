@@ -29,7 +29,7 @@ public class GrebiSummarySvc {
         }
 
         Javalin app = Javalin.create(config -> {
-        }).start(8081);
+        }).start("0.0.0.0", 8081);
 
         app.get("/", ctx -> {
             ctx.contentType("application/json");

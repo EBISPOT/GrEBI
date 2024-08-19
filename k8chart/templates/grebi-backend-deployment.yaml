@@ -19,7 +19,7 @@ spec:
           image: ghcr.io/ebispot/grebi_api:{{.Values.imageTag}}
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - containerPort: 8090
           resources:
             requests:
               memory: 8Gi
@@ -32,6 +32,10 @@ spec:
               value: http://{{ .Release.Name }}-solr:8983
             - name: GREBI_NEO4J_HOST
               value: bolt://{{ .Release.Name }}-neo4j:7687
+            - name: GREBI_RESOLVER_HOST
+              value: http://{{ .Release.Name }}-resolver:8080
+            - name: GREBI_SUMMARY_HOST
+              value: http://{{ .Release.Name }}-summary-service:8081
             - name: GREBI_CONTEXT_PATH
               value: /kg
             - name: JDK_JAVA_OPTIONS

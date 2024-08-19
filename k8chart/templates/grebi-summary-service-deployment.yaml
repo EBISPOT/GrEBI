@@ -21,16 +21,17 @@ spec:
       containers:
         - name: summary-service
           image: ghcr.io/ebispot/grebi_summary_service:{{.Values.imageTag}}
+          imagePullPolicy: Always
           volumeMounts:
             - mountPath: "/data"
               name: {{ .Release.Name }}-summary-service-storage
           resources:
             requests:
               memory: 2Gi
-              cpu: 2
+              cpu: 0.5
             limits:
               memory: 2Gi
-              cpu: 2
+              cpu: 0.5
           env:
             - name: GREBI_SUMMARY_JSON_SEARCH_PATH
               value: /data

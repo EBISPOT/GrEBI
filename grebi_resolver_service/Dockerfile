@@ -1,6 +1,7 @@
 
-FROM maven:3.9.6-amazoncorretto-17
+FROM maven:3.9-eclipse-temurin-11
 
+RUN mkdir -p /opt
 COPY . /opt/
 RUN cd /opt/ && ls && mvn clean package assembly:single -DskipTests
 

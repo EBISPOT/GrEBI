@@ -30,20 +30,20 @@ spec:
               name: {{ .Release.Name }}-neo4j-storage
           resources:
             requests:
-              memory: 40Gi
+              memory: 30Gi
               cpu: 4
             limits:
-              memory: 40Gi
+              memory: 30Gi
               cpu: 4
           env:
             - name: NEO4J_AUTH
               value: none
             - name: NEO4J_server_memory_heap_initial__size
-              value: 15000m
+              value: 12000m
             - name: NEO4J_server_memory_heap_max__size
-              value: 15000m
+              value: 12000m
             - name: NEO4J_server_memory_pagecache_size
-              value: 15g
+              value: 12g
             - name: NEO4J_PLUGINS
               value: \["apoc"\]
           ports:

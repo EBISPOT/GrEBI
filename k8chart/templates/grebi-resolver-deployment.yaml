@@ -21,15 +21,16 @@ spec:
       containers:
         - name: resolver
           image: ghcr.io/ebispot/grebi_resolver_service:{{.Values.imageTag}}
+          imagePullPolicy: Always
           volumeMounts:
             - mountPath: "/data"
               name: {{ .Release.Name }}-resolver-storage
           resources:
             requests:
-              memory: 8Gi
+              memory: 16Gi
               cpu: 2
             limits:
-              memory: 8Gi
+              memory: 16Gi
               cpu: 2
           env:
             - name: GREBI_ROCKSDB_SEARCH_PATH
