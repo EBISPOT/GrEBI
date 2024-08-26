@@ -1,8 +1,6 @@
 package uk.ac.ebi.grebi.db;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -47,6 +45,15 @@ public class GrebiSolrQuery {
 
     public void addFilter(String propertyName, Collection<String> propertyValues, SearchType searchType, boolean negate) {
         this.filters.add(new Filter(propertyName, propertyValues, searchType, negate));
+    }
+
+    public void addInvertedFilter(String propertyName, Collection<String> allPossibleValues, Collection<String> chosenValues) {
+        for(var possibleValue : allPossibleValues) {
+            if(!chosenValues.contains(possibleValue)) {
+                addFilter(propertyName, Set.of(possibleValue), SearchType.WHOLE_FIELD, true);
+            }
+        }
+
     }
 
     public SolrQuery constructQuery() {

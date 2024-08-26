@@ -4,14 +4,17 @@
 package uk.ac.ebi.grebi;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import io.javalin.Javalin;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.repo.GrebiNeoRepo;
 import uk.ac.ebi.grebi.db.GrebiSolrQuery;
 import uk.ac.ebi.grebi.db.ResolverClient;
@@ -84,9 +87,87 @@ public class GrebiApi {
                     if(size == null) {
                         size = "10";
                     }
-                   var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
+                    var sortBy = ctx.queryParam("sortBy");
+                    if(sortBy == null) {
+                        sortBy = "grebi:type";
+                    }
+                    var sortDir = ctx.queryParam("sortDir");
+                    if(sortDir == null) {
+                        sortDir = "asc";
+                    }
+                   var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size), Sort.by(
+                           sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC,
+                           sortBy
+                   ));
+
+                   var q = new GrebiSolrQuery();
+
+//                   var allEdgeProps = summary.getAllEdgeProps(ctx.pathParam("subgraph"));
+//
+//                   for(var p : allEdgeProps)
+//                       q.addFacetField(p);
+                   q.addFacetField("grebi:datasources");
+
+                    q.addFilter("grebi:to", Set.of(ctx.pathParam("nodeId")),
+                           /* this is actually a string field so this is an exact match */ SearchType.CASE_INSENSITIVE_TOKENS,
+                           false);
+
+                    for(var queryParam : ctx.queryParamMap().entrySet()) {
+                        var queryParamName = queryParam.getKey();
+                        if(queryParamName.equals("page") || queryParamName.equals("size")
+                                || queryParamName.equals("sortBy") || queryParamName.equals("sortDir")
+                                || queryParamName.equals("grebi:datasources")) {
+                            continue;
+                        }
+                        q.addFilter(queryParamName.replace("-", ""),
+                                queryParam.getValue(), SearchType.WHOLE_FIELD, queryParamName.startsWith("-"));
+                    }
+
+                   var res = solr.searchEdgesPaginated(ctx.pathParam("subgraph"), q, page);
                    ctx.contentType("application/json");
-                   ctx.result(gson.toJson( neo.getIncomingEdges( ctx.pathParam("subgraph"), ctx.pathParam("nodeId"), page )));
+                   ctx.result(gson.toJson(res
+                           .map(edge -> {
+                               Map<String, Object> refs = (Map<String,Object>) edge.get("_refs");
+                               Map<String, Object> retEdge = new LinkedHashMap<>(edge);
+                               retEdge.put("grebi:from", refs.get((String) edge.get("grebi:from")));
+                               retEdge.put("grebi:to", refs.get((String) edge.get("grebi:to")));
+
+//                               String type = (String)edge.get("grebi:type");
+//                               if(refs.containsKey(type)) {
+//                                   retEdge.put("grebi:type", refs.get(type));
+//                               }
+
+                               return retEdge;
+                           }))
+                   );
+                })
+                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/outgoing_edges", ctx -> {
+                    var page_num = ctx.queryParam("page");
+                    if(page_num == null) {
+                        page_num = "0";
+                    }
+                    var size = ctx.queryParam("size");
+                    if(size == null) {
+                        size = "10";
+                    }
+                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
+
+                    var q = new GrebiSolrQuery();
+
+                    q.addFilter("grebi:from", Set.of(ctx.pathParam("nodeId")),
+                            /* this is actually a string field so this is an exact match */ SearchType.CASE_INSENSITIVE_TOKENS,
+                            false);
+
+                    var queryParams = ctx.queryParamMap();
+                    for(var param : queryParams.keySet()) {
+                        for(var value : queryParams.get(param)) {
+
+                        }
+                    }
+
+                    var res = solr.searchEdgesPaginated(ctx.pathParam("subgraph"), q, page);
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(res));
                 })
 //                .get("/api/v1/edge_types", ctx -> {
 //                    ctx.contentType("application/json");

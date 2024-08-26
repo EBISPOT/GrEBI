@@ -40,8 +40,8 @@ public class GrebiNeoRepo {
     }
 
     public class EdgeAndNode {
-        public Map<String,JsonElement> edge, node;
-        public EdgeAndNode(Map<String,JsonElement> edge, Map<String,JsonElement> node) {
+        public Map<String,Object> edge, node;
+        public EdgeAndNode(Map<String,Object> edge, Map<String,Object> node) {
             this.edge = edge;
             this.node = node;
         }
@@ -68,8 +68,8 @@ public class GrebiNeoRepo {
 
         return res.records().stream().map(record -> {
             var props = record.asMap();
-            var otherId = (String)props.get("otherId");
-            var edgeId = (String)props.get("edgeId");
+            var otherId = removeSubgraphPrefix((String)props.get("otherId"), subgraph);
+            var edgeId = removeSubgraphPrefix((String)props.get("edgeId"), subgraph);
             return new EdgeAndNode(resolved.get(edgeId), resolved.get(otherId));
         }).collect(Collectors.toList());
     }

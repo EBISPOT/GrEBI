@@ -53,7 +53,7 @@ public class ResolverClient {
         return null;
     }
 
-    public Map<String, Map<String,JsonElement>> resolveToMap(String subgraph, Collection<String> ids) {
+    public Map<String, Map<String,Object>> resolveToMap(String subgraph, Collection<String> ids) {
 
         Stopwatch timer = Stopwatch.createStarted();
 
@@ -88,7 +88,7 @@ public class ResolverClient {
         return null;
     }
 
-    public List<Map<String, JsonElement>> resolveToList(String subgraph, Collection<String> ids) {
+    public List<Map<String, Object>> resolveToList(String subgraph, Collection<String> ids) {
 
         var resolved = resolveToMap(subgraph, ids);
 

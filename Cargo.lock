@@ -699,6 +699,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_superclasses2types"
+version = "0.1.0"
+dependencies = [
+ "bloomfilter",
+ "clap",
+ "csv",
+ "fasthash",
+ "grebi_shared",
+ "jemallocator",
+ "lmdb-zero",
+ "serde_json",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

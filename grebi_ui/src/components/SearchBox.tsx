@@ -8,6 +8,7 @@ import React from "react";
 import GraphNode from "../model/GraphNode";
 import encodeNodeId from "../encodeNodeId";
 import { DatasourceTags } from "./DatasourceTag";
+import NodeTypeChip from "./NodeTypeChip";
 
 let curSearchToken: any = null;
 
@@ -148,7 +149,7 @@ export default function SearchBox({
   let jumpToEntityElements = jumpTo
     .map((entry: GraphNode, i: number): SearchBoxEntry => {
           let name = entry.getName();
-          let type = entry.extractType()?.short
+          let type = entry.extractType()
           return {
             linkUrl: entry.getLinkUrl(),
             li: (
@@ -171,10 +172,7 @@ export default function SearchBox({
                  
                     <div className="truncate flex-auto" title={name}>
                       {name}
-                      { type &&
-                      <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{type}</span>
-
-          }
+                      {type && <NodeTypeChip type={type} />}
                     </div>
                     
                     <div className="truncate flex-initial ml-2 text-right">
