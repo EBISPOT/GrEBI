@@ -1,9 +1,11 @@
-import { KeyboardArrowDown } from "@mui/icons-material";
-import { randomString } from "../app/util";
-import { Pagination } from "./Pagination";
+import { ArrowDownward, ArrowUpward, KeyboardArrowDown, SwapVert } from "@mui/icons-material";
+import { randomString } from "../../app/util";
+import { Pagination } from "../Pagination";
 import React from "react";
+import DtSortIcon from "./DtSortIcon";
 
 export interface Column {
+  id: string;
   name: string;
   minWidth?: number;
   align?: "right";
@@ -22,6 +24,10 @@ export default function DataTable({
   onPageChange,
   onRowsPerPageChange,
   onFilter,
+  sortColumn,
+  setSortColumn,
+  sortDir,
+  setSortDir
 }: {
   columns: readonly Column[];
   data: any[];
@@ -33,9 +39,11 @@ export default function DataTable({
   onPageChange?: (page: number) => void;
   onRowsPerPageChange?: (rowsPerPage: number) => void;
   onFilter?: (key: string) => void;
+  sortColumn?: string,
+  setSortColumn?: (sortColumn: string) => void,
+  sortDir?: 'asc'|'desc',
+  setSortDir?: (sortDir: 'asc'|'desc') => void,
 }) {
-  // const [sortColumn, setSortColumn] = useState<string>("");
-  // const [sortDirection, setSortDirection] = useState<string>("asc");
 
   return (
     <div>
@@ -66,7 +74,7 @@ export default function DataTable({
           <div className="justify-self-end group relative w-3/4 px-2 mb-2">
             <input
               type="text"
-              placeholder={placeholder ? placeholder : "Search table..."}
+              placeholder={placeholder ? placeholder : "Search..."}
               className="input-default text-md pl-10"
               onChange={(e) => {
                 onFilter(e.target.value);
@@ -84,10 +92,29 @@ export default function DataTable({
             <tr key={randomString()} className="border-b-2 border-grey-default">
               {columns.map((column) => (
                 <td
-                  className="text-lg text-left font-bold py-2 px-4"
+                  className="text-lg font-bold py-2 px-4"
                   key={column.name}
                 >
+                  <div className="flex justify-between">
+                  <div>
                   {column.name}
+                  </div>
+                  <div>
+                  {column.sortable && setSortDir && setSortColumn && sortColumn !== column.id &&
+                    <SwapVert color={'disabled'} className="cursor-pointer" onClick={() => {
+                        setSortColumn(column.id)
+                        setSortDir('asc')
+                      }}
+                    />
+                  }
+                  {column.sortable && setSortDir && setSortColumn && sortColumn === column.name && sortDir === 'asc' &&
+                      <ArrowDownward color={'primary'} className="cursor-pointer" onClick={() => { setSortDir('desc') }} />
+                  }
+                  {column.sortable && setSortDir && setSortColumn && sortColumn === column.name && sortDir === 'desc' &&
+                      <ArrowUpward color={'primary'} className="cursor-pointer" onClick={() => { setSortDir('asc') }} />
+                  }
+                  </div>
+                  </div>
                 </td>
               ))}
             </tr>

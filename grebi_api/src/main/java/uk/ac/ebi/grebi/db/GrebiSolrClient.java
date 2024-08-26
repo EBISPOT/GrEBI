@@ -4,9 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -16,6 +18,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.GrebiFacetedResultsPage;
 
 import java.io.IOException;
@@ -108,10 +111,16 @@ public class GrebiSolrClient {
         if (pageable != null) {
             query.setStart((int) pageable.getOffset());
             query.setRows(pageable.getPageSize() > MAX_ROWS ? MAX_ROWS : pageable.getPageSize());
+            var orders = pageable.getSort().get().iterator();
+            if(orders.hasNext()) {
+                var order = orders.next();
+                query.setSort(order.getProperty().replace(":", "__"),
+                        order.getDirection() == Sort.Direction.ASC ? SolrQuery.ORDER.asc : SolrQuery.ORDER.desc);
+            }
         }
 
         logger.info("solr rows: {} ", query.getRows());
-        logger.info("solr query: {} ", query.toQueryString());
+        logger.info("solr query to core " + coreName + ": {} ", query.toQueryString());
         logger.info("solr query urldecoded: {}", URLDecoder.decode(query.toQueryString()));
         logger.info("solr host: {}", SOLR_HOST);
 
@@ -145,9 +154,15 @@ public class GrebiSolrClient {
         query.set("qf", "label^10 edge_label^2 whitespace_edge_label^1");
         query.set("q.op", "AND");
 
+
+        // Create a QueryRequest and explicitly set it to use POST
+        QueryRequest request = new QueryRequest(query);
+        request.setMethod(SolrRequest.METHOD.POST);
+
+
         QueryResponse qr = null;
         try {
-            qr = mySolrClient.query(query);
+            qr = request.process(mySolrClient);
             logger.info("solr query had {} result(s).", qr.getResults().getNumFound());
         } catch (SolrServerException e) {
             throw new RuntimeException(e);

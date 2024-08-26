@@ -36,28 +36,10 @@ export default function NodePage() {
   let [node, setNode] = useState<GraphNode|null>(null);
   const tab = searchParams.get("tab") || "properties";
 
-  let [datasources,setDatasources] = useState<string[]>([])
-  let [dsEnabled,setDsEnabled] = useState<string[]>([])
-  
-
-  let toggleDsEnabled=(ds:string)=>{
-    if(dsEnabled.indexOf(ds) !== -1) {
-      setDsEnabled(dsEnabled.filter(ds2=>ds2!==ds))
-    } else {
-      setDsEnabled([...dsEnabled,ds])
-    }
-  }
-
   useEffect(() => {
     async function getNode() {
       let graphNode = new GraphNode(await get<any>(`api/v1/subgraphs/${subgraph}/nodes/${nodeId}?lang=${lang}`))
       setNode(graphNode)
-
-      let datasources = graphNode.getDatasources();
-      datasources.sort((a, b) => a.localeCompare(b) + (a.startsWith("OLS.") ? 10000 : 0) + (b.startsWith("OLS.") ? -10000 : 0))
-
-      setDatasources(datasources)
-      setDsEnabled(datasources.filter(ds => ds !== 'UberGraph'))
     }
     getNode()
   }, [nodeId, lang]);
@@ -98,26 +80,8 @@ className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 mb-2 text-sm
                   </button>
 </span>)}
               </Grid>
+          </div>
         <Typography>{pageDesc}</Typography>
-        <div className="pt-2">
-                {datasources.map((ds, i) => {
-                  if (ds.startsWith("OLS.")) {
-                    return <span className="mr-1">
-                    { datasources.length > 1 && <Checkbox size="small" style={{padding:0}} checked={dsEnabled.indexOf(ds) !== -1} onChangeCapture={() => toggleDsEnabled(ds)} />}
-                      <span
-                      className="link-ontology px-2 py-0.5 rounded-md text-xs text-white uppercase"
-                      title={ds.split('.')[1]}>{ds.split('.')[1]}</span></span>
-                  } else {
-                    return <span className="mr-1">
-                    { datasources.length > 1 && <Checkbox size="small" style={{padding:0}} checked={dsEnabled.indexOf(ds) !== -1} onChangeCapture={() => toggleDsEnabled(ds)} />}
-                      <span
-                      className="link-datasource px-2 py-0.5 rounded-md text-xs text-white uppercase"
-                      title={ds}>{ds}
-                      </span>
-                      </span>
-                  }
-                })}</div>
-        </div>
         <Grid container spacing={1} direction="row">
             <Grid item xs={2}>
           <Tabs orientation="vertical" variant="scrollable" value={tab} aria-label="basic tabs example" className="border-green" sx={{ borderRight: 1, borderColor: 'divider' }} onChange={(e, tab) => setSearchParams({tab})}>
@@ -128,13 +92,12 @@ className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 mb-2 text-sm
           </Grid>
           <Grid item xs={10}>
         <TabPanel value={tab} index={"properties"}>
-          <PropTable subgraph={subgraph} node={node} datasources={datasources} dsEnabled={dsEnabled} />
+          <PropTable lang={lang} subgraph={subgraph} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"edges_in"}>
-          <EdgesInList subgraph={subgraph} node={node} datasources={datasources} dsEnabled={dsEnabled} />
+          <EdgesInList subgraph={subgraph} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"edges_out"}>
-          <EdgesOutList subgraph={subgraph} node={node} datasources={datasources} dsEnabled={dsEnabled} />
         </TabPanel>
         <TabPanel value={tab} index={"mappings"}>
           Item Three

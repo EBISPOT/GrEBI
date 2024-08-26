@@ -26,5 +26,9 @@ public class GrebiSummaryRepo {
         return subgraph2summary.get(subgraph).getAsJsonObject().asMap();
     }
 
+    public Set<String> getAllEdgeProps(String subgraph) {
+        return getSummary(subgraph).get("edge_props").getAsJsonObject().keySet();
+    }
+
 
 }

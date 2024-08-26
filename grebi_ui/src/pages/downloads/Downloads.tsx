@@ -1,7 +1,7 @@
 
 
 import { Fragment } from "react";
-import DataTable, { Column } from "../../components/DataTable";
+import DataTable, { Column } from "../../components/datatable/DataTable";
 import Header from "../../components/Header";
 import React from "react";
 
