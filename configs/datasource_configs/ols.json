@@ -3,10 +3,10 @@
     "enabled": true,
     "ingests": [
         {
-            "ingest_files": ["/nfs/production/parkinso/spot/grebi/ontologies.json.gz"],
+            "ingest_files": ["/nfs/production/parkinso/spot/ols4/prod/slurm_pipeline/ontologies.json.gz"],
             "ingest_script": "./target/release/grebi_ingest_ols",
             "ingest_args": [
-                { "name": "--ontologies", "value": "efo,mp,hp,go,ro,iao,uberon,pato,oba,chebi,bspo,iao,obi,bfo,cob,cl,so,eco,pr,ncbitaxon,oio,iao,biolink,mondo,doid" },
+                { "name": "--ontologies", "value": "efo,mp,hp,go,ro,iao,uberon,pato,oba,chebi,bspo,iao,obi,bfo,cob,cl,so,eco,pr,ncbitaxon,oio,iao,biolink,mondo,doid,cheminf,dc,dcterms,ncit,edam" },
                 { "name": "--skip-obsolete", "value": "" }
             ]
         }

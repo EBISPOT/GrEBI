@@ -17,7 +17,12 @@
         "impc:pmId",
         "impc:humanGeneAccId",
         "monarch:iri",
-        "skos:exactMatch"
+        "skos:exactMatch",
+        "ncit:P368",
+        "ncit:C98965",
+	"cheminf:000407",
+	"dcterms:identifier",
+        "oboinowl:hasAlternativeId"
     ],
     "type_superclasses": [
         "mondo:0000001",
@@ -26,25 +31,42 @@
         "chebi:24431"
     ],
     "additional_equivalence_groups": [
-        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName"],
+        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName", "dcterms:title", "ncit:Preferred_Name"],
         ["grebi:description", "iao:definition", "monarch:description", "ols:definition"],
-        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym"],
-        ["mondo:0000001", "ogms:0000031"]
+        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym", "dcterms:alternative" ],
+        ["mondo:0000001", "ogms:0000031"],
+        ["biolink:broad_match", "skos:broader", "skos:broadMatch", "ols:directAncestor"],
+        ["biolink:subclass_of", "ols:directParent", "rdfs:subClassOf", "rdfs:subPropertyOf"],
+        ["rdfs:isDefinedBy", "ols:ontologyIri", "ols:ontologyId"]
     ],
     "exclude_props": [
+	"ols:hierarchicalProperty",
+	"ols:synonymProperty",
         "ols:curie",
         "ols:shortForm",
         "ols:ontologyPreferredPrefix",
         "ols:iri",
+        "ols:uri",
         "oboinowl:id",
         "oboinowl:url",
         "monarch:iri"
     ],
     "exclude_edges": [
     ],
+    "exclude_self_referential_edges": [
+        "foaf:page",
+        "oboinowl:hasDbXref",
+	"biolink:subclass_of",
+	"biolink:broad_match",
+	"ols:ontology_purl",
+	"ols:ontologyId"
+     ],
     "datasource_configs": [
         "./configs/datasource_configs/hett_pesticides_appril.json",
         "./configs/datasource_configs/hett_pesticides_eu.json",
-        "./configs/datasource_configs/hett_pesticides_gb.json"
+        "./configs/datasource_configs/hett_pesticides_gb.json",
+        "./configs/datasource_configs/aopwiki.json",
+        "./configs/datasource_configs/chembl.json",
+        "./configs/datasource_configs/ols_hett.json"
     ]
 }

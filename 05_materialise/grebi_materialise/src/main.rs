@@ -12,6 +12,7 @@ use std::io;
 use std::io::BufRead;
 use std::io::StdoutLock;
 use std::mem::transmute;
+use grebi_shared::load_groups_txt::load_groups_txt;
 use sha1::{Sha1, Digest};
 use serde_json::json;
 
@@ -52,7 +53,13 @@ struct Args {
     out_edge_summary_json: String,
 
     #[arg(long)]
-    exclude: String
+    groups_txt: String,
+
+    #[arg(long)]
+    exclude: String,
+
+    #[arg(long)]
+    exclude_self_referential: String
 }
 
 
@@ -76,9 +83,33 @@ fn main() -> std::io::Result<()> {
 
     let start_time = std::time::Instant::now();
 
-    let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
+    // we need to map the ids given to --exclude to their identifier groups
+    // as the caller of this program won't know for sure which id the property actually got
+    //
+    let mut id_to_group:HashMap<Vec<u8>, Vec<u8>> = load_groups_txt(&args.groups_txt);
 
-    let exclude:BTreeSet<Vec<u8>> = args.exclude.split(",").map(|s| s.to_string().as_bytes().to_vec()).collect();
+    let exclude:BTreeSet<Vec<u8>> = args.exclude.split(",").map(|s| {
+        let group = id_to_group.get(s.as_bytes());
+        if group.is_some() {
+            group.unwrap().clone()
+        } else {
+            s.as_bytes().to_vec()
+        }
+    }).collect();
+
+    let exclude_self_ref:BTreeSet<Vec<u8>> = args.exclude_self_referential.split(",").map(|s| {
+        let group = id_to_group.get(s.as_bytes());
+        if group.is_some() {
+            group.unwrap().clone()
+        } else {
+            s.as_bytes().to_vec()
+        }
+    }).collect();
+
+    id_to_group.clear();
+    id_to_group.shrink_to(0);
+
+    let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
 
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
@@ -116,7 +147,7 @@ fn main() -> std::io::Result<()> {
 
         sliced.props.iter().for_each(|prop| {
             for val in &prop.values {
-                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &node_metadata, &val.datasources, sliced.subgraph, &mut edge_summary);
+                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &exclude_self_ref, &node_metadata, &val.datasources, sliced.subgraph, &mut edge_summary);
             }
         });
 
@@ -154,7 +185,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable) {
 
     if prop.key.eq(b"id") || prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
         return;
@@ -171,6 +202,9 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
                 let str = JsonParser::parse(&buf).string();
                 let exists = node_metadata.contains_key(str);
                 if exists {
+                    if from_id.eq(str) && exclude_self_ref.contains(prop.key) {
+                        return;
+                    }
                     write_edge(from_id, str, prop.key,  Some(&reified_u.props), edges_writer,  node_metadata, &datasources, &subgraph, edge_summary);
                 }
             } else {
@@ -185,6 +219,9 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
         let exists = node_metadata.contains_key(str);
 
         if exists {
+            if from_id.eq(str) &&  exclude_self_ref.contains(prop.key) {
+                return;
+            }
             write_edge(from_id, str, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph, edge_summary);
         }
 

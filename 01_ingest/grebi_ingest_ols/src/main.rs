@@ -172,7 +172,7 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             }
         }
 
-        if grebitype.eq("ols:Property") { 
+        //if grebitype.eq("ols:Property") { 
 
             let qualified_safe_label = {
                 let curie = get_string_values(obj.get("ols:curie").unwrap()).iter().next().unwrap().to_string();
@@ -211,11 +211,11 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
             output_nodes.write_all(r#"{"id":"#.as_bytes()).unwrap();
             output_nodes.write_all(Value::String(qualified_safe_label).to_string().as_bytes()).unwrap();
-        } else {
+        /*} else {
             output_nodes.write_all(r#"{"id":"#.as_bytes()).unwrap();
             let curie = get_string_values(obj.get("ols:curie").unwrap()).iter().next().unwrap().to_string();
             output_nodes.write_all(Value::String(curie).to_string().as_bytes()).unwrap();
-        }
+        }*/
 
         output_nodes.write_all(r#","grebi:datasource":""#.as_bytes()).unwrap();
         output_nodes.write_all(datasource.as_bytes()).unwrap();
@@ -345,8 +345,12 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
                 if obj.contains_key("ols:value") {
                     let value = obj.get("ols:value").unwrap();
                     write_value(&value, output_nodes);
-                } else {
-                    panic!("Unknown value: {:?}", serde_json::to_string(obj));
+                } else if obj.contains_key("ols:iri") {
+                    // TODO: Datatypes
+
+                    //panic!("Unknown value: {:?}", serde_json::to_string(obj).unwrap());
+                    let value = obj.get("ols:iri").unwrap();
+                    write_value(&value, output_nodes);
                 }
             }
             return;
@@ -393,6 +397,13 @@ fn get_string_values<'a>(v:&'a Value) ->Vec<&'a str> {
     }
     if v.is_array() {
         return v.as_array().unwrap().iter().map(|x| get_string_values(x)).flatten().collect();
+    }
+    if v.is_boolean() {
+        if v.as_bool().unwrap() {
+            return vec!("true");
+        } else {
+            return vec!("false");
+        }
     }
     return [].to_vec();
 }

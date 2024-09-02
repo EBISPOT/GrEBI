@@ -3,10 +3,16 @@
     "enabled": true,
     "ingests": [
         {
-            "ingest_files": ["./00_fetch_data/chembl/chembl_34/chembl_34_sqlite/chembl_34.db"],
-            "ingest_script": "./target/release/grebi_ingest_sqlite",
-            "stdin": false,
+            "ingest_files": ["./00_fetch_data/chembl/*.ttl.gz"],
+            "ingest_script": "./target/release/grebi_ingest_rdf",
             "ingest_args": [
+                { "name": "--rdf-type", "value": "rdf_triples_turtle" },
+                { "name": "--rdf-types-are-grebi-types", "value": "" },
+                { "name": "--nest-objects-of-predicate", "value": "http://rdf.ebi.ac.uk/terms/chembl#hasMolecule" },
+                { "name": "--exclude-objects-of-predicate", "value": "http://rdf.ebi.ac.uk/terms/chembl#hasDocument" },
+                { "name": "--reif-pointer-predicate", "value": "http://semanticscience.org/resource/SIO_000008" },
+                { "name": "--reif-predicate-predicate", "value": "http://www.w3.org/2000/01/rdf-schema#type" },
+                { "name": "--reif-value-predicate", "value": "http://semanticscience.org/resource/SIO_000300" }
             ]
         }
     ]

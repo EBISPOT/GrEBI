@@ -1,0 +1,14 @@
+{
+    "name": "OLS",
+    "enabled": true,
+    "ingests": [
+        {
+            "ingest_files": ["/data/ontologies/ontologies.json"],
+            "ingest_script": "./target/release/grebi_ingest_ols",
+            "ingest_args": [
+                { "name": "--ontologies", "value": "cheminf,chebi,edam,dc,dcterms,go,pato,ncit,ro" },
+                { "name": "--skip-obsolete", "value": "" }
+            ]
+        }
+    ]
+}
