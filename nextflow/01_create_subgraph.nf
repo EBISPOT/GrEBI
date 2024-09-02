@@ -27,7 +27,7 @@ workflow {
         Channel.value(config.bytes_per_merged_file))
 
     indexed = index(merged.collect())
-    materialise(merged.flatten(), indexed.metadata_jsonl, Channel.value(config.exclude_edges + config.identifier_props))
+    materialise(merged.flatten(), indexed.metadata_jsonl, Channel.value(config.exclude_edges + config.identifier_props), Channel.value(config.exclude_self_referential_edges + config.identifier_props), groups_txt)
     merge_summary_jsons(indexed.prop_summary_json.collect() + materialise.out.edge_summary.collect())
 
     materialised_nodes_and_edges = materialise.out.nodes.collect() + materialise.out.edges.collect()
@@ -238,6 +238,8 @@ process materialise {
     path(merged_filename)
     path(metadata_jsonl)
     val(exclude)
+    val(exclude_self_referential)
+    path(groups_txt)
 
     output:
     path("materialised_nodes_${task.index}.jsonl"), emit: nodes
@@ -251,9 +253,11 @@ process materialise {
     cat ${merged_filename} \
         | ${params.home}/target/release/grebi_materialise \
           --in-metadata-jsonl ${metadata_jsonl} \
+          --groups-txt ${groups_txt} \
           --out-edges-jsonl materialised_edges_${task.index}.jsonl \
           --out-edge-summary-json edge_summary_${task.index}.json \
           --exclude ${exclude.iterator().join(",")} \
+          --exclude-self-referential ${exclude_self_referential.iterator().join(",")} \
         > materialised_nodes_${task.index}.jsonl
     """
 }
