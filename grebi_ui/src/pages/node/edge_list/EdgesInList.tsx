@@ -39,7 +39,7 @@ export default function EdgesInList(params:{
         async function getEdges() {
             console.log('refreshing ', node.getNodeId(), JSON.stringify(dsEnabled), JSON.stringify(edgesState?.datasources))
             setLoading(true)
-            let res = await getPaginated<GraphEdge>(`api/v1/subgraphs/${subgraph}/nodes/${node.getNodeId()}/incoming_edges?${
+            let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes/${node.getNodeId()}/incoming_edges?${
                 new URLSearchParams([
                     ['page', page],
                     ['size', rowsPerPage],
@@ -50,7 +50,7 @@ export default function EdgesInList(params:{
                     ...(edgesState && dsEnabled!==null ? 
                             difference(edgesState.datasources, dsEnabled).map(ds => ['-grebi:datasources', ds]) : [])
                 ])
-            }`)
+            }`)).map(e => new GraphEdge(e))
             setEdgesState({
                 total: res.totalElements,
                 datasources: Object.keys(res.facetFieldsToCounts['grebi:datasources']),
