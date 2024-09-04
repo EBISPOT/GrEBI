@@ -14,11 +14,13 @@ cytoscape.use(fcose)
 
 let formatter = Intl.NumberFormat('en', { notation: 'compact' });
 
+let MIN_COUNT_NODE_SIZE = 30
+let MAX_COUNT_NODE_SIZE = 120
 export default class GraphViewCtx {
 
     public dsSelectorDiv:HTMLDivElement
     public graphDiv:HTMLDivElement
-    public cy:null|cytoscape.Core = null
+    public cy:any = null
     public subgraph:string
     public loadingOverlay:HTMLDivElement
 
@@ -74,12 +76,14 @@ export default class GraphViewCtx {
 
         let elements = [
             ...Array.from(this.nodes.values()).map((node:GraphNodeRef) => ({
+                classes: 'node' + (node.getNodeId() === root.getNodeId() ? ' root' : ''),
                 data: {
                     id: node.getNodeId(),
                     label: node.getName()
                 }
             })),
             ...Array.from(this.edges.values()).map((edge:GraphEdge) => ({
+                classes: 'edge',
                 data: {
                     id: edge.getEdgeId(),
                     source: edge.getFrom().getNodeId(),
@@ -88,20 +92,28 @@ export default class GraphViewCtx {
             }))
         ];
 
+        let constraints:any = []
+
+        let max_count = 0
         for(let node of this.nodes.values()) {
             let nodeId = node.getNodeId()
             let outgoing_edgeCountByType = this.outgoing_nodeIdToEdgeCountByType.get(nodeId)
+            let incoming_edgeCountByType = this.incoming_nodeIdToEdgeCountByType.get(nodeId)
             for(let [edgeType,count] of outgoing_edgeCountByType!.entries()) {
                 if(count === 0)
                     continue
+                max_count = Math.max(count, max_count)
                 let countNodeId = 'count_outgoing_' + nodeId + '_' + edgeType
                 elements.push({
+                    classes: 'count',
                     data: {
                         id: countNodeId,
-                        label: formatter.format(count)
+                        label: formatter.format(count),
+                        count
                     }
                 })
                 elements.push({
+                    classes: 'count_edge',
                     data: {
                         id: 'to_' + countNodeId,
                         source: nodeId,
@@ -109,6 +121,31 @@ export default class GraphViewCtx {
                         label: edgeType
                     }
                 })
+                constraints.push({ left: nodeId, right: countNodeId })
+            }
+            for(let [edgeType,count] of incoming_edgeCountByType!.entries()) {
+                if(count === 0)
+                    continue
+                max_count = Math.max(count, max_count)
+                let countNodeId = 'count_incoming_' + nodeId + '_' + edgeType
+                elements.push({
+                    classes: 'count',
+                    data: {
+                        id: countNodeId,
+                        label: formatter.format(count),
+                        count
+                    }
+                })
+                elements.push({
+                    classes: 'count_edge',
+                    data: {
+                        id: 'from_' + countNodeId,
+                        source: countNodeId,
+                        target: nodeId, 
+                        label: edgeType
+                    }
+                })
+                constraints.push({ right: nodeId, left: countNodeId })
             }
         }
 
@@ -123,23 +160,48 @@ export default class GraphViewCtx {
             elements,
             style: [ // the stylesheet for the graph
                 {
-                    selector: 'node',
+                    selector: '.root',
                     style: {
-                        'background-color': '#666',
+                        'background-color': '#DDD',
                         'label': 'data(label)',
                         "text-valign" : "center",
-"text-halign" : "center"
-                    }
+                        "text-halign": "center",
+                        padding: '16px'
+                    } as any
                 },
-
                 {
-                    selector: 'edge',
+                    selector: '.node',
+                    style: {
+                        'background-color': '#EEE',
+                        'label': 'data(label)',
+                        "text-valign" : "center",
+"text-halign" : "center",
+padding: '8px'
+                    } as any
+                },
+                {
+                    selector: '.count',
+                    style: {
+                        'background-color': '#EEE',
+                        'label': 'data(label)',
+                        "text-valign" : "center",
+"text-halign" : "center",
+padding: '8px',
+                    width: (node) => (MIN_COUNT_NODE_SIZE + (node.data('count') / max_count) * (MAX_COUNT_NODE_SIZE-MIN_COUNT_NODE_SIZE)) + 'px',
+                    height: (node) => (MIN_COUNT_NODE_SIZE + (node.data('count') / max_count) * (MAX_COUNT_NODE_SIZE-MIN_COUNT_NODE_SIZE)) + 'px'
+
+                    } as any
+                },
+                {
+                    selector: '.count_edge',
                     style: {
                         'width': 3,
                         'label': 'data(label)',
                         'line-color': '#ccc',
+                        'line-dash-pattern': [6, 3],
                         'target-arrow-color': '#ccc',
                         'target-arrow-shape': 'triangle',
+                        'arrow-scale': 2,
                         'curve-style': 'bezier',
                          "text-rotation": "autorotate"
                     }
@@ -148,7 +210,11 @@ export default class GraphViewCtx {
             layout: {
                 name: 'fcose',
                     avoidOverlap: true,
-    nodeDimensionsIncludeLabels: true
+    nodeDimensionsIncludeLabels: true,
+    idealEdgeLength: edge => 500,
+    numIter: 500,
+    amimate: false,
+    relativePlacementConstraint: constraints
             } as any
         })
 

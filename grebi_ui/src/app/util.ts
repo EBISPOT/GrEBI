@@ -60,6 +60,8 @@ export function pickBestDisplayName(names:string[]):string|undefined {
     for (let c of name) {
       if (c.match(/[A-Za-z ]/)) {
         n++
+      } else {
+        n-=10
       }
     }
     return n

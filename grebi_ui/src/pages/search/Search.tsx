@@ -18,7 +18,7 @@ export default function Search() {
   const params = useParams();
   const subgraph: string = params.subgraph as string;
 
-  let [loadingResults, setLoadingResults] = useState<boolean>(false);
+  let [loadingResults, setLoadingResults] = useState<boolean>(true);
   let [results, setResults] = useState<GraphNode[]>([]);
   let [totalResults, setTotalResults] = useState<number>(0);
 
@@ -95,6 +95,8 @@ export default function Search() {
   useEffect(() => {
 
     async function doSearch() {
+      setLoadingResults(true)
+
       let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, {
         page: page.toString(), size: rowsPerPage.toString(), q: search,
         facet: ['grebi:datasources','grebi:type']
@@ -105,6 +107,8 @@ export default function Search() {
 
       setResults(res.elements)
       setFacets(res.facetFieldsToCounts)
+
+      setLoadingResults(false)
     }
 
     doSearch()
@@ -352,7 +356,6 @@ className="bg-grey-default rounded-sm font-mono py-1 px-1 mr-1 text-sm"
               </div>
             ) : (
               <div className="text-xl text-neutral-black font-bold">
-                No results!
               </div>
             )}
           </div>
