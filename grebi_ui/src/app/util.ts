@@ -65,3 +65,7 @@ export function pickBestDisplayName(names:string[]):string|undefined {
     return n
   }
 }
+
+export function difference(a:any[], b:any[]) {
+    return a.filter(x => b.indexOf(x) === -1)
+}

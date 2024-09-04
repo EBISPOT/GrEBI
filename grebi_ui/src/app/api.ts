@@ -71,7 +71,7 @@ export async function getPaginated<ResType>(
 	res.totalPages || 0,
 	res.totalElements || 0,
 	res.content || [],
-	res.facetFieldsToCounts || new Map()
+	res.facetFieldToCounts || new Map()
   );
 }
 
