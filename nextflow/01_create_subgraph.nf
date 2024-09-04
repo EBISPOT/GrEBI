@@ -255,7 +255,7 @@ process materialise {
           --in-metadata-jsonl ${metadata_jsonl} \
           --groups-txt ${groups_txt} \
           --out-edges-jsonl materialised_edges_${task.index}.jsonl \
-          --out-edge-summary-json edge_summary_${task.index}.json \
+          --out-summary-json edge_summary_${task.index}.json \
           --exclude ${exclude.iterator().join(",")} \
           --exclude-self-referential ${exclude_self_referential.iterator().join(",")} \
         > materialised_nodes_${task.index}.jsonl

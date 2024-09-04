@@ -50,7 +50,7 @@ struct Args {
     out_edges_jsonl: String,
 
     #[arg(long)]
-    out_edge_summary_json: String,
+    out_summary_json: String,
 
     #[arg(long)]
     groups_txt: String,
@@ -120,10 +120,14 @@ fn main() -> std::io::Result<()> {
     let stdout = io::stdout().lock();
     let mut nodes_writer = BufWriter::new(stdout);
 
-    let edge_summary_file = File::create(args.out_edge_summary_json).unwrap();
-    let mut edge_summary_writer = BufWriter::new(edge_summary_file);
+    let summary_file = File::create(args.out_summary_json).unwrap();
+    let mut summary_writer = BufWriter::new(summary_file);
 
     let mut edge_summary:EdgeSummaryTable = HashMap::new();
+
+    let mut all_entity_props:BTreeSet<Vec<u8>> = BTreeSet::new();
+    let mut all_edge_props:BTreeSet<Vec<u8>> = BTreeSet::new();
+    let mut all_types:BTreeSet<Vec<u8>> = BTreeSet::new();
 
     let mut n_nodes:i64 = 0;
 
@@ -146,8 +150,24 @@ fn main() -> std::io::Result<()> {
         }
 
         sliced.props.iter().for_each(|prop| {
+
+            let prop_key = prop.key;
+
+	    if prop_key.eq(b"grebi:type") {
+		    for val in &prop.values {
+			    if val.kind == JsonTokenType::StartString {
+				    let buf = &val.value.to_vec();
+				    let str = JsonParser::parse(&buf).string();
+				    all_types.insert(str.to_vec());
+			    }
+		    }
+
+	    }
+
+            all_entity_props.insert(prop_key.to_vec());
+
             for val in &prop.values {
-                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &exclude_self_ref, &node_metadata, &val.datasources, sliced.subgraph, &mut edge_summary);
+                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &exclude_self_ref, &node_metadata, &val.datasources, sliced.subgraph, &mut edge_summary, &mut all_edge_props);
             }
         });
 
@@ -176,16 +196,45 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("materialise took {} seconds", start_time.elapsed().as_secs());
 
-    edge_summary_writer.write_all(serde_json::to_string_pretty(&json!({
+    let mut entity_prop_defs:Map<String,Value> = Map::new();
+
+    for prop in all_entity_props {
+        let def = node_metadata.get(&prop);
+        if def.is_some() {
+            entity_prop_defs.insert(String::from_utf8_lossy(&prop).to_string(), serde_json::from_slice::<Value>(def.unwrap().json.as_slice()).unwrap());
+        }
+    }
+
+   let mut edge_prop_defs:Map<String,Value> = Map::new();
+
+    for prop in all_edge_props {
+        let def = node_metadata.get(&prop);
+        if def.is_some() {
+            edge_prop_defs.insert(String::from_utf8_lossy(&prop).to_string(), serde_json::from_slice::<Value>(def.unwrap().json.as_slice()).unwrap());
+        }
+    }
+   let mut type_defs:Map<String,Value> = Map::new();
+
+    for t in all_types {
+        let def = node_metadata.get(&t);
+        if def.is_some() {
+            type_defs.insert(String::from_utf8_lossy(&t).to_string(), serde_json::from_slice::<Value>(def.unwrap().json.as_slice()).unwrap());
+        }
+    }
+
+    summary_writer.write_all(serde_json::to_string_pretty(&json!({
+        "entity_prop_defs": entity_prop_defs,
+        "edge_prop_defs": edge_prop_defs,
+        "type_defs": type_defs,
         "edges": edge_summary
     })).unwrap().as_bytes()).unwrap();
 
-    edge_summary_writer.flush().unwrap();
+    summary_writer.flush().unwrap();
 
     Ok(())
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable, all_edge_props: &mut BTreeSet<Vec<u8>>) {
 
     if prop.key.eq(b"id") || prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
         return;
@@ -197,6 +246,10 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 
         if reified.is_some() {
             let reified_u = reified.unwrap();
+		reified_u.props.iter().for_each(|prop| {
+		    let prop_key = prop.key.to_vec();
+            all_edge_props.insert(prop_key);
+		});
             if reified_u.value_kind == JsonTokenType::StartString {
                 let buf = &reified_u.value.to_vec();
                 let str = JsonParser::parse(&buf).string();
