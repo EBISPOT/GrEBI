@@ -24,6 +24,7 @@ import SearchBox from "../../components/SearchBox";
 import PropTable from "./prop_table/PropTable";
 import EdgesInList from "./edge_list/EdgesInList";
 import EdgesOutList from "./edge_list/EdgesOutList";
+import GraphView from "./graph_view/GraphView";
 
 
 export default function NodePage() {
@@ -88,6 +89,7 @@ className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 mb-2 text-sm
             <Tab label="Properties" icon={<FormatListBulleted/>} value="properties" />
             <Tab label="Edges In" icon={<CallReceived/>} value="edges_in" />
             <Tab label="Edges Out" icon={<CallMade/>} value="edges_out" />
+            <Tab label="Graph" icon={<Share/>} value="graph" />
           </Tabs>
           </Grid>
           <Grid item xs={10}>
@@ -99,8 +101,8 @@ className="bg-grey-default rounded-sm font-mono py-1 pl-2 ml-1 my-1 mb-2 text-sm
         </TabPanel>
         <TabPanel value={tab} index={"edges_out"}>
         </TabPanel>
-        <TabPanel value={tab} index={"mappings"}>
-          Item Three
+        <TabPanel value={tab} index={"graph"}>
+         <GraphView subgraph={subgraph} node={node} />
         </TabPanel>
         </Grid>
         </Grid>

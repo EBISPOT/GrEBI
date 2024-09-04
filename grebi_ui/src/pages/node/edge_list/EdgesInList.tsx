@@ -1,9 +1,7 @@
 
-import { Grid } from "@mui/material";
 import GraphNode from "../../../model/GraphNode";
 import React, { Fragment, useEffect, useState, useMemo } from "react";
-import { get } from "../../../app/api";
-import {MaterialReactTable, MRT_ColumnDef, useMaterialReactTable} from "material-react-table";
+import { get, getPaginated } from "../../../app/api";
 import DatasourceSelector from "../../../components/DatasourceSelector";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import {useNavigate} from "react-router-dom";
@@ -11,20 +9,14 @@ import NodeRefLink from "./NodeRefLink";
 import GraphNodeRef from "../../../model/GraphNodeRef";
 import { DatasourceTags } from "../../../components/DatasourceTag";
 import DataTable from "../../../components/datatable/DataTable";
-import { Record } from "immutable";
-import { dir } from "console";
-
-function difference(a:any[], b:any[]) {
-    return a.filter(x => b.indexOf(x) === -1)
-}
+import { difference } from "../../../app/util";
+import GraphEdge from "../../../model/GraphEdge";
 
 export default function EdgesInList(params:{
     subgraph:string,
     node:GraphNode
 }) {
     let { subgraph, node } = params
-
-    const navigate = useNavigate();
 
   let [edgesState, setEdgesState] = useState<null|{
     total:number,
@@ -47,26 +39,27 @@ export default function EdgesInList(params:{
         async function getEdges() {
             console.log('refreshing ', node.getNodeId(), JSON.stringify(dsEnabled), JSON.stringify(edgesState?.datasources))
             setLoading(true)
-            let res = await get<any>(`api/v1/subgraphs/${subgraph}/nodes/${node.getNodeId()}/incoming_edges?${
+            let res = await getPaginated<GraphEdge>(`api/v1/subgraphs/${subgraph}/nodes/${node.getNodeId()}/incoming_edges?${
                 new URLSearchParams([
                     ['page', page],
                     ['size', rowsPerPage],
                     ['sortBy', sortColumn],
                     ['sortDir', sortDir],
+                    ['facet', 'grebi:datasources'],
                     ...(filter ? [['q', filter]] : []),
                     ...(edgesState && dsEnabled!==null ? 
                             difference(edgesState.datasources, dsEnabled).map(ds => ['-grebi:datasources', ds]) : [])
                 ])
             }`)
             setEdgesState({
-                total: res['total'],
-                datasources: Object.keys(res['facetFieldToCounts']['grebi:datasources']),
-                edges: res['content'],
-                facetFieldToCounts: res['facetFieldToCounts'],
+                total: res.totalElements,
+                datasources: Object.keys(res.facetFieldsToCounts['grebi:datasources']),
+                edges: res.elements,
+                facetFieldToCounts: res.facetFieldsToCounts,
                 propertyColumns:
-                    Object.keys(res['facetFieldToCounts'])
+                    Object.keys(res.facetFieldsToCounts)
                         .filter(k => k !== 'grebi:datasources')
-                        .filter(k => Object.entries(res['facetFieldToCounts'][k]).length > 0)
+                        .filter(k => Object.entries(res.facetFieldsToCounts[k]).length > 0)
             })
             setLoading(false)
         }
@@ -78,7 +71,6 @@ export default function EdgesInList(params:{
         return <LoadingOverlay message="Loading edges..." />
     }
 
-
     return <div>
         <DatasourceSelector datasources={edgesState.datasources} dsEnabled={dsEnabled!==null?dsEnabled:edgesState.datasources} setDsEnabled={setDsEnabled} />
         { loading && <LoadingOverlay message="Loading edges..." /> }
@@ -86,24 +78,24 @@ export default function EdgesInList(params:{
                 {
                     id: 'grebi:datasources',
                     name: 'Datasources',
-                    selector: (row:any) => {
-                        return <DatasourceTags dss={row['grebi:datasources']} />
+                    selector: (row:GraphEdge) => {
+                        return <DatasourceTags dss={row.getDatasources()} />
                     },
                     sortable: true,
                 },
                 {
                     id: 'grebi:from',
-                    name: 'Source',
-                    selector: (row:any) => {
-                        return  <NodeRefLink subgraph={subgraph} nodeRef={new GraphNodeRef(row['grebi:from'])} />
+                    name: 'From Node',
+                    selector: (row:GraphEdge) => {
+                        return  <NodeRefLink subgraph={subgraph} nodeRef={row.getFrom()} />
                     },
                     sortable: true,
                 },
                 {
                     id: 'grebi:type',
-                    name: 'Type',
-                    selector: (row:any) => {
-                        return row['grebi:type']
+                    name: 'Edge Type',
+                    selector: (row:GraphEdge) => {
+                        return row.getType()
                     },
                     sortable: true,
                 },

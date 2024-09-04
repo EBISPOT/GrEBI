@@ -107,10 +107,10 @@ export default function DataTable({
                       }}
                     />
                   }
-                  {column.sortable && setSortDir && setSortColumn && sortColumn === column.name && sortDir === 'asc' &&
+                  {column.sortable && setSortDir && setSortColumn && sortColumn === column.id && sortDir === 'asc' &&
                       <ArrowDownward color={'primary'} className="cursor-pointer" onClick={() => { setSortDir('desc') }} />
                   }
-                  {column.sortable && setSortDir && setSortColumn && sortColumn === column.name && sortDir === 'desc' &&
+                  {column.sortable && setSortDir && setSortColumn && sortColumn === column.id && sortDir === 'desc' &&
                       <ArrowUpward color={'primary'} className="cursor-pointer" onClick={() => { setSortDir('asc') }} />
                   }
                   </div>
