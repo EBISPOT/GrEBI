@@ -4,8 +4,7 @@
     "bytes_per_merged_file": 1073741824,
     "identifier_props": [
         "id",
-        "owl:equivalentClass",
-        "owl:equivalentProperty",
+        "owl:equivalentClass", "owl:equivalentProperty",
         "owl:sameAs",
         "grebi:equivalentTo",
         "ols:iri",
@@ -20,9 +19,10 @@
         "skos:exactMatch",
         "ncit:P368",
         "ncit:C98965",
-	"cheminf:000407",
-	"dcterms:identifier",
-        "oboinowl:hasAlternativeId"
+        "cheminf:000407",
+        "dcterms:identifier",
+        "oboinowl:hasAlternativeId",
+        "semapv:crossSpeciesExactMatch"
     ],
     "type_superclasses": [
         "mondo:0000001",
