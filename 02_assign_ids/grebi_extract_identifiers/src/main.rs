@@ -71,28 +71,30 @@ fn main() {
                 json.begin_array();
                 while json.peek().kind != JsonTokenType::EndArray {
                     if json.peek().kind == JsonTokenType::StartString {
-                        if wrote_any {
-                            writer.write_all(b"\t").unwrap();
-                        } else {
-                            wrote_any = true;
-                        }
                         let id = json.string();
-                        check_id(&k, &id);
-                        writer.write_all(&id).unwrap();
+                        if check_id(&k, &id) {
+                            if wrote_any {
+                                writer.write_all(b"\t").unwrap();
+                            } else {
+                                wrote_any = true;
+                            }
+                            writer.write_all(&id).unwrap();
+                        }
                     } else {
                         json.value(); // skip
                     }
                 }
                 json.end_array();
             } else if json.peek().kind == JsonTokenType::StartString {
-                if wrote_any {
-                    writer.write_all(b"\t").unwrap();
-                } else {
-                    wrote_any = true;
-                }
                 let id = json.string();
-                check_id(&k, &id);
-                writer.write_all(&id).unwrap();
+                if check_id(&k, &id) {
+                    if wrote_any {
+                        writer.write_all(b"\t").unwrap();
+                    } else {
+                        wrote_any = true;
+                    }
+                    writer.write_all(&id).unwrap();
+                }
             } else {
                 json.value(); // skip
             }
@@ -114,21 +116,19 @@ fn main() {
 
 }
 
-fn check_id(k:&[u8], id:&[u8]) {
+fn check_id(k:&[u8], id:&[u8]) -> bool {
     if id.len() >= 16 {
         // long numeric ID is prob a UUID and fine
-        return;
+        return true;
     }
-    let mut has_non_numeric = false;
     for c in id {
         if !c.is_ascii_digit() {
-            has_non_numeric = true;
-            break;
+            return true;
         }
     }
-    if !has_non_numeric {
-        panic!("Found unprefixed numeric ID {} for identifier property {}. Unqualified numbers like this as identifiers are ambiguous and may cause incorrect equivalences.", String::from_utf8_lossy(id), String::from_utf8_lossy(k));
-    }
+    // also triggers for blank IDs
+    eprintln!("Found unprefixed numeric ID {} for identifier property {}. Unqualified numbers like this as identifiers are ambiguous and may cause incorrect equivalences.", String::from_utf8_lossy(id), String::from_utf8_lossy(k));
+    return false;
 }
 
 
