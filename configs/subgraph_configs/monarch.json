@@ -20,7 +20,6 @@
         "skos:exactMatch",
         "ncit:P368",
         "ncit:C98965",
-	"cheminf:000407",
 	"dcterms:identifier",
         "oboinowl:hasAlternativeId"
     ],

@@ -129,7 +129,7 @@ Node {
 #[inline(always)]
 fn reprefix_impl<'a>(subject:&[u8], buf:&[u8]) -> Option<Vec<u8>> {
 
-    if subject.len() == 0 {
+    if subject.len() == 0 || buf.len() == 0 {
         return None;
     }
 

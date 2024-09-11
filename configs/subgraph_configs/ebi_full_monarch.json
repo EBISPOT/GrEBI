@@ -19,7 +19,6 @@
         "skos:exactMatch",
         "ncit:P368",
         "ncit:C98965",
-        "cheminf:000407",
         "dcterms:identifier",
         "oboinowl:hasAlternativeId",
         "semapv:crossSpeciesExactMatch"
@@ -65,7 +64,7 @@
         "./configs/datasource_configs/gwas.json",
         "./configs/datasource_configs/hgnc.json",
         "./configs/datasource_configs/impc.json",
-        "./configs/datasource_configs/mp_hp.json",
+        "./configs/datasource_configs/sssom.json",
         "./configs/datasource_configs/ols.json",
         "./configs/datasource_configs/reactome.json",
         "./configs/datasource_configs/ubergraph.json",

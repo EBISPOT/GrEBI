@@ -52,14 +52,15 @@ fn main() {
         return line.trim_start_matches("#").to_string();
     }).collect::<Vec<String>>().join("\n");
 
-    let yaml_header:serde_yaml::Value = serde_yaml::from_str::<serde_yaml::Value>(yaml.as_str()).unwrap();
-
-    let yaml_header_curie_map = yaml_header.get("curie_map").unwrap().as_mapping().unwrap();
-
+    
     let expand:PrefixMap = {
         let mut builder = PrefixMapBuilder::new();
-        for (k, v) in yaml_header_curie_map {
-            builder.add_mapping(k.as_str().unwrap().to_string() + ":", v.as_str().unwrap().to_string());
+        let yaml_header:serde_yaml::Value = serde_yaml::from_str::<serde_yaml::Value>(yaml.as_str()).unwrap();
+        let yaml_header_curie_map = yaml_header.get("curie_map");
+        if yaml_header_curie_map.is_some() {
+            for (k, v) in yaml_header_curie_map.unwrap().as_mapping().unwrap() {
+                builder.add_mapping(k.as_str().unwrap().to_string() + ":", v.as_str().unwrap().to_string());
+            }
         }
         builder.build()
     };

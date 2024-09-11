@@ -1,10 +1,10 @@
 {
-    "name": "MP_HP",
+    "name": "SSSOM",
     "enabled": true,
     "ingests": [
         {
             "ingest_files": [
-                "./00_fetch_data/sssom/mphp.sssom.tsv"
+                "./00_fetch_data/sssom/*.tsv.gz"
             ],
             "ingest_script": "./target/release/grebi_ingest_sssom",
             "ingest_args": []
