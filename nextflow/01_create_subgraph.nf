@@ -27,14 +27,15 @@ workflow {
         Channel.value(config.bytes_per_merged_file))
 
     indexed = index(merged.collect())
-    materialise(merged.flatten(), indexed.metadata_jsonl, Channel.value(config.exclude_edges + config.identifier_props), Channel.value(config.exclude_self_referential_edges + config.identifier_props), groups_txt)
-    merge_summary_jsons(indexed.prop_summary_json.collect() + materialise.out.edge_summary.collect())
+
+    materialise(merged.flatten(), indexed.metadata_jsonl, indexed.summary_json, Channel.value(config.exclude_edges + config.identifier_props), Channel.value(config.exclude_self_referential_edges + config.identifier_props), groups_txt)
+    merge_summary_jsons(indexed.summary_json.collect() + materialise.out.mat_summary.collect())
 
     materialised_nodes_and_edges = materialise.out.nodes.collect() + materialise.out.edges.collect()
 
     rocks_db = create_rocks(materialised_nodes_and_edges)
 
-    neo_input_dir = prepare_neo(indexed.prop_summary_json, materialise.out.nodes, materialise.out.edges)
+    neo_input_dir = prepare_neo(indexed.summary_json, materialise.out.nodes, materialise.out.edges)
 
     ids_csv = create_neo_ids_csv(indexed.ids_txt)
     neo_db = create_neo(
@@ -208,7 +209,7 @@ process index {
 
     output:
     path("metadata.jsonl"), emit: metadata_jsonl
-    path("prop_summary.json"), emit: prop_summary_json
+    path("summary.json"), emit: summary_json
     path("names.txt"), emit: names_txt
     path("ids_${params.subgraph}.txt"), emit: ids_txt
 
@@ -220,7 +221,7 @@ process index {
         | ${params.home}/target/release/grebi_index \
         --subgraph-name ${params.subgraph} \
         --out-metadata-jsonl-path metadata.jsonl \
-        --out-summary-json-path prop_summary.json \
+        --out-summary-json-path summary.json \
         --out-names-txt names.txt \
         --out-ids-txt ids_${params.subgraph}.txt
     """
@@ -237,6 +238,7 @@ process materialise {
     input:
     path(merged_filename)
     path(metadata_jsonl)
+    path(index_summary_json)
     val(exclude)
     val(exclude_self_referential)
     path(groups_txt)
@@ -244,7 +246,7 @@ process materialise {
     output:
     path("materialised_nodes_${task.index}.jsonl"), emit: nodes
     path("materialised_edges_${task.index}.jsonl"), emit: edges
-    path("edge_summary_${task.index}.json"), emit: edge_summary
+    path("mat_summary_${task.index}.json"), emit: mat_summary
 
     script:
     """
@@ -253,9 +255,10 @@ process materialise {
     cat ${merged_filename} \
         | ${params.home}/target/release/grebi_materialise \
           --in-metadata-jsonl ${metadata_jsonl} \
+          --in-summary-json ${index_summary_json} \
           --groups-txt ${groups_txt} \
           --out-edges-jsonl materialised_edges_${task.index}.jsonl \
-          --out-summary-json edge_summary_${task.index}.json \
+          --out-summary-json mat_summary_${task.index}.json \
           --exclude ${exclude.iterator().join(",")} \
           --exclude-self-referential ${exclude_self_referential.iterator().join(",")} \
         > materialised_nodes_${task.index}.jsonl
@@ -266,9 +269,6 @@ process merge_summary_jsons {
     cache "lenient"
     memory "8 GB"
     time "1h"
-    //time { 1.hour + 8.hour * (task.attempt-1) }
-    //errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-    //maxRetries 5
 
     publishDir "${params.tmp}/${params.config}/${params.subgraph}", overwrite: true
 
@@ -321,7 +321,7 @@ process prepare_neo {
     publishDir "${params.tmp}/${params.config}/${params.subgraph}/neo4j_csv", overwrite: true
 
     input:
-    path(prop_summary_json)
+    path(summary_json)
     path(nodes_jsonl)
     path(edges_jsonl)
 
@@ -335,7 +335,7 @@ process prepare_neo {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     ${params.home}/target/release/grebi_make_neo_csv \
-      --in-summary-jsons ${prop_summary_json} \
+      --in-summary-jsons ${summary_json} \
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-edges-jsonl ${edges_jsonl} \
       --out-nodes-csv-path neo_nodes_${params.subgraph}_${task.index}.csv \
@@ -435,7 +435,7 @@ process create_solr_nodes_core {
     set -Eeuo pipefail
     python3 ${params.home}/06_prepare_db_import/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
-        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/prop_summary.json \
+        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/summary.json \
         --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
         --out-config-dir solr_config
     python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \
@@ -464,7 +464,7 @@ process create_solr_edges_core {
     set -Eeuo pipefail
     python3 ${params.home}/06_prepare_db_import/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
-        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/prop_summary.json \
+        --in-summary-json ${params.tmp}/${params.config}/${params.subgraph}/summary.json \
         --in-template-config-dir ${params.home}/06_prepare_db_import/solr_config_template \
         --out-config-dir solr_config
     python3 ${params.home}/07_create_db/solr/solr_import.slurm.py \

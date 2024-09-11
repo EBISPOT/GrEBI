@@ -92,7 +92,7 @@ fn main() -> std::io::Result<()> {
 
 
 
-    nodes_writer.write_all("grebi:nodeId:ID,:LABEL,grebi:datasources:string[],grebi:subgraph:string".as_bytes()).unwrap();
+    nodes_writer.write_all("grebi:nodeId:ID,:LABEL,grebi:datasources:string[],grebi:subgraph:string,grebi:displayType:string".as_bytes()).unwrap();
     for prop in &all_entity_props {
         nodes_writer.write_all(b",").unwrap();
         nodes_writer.write_all(prop.as_bytes()).unwrap();
@@ -204,8 +204,16 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
         nodes_writer.write_all(ds).unwrap();
     });
 
+    // grebi:subgraph
     nodes_writer.write_all(b"\",\"").unwrap();
     nodes_writer.write_all(entity.subgraph).unwrap();
+    nodes_writer.write_all(b"\",").unwrap();
+
+    // grebi:displayType
+    nodes_writer.write_all(b"\"").unwrap();
+    if entity.display_type.is_some() {
+        write_escaped_value(entity.display_type.unwrap(), nodes_writer);
+    }
     nodes_writer.write_all(b"\"").unwrap();
 
     for header_prop in all_node_props {
@@ -217,6 +225,9 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
                 }
                 if row_prop.key == "grebi:type".as_bytes() {
                     continue; // already put in :LABEL column
+                }
+                if row_prop.key == "grebi:displayType".as_bytes() {
+                    continue; // already written above
                 }
                 if header_prop.as_bytes() == row_prop.key {
                     if row_prop.key == "id".as_bytes() {

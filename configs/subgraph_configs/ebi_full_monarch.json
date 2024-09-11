@@ -61,21 +61,6 @@
 	"ols:ontologyId"
      ],
     "datasource_configs": [
-        "./configs/datasource_configs/gwas.json",
-        "./configs/datasource_configs/hgnc.json",
-        "./configs/datasource_configs/impc.json",
-        "./configs/datasource_configs/sssom.json",
-        "./configs/datasource_configs/ols.json",
-        "./configs/datasource_configs/reactome.json",
-        "./configs/datasource_configs/ubergraph.json",
-        "./configs/datasource_configs/otar.json",
-        "./configs/datasource_configs/monarch.json",
-        "./configs/datasource_configs/metabolights.json",
-        "./configs/datasource_configs/mondo_efo.json",
-        "./configs/datasource_configs/hett_pesticides_appril.json",
-        "./configs/datasource_configs/hett_pesticides_eu.json",
-        "./configs/datasource_configs/hett_pesticides_gb.json",
-        "./configs/datasource_configs/aopwiki.json",
-        "./configs/datasource_configs/chembl.json"
+        "./configs/datasource_configs/reactome.json"
     ]
 }

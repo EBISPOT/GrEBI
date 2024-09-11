@@ -53,6 +53,7 @@ fn main() {
 
     let mut entity_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut edge_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
+    let mut types_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut all_names:BTreeSet<Vec<u8>> = BTreeSet::new();
     let mut all_ids:BTreeSet<Vec<u8>> = BTreeSet::new();
 
@@ -106,7 +107,9 @@ fn main() {
             w_count = entity_props_to_count.get_mut(prop_key);
             let count:&mut i64 = w_count.unwrap();
 
-            if prop_key.eq(b"grebi:type") || prop_key.eq(b"grebi:datasources") || prop_key.eq(b"id") {
+            let is_type = prop_key.eq(b"grebi:type");
+
+            if is_type || prop_key.eq(b"grebi:datasources") || prop_key.eq(b"id") {
                 metadata_writer.write_all(r#",""#.as_bytes()).unwrap();
                 metadata_writer.write_all(&prop_key).unwrap();
                 metadata_writer.write_all(r#"":["#.as_bytes()).unwrap();
@@ -117,6 +120,10 @@ fn main() {
                             is_first = false;
                         } else {
                             metadata_writer.write_all(r#","#.as_bytes()).unwrap();
+                        }
+                        if is_type && val.kind == JsonTokenType::StartString {
+                            let typecount = types_to_count.entry(val.value[1..val.value.len()-1].to_vec()).or_insert(0);
+                            *typecount += 1;
                         }
                         metadata_writer.write_all(val.value).unwrap();
                     }
@@ -218,7 +225,12 @@ fn main() {
                 return (String::from_utf8(k.to_vec()).unwrap(), json!({
                     "count": v
                 }))
-        }).collect::<HashMap<String,serde_json::Value>>()
+        }).collect::<HashMap<String,serde_json::Value>>(),
+        "types": types_to_count.iter().map(|(k,v)| {
+                return (String::from_utf8(k.to_vec()).unwrap(), json!({
+                    "count": v
+                }))
+        }).collect::<HashMap<String,serde_json::Value>>(),
     })).unwrap().as_bytes()).unwrap();
 
     for name in all_names {

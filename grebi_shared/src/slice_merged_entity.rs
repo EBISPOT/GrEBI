@@ -23,7 +23,8 @@ pub struct SlicedEntity<'a> {
     pub datasources:Vec<&'a [u8]>,
     pub subgraph:&'a [u8],
     pub props:Vec<SlicedProperty<'a>>,
-    pub _refs:Option<&'a [u8]>
+    pub _refs:Option<&'a [u8]>,
+    pub display_type:Option<&'a [u8]>
 }
 
 impl<'a> SlicedEntity<'a> {
@@ -34,6 +35,7 @@ impl<'a> SlicedEntity<'a> {
 
         let mut props:Vec<SlicedProperty> = Vec::new();
         let mut entity_datasources:Vec<&[u8]> = Vec::new();
+        let mut display_type:Option<&[u8]> = None;
         let mut _refs:Option<&[u8]> = None;
         
         // {
@@ -61,6 +63,11 @@ impl<'a> SlicedEntity<'a> {
         while parser.peek().kind != JsonTokenType::EndObject {
 
             let prop_key = parser.name();
+
+            if prop_key == b"grebi:displayType" {
+                display_type = Some(&parser.value());
+                continue;
+            }
 
             if prop_key == b"_refs" {
                 _refs = Some(&parser.value());
@@ -106,7 +113,7 @@ impl<'a> SlicedEntity<'a> {
 
 
 
-        return SlicedEntity { id, datasources: entity_datasources, subgraph, props, _refs };
+        return SlicedEntity { id, datasources: entity_datasources, subgraph, props, display_type, _refs };
 
     }
 

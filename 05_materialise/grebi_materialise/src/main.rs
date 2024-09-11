@@ -47,6 +47,9 @@ struct Args {
     in_metadata_jsonl: String,
 
     #[arg(long)]
+    in_summary_json: String,
+
+    #[arg(long)]
     out_edges_jsonl: String,
 
     #[arg(long)]
@@ -111,6 +114,14 @@ fn main() -> std::io::Result<()> {
 
     let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
 
+    let mut types_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
+    {
+        let summary_json:Map<String, Value> = serde_json::from_reader(File::open(&args.in_summary_json).unwrap()).unwrap();
+        for (k, v) in summary_json["types"].as_object().unwrap() {
+            types_to_count.insert(k.as_bytes().to_vec(), v.as_object().unwrap()["count"].as_i64().unwrap());
+        }
+    }
+
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
 
@@ -149,20 +160,31 @@ fn main() -> std::io::Result<()> {
             eprintln!("... written {} nodes", n_nodes);
         }
 
+        let mut rarest_type:Option<Vec<u8>> = None;
+        let mut rarest_type_count:i64 = std::i64::MAX;
+
         sliced.props.iter().for_each(|prop| {
 
             let prop_key = prop.key;
 
-	    if prop_key.eq(b"grebi:type") {
-		    for val in &prop.values {
-			    if val.kind == JsonTokenType::StartString {
-				    let buf = &val.value.to_vec();
-				    let str = JsonParser::parse(&buf).string();
-				    all_types.insert(str.to_vec());
-			    }
-		    }
+            if prop_key.eq(b"grebi:type") {
+                for val in &prop.values {
+                    if val.kind == JsonTokenType::StartString {
+                        let buf = &val.value.to_vec();
+                        let str = JsonParser::parse(&buf).string();
+                        all_types.insert(str.to_vec());
 
-	    }
+                        let count = types_to_count.get(str);
+                        if count.is_some() {
+                            if *count.unwrap() < rarest_type_count {
+                                rarest_type = Some(str.to_vec());
+                                rarest_type_count = *count.unwrap();
+                            }
+                        }
+                    }
+                }
+
+            }
 
             all_entity_props.insert(prop_key.to_vec());
 
@@ -187,6 +209,11 @@ fn main() -> std::io::Result<()> {
         };
 
         nodes_writer.write_all(&line[0..line.len()-1] /* skip closing bracket */).unwrap();
+        if rarest_type.is_some() {
+            nodes_writer.write_all(b",\"grebi:displayType\":\"").unwrap();
+            nodes_writer.write_all(&rarest_type.unwrap()).unwrap();
+            nodes_writer.write_all(b"\"").unwrap();
+        }
         nodes_writer.write_all(b",\"_refs\":").unwrap();
         nodes_writer.write_all(serde_json::to_string(&_refs).unwrap().as_bytes()).unwrap();
         nodes_writer.write_all(b"}\n").unwrap();
@@ -225,7 +252,7 @@ fn main() -> std::io::Result<()> {
     summary_writer.write_all(serde_json::to_string_pretty(&json!({
         "entity_prop_defs": entity_prop_defs,
         "edge_prop_defs": edge_prop_defs,
-        "type_defs": type_defs,
+        "types": type_defs,
         "edges": edge_summary
     })).unwrap().as_bytes()).unwrap();
 
