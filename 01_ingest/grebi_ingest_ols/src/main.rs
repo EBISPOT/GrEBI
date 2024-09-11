@@ -191,7 +191,6 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             } else {
                 let pref_prefix_u = pref_prefix.unwrap().to_string();
                 let label = get_string_values(obj.get("ols:label").unwrap()).iter().next().unwrap().to_string();
-
                 // this might not be a real label, in which case just return the curie
                 if label.starts_with(&(pref_prefix_u.to_owned()  + ":")) || label.starts_with(&(pref_prefix_u.to_owned() + "_")) {
                     curie.to_string()
