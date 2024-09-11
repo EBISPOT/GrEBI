@@ -115,6 +115,10 @@ fn main() {
 }
 
 fn check_id(k:&[u8], id:&[u8]) {
+    if id.len() >= 16 {
+        // long numeric ID is prob a UUID and fine
+        return;
+    }
     let mut has_non_numeric = false;
     for c in id {
         if !c.is_ascii_digit() {
