@@ -172,51 +172,57 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             }
         }
 
-        //if grebitype.eq("ols:Property") { 
-
-            let qualified_safe_label = {
-                let curie = get_string_values(obj.get("ols:curie").unwrap()).iter().next().unwrap().to_string();
-                let pref_prefix = {
-                    if curie.contains(":") {
-                        Some(curie.split(":").next().unwrap().to_ascii_lowercase())
-                    } else {
-			let definedBy = obj.get("ols:definedBy");
-			if definedBy.is_some() {
-				Some(get_string_values(definedBy.unwrap()).iter().next().unwrap().to_string())
-			} else {
-				None
-			}
-                    }
-                };
-		if !pref_prefix.is_some() {
-			curie.to_string()
-		} else {
-			let pref_prefix_u = pref_prefix.unwrap().to_string();
-			let label = get_string_values(obj.get("ols:label").unwrap()).iter().next().unwrap().to_string();
-
-			// this might not be a real label, in which case just return the curie
-			if label.starts_with(&(pref_prefix_u.to_owned()  + ":")) || label.starts_with(&(pref_prefix_u.to_owned() + "_")) {
-			    curie.to_string()
-			} else {
-			    pref_prefix_u.to_string() + ":" + &label.to_string().as_bytes().iter().map(|x| {
-				if x.is_ascii_alphanumeric() {
-				    *x as char
-				} else {
-				    '_'
-				}
-			    }).collect::<String>()
-			}
-		}
-            };
-
-            output_nodes.write_all(r#"{"id":"#.as_bytes()).unwrap();
-            output_nodes.write_all(Value::String(qualified_safe_label).to_string().as_bytes()).unwrap();
-        /*} else {
-            output_nodes.write_all(r#"{"id":"#.as_bytes()).unwrap();
+        let qualified_safe_label = {
             let curie = get_string_values(obj.get("ols:curie").unwrap()).iter().next().unwrap().to_string();
-            output_nodes.write_all(Value::String(curie).to_string().as_bytes()).unwrap();
-        }*/
+            let pref_prefix = {
+                if curie.contains(":") {
+                    Some(curie.split(":").next().unwrap().to_ascii_lowercase())
+                } else {
+                    let definedBy = obj.get("ols:definedBy");
+                    if definedBy.is_some() {
+                        Some(get_string_values(definedBy.unwrap()).iter().next().unwrap().to_string())
+                    } else {
+                        None
+                    }
+                }
+            };
+            if !pref_prefix.is_some() {
+                obj.get("ols:iri").unwrap().as_str().unwrap().to_string()
+            } else {
+                let pref_prefix_u = pref_prefix.unwrap().to_string();
+                let label = get_string_values(obj.get("ols:label").unwrap()).iter().next().unwrap().to_string();
+                // this might not be a real label, in which case just return the curie
+                if label.starts_with(&(pref_prefix_u.to_owned()  + ":")) || label.starts_with(&(pref_prefix_u.to_owned() + "_")) {
+                    curie.to_string()
+                } else {
+                    pref_prefix_u.to_string() + ":" + &label.to_string().as_bytes().iter().map(|x| {
+                    if x.is_ascii_alphanumeric() {
+                        *x as char
+                    } else {
+                        '_'
+                    }
+                    }).collect::<String>()
+                }
+            }
+        };
 
+        // Remove unprefixed IDs to avoid polluting ID space, e.g.
+        // https://www.ebi.ac.uk/ols4/api/v2/ontologies/mondo/classes/http%253A%252F%252Fidentifiers.org%252Fhgnc%252F4044
+        // TODO: fix this in OLS?
+        //
+        if obj.contains_key("ols:curie") {
+                if !get_string_values(obj.get("ols:curie").unwrap()).iter().next().unwrap().contains(":") {
+                    obj.remove_entry("ols:curie");
+                }
+        }
+        if obj.contains_key("ols:shortForm") {
+                if !get_string_values(obj.get("ols:shortForm").unwrap()).iter().next().unwrap().contains("_") {
+                    obj.remove_entry("ols:shortForm");
+                }
+        }
+
+        output_nodes.write_all(r#"{"id":"#.as_bytes()).unwrap();
+        output_nodes.write_all(Value::String(qualified_safe_label).to_string().as_bytes()).unwrap();
         output_nodes.write_all(r#","grebi:datasource":""#.as_bytes()).unwrap();
         output_nodes.write_all(datasource.as_bytes()).unwrap();
         output_nodes.write_all(r#"","grebi:type":[""#.as_bytes()).unwrap();

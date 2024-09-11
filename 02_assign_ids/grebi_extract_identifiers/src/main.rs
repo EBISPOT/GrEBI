@@ -76,7 +76,9 @@ fn main() {
                         } else {
                             wrote_any = true;
                         }
-                        writer.write_all(&json.string()).unwrap();
+                        let id = json.string();
+                        check_id(&k, &id);
+                        writer.write_all(&id).unwrap();
                     } else {
                         json.value(); // skip
                     }
@@ -88,7 +90,9 @@ fn main() {
                 } else {
                     wrote_any = true;
                 }
-                writer.write_all(&json.string()).unwrap();
+                let id = json.string();
+                check_id(&k, &id);
+                writer.write_all(&id).unwrap();
             } else {
                 json.value(); // skip
             }
@@ -109,6 +113,20 @@ fn main() {
     writer.flush().unwrap();
 
 }
+
+fn check_id(k:&[u8], id:&[u8]) {
+    let mut has_non_numeric = false;
+    for c in id {
+        if !c.is_ascii_digit() {
+            has_non_numeric = true;
+            break;
+        }
+    }
+    if !has_non_numeric {
+        panic!("Found unprefixed numeric ID {} for identifier property {}. Unqualified numbers like this as identifiers are ambiguous and may cause incorrect equivalences.", String::from_utf8_lossy(id), String::from_utf8_lossy(k));
+    }
+}
+
 
 
 

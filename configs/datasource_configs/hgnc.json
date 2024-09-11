@@ -13,6 +13,10 @@
                 { "name": "--json-inject-key-prefix", "value": "hgnc:" },
                 { "name": "--json-inject-value-prefix", "value": "uniprot_ids:uniprot:" },
                 { "name": "--json-inject-value-prefix", "value": "omim_id:omim:" },
+                { "name": "--json-inject-value-prefix", "value": "ena:ena:" },
+                { "name": "--json-inject-value-prefix", "value": "vega_id:vega:" },
+                { "name": "--json-inject-value-prefix", "value": "ccds_id:ccds:" },
+                { "name": "--json-inject-value-prefix", "value": "entrez_id:entrez:" },
                 { "name": "--json-inject-value-prefix", "value": "pubmed_id:pmid:" }
             ]
         }
