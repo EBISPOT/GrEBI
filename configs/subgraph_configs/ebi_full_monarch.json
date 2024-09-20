@@ -39,26 +39,35 @@
         ["rdfs:isDefinedBy", "ols:ontologyIri", "ols:ontologyId"]
     ],
     "exclude_props": [
-	"ols:hierarchicalProperty",
-	"ols:synonymProperty",
+        "ols:hierarchicalProperty",
+        "ols:synonymProperty",
         "ols:curie",
         "ols:shortForm",
         "ols:ontologyPreferredPrefix",
         "ols:iri",
         "ols:uri",
+        "ols:imported",
         "oboinowl:id",
         "oboinowl:url",
-        "monarch:iri"
+        "monarch:iri",
+        "cco:hasDocument",
+        "cco:hasMolecule"
     ],
     "exclude_edges": [
     ],
     "exclude_self_referential_edges": [
         "foaf:page",
         "oboinowl:hasDbXref",
-	"biolink:subclass_of",
-	"biolink:broad_match",
-	"ols:ontology_purl",
-	"ols:ontologyId"
+        "biolink:subclass_of",
+        "biolink:broad_match",
+        "ols:ontology_purl",
+        "ols:ontologyId",
+        "cheminf:000407",
+        "biolink:interacts_with",
+        "reactome:url",
+        "dc:Identifier",
+        "hgnc:agr",
+        "hgnc:gencc"
      ],
     "datasource_configs": [
         "./configs/datasource_configs/reactome.json",
