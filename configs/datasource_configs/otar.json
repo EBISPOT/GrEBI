@@ -8,7 +8,8 @@
             "ingest_args": [
                 { "name": "--json-inject-type", "value": "otar:Evidence" },
                 { "name": "--json-inject-key-prefix", "value": "otar:" },
-                { "name": "--json-inject-value-prefix", "value": "literature:pmid:" }
+                { "name": "--json-inject-value-prefix", "value": "literature:pmid:" },
+                { "name": "--json-de-nest-field", "value": "diseaseModelAssociatedModelPhenotypes.id" }
             ]
         }
     ]
