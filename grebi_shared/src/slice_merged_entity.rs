@@ -7,6 +7,7 @@ use crate::json_parser::JsonParser;
 pub struct SlicedPropertyValue<'a> {
     pub kind:JsonTokenType,
     pub datasources:Vec<&'a [u8]>,
+    pub source_ids:Vec<&'a [u8]>,
     pub value:&'a [u8]
 }
 
@@ -21,6 +22,7 @@ pub struct SlicedProperty<'a> {
 pub struct SlicedEntity<'a> {
     pub id:&'a [u8],
     pub datasources:Vec<&'a [u8]>,
+    pub source_ids:Vec<&'a [u8]>,
     pub subgraph:&'a [u8],
     pub props:Vec<SlicedProperty<'a>>,
     pub _refs:Option<&'a [u8]>,
@@ -35,6 +37,7 @@ impl<'a> SlicedEntity<'a> {
 
         let mut props:Vec<SlicedProperty> = Vec::new();
         let mut entity_datasources:Vec<&[u8]> = Vec::new();
+        let mut entity_source_ids:Vec<&[u8]> = Vec::new();
         let mut display_type:Option<&[u8]> = None;
         let mut _refs:Option<&[u8]> = None;
         
@@ -52,6 +55,15 @@ impl<'a> SlicedEntity<'a> {
         parser.begin_array();
             while parser.peek().kind != JsonTokenType::EndArray {
                 entity_datasources.push(parser.string());
+            }
+        parser.end_array();
+
+        // "grebi:sourceIds": ...
+        let k_value_source_ids = parser.name();
+        if k_value_source_ids != "grebi:sourceIds".as_bytes() { panic!(); }
+        parser.begin_array();
+            while parser.peek().kind != JsonTokenType::EndArray {
+                entity_source_ids.push(parser.string());
             }
         parser.end_array();
 
@@ -93,6 +105,15 @@ impl<'a> SlicedEntity<'a> {
                             }
                         parser.end_array();
 
+                        // "grebi:source_ids": ...
+                        let k_value_source_ids = parser.name();
+                        if k_value_source_ids != "grebi:sourceIds".as_bytes() { panic!(); }
+                        parser.begin_array();
+                            while parser.peek().kind != JsonTokenType::EndArray {
+                                value_source_ids.push(parser.string());
+                            }
+                        parser.end_array();
+
                         // "grebi:value": ...
                         let k_value_value = parser.name();
                         if k_value_value != "grebi:value".as_bytes() { panic!(); }
@@ -100,7 +121,7 @@ impl<'a> SlicedEntity<'a> {
                         let prop_value_kind = parser.peek().kind;
                         let prop_value = parser.value();
 
-                        values.push(SlicedPropertyValue { kind: prop_value_kind, datasources: value_datasources, value: prop_value });
+                        values.push(SlicedPropertyValue { kind: prop_value_kind, datasources: value_datasources, source_ids: value_source_ids, value: prop_value });
 
                     parser.end_object();
                 }
@@ -113,7 +134,7 @@ impl<'a> SlicedEntity<'a> {
 
 
 
-        return SlicedEntity { id, datasources: entity_datasources, subgraph, props, display_type, _refs };
+        return SlicedEntity { id, datasources: entity_datasources, sourceIds: entity_source_ids, subgraph, props, display_type, _refs };
 
     }
 

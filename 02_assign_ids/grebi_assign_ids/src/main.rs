@@ -12,6 +12,7 @@ use clap::Parser;
 
 use grebi_shared::find_strings;
 use grebi_shared::load_groups_txt::load_groups_txt;
+use grebi_shared::check_id;
 
 
 #[derive(clap::Parser, Debug)]
@@ -67,25 +68,37 @@ fn main() {
         
         let mut json = JsonParser::parse(&line);
 
-        let mut id:Option<&[u8]> = None;
+        let mut ids:Vec<&[u8]> = None;
 
         json.begin_object();
         json.mark();
         while json.peek().kind != JsonTokenType::EndObject {
-            let prop_key = json.name();
 
-            // any of the IDs will do, we only need one
-            // as all identifiers map to the same group
-            //
-            if id_props.contains(prop_key) {
-		// TODO handle the same cases as the id extraction does
-		if json.peek().kind == JsonTokenType::StartArray {
-			json.begin_array();
-			id = Some(json.string());
-		} else {
-			id = Some(json.string());
-		}
-		break;
+            let k = json.name();
+
+            if id_props.contains(k) {
+                json.value(); // skip
+                continue;
+            }
+
+            if json.peek().kind == JsonTokenType::StartArray {
+                json.begin_array();
+                while json.peek().kind != JsonTokenType::EndArray {
+                    if json.peek().kind == JsonTokenType::StartString {
+                        let id = json.string();
+                        if check_id(&k, &id) {
+                            ids.push(&id);
+                        }
+                    } else {
+                        json.value(); // skip
+                    }
+                }
+                json.end_array();
+            } else if json.peek().kind == JsonTokenType::StartString {
+                let id = json.string();
+                if check_id(&k, &id) {
+                    ids.push(&id);
+                }
             } else {
                 json.value(); // skip
             }
@@ -93,7 +106,8 @@ fn main() {
 
         writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
 
-        let group = id_to_group.get(id.unwrap());
+        // just get the first id, doesn't matter bc all map to the same group 
+        let group = id_to_group.get(ids.iter().next().unwrap());
         if group.is_some() {
             writer.write_all(group.unwrap().as_slice()).unwrap();
         } else {
@@ -101,7 +115,19 @@ fn main() {
         }
 
         writer.write_all("\"".as_bytes()).unwrap();
-
+        writer.write_all(",\"grebi:sourceIds\":[".as_bytes()).unwrap();
+        let mut is_first_id = true;
+        for &id in ids {
+            if is_first_id {
+                is_first_id = false;
+            } else {
+                writer.write_all(b",").unwrap();
+            }
+            writer.write_all(b"\"").unwrap();
+            writer.write_all(id).unwrap();
+            writer.write_all(b"\"").unwrap();
+        }
+        writer.write_all("]".as_bytes()).unwrap();
 
         json.rewind();
         while json.peek().kind != JsonTokenType::EndObject {
@@ -109,19 +135,18 @@ fn main() {
             writer.write_all(b",\"").unwrap();
 
             let name = json.name();
-            if name.eq(b"id") {
-                writer.write_all(b"id").unwrap();
+            let name_group = id_to_group.get(name);
+            if name_group.is_some() {
+                writer.write_all(b"mapped##").unwrap();
+                writer.write_all(name).unwrap();
+                writer.write_all(b"##").unwrap();
+                writer.write_all(name_group.unwrap()).unwrap();
             } else {
-                let name_group = id_to_group.get(name);
-                if name_group.is_some() {
-                    writer.write_all(name_group.unwrap()).unwrap();
-                } else {
-                    writer.write_all(name).unwrap();
-                }
+                writer.write_all(name).unwrap();
             }
             writer.write_all(b"\":").unwrap();
 
-            if name.eq(b"id") || preserve_fields.contains(name) {
+            if preserve_fields.contains(name) {
                 writer.write_all(json.value()).unwrap();
             } else {
                 write_value(&mut writer, json.value(), &id_to_group);
@@ -158,6 +183,9 @@ fn write_value(writer:&mut BufWriter<io::StdoutLock>, value:&[u8], id_to_group:&
 
         let pv_group = id_to_group.get(str);
         if pv_group.is_some() {
+            writer.write_all(b"mapped##").unwrap();
+            writer.write_all(str).unwrap();
+            writer.write_all(b"##").unwrap();
             writer.write_all(pv_group.unwrap()).unwrap();
         } else {
             writer.write_all(str).unwrap();

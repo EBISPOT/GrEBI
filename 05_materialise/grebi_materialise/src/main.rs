@@ -263,7 +263,7 @@ fn main() -> std::io::Result<()> {
 
 fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable, all_edge_props: &mut BTreeSet<Vec<u8>>) {
 
-    if prop.key.eq(b"id") || prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
+    if prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
         return;
     }
 
@@ -279,13 +279,35 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 		});
             if reified_u.value_kind == JsonTokenType::StartString {
                 let buf = &reified_u.value.to_vec();
-                let str = JsonParser::parse(&buf).string();
-                let exists = node_metadata.contains_key(str);
+                
+                let value_str = JsonParser::parse(&buf).string();
+
+                let (to_node_id, to_source_id) = {
+                    if value_str.starts_with("mapped##") {
+                        let tokens = value_str.split("##");
+                        (tokens[2], tokens[1])
+                    } else {
+                        (value_str, value_str)
+                    }
+                };
+
+                let exists = node_metadata.contains_key(to_node_id);
                 if exists {
-                    if from_id.eq(str) && exclude_self_ref.contains(prop.key) {
+                    if from_id.eq(to_node_id) && exclude_self_ref.contains(prop.key) {
                         return;
                     }
-                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), edges_writer,  node_metadata, &datasources, &subgraph, edge_summary);
+                    write_edge(
+                        from_id,
+                        prop.source_ids,
+                        to_node_id,
+                        to_source_id,
+                        prop.key,
+                        Some(&reified_u.props),
+                        edges_writer,
+                        node_metadata,
+                        &datasources,
+                        &subgraph,
+                        edge_summary);
                 }
             } else {
                 // panic!("unexpected kind: {:?}", reified_u.value_kind);
@@ -317,7 +339,18 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, edges_writer: &mut BufWriter<File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary:&mut EdgeSummaryTable) {
+fn write_edge(
+    from_node_id: &[u8],
+    from_source_ids: Vec<&[u8]>,
+    to_node_id: &[u8],
+    to_source_id: &[u8],
+    edge:&[u8],
+    edge_props:Option<&Vec<SlicedProperty>>,
+    edges_writer: &mut BufWriter<File>,
+    node_metadata:&BTreeMap<Vec<u8>,Metadata>,
+    datasources:&Vec<&[u8]>,
+    subgraph:&[u8],
+    edge_summary:&mut EdgeSummaryTable) {
  
     let mut buf = Vec::new();
 
@@ -325,10 +358,26 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
     buf.extend(edge);
     buf.extend(b"\",\"grebi:subgraph\":\"");
     buf.extend(subgraph);
-    buf.extend(b"\",\"grebi:from\":\"");
-    buf.extend(from_id);
-    buf.extend(b"\",\"grebi:to\":\"");
+    buf.extend(b"\",\"grebi:fromNodeId\":\"");
+    buf.extend(from_node_id);
+    buf.extend(b"\",\"grebi:fromSourceIds\":[");
+    {
+        let mut is_first = true
+        for source_id in from_source_ids {
+            if is_first {
+                is_first = false;
+            } else {
+                buf.extend(b",");
+            }
+            buf.extend(b"\"");
+            buf.extend(source_id);
+            buf.extend(b"\"");
+        }
+    }
+    buf.extend(b"],\"grebi:toNodeId\":\"");
     buf.extend(to_id);
+    buf.extend(b"\",\"grebi:toSourceId\":\"");
+    buf.extend(to_source_id);
     buf.extend(b"\",\"grebi:datasources\":[");
 
     let mut is_first_ds = true;

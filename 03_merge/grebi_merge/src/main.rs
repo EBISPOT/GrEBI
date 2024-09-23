@@ -194,11 +194,11 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     for json in &jsons {
         n_props_total += json.props.len();
     }
-    let mut merged_props = Vec::<(&[u8] /* datasource */, ParsedProperty)>::with_capacity(n_props_total);
+    let mut merged_props = Vec::<(&[u8] /* datasource */, Vec<&[u8]> /* source ids */, ParsedProperty)>::with_capacity(n_props_total);
     for json in &jsons {
         for prop in json.props.iter() {
             if !exclude_props.contains(prop.key) {
-                merged_props.push(( json.datasource, prop.clone()));
+                merged_props.push(( json.datasource, json.sourceIds, prop.clone()));
             }
         }
     }
@@ -280,6 +280,8 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
             let start_value_index = index;
             stdout.write_all(r#"{"grebi:datasources":["#.as_bytes()).unwrap();
 
+            let mut source_ids:Vec<&[u8]> = Vec::new();
+
             let mut is_first3:bool = true;
             loop {
                 if !is_first3 {
@@ -293,6 +295,10 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
                 stdout.write_all(r#"""#.as_bytes()).unwrap();
 
                 index = index + 1;
+
+                for &source_id in merged_props[index].1 {
+                    source_ids.push(source_id);
+                }
                 
                 // if we hit the end of all the property definitions are are done
                 if index == merged_props.len() {
@@ -301,11 +307,28 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
                 // when we hit another key or value we are done; all the same key/value with different
                 // datasources should be right after us.
-                if merged_props[index].1.key != merged_props[start_value_index].1.key 
-                    ||merged_props[index].1.value != merged_props[start_value_index].1.value 
+                if merged_props[index].2.key != merged_props[start_value_index].2.key 
+                    ||merged_props[index].2.value != merged_props[start_value_index].2.value 
                 {
                     break;
                 }
+            }
+
+            source_ids.sort_unstable();
+            stdout.write_all(r#"],"grebi:sourceIds":["#.as_bytes()).unwrap();
+            let mut last_source_id:Option<&[u8]> = None;
+            for index2 in 0..source_ids.len() {
+                let source_id = &source_ids[index2];
+                if last_source_id.is_some() {
+                    if source_id == last_source_id.unwrap() {
+                        continue;
+                    }
+                    last_source_id = Some(source_id);
+                    stdout.write_all(b",");
+                }
+                stdout.write_all(r#"""#.as_bytes()).unwrap();
+                stdout.write_all(source_id).unwrap();
+                stdout.write_all(r#"""#.as_bytes()).unwrap();
             }
 
             // now write the value itself (from start_value_index; index should already be at the next value)
@@ -319,7 +342,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
             }   
 
             // if we changed key, we are done here (onto the next property)
-            if merged_props[index].1.key != merged_props[start_value_index].1.key {
+            if merged_props[index].2.key != merged_props[start_value_index].2.key {
                 break;
             }
         }

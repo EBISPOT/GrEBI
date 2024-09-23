@@ -43,15 +43,27 @@ impl<'a> SlicedEdge<'a> {
         if k_subgraph != "grebi:subgraph".as_bytes() { panic!("expected subgraph as key, got {}", String::from_utf8( k_subgraph.to_vec() ).unwrap()); }
         let edge_subgraph = parser.string();
 
-        // "from": ...
-        let k_from = parser.name();
-        if k_from != "grebi:from".as_bytes() { panic!("expected from as key, got {}", String::from_utf8( k_from.to_vec() ).unwrap()); }
-        let from = parser.string();
+        // "fromNodeId": ...
+        let k_from_nid = parser.name();
+        if k_from_nid != "grebi:fromNodeId".as_bytes() { panic!("expected from as key, got {}", String::from_utf8( k_from_nid.to_vec() ).unwrap()); }
+        let from_nid = parser.string();
+
+        // "fromSourceIds": ...
+        let k_from_sids = parser.name();
+        if k_from_sids != "grebi:fromSourceIds".as_bytes() { panic!("expected from as key, got {}", String::from_utf8( k_from_sids.to_vec() ).unwrap()); }
+
+        ///// TODO
 
         // "to": ...
-        let k_to = parser.name();
-        if k_to != "grebi:to".as_bytes() { panic!("expected to as key, got {}", String::from_utf8( k_to.to_vec() ).unwrap()); }
-        let to = parser.string();
+        let k_to_nid = parser.name();
+        if k_to_nid != "grebi:toNodeId".as_bytes() { panic!("expected to as key, got {}", String::from_utf8( k_to_nid.to_vec() ).unwrap()); }
+        let to_nid = parser.string();
+
+        // "to": ...
+        let k_to_sids = parser.name();
+        if k_to_sids != "grebi:toSourceIds".as_bytes() { panic!("expected to as key, got {}", String::from_utf8( k_to_sids.to_vec() ).unwrap()); }
+
+        ///// TODO
 
         // "grebi:datasources": ...
         let k_value_datasources = parser.name();

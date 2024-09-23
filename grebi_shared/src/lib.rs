@@ -7,6 +7,21 @@ pub mod slice_materialised_edge;
 pub mod load_metadata_mapping_table;
 pub mod load_groups_txt;
 
+pub fn check_id(k:&[u8], id:&[u8]) -> bool {
+    if id.len() >= 16 {
+        // long numeric ID is prob a UUID and fine
+        return true;
+    }
+    for c in id {
+        if !c.is_ascii_digit() {
+            return true;
+        }
+    }
+    // also triggers for blank IDs
+    eprintln!("Found unprefixed numeric ID {} for identifier property {}. Unqualified numbers like this as identifiers are ambiguous and may cause incorrect equivalences.", String::from_utf8_lossy(id), String::from_utf8_lossy(k));
+    return false;
+}
+
 // get the id without parsing json
 pub fn get_id<'a>(json:&'a [u8])->&'a [u8] {
 

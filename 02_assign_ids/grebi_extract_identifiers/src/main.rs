@@ -13,6 +13,7 @@ use clap::Parser;
 
 use grebi_shared::json_lexer::{lex, JsonTokenType};
 use grebi_shared::json_parser::JsonParser;
+use grebi_shared::check_id;
 
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
@@ -116,20 +117,6 @@ fn main() {
 
 }
 
-fn check_id(k:&[u8], id:&[u8]) -> bool {
-    if id.len() >= 16 {
-        // long numeric ID is prob a UUID and fine
-        return true;
-    }
-    for c in id {
-        if !c.is_ascii_digit() {
-            return true;
-        }
-    }
-    // also triggers for blank IDs
-    eprintln!("Found unprefixed numeric ID {} for identifier property {}. Unqualified numbers like this as identifiers are ambiguous and may cause incorrect equivalences.", String::from_utf8_lossy(id), String::from_utf8_lossy(k));
-    return false;
-}
 
 
 
