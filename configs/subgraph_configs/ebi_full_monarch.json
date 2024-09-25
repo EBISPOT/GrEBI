@@ -85,6 +85,23 @@
         "./configs/datasource_configs/hett_pesticides_eu.json",
         "./configs/datasource_configs/hett_pesticides_gb.json",
         "./configs/datasource_configs/aopwiki.json",
-        "./configs/datasource_configs/chembl.json"
+        "./configs/datasource_configs/chembl.json",
+        "./configs/datasource_configs/robokop_alliance.json",
+        "./configs/datasource_configs/robokop_binding.json",
+        "./configs/datasource_configs/robokop_cam.json",
+        "./configs/datasource_configs/robokop_ctd.json",
+        "./configs/datasource_configs/robokop_drugcentral.json",
+        "./configs/datasource_configs/robokop_gtex.json",
+        "./configs/datasource_configs/robokop_gtopdb.json",
+        "./configs/datasource_configs/robokop_hetionet.json",
+        "./configs/datasource_configs/robokop_hgoa.json",
+        "./configs/datasource_configs/robokop_hmdb.json",
+        "./configs/datasource_configs/robokop_icees.json",
+        "./configs/datasource_configs/robokop_intact.json",
+        "./configs/datasource_configs/robokop_panther.json",
+        "./configs/datasource_configs/robokop_pharos.json",
+        "./configs/datasource_configs/robokop_string.json",
+        "./configs/datasource_configs/robokop_textmining.json",
+        "./configs/datasource_configs/robokop_viralproteome.json"
     ]
 }

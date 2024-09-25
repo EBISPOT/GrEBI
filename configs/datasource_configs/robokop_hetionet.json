@@ -1,0 +1,21 @@
+{
+    "name": "Robokop.Hetionet",
+    "enabled": true,
+    "ingests": [
+        {
+            "ingest_files": ["./00_fetch_data/robokop/hetionet_edges.jsonl.gz"],
+            "ingest_script": "./target/release/grebi_ingest_kgx_edges",
+            "ingest_args": [
+                { "name": "--kgx-inject-key-prefix", "value": "robokop:" }
+            ]
+        },
+        {
+            "ingest_files": ["./00_fetch_data/robokop/hetionet_nodes.jsonl.gz"],
+            "ingest_script": "./target/release/grebi_ingest_json",
+            "ingest_args": [
+                { "name": "--json-rename-field", "value": "category:grebi:type" },
+                { "name": "--json-inject-key-prefix", "value": "robokop:" }
+             ]
+        }
+    ]
+}

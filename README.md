@@ -10,10 +10,11 @@ EBI Codon HPC pipeline for building integrated knowledge graphs from [EMBL-EBI r
 * [Metabolights](https://www.ebi.ac.uk/metabolights)
 * [ChEMBL](https://www.ebi.ac.uk/chembl/)
 
-GrEBI also imports complementary datasets, so far:
+In addition to loading from EBI databases GrEBI also imports other knowledge graphs, so far:
 
 * [MONARCH Initiative KG](https://monarch-initiative.github.io/monarch-ingest/Sources/)
 * [Ubergraph](https://github.com/INCATools/ubergraph)
+* [ROBOKOP](https://robokop.renci.org/)
 * [Human Reference Atlas KG](https://humanatlas.io/)
 * [AOPWiki](https://aopwiki.org/) (via [AOPWikiRDF](https://github.com/marvinm2/AOPWikiRDF))
 
