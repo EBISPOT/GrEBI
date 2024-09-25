@@ -95,6 +95,7 @@ impl<'a> SlicedEntity<'a> {
                     parser.begin_object();
 
                         let mut value_datasources:Vec<&[u8]> = Vec::new();
+                        let mut value_source_ids:Vec<&[u8]> = Vec::new();
 
                         // "grebi:datasources": ...
                         let k_value_datasources = parser.name();
@@ -132,9 +133,7 @@ impl<'a> SlicedEntity<'a> {
         }
         parser.end_object();
 
-
-
-        return SlicedEntity { id, datasources: entity_datasources, sourceIds: entity_source_ids, subgraph, props, display_type, _refs };
+        return SlicedEntity { id, datasources: entity_datasources, source_ids: entity_source_ids, subgraph, props, display_type, _refs };
 
     }
 
@@ -185,7 +184,7 @@ impl<'a> SlicedReified<'a> {
                         let kind = parser.peek().kind;
                         let prop_value = parser.value();
 
-                        values.push(SlicedPropertyValue { kind, value: prop_value, datasources: Vec::new() });
+                        values.push(SlicedPropertyValue { kind, value: prop_value, datasources: Vec::new(), source_ids: Vec::new() });
 
                     }
 

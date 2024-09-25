@@ -269,12 +269,12 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, 
 
     edges_writer.write_all(b"\"").unwrap();
     write_escaped_value(&add_prefix, edges_writer);
-    write_escaped_value(edge.from, edges_writer); // START_ID
+    write_escaped_value(edge.from_node_id, edges_writer); // START_ID
     edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(edge.edge_type, edges_writer); // TYPE
     edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(&add_prefix, edges_writer);
-    write_escaped_value(edge.to, edges_writer); // END_ID
+    write_escaped_value(edge.to_node_id, edges_writer); // END_ID
     edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(&add_prefix, edges_writer);
     write_escaped_value(edge.edge_id, edges_writer); // edge_id

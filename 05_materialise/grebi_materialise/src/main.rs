@@ -13,6 +13,7 @@ use std::io::BufRead;
 use std::io::StdoutLock;
 use std::mem::transmute;
 use grebi_shared::load_groups_txt::load_groups_txt;
+use grebi_shared::split_mapped_value;
 use sha1::{Sha1, Digest};
 use serde_json::json;
 
@@ -283,9 +284,8 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
                 let value_str = JsonParser::parse(&buf).string();
 
                 let (to_node_id, to_source_id) = {
-                    if value_str.starts_with("mapped##") {
-                        let tokens = value_str.split("##");
-                        (tokens[2], tokens[1])
+                    if value_str.starts_with(b"mapped##") {
+                        split_mapped_value(&value_str)
                     } else {
                         (value_str, value_str)
                     }
@@ -298,7 +298,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
                     }
                     write_edge(
                         from_id,
-                        prop.source_ids,
+                        &val.source_ids,
                         to_node_id,
                         to_source_id,
                         prop.key,
@@ -320,11 +320,19 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
         let str = JsonParser::parse(&buf).string();
         let exists = node_metadata.contains_key(str);
 
+        let (to_node_id, to_source_id) = {
+            if str.starts_with(b"mapped##") {
+                split_mapped_value(&str)
+            } else {
+                (str, str)
+            }
+        };
+
         if exists {
             if from_id.eq(str) &&  exclude_self_ref.contains(prop.key) {
                 return;
             }
-            write_edge(from_id, str, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph, edge_summary);
+            write_edge(from_id, &val.source_ids, to_node_id, to_source_id, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph, edge_summary);
         }
 
     } else if val.kind == JsonTokenType::StartArray {
@@ -341,7 +349,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 
 fn write_edge(
     from_node_id: &[u8],
-    from_source_ids: Vec<&[u8]>,
+    from_source_ids: &Vec<&[u8]>,
     to_node_id: &[u8],
     to_source_id: &[u8],
     edge:&[u8],
@@ -362,7 +370,7 @@ fn write_edge(
     buf.extend(from_node_id);
     buf.extend(b"\",\"grebi:fromSourceIds\":[");
     {
-        let mut is_first = true
+        let mut is_first = true;
         for source_id in from_source_ids {
             if is_first {
                 is_first = false;
@@ -370,12 +378,12 @@ fn write_edge(
                 buf.extend(b",");
             }
             buf.extend(b"\"");
-            buf.extend(source_id);
+            buf.extend(*source_id);
             buf.extend(b"\"");
         }
     }
     buf.extend(b"],\"grebi:toNodeId\":\"");
-    buf.extend(to_id);
+    buf.extend(to_node_id);
     buf.extend(b"\",\"grebi:toSourceId\":\"");
     buf.extend(to_source_id);
     buf.extend(b"\",\"grebi:datasources\":[");
@@ -418,8 +426,8 @@ fn write_edge(
         res
     };
 
-    let from_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(from_id).to_string()).unwrap());
-    let to_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(to_id).to_string()).unwrap());
+    let from_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(from_node_id).to_string()).unwrap());
+    let to_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(to_node_id).to_string()).unwrap());
     let datasources_signature:String =  datasources.iter().map(|ds| String::from_utf8_lossy(ds).to_string()).collect::<Vec<String>>().join(",");
 
     let edge_summary_edges = edge_summary.entry(from_type_signature).or_insert(HashMap::new());

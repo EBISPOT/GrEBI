@@ -194,11 +194,11 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     for json in &jsons {
         n_props_total += json.props.len();
     }
-    let mut merged_props = Vec::<(&[u8] /* datasource */, Vec<&[u8]> /* source ids */, ParsedProperty)>::with_capacity(n_props_total);
+    let mut merged_props = Vec::<(&[u8] /* datasource */, &Vec<&[u8]> /* source ids */, ParsedProperty)>::with_capacity(n_props_total);
     for json in &jsons {
         for prop in json.props.iter() {
             if !exclude_props.contains(prop.key) {
-                merged_props.push(( json.datasource, json.sourceIds, prop.clone()));
+                merged_props.push(( json.datasource, &json.source_ids, prop.clone()));
             }
         }
     }
@@ -235,9 +235,9 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
     // sort by key, then value, then datasource
     merged_props.sort_by(|a, b| {
-        match a.1.key.cmp(&b.1.key) {
+        match a.2.key.cmp(&b.2.key) {
             Ordering::Equal => {
-                match a.1.value.cmp(&b.1.value) {
+                match a.2.value.cmp(&b.2.value) {
                     Ordering::Equal => {
                         return a.0.cmp(&b.0);
                     }
@@ -256,7 +256,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     // has multiple files that define the same thing (e.g. multiple ontologies that import
     // the same ontology when we import the whole lot as an "Ontologies" datasource)
     merged_props.dedup_by(|a, b| {
-        return a.1.key == b.1.key && a.1.value == b.1.value && a.0 == b.0;
+        return a.2.key == b.2.key && a.2.value == b.2.value && a.0 == b.0;
     });
 
     let mut index = 0;
@@ -264,7 +264,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     // for each of all the properties (key) that apply to this entity
     while index < merged_props.len() {
         stdout.write_all(r#",""#.as_bytes()).unwrap();
-        stdout.write_all(merged_props[index].1.key).unwrap();
+        stdout.write_all(merged_props[index].2.key).unwrap();
         stdout.write_all(r#"":["#.as_bytes()).unwrap();
 
         let mut is_first2 = true;
@@ -296,8 +296,8 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
                 index = index + 1;
 
-                for &source_id in merged_props[index].1 {
-                    source_ids.push(source_id);
+                for &source_id in merged_props[index].1.iter() {
+                    source_ids.push(&source_id);
                 }
                 
                 // if we hit the end of all the property definitions are are done
@@ -320,7 +320,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
             for index2 in 0..source_ids.len() {
                 let source_id = &source_ids[index2];
                 if last_source_id.is_some() {
-                    if source_id == last_source_id.unwrap() {
+                    if *source_id == last_source_id.unwrap() {
                         continue;
                     }
                     last_source_id = Some(source_id);
@@ -333,7 +333,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
             // now write the value itself (from start_value_index; index should already be at the next value)
             stdout.write_all(r#"],"grebi:value":"#.as_bytes()).unwrap();
-            stdout.write_all(merged_props[start_value_index].1.value).unwrap();
+            stdout.write_all(merged_props[start_value_index].2.value).unwrap();
             stdout.write_all(r#"}"#.as_bytes()).unwrap();
 
             // if we hit the end of all the property definitions are are done

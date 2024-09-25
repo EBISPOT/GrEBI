@@ -68,7 +68,7 @@ fn main() {
         
         let mut json = JsonParser::parse(&line);
 
-        let mut ids:Vec<&[u8]> = None;
+        let mut ids:Vec<&[u8]> = Vec::new();
 
         json.begin_object();
         json.mark();
@@ -107,17 +107,18 @@ fn main() {
         writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
 
         // just get the first id, doesn't matter bc all map to the same group 
-        let group = id_to_group.get(ids.iter().next().unwrap());
+        let id = ids.iter().next().unwrap();
+        let group = id_to_group.get(id.clone());
         if group.is_some() {
             writer.write_all(group.unwrap().as_slice()).unwrap();
         } else {
-            writer.write_all(id.unwrap()).unwrap();
+            writer.write_all(id).unwrap();
         }
 
         writer.write_all("\"".as_bytes()).unwrap();
         writer.write_all(",\"grebi:sourceIds\":[".as_bytes()).unwrap();
         let mut is_first_id = true;
-        for &id in ids {
+        for &id in ids.iter() {
             if is_first_id {
                 is_first_id = false;
             } else {

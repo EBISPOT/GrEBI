@@ -27,7 +27,7 @@ impl<'a> ParsedEntity<'a> {
         let mut props:Vec<ParsedProperty> = Vec::new();
         let mut has_type = false;
         let mut ds:&[u8] = datasource;
-        let mut sourceIds:Vec<&[u8]> = Vec::new();
+        let mut source_ids:Vec<&[u8]> = Vec::new();
 
         // {
         parser.begin_object();
@@ -39,7 +39,7 @@ impl<'a> ParsedEntity<'a> {
             let k_sourceIds = parser.name();
             if k_sourceIds != "grebi:sourceIds".as_bytes() { panic!(); }
             while parser.peek().kind != JsonTokenType::EndArray {
-                sourceIds.push(parser.string());
+                source_ids.push(parser.string());
             }
 
             while parser.peek().kind != JsonTokenType::EndObject {
