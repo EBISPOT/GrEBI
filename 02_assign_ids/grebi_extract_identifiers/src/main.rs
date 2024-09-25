@@ -117,7 +117,8 @@ fn write_ids(k:&[u8], json:&mut JsonParser, writer:&mut BufWriter<io::StdoutLock
             let k = json.name();
             if k.eq(b"grebi:value") {
                 write_ids(k, json, writer, wrote_any);
-                break;
+            } else {
+                json.value(); // skip
             }
         }
         json.end_object();
