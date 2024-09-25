@@ -67,37 +67,7 @@ fn main() {
                 continue;
             }
 
-            if json.peek().kind == JsonTokenType::StartArray {
-                json.begin_array();
-                while json.peek().kind != JsonTokenType::EndArray {
-                    if json.peek().kind == JsonTokenType::StartString {
-                        let id = json.string();
-                        if check_id(&k, &id) {
-                            if wrote_any {
-                                writer.write_all(b"\t").unwrap();
-                            } else {
-                                wrote_any = true;
-                            }
-                            writer.write_all(&id).unwrap();
-                        }
-                    } else {
-                        json.value(); // skip
-                    }
-                }
-                json.end_array();
-            } else if json.peek().kind == JsonTokenType::StartString {
-                let id = json.string();
-                if check_id(&k, &id) {
-                    if wrote_any {
-                        writer.write_all(b"\t").unwrap();
-                    } else {
-                        wrote_any = true;
-                    }
-                    writer.write_all(&id).unwrap();
-                }
-            } else {
-                json.value(); // skip
-            }
+            write_ids(&k, &mut json, &mut writer, &mut wrote_any);
         }
         if !wrote_any {
             panic!("no identifiers found in object {}", String::from_utf8_lossy(&line));
@@ -115,6 +85,48 @@ fn main() {
     writer.flush().unwrap();
 
 }
+
+fn write_ids(k:&[u8], json:&mut JsonParser, writer:&mut BufWriter<io::StdoutLock>, wrote_any:&mut bool) {
+
+    if json.peek().kind == JsonTokenType::StartArray {
+        json.begin_array();
+        while json.peek().kind != JsonTokenType::EndArray {
+            write_ids(k, json, writer, wrote_any);
+        }
+        json.end_array();
+        return;
+    } 
+        
+    if json.peek().kind == JsonTokenType::StartString {
+        let id = json.string();
+        if check_id(&k, &id) {
+            if *wrote_any {
+                writer.write_all(b"\t").unwrap();
+            } else {
+                *wrote_any = true;
+            }
+            writer.write_all(&id).unwrap();
+        }
+        return;
+    }
+
+    if json.peek().kind == JsonTokenType::StartObject {
+        // maybe a reification
+        json.begin_object();
+        while json.peek().kind != JsonTokenType::EndObject {
+            let k = json.name();
+            if k.eq(b"grebi:value") {
+                write_ids(k, json, writer, wrote_any);
+                break;
+            }
+        }
+        json.end_object();
+        return;
+    }
+
+    json.value(); // skip
+}
+
 
 fn check_id(k:&[u8], id:&[u8]) -> bool {
     if id.len() >= 16 {
