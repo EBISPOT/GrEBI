@@ -30,7 +30,7 @@
         "chebi:24431"
     ],
     "additional_equivalence_groups": [
-        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName", "dcterms:title", "ncit:Preferred_Name"],
+        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName", "dcterms:title", "ncit:Preferred_Name", "robokop:name"],
         ["grebi:description", "iao:definition", "monarch:description", "ols:definition"],
         ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym", "dcterms:alternative" ],
         ["mondo:0000001", "ogms:0000031"],
