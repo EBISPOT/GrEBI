@@ -1,13 +1,12 @@
 # GrEBI (Graphs@EBI)
 
-HPC pipeline to aggregate and integrate knowledge graphs from [EMBL-EBI resources](https://www.ebi.ac.uk/services/data-resources-and-tools), the [MONARCH Initiative KG](https://monarch-initiative.github.io/monarch-ingest/Sources/), [ROBOKOP](https://robokop.renci.org/), [Ubergraph](https://github.com/INCATools/ubergraph), and other sources.
+HPC pipeline to integrate knowledge graphs from [EMBL-EBI resources](https://www.ebi.ac.uk/services/data-resources-and-tools), the [MONARCH Initiative KG](https://monarch-initiative.github.io/monarch-ingest/Sources/), [ROBOKOP](https://robokop.renci.org/), [Ubergraph](https://github.com/INCATools/ubergraph), and other sources into giant (multi-terabyte) materialised Neo4j+Solr+RocksDB databases.
 
 | Datasource | Loaded from |
 | ---------- | ------ |
 | [IMPC](https://www.mousephenotype.org/) | EBI
 | [GWAS Catalog](https://www.ebi.ac.uk/gwas) | EBI
 | [OLS](https://www.ebi.ac.uk/ols4) | EBI
-| [Reactome](https://reactome.org/) | EBI
 | [OpenTargets](https://www.opentargets.org/) | EBI
 | [Metabolights](https://www.ebi.ac.uk/metabolights) | EBI
 | [ChEMBL](https://www.ebi.ac.uk/chembl/) | EBI
