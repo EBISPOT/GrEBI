@@ -1,7 +1,7 @@
 
 
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, BTreeSet};
 use std::fs::File;
 use std::{env, io};
 use std::io::{BufRead, BufReader };
@@ -68,7 +68,7 @@ fn main() {
         
         let mut json = JsonParser::parse(&line);
 
-        let mut ids:Vec<&[u8]> = Vec::new();
+        let mut ids:BTreeSet<&[u8]> = BTreeSet::new();
 
         json.begin_object();
         json.mark();
@@ -76,32 +76,12 @@ fn main() {
 
             let k = json.name();
 
-            if id_props.contains(k) {
+            if !id_props.contains(k) {
                 json.value(); // skip
                 continue;
             }
 
-            if json.peek().kind == JsonTokenType::StartArray {
-                json.begin_array();
-                while json.peek().kind != JsonTokenType::EndArray {
-                    if json.peek().kind == JsonTokenType::StartString {
-                        let id = json.string();
-                        if check_id(&k, &id) {
-                            ids.push(&id);
-                        }
-                    } else {
-                        json.value(); // skip
-                    }
-                }
-                json.end_array();
-            } else if json.peek().kind == JsonTokenType::StartString {
-                let id = json.string();
-                if check_id(&k, &id) {
-                    ids.push(&id);
-                }
-            } else {
-                json.value(); // skip
-            }
+            get_ids(&mut json, &mut ids);
         }
 
         writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
@@ -197,4 +177,32 @@ fn write_value(writer:&mut BufWriter<io::StdoutLock>, value:&[u8], id_to_group:&
     }
 
     writer.write_all(&value[n_ch..value.len()]).unwrap();
+}
+
+fn get_ids<'a, 'b>(json:&mut JsonParser<'a>, ids:&'b mut BTreeSet<&'a [u8]>) {
+
+    if json.peek().kind == JsonTokenType::StartArray {
+        json.begin_array();
+        while json.peek().kind != JsonTokenType::EndArray {
+            get_ids(json, ids);
+        }
+        json.end_array();
+    } else if json.peek().kind == JsonTokenType::StartString {
+        let id = json.string();
+        ids.insert(id.clone());
+    } else if json.peek().kind == JsonTokenType::StartObject {
+        // maybe a reification
+        json.begin_object();
+        while json.peek().kind != JsonTokenType::EndObject {
+            let k = json.name();
+            if k.eq(b"grebi:value") {
+                get_ids(json, ids);
+            } else {
+                json.value(); // skip
+            }
+        }
+        json.end_object();
+    } else {
+        json.value(); // skip
+    }
 }
