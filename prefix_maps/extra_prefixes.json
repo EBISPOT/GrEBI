@@ -189,5 +189,7 @@
 "unipathway:": "http://purl.uniprot.org/unipathway/",
 "EFO_": "efo:",
 "GO_": "go:",
-"BAO_": "bao:"
+"BAO_": "bao:",
+"REACT:": "reactome:",
+"mesh:": "http://id.nlm.nih.gov/mesh/2024/"
 }
