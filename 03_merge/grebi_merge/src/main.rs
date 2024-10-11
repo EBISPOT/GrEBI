@@ -172,15 +172,18 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
     let mut has_any_type:bool = false;
 
-    let mut datasources: Vec<&[u8]> = jsons
-        .iter()
-        .map(|json| {
-            if json.has_type {
-                has_any_type = true;
-            }
-            return json.datasource;
-        })
-        .collect();
+    let mut source_ids: Vec<&[u8]> = Vec::new();
+    let mut datasources: Vec<&[u8]> = Vec::new();
+
+    for json in &jsons {
+        if json.has_type {
+            has_any_type = true;
+        }
+        for &source_id in json.source_ids.iter() {
+            source_ids.push(source_id);
+        }
+        datasources.push(json.datasource);
+    }
 
     if !has_any_type {
         // skip if after merging the node has no type
@@ -211,6 +214,9 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     datasources.sort();
     datasources.dedup();
 
+    source_ids.sort();
+    source_ids.dedup();
+
     stdout.write_all(r#"{"grebi:nodeId":""#.as_bytes()).unwrap();
     stdout.write_all(jsons[0].id).unwrap();
     stdout.write_all(r#"","grebi:datasources":["#.as_bytes()).unwrap();
@@ -226,6 +232,22 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         stdout.write_all(r#"""#.as_bytes()).unwrap();
     }
     stdout.write_all(r#"]"#.as_bytes()).unwrap();
+
+    // source ids here
+    stdout.write_all(r#","grebi:sourceIds":["#.as_bytes()).unwrap();
+    let mut is_first_sid = true;
+    for sid in source_ids {
+        if !is_first_sid {
+            stdout.write_all(r#","#.as_bytes()).unwrap();
+        } else {
+            is_first_sid = false;
+        }
+        stdout.write_all(r#"""#.as_bytes()).unwrap();
+        stdout.write_all(sid).unwrap();
+        stdout.write_all(r#"""#.as_bytes()).unwrap();
+    }
+    stdout.write_all(r#"]"#.as_bytes()).unwrap();
+
 
     if subgraph_name.is_some() {
         stdout.write_all(r#","grebi:subgraph":""#.as_bytes()).unwrap();
@@ -294,11 +316,12 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
                 stdout.write_all(merged_props[index].0).unwrap();
                 stdout.write_all(r#"""#.as_bytes()).unwrap();
 
-                index = index + 1;
-
+                // piggybacking on this loop to find all the source IDs
                 for &source_id in merged_props[index].1.iter() {
                     source_ids.push(&source_id);
                 }
+
+                index = index + 1;
                 
                 // if we hit the end of all the property definitions are are done
                 if index == merged_props.len() {
@@ -323,12 +346,12 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
                     if *source_id == last_source_id.unwrap() {
                         continue;
                     }
-                    last_source_id = Some(source_id);
                     stdout.write_all(b",");
                 }
                 stdout.write_all(r#"""#.as_bytes()).unwrap();
                 stdout.write_all(source_id).unwrap();
                 stdout.write_all(r#"""#.as_bytes()).unwrap();
+                last_source_id = Some(source_id);
             }
 
             // now write the value itself (from start_value_index; index should already be at the next value)

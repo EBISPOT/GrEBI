@@ -38,9 +38,11 @@ impl<'a> ParsedEntity<'a> {
 
             let k_sourceIds = parser.name();
             if k_sourceIds != "grebi:sourceIds".as_bytes() { panic!(); }
+            parser.begin_array();
             while parser.peek().kind != JsonTokenType::EndArray {
                 source_ids.push(parser.string());
             }
+            parser.end_array();
 
             while parser.peek().kind != JsonTokenType::EndObject {
 

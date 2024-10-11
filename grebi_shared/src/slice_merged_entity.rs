@@ -60,7 +60,7 @@ impl<'a> SlicedEntity<'a> {
 
         // "grebi:sourceIds": ...
         let k_value_source_ids = parser.name();
-        if k_value_source_ids != "grebi:sourceIds".as_bytes() { panic!(); }
+        if k_value_source_ids != "grebi:sourceIds".as_bytes() { panic!("expected grebi:sourceIds as key, got {} in {}", String::from_utf8( k_value_source_ids.to_vec() ).unwrap(), String::from_utf8( buf.to_vec() ).unwrap()); }
         parser.begin_array();
             while parser.peek().kind != JsonTokenType::EndArray {
                 entity_source_ids.push(parser.string());

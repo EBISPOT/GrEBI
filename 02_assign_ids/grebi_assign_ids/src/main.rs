@@ -119,6 +119,7 @@ fn main() {
         while json.peek().kind != JsonTokenType::EndObject {
 
             let name = json.name();
+            writer.write_all(b",\"").unwrap();
             let name_group = id_to_group.get(name);
             if name_group.is_some() {
                 writer.write_all(b"mapped##").unwrap();
