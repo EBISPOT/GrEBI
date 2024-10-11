@@ -13,6 +13,8 @@ use std::io::BufRead;
 use std::io::StdoutLock;
 use std::mem::transmute;
 use grebi_shared::load_groups_txt::load_id_to_group_mapping;
+use grebi_shared::load_groups_txt::load_id_to_group_bidirectional_mapping;
+use grebi_shared::split_mapped_value;
 use sha1::{Sha1, Digest};
 use serde_json::json;
 
@@ -263,7 +265,7 @@ fn main() -> std::io::Result<()> {
 
 fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable, all_edge_props: &mut BTreeSet<Vec<u8>>) {
 
-    if prop.key.eq(b"id") || prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
+    if prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
         return;
     }
 
@@ -279,13 +281,34 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 		});
             if reified_u.value_kind == JsonTokenType::StartString {
                 let buf = &reified_u.value.to_vec();
-                let str = JsonParser::parse(&buf).string();
-                let exists = node_metadata.contains_key(str);
+                
+                let value_str = JsonParser::parse(&buf).string();
+
+                let (to_node_id, to_source_id) = {
+                    if value_str.starts_with(b"mapped##") {
+                        split_mapped_value(&value_str)
+                    } else {
+                        (value_str, value_str)
+                    }
+                };
+
+                let exists = node_metadata.contains_key(to_node_id);
                 if exists {
-                    if from_id.eq(str) && exclude_self_ref.contains(prop.key) {
+                    if from_id.eq(to_node_id) && exclude_self_ref.contains(prop.key) {
                         return;
                     }
-                    write_edge(from_id, str, prop.key,  Some(&reified_u.props), edges_writer,  node_metadata, &datasources, &subgraph, edge_summary);
+                    write_edge(
+                        from_id,
+                        &val.source_ids,
+                        to_node_id,
+                        to_source_id,
+                        prop.key,
+                        Some(&reified_u.props),
+                        edges_writer,
+                        node_metadata,
+                        &datasources,
+                        &subgraph,
+                        edge_summary);
                 }
             } else {
                 // panic!("unexpected kind: {:?}", reified_u.value_kind);
@@ -298,11 +321,19 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
         let str = JsonParser::parse(&buf).string();
         let exists = node_metadata.contains_key(str);
 
+        let (to_node_id, to_source_id) = {
+            if str.starts_with(b"mapped##") {
+                split_mapped_value(&str)
+            } else {
+                (str, str)
+            }
+        };
+
         if exists {
             if from_id.eq(str) &&  exclude_self_ref.contains(prop.key) {
                 return;
             }
-            write_edge(from_id, str, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph, edge_summary);
+            write_edge(from_id, &val.source_ids, to_node_id, to_source_id, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph, edge_summary);
         }
 
     } else if val.kind == JsonTokenType::StartArray {
@@ -317,7 +348,18 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
 
 }
 
-fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<SlicedProperty>>, edges_writer: &mut BufWriter<File>, node_metadata:&BTreeMap<Vec<u8>,Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary:&mut EdgeSummaryTable) {
+fn write_edge(
+    from_node_id: &[u8],
+    from_source_ids: &Vec<&[u8]>,
+    to_node_id: &[u8],
+    to_source_id: &[u8],
+    edge:&[u8],
+    edge_props:Option<&Vec<SlicedProperty>>,
+    edges_writer: &mut BufWriter<File>,
+    node_metadata:&BTreeMap<Vec<u8>,Metadata>,
+    datasources:&Vec<&[u8]>,
+    subgraph:&[u8],
+    edge_summary:&mut EdgeSummaryTable) {
  
     let mut buf = Vec::new();
 
@@ -325,10 +367,26 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
     buf.extend(edge);
     buf.extend(b"\",\"grebi:subgraph\":\"");
     buf.extend(subgraph);
-    buf.extend(b"\",\"grebi:from\":\"");
-    buf.extend(from_id);
-    buf.extend(b"\",\"grebi:to\":\"");
-    buf.extend(to_id);
+    buf.extend(b"\",\"grebi:fromNodeId\":\"");
+    buf.extend(from_node_id);
+    buf.extend(b"\",\"grebi:fromSourceIds\":[");
+    {
+        let mut is_first = true;
+        for source_id in from_source_ids {
+            if is_first {
+                is_first = false;
+            } else {
+                buf.extend(b",");
+            }
+            buf.extend(b"\"");
+            buf.extend(*source_id);
+            buf.extend(b"\"");
+        }
+    }
+    buf.extend(b"],\"grebi:toNodeId\":\"");
+    buf.extend(to_node_id);
+    buf.extend(b"\",\"grebi:toSourceId\":\"");
+    buf.extend(to_source_id);
     buf.extend(b"\",\"grebi:datasources\":[");
 
     let mut is_first_ds = true;
@@ -369,8 +427,8 @@ fn write_edge(from_id: &[u8], to_id: &[u8], edge:&[u8], edge_props:Option<&Vec<S
         res
     };
 
-    let from_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(from_id).to_string()).unwrap());
-    let to_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(to_id).to_string()).unwrap());
+    let from_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(from_node_id).to_string()).unwrap());
+    let to_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(to_node_id).to_string()).unwrap());
     let datasources_signature:String =  datasources.iter().map(|ds| String::from_utf8_lossy(ds).to_string()).collect::<Vec<String>>().join(",");
 
     let edge_summary_edges = edge_summary.entry(from_type_signature).or_insert(HashMap::new());

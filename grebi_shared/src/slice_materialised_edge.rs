@@ -8,8 +8,10 @@ pub struct SlicedEdge<'a> {
     pub edge_id:&'a [u8],
     pub edge_type:&'a [u8],
     pub subgraph:&'a [u8],
-    pub from:&'a [u8],
-    pub to:&'a [u8],
+    pub from_node_id:&'a [u8],
+    pub from_source_ids:Vec<&'a [u8]>,
+    pub to_node_id:&'a [u8],
+    pub to_source_id:&'a [u8],
     pub datasources:Vec<&'a [u8]>,
     pub props:Vec<SlicedProperty<'a>>,
     pub _refs:Option<&'a [u8]>
@@ -43,15 +45,30 @@ impl<'a> SlicedEdge<'a> {
         if k_subgraph != "grebi:subgraph".as_bytes() { panic!("expected subgraph as key, got {}", String::from_utf8( k_subgraph.to_vec() ).unwrap()); }
         let edge_subgraph = parser.string();
 
-        // "from": ...
-        let k_from = parser.name();
-        if k_from != "grebi:from".as_bytes() { panic!("expected from as key, got {}", String::from_utf8( k_from.to_vec() ).unwrap()); }
-        let from = parser.string();
+        // "fromNodeId": ...
+        let k_from_nid = parser.name();
+        if k_from_nid != "grebi:fromNodeId".as_bytes() { panic!("expected from as key, got {}", String::from_utf8( k_from_nid.to_vec() ).unwrap()); }
+        let from_nid = parser.string();
 
-        // "to": ...
-        let k_to = parser.name();
-        if k_to != "grebi:to".as_bytes() { panic!("expected to as key, got {}", String::from_utf8( k_to.to_vec() ).unwrap()); }
-        let to = parser.string();
+        // "fromSourceIds": ...
+        let k_from_sids = parser.name();
+        if k_from_sids != "grebi:fromSourceIds".as_bytes() { panic!("expected from as key, got {}", String::from_utf8( k_from_sids.to_vec() ).unwrap()); }
+        parser.begin_array();
+        let mut from_sids:Vec<&[u8]> = Vec::new();
+        while parser.peek().kind != JsonTokenType::EndArray {
+            from_sids.push(parser.string());
+        }
+        parser.end_array();
+
+        // "toNodeId": ...
+        let k_to_nid = parser.name();
+        if k_to_nid != "grebi:toNodeId".as_bytes() { panic!("expected to as key, got {}", String::from_utf8( k_to_nid.to_vec() ).unwrap()); }
+        let to_nid = parser.string();
+
+        // "toSourceId": ...
+        let k_to_sid = parser.name();
+        if k_to_sid != "grebi:toSourceId".as_bytes() { panic!("expected to as key, got {}", String::from_utf8( k_to_sid.to_vec() ).unwrap()); }
+        let to_sid = parser.string();
 
         // "grebi:datasources": ...
         let k_value_datasources = parser.name();
@@ -80,7 +97,7 @@ impl<'a> SlicedEdge<'a> {
                     let prop_value_kind = parser.peek().kind;
                     let prop_value = parser.value();
 
-                    values.push(SlicedPropertyValue { kind: prop_value_kind, datasources: vec![], value: prop_value });
+                    values.push(SlicedPropertyValue { kind: prop_value_kind, datasources: vec![], value: prop_value, source_ids: vec![] });
                 }
 
             let values_slice_end = parser.end_array();
@@ -91,7 +108,18 @@ impl<'a> SlicedEdge<'a> {
         parser.end_object();
 
 
-        return SlicedEdge { edge_id, edge_type, subgraph: edge_subgraph, from, to, datasources: entity_datasources, props, _refs };
+        return SlicedEdge {
+            edge_id,
+            edge_type,
+            subgraph: edge_subgraph,
+            from_node_id: from_nid,
+            from_source_ids: from_sids,
+            to_node_id: to_nid,
+            to_source_id: to_sid,
+            datasources: entity_datasources,
+            props,
+            _refs
+        };
     }
 
 

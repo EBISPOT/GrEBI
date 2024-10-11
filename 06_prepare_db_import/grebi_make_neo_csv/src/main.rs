@@ -102,7 +102,7 @@ fn main() -> std::io::Result<()> {
     nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
-    edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string".as_bytes()).unwrap();
+    edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string,grebi:fromSourceIds:string[],grebi:toSourceId:string".as_bytes()).unwrap();
     for prop in &all_edge_props {
         edges_writer.write_all(b",").unwrap();
         edges_writer.write_all(prop.as_bytes()).unwrap();
@@ -231,7 +231,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
                     continue; // already written above
                 }
                 if header_prop.as_bytes() == row_prop.key {
-                    if row_prop.key == "id".as_bytes() {
+                    if row_prop.key == "grebi:sourceIds".as_bytes() {
                         for val in row_prop.values.iter() {
                             write_id_row(val, id_edges_writer, &entity.id, &add_prefix);
                         }
@@ -279,15 +279,15 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, 
 
     edges_writer.write_all(b"\"").unwrap();
     write_escaped_value(&add_prefix, edges_writer);
-    write_escaped_value(edge.from, edges_writer);
+    write_escaped_value(edge.from_node_id, edges_writer); // START_ID
     edges_writer.write_all(b"\",\"").unwrap();
-    write_escaped_value(edge.edge_type, edges_writer);
-    edges_writer.write_all(b"\",\"").unwrap();
-    write_escaped_value(&add_prefix, edges_writer);
-    write_escaped_value(edge.to, edges_writer);
+    write_escaped_value(edge.edge_type, edges_writer); // TYPE
     edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(&add_prefix, edges_writer);
-    write_escaped_value(edge.edge_id, edges_writer);
+    write_escaped_value(edge.to_node_id, edges_writer); // END_ID
+    edges_writer.write_all(b"\",\"").unwrap();
+    write_escaped_value(&add_prefix, edges_writer);
+    write_escaped_value(edge.edge_id, edges_writer); // edge_id
     edges_writer.write_all(b"\",\"").unwrap();
 
     // grebi:datasources
@@ -301,10 +301,28 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, 
         edges_writer.write_all(ds).unwrap();
     });
 
+    // grebi:subgraph
     edges_writer.write_all(b"\",\"").unwrap();
     edges_writer.write_all(edge.subgraph).unwrap();
     edges_writer.write_all(b"\"").unwrap();
 
+    // grebi:fromSourceIds
+    edges_writer.write_all(b",\"").unwrap();
+    let mut is_first_sid = true;
+    edge.from_source_ids.iter().for_each(|sid| {
+        if is_first_sid {
+            is_first_sid = false;
+        } else {
+            edges_writer.write_all(&[(31 as u8)]).unwrap();
+        }
+        edges_writer.write_all(sid).unwrap();
+    });
+    edges_writer.write_all(b"\"").unwrap();
+
+    // grebi:toSourceId
+    edges_writer.write_all(b",\"").unwrap();
+    edges_writer.write_all(edge.to_source_id).unwrap();
+    edges_writer.write_all(b"\"").unwrap();
 
     for header_prop in all_edge_props {
         edges_writer.write_all(b",").unwrap();
@@ -391,7 +409,7 @@ fn write_id_row(val:&SlicedPropertyValue, id_edges_writer:&mut BufWriter<&File>,
     write_escaped_value(&add_prefix, id_edges_writer);
     write_escaped_value(grebi_node_id, id_edges_writer);
     id_edges_writer.write_all(b"\",\"").unwrap();
-    write_escaped_value(b"id", id_edges_writer);
+    write_escaped_value(b"sourceId", id_edges_writer);
     id_edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(actual_id, id_edges_writer);
     id_edges_writer.write_all(b"\"\n").unwrap();

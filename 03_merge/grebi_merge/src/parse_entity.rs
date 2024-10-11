@@ -12,6 +12,7 @@ pub struct ParsedProperty<'a> {
 #[derive(Clone)]
 pub struct ParsedEntity<'a> {
     pub id:&'a [u8],
+    pub source_ids:Vec<&'a [u8]>,
     pub props:Vec<ParsedProperty<'a>>,
     pub datasource:&'a [u8],
     pub has_type:bool
@@ -26,14 +27,20 @@ impl<'a> ParsedEntity<'a> {
         let mut props:Vec<ParsedProperty> = Vec::new();
         let mut has_type = false;
         let mut ds:&[u8] = datasource;
+        let mut source_ids:Vec<&[u8]> = Vec::new();
 
         // {
         parser.begin_object();
 
-            // "id": ...
             let k_id = parser.name();
             if k_id != "grebi:nodeId".as_bytes() { panic!(); }
             let id = parser.string();
+
+            let k_sourceIds = parser.name();
+            if k_sourceIds != "grebi:sourceIds".as_bytes() { panic!(); }
+            while parser.peek().kind != JsonTokenType::EndArray {
+                source_ids.push(parser.string());
+            }
 
             while parser.peek().kind != JsonTokenType::EndObject {
 
@@ -68,7 +75,7 @@ impl<'a> ParsedEntity<'a> {
         parser.end_object();
 
 
-        return ParsedEntity { id, props, datasource: ds, has_type };
+        return ParsedEntity { id, source_ids, props, datasource: ds, has_type };
 
     }
 

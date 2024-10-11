@@ -7,6 +7,21 @@ pub mod slice_materialised_edge;
 pub mod load_metadata_mapping_table;
 pub mod load_groups_txt;
 
+pub fn check_id(k:&[u8], id:&[u8]) -> bool {
+    if id.len() >= 16 {
+        // long numeric ID is prob a UUID and fine
+        return true;
+    }
+    for c in id {
+        if !c.is_ascii_digit() {
+            return true;
+        }
+    }
+    // also triggers for blank IDs
+    eprintln!("Found unprefixed numeric ID {} for identifier property {}. Unqualified numbers like this as identifiers are ambiguous and may cause incorrect equivalences.", String::from_utf8_lossy(id), String::from_utf8_lossy(k));
+    return false;
+}
+
 // get the id without parsing json
 pub fn get_id<'a>(json:&'a [u8])->&'a [u8] {
 
@@ -176,6 +191,19 @@ pub fn find_strings<'a>(json:&'a [u8])->Vec<(usize, usize)> {
     return strings;
 
 
+}
+
+pub fn split_mapped_value(val:&[u8])->(&[u8],&[u8]) {
+
+    if !val.starts_with(b"mapped##") {
+        panic!("expected mapped## prefix in {}", String::from_utf8(val.to_vec()).unwrap());
+    }
+
+    let mut i = "mapped##".len();
+    while val[i] != b'#' || val[i+1] != b'#' {
+        i = i + 1;
+    }
+    return (&val["mapped##".len()..i], &val[i+2..]);
 }
 
 
