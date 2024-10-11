@@ -61,6 +61,6 @@
 	"ols:ontologyId"
      ],
     "datasource_configs": [
-        "./configs/datasource_configs/hra_kg.json"
+        "./configs/datasource_configs/hra_kg.yaml"
     ]
 }

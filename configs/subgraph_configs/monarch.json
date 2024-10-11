@@ -61,6 +61,6 @@
 	"ols:ontologyId"
      ],
     "datasource_configs": [
-        "./configs/datasource_configs/monarch.json"
+        "./configs/datasource_configs/monarch.yaml"
     ]
 }

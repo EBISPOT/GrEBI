@@ -1,0 +1,16 @@
+name: UniProt
+enabled: true
+ingests:
+  - globs: ["/nfs/production/parkinso/spot/jmcl/up/rdf/uniprotkb_unreviewed_eukaryota_opisthokonta_metazoa_33208_0.rdf.xz"]
+    command: '
+        grebi_rdf2jsonl
+            --rdf-type rdf_triples_xml
+            --nest "http://purl.uniprot.org/core/attribution"
+            --nest "http://purl.uniprot.org/core/recommendedName" 
+            --nest "http://purl.uniprot.org/core/alternativeName" 
+            --nest "http://purl.uniprot.org/core/locatedIn" 
+            --p-to-ignore-o "http://purl.uniprot.org/core/annotation" 
+            --p-to-ignore-o "http://purl.uniprot.org/core/sequence" 
+            --p-to-ignore-o "http://purl.uniprot.org/core/range" 
+            --p-to-ignore-o "http://biohackathon.org/resource/faldo#begin" 
+            --p-to-ignore-o "http://biohackathon.org/resource/faldo#end"'

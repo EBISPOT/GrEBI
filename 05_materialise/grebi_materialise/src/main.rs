@@ -12,7 +12,7 @@ use std::io;
 use std::io::BufRead;
 use std::io::StdoutLock;
 use std::mem::transmute;
-use grebi_shared::load_groups_txt::load_groups_txt;
+use grebi_shared::load_groups_txt::load_id_to_group_mapping;
 use sha1::{Sha1, Digest};
 use serde_json::json;
 
@@ -89,7 +89,7 @@ fn main() -> std::io::Result<()> {
     // we need to map the ids given to --exclude to their identifier groups
     // as the caller of this program won't know for sure which id the property actually got
     //
-    let mut id_to_group:HashMap<Vec<u8>, Vec<u8>> = load_groups_txt(&args.groups_txt);
+    let mut id_to_group:HashMap<Vec<u8>, Vec<u8>> = load_id_to_group_mapping(&args.groups_txt);
 
     let exclude:BTreeSet<Vec<u8>> = args.exclude.split(",").map(|s| {
         let group = id_to_group.get(s.as_bytes());

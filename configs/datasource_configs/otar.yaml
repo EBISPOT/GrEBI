@@ -1,0 +1,9 @@
+name": OpenTargets
+enabled: true
+ingests:
+  - globs: ["./00_fetch_data/otar/evidence.jsonl.gz"]
+    command: '
+      grebi_transform_jsonl
+          --json-inject-type otar:Evidence
+          --json-inject-key-prefix otar:
+          --json-inject-value-prefix literature:pmid:'

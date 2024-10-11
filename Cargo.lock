@@ -536,17 +536,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "grebi_ingest_json"
-version = "0.1.0"
-dependencies = [
- "clap",
- "grebi_shared",
- "jemallocator",
- "serde_json",
- "struson",
-]
-
-[[package]]
 name = "grebi_ingest_kgx_edges"
 version = "0.1.0"
 dependencies = [
@@ -565,22 +554,6 @@ dependencies = [
  "grebi_shared",
  "serde_json",
  "struson",
-]
-
-[[package]]
-name = "grebi_ingest_rdf"
-version = "0.1.0"
-dependencies = [
- "clap",
- "csv",
- "curie",
- "grebi_shared",
- "libc",
- "mownstr",
- "serde_json",
- "sophia",
- "sophia_api",
- "sophia_xml",
 ]
 
 [[package]]
@@ -681,6 +654,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_nodes2edges"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "grebi_shared",
+ "jemallocator",
+ "serde_json",
+ "struson",
+]
+
+[[package]]
 name = "grebi_normalise_prefixes"
 version = "0.1.0"
 dependencies = [
@@ -688,6 +672,22 @@ dependencies = [
  "grebi_shared",
  "jemallocator",
  "serde_json",
+]
+
+[[package]]
+name = "grebi_rdf2jsonl"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "csv",
+ "curie",
+ "grebi_shared",
+ "libc",
+ "mownstr",
+ "serde_json",
+ "sophia",
+ "sophia_api",
+ "sophia_xml",
 ]
 
 [[package]]
@@ -709,6 +709,29 @@ dependencies = [
  "grebi_shared",
  "jemallocator",
  "lmdb-zero",
+ "serde_json",
+]
+
+[[package]]
+name = "grebi_transform_jsonl"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "grebi_shared",
+ "hex",
+ "jemallocator",
+ "serde_json",
+ "sha1",
+ "struson",
+]
+
+[[package]]
+name = "grebi_tsv2jsonl"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "csv",
+ "grebi_shared",
  "serde_json",
 ]
 

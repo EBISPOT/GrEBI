@@ -128,6 +128,10 @@ fn main() {
 			continue;
 		}
 
+		if group.1.len() > 50 {
+			eprintln!("warning: group {} has {} members", group.0, group.1.len());
+		}
+
 		n2 = n2 + 1;
 
 		// writer.write_all("group_".as_bytes()).unwrap();

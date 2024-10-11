@@ -236,12 +236,24 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
                 continue;
             }
 
+            let v = obj.get(k).unwrap();
+
             output_nodes.write_all(r#","#.as_bytes()).unwrap();
             output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-            output_nodes.write_all(k.as_bytes()).unwrap();// already reprefixed on load
-            output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
 
-            let v = obj.get(k).unwrap();
+            if k.eq("ols:relatedFrom") || k.eq("ols:relatedTo") {
+                let v_as_obj = v.as_object().unwrap();
+                let pred = v_as_obj.get("http://www.w3.org/2002/07/owl#onProperty");
+                if pred.is_some() {
+                    output_nodes.write_all(pred.unwrap().as_str().unwrap().as_bytes()).unwrap();
+                } else {
+                    output_nodes.write_all(k.as_bytes()).unwrap();
+                }
+            } else {
+                output_nodes.write_all(k.as_bytes()).unwrap();
+            }
+
+            output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
 
             output_nodes.write_all(r#"["#.as_bytes()).unwrap();
                 if v.is_array() {

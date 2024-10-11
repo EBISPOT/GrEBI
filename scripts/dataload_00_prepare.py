@@ -2,11 +2,8 @@
 import json
 import os
 import glob
-import sys
-import subprocess
-import shlex
-import re
 import time
+import yaml
 
 def main():
 
@@ -17,7 +14,7 @@ def main():
     with open(config_filename, 'r') as f:
         config = json.load(f)
 
-    datasources = map(lambda x: json.load(open(os.path.join(os.environ['GREBI_HOME'], x), 'r')), config['datasource_configs'])
+    datasources = map(lambda x: yaml.load(open(os.path.join(os.environ['GREBI_HOME'], x), 'r'), Loader=yaml.FullLoader), config['datasource_configs'])
     datasource_files = []
 
     for datasource in datasources:
@@ -25,7 +22,7 @@ def main():
             print("Skipping disabled datasource: " + datasource['name'])
         else:
             for ingest in datasource['ingests']:
-                for g in ingest['ingest_files']:
+                for g in ingest['globs']:
                     files = glob.glob(os.path.join(os.environ['GREBI_HOME'], g))
                     for file in files:
                         filename = os.path.abspath(file)

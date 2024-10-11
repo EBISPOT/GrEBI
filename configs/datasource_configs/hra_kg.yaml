@@ -1,0 +1,8 @@
+name: HRA
+enabled: true
+ingests:
+  - globs: ["/nfs/production/parkinso/spot/hra/dataload/tmp/out/ontologies.json"]
+    command: '
+      grebi_ingest_ols
+          --ontologies ccf,hra
+    ' 

@@ -11,7 +11,7 @@ use grebi_shared::json_parser::JsonParser;
 use clap::Parser;
 
 use grebi_shared::find_strings;
-use grebi_shared::load_groups_txt::load_groups_txt;
+use grebi_shared::load_groups_txt::load_id_to_group_bidirectional_mapping;
 
 
 #[derive(clap::Parser, Debug)]
@@ -45,7 +45,7 @@ fn main() {
 
     let preserve_fields:HashSet<Vec<u8>> = args.preserve_field.iter().map(|x| x.as_bytes().to_vec()).collect();
 
-    let id_to_group:HashMap<Vec<u8>, Vec<u8>> = load_groups_txt(&args.groups_txt);
+    let (id_to_group, group_to_ids) = load_id_to_group_bidirectional_mapping(&args.groups_txt);
 
     let start_time = std::time::Instant::now();
 
@@ -91,6 +91,11 @@ fn main() {
             }
         }
 
+        if !id.is_some() {
+            eprintln!("!!! skipping object with no identifiers: {}", String::from_utf8_lossy(&line));
+            continue;
+        }
+
         writer.write_all("{\"grebi:nodeId\":\"".as_bytes()).unwrap();
 
         let group = id_to_group.get(id.unwrap());
@@ -100,28 +105,44 @@ fn main() {
             writer.write_all(id.unwrap()).unwrap();
         }
 
-        writer.write_all("\"".as_bytes()).unwrap();
-
+        writer.write_all("\",\"id\":".as_bytes()).unwrap();
+        if group.is_some() {
+            writer.write_all(b"[").unwrap();
+            writer.write_all(b"\"").unwrap();
+            writer.write_all(group.unwrap().as_slice()).unwrap();
+            writer.write_all(b"\"").unwrap();
+            let ids_in_group = group_to_ids.get(group.unwrap()).unwrap();
+            for id_in_group in ids_in_group {
+                writer.write_all(b",\"").unwrap();
+                write_escaped_string(&id_in_group, &mut writer);
+                writer.write_all(b"\"").unwrap();
+            }
+            writer.write_all(b"]").unwrap();
+        } else {
+            writer.write_all(b"\"").unwrap();
+            writer.write_all(id.unwrap()).unwrap();
+            writer.write_all(b"\"").unwrap();
+        }
 
         json.rewind();
         while json.peek().kind != JsonTokenType::EndObject {
 
-            writer.write_all(b",\"").unwrap();
-
             let name = json.name();
             if name.eq(b"id") {
-                writer.write_all(b"id").unwrap();
+                json.value(); // skip, we already wrote the ids
+                continue;
+            }
+
+            writer.write_all(b",\"").unwrap();
+            let name_group = id_to_group.get(name);
+            if name_group.is_some() {
+                writer.write_all(name_group.unwrap()).unwrap();
             } else {
-                let name_group = id_to_group.get(name);
-                if name_group.is_some() {
-                    writer.write_all(name_group.unwrap()).unwrap();
-                } else {
-                    writer.write_all(name).unwrap();
-                }
+                writer.write_all(name).unwrap();
             }
             writer.write_all(b"\":").unwrap();
 
-            if name.eq(b"id") || preserve_fields.contains(name) {
+            if preserve_fields.contains(name) {
                 writer.write_all(json.value()).unwrap();
             } else {
                 write_value(&mut writer, json.value(), &id_to_group);
@@ -168,4 +189,17 @@ fn write_value(writer:&mut BufWriter<io::StdoutLock>, value:&[u8], id_to_group:&
     }
 
     writer.write_all(&value[n_ch..value.len()]).unwrap();
+}
+
+fn write_escaped_string(str:&[u8], writer:&mut BufWriter<io::StdoutLock>) {
+    for c in str {
+        match c {
+            b'"' => { writer.write_all(b"\\\"").unwrap(); }
+            b'\\' => { writer.write_all(b"\\\\").unwrap(); }
+            b'\n' => { writer.write_all(b"\\n").unwrap(); }
+            b'\r' => { writer.write_all(b"\\r").unwrap(); }
+            b'\t' => { writer.write_all(b"\\t").unwrap(); }
+            _ => { writer.write_all([*c].as_slice()).unwrap(); }
+        }
+    }
 }

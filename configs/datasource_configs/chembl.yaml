@@ -1,0 +1,14 @@
+name: ChEMBL
+enabled: true
+ingests:
+  - globs: ["./00_fetch_data/chembl/*.ttl.gz"]
+    command: '
+      grebi_rdf2jsonl
+          --rdf-type rdf_triples_turtle
+          --rdf-types-are-grebi-types
+          --nest-objects-of-predicate "http://rdf.ebi.ac.uk/terms/chembl#hasMolecule"
+          --exclude-objects-of-predicate "http://rdf.ebi.ac.uk/terms/chembl#hasDocument"
+          --reif-pointer-predicate "http://semanticscience.org/resource/SIO_000008"
+          --reif-predicate-predicate "http://www.w3.org/2000/01/rdf-schema#type"
+          --reif-value-predicate "http://semanticscience.org/resource/SIO_000300"
+    '

@@ -1,0 +1,8 @@
+name: UberGraph
+enabled: true
+ingests:
+  - globs: ["./ubergraph.nq.gz"]
+    command: '
+      grebi_rdf2jsonl
+        --rdf-type rdf_quads_nq
+        --rdf-graph "http://reasoner.renci.org/redundant"'

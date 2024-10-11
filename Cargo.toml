@@ -3,11 +3,13 @@
 resolver="2"
 
 members = [
-	"01_ingest/grebi_ingest_rdf",
+	"01_ingest/grebi_rdf2jsonl",
+	"01_ingest/grebi_tsv2jsonl",
+	"01_ingest/grebi_nodes2edges",
 	"01_ingest/grebi_ingest_sssom",
 	"01_ingest/grebi_ingest_ols",
 	"01_ingest/grebi_ingest_gwas",
-	"01_ingest/grebi_ingest_json",
+	"01_ingest/grebi_transform_jsonl",
 	"01_ingest/grebi_ingest_reactome",
 	"01_ingest/grebi_ingest_kgx_edges",
 	"01_ingest/grebi_ingest_sqlite",

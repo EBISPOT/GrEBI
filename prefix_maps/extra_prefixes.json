@@ -191,5 +191,6 @@
 "GO_": "go:",
 "BAO_": "bao:",
 "REACT:": "reactome:",
-"mesh:": "http://id.nlm.nih.gov/mesh/2024/"
+"mesh:": "http://id.nlm.nih.gov/mesh/2024/",
+"medgen:": "http://purl.obolibrary.org/obo/MEDGENCUI_"
 }

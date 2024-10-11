@@ -12,7 +12,7 @@ use grebi_shared::json_parser::JsonParser;
 use clap::Parser;
 
 use grebi_shared::find_strings;
-use grebi_shared::load_groups_txt::load_groups_txt;
+use grebi_shared::load_groups_txt::load_id_to_group_mapping;
 
 
 #[derive(clap::Parser, Debug)]
@@ -35,7 +35,7 @@ fn main() {
     let args = Args::parse();
 
     let mut type_superclasses:HashSet<Vec<u8>> = {
-        let id_to_group:HashMap<Vec<u8>, Vec<u8>> = load_groups_txt(args.groups_txt.as_str());
+        let id_to_group:HashMap<Vec<u8>, Vec<u8>> = load_id_to_group_mapping(args.groups_txt.as_str());
         let mut res = HashSet::new();
         for prop in args.type_superclasses.split(",") {
             let mapped = id_to_group.get(prop.as_bytes());

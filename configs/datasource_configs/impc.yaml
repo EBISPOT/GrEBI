@@ -1,0 +1,123 @@
+name: IMPC
+enabled: true
+ingests:
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/mouse_gene_json/*.json.gz"]
+    command: '
+      grebi_transform_jsonl
+          --json-rename-field mgiGeneAccessionId:id
+          --json-inject-type impc:MouseGene
+          --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/categorical_observation_json/*.json.gz"]
+    command: '
+      grebi_transform_jsonl
+          --json-rename-field observationId:id
+          --json-inject-type impc:CategoricalObservation
+          --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/embryo_specimen_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field specimenId:id
+            --json-inject-type impc:EmbryoSpecimen
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/gene_phenotype_association_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field genePhenotypeAssociationId:id
+            --json-inject-type impc:GenePhenotypeAssociation
+            --json-inject-key-prefix impc:
+            --json-de-nest-field phenotype.id'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/image_record_observation_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field observationId:id
+            --json-inject-type impc:ImageRecordObservation
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/line_experiment_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field experimentId:id
+            --json-inject-type impc:LineExperiment
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/mouse_specimen_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field specimenId:id
+            --json-inject-type impc:MouseSpecimen
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/ontological_observation_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field observationId:id
+            --json-inject-type impc:OntologicalObservation
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/parameter_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field parameterId:id
+            --json-inject-type impc:Parameter
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/pipeline_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field pipelineId:id
+            --json-inject-type impc:Pipeline
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/procedure_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field procedureId:id
+            --json-inject-type impc:Procedure
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/specimen_experiment_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field experimentId:id
+            --json-inject-type impc:SpecimenExperiment
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/text_observation_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field observationId:id
+            --json-inject-type impc:TextObservation
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/time_series_observation_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field observationId:id
+            --json-inject-type impc:TimeSeriesObservation
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/unidimensional_observation_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field observationId:id
+            --json-inject-type impc:UnidimensionalObservation
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/statistical_result_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field statisticalResultId:id
+            --json-inject-type impc:StatisticalResult
+            --json-inject-key-prefix impc:
+            --json-de-nest-field potentialPhenotypes.id
+            --json-de-nest-field statisticalMethod.name'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/human_gene_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field humanGeneId:id
+            --json-inject-type impc:HumanGene
+            --json-inject-key-prefix impc:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/publications_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field publication_id:id
+            --json-inject-type impc:Publication
+            --json-inject-key-prefix impc:
+            --json-inject-value-prefix pmId:pmid:'
+  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/mouse_allele_json/*.json.gz"]
+    command: '
+        grebi_transform_jsonl
+            --json-rename-field mouseAlleleId:id
+            --json-inject-type impc:Allele
+            --json-inject-key-prefix impc:
+            --json-inject-value-prefix ensemblAccId:ENSEMBL:'
+

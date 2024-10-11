@@ -70,10 +70,10 @@ fn main() {
             write_ids(&k, &mut json, &mut writer, &mut wrote_any);
         }
         if !wrote_any {
-            panic!("no identifiers found in object {}", String::from_utf8_lossy(&line));
+            eprintln!("!!! no identifiers found in object {}", String::from_utf8_lossy(&line));
+        } else {
+            writer.write_all(b"\n").unwrap();
         }
-
-        writer.write_all(b"\n").unwrap();
 
         n_total = n_total + 1;
 

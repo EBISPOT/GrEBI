@@ -1,0 +1,5 @@
+name: HETT_Pesticides.EU
+enabled: true
+ingests:
+  - globs: ["./00_fetch_data/hett_pesticides/ActiveSubstanceExport*"]
+    command: ./01_ingest/hett_pesticides_eu.py
