@@ -11,7 +11,6 @@ use grebi_shared::json_parser::JsonParser;
 use clap::Parser;
 
 use grebi_shared::find_strings;
-use grebi_shared::load_groups_txt::load_id_to_group_bidirectional_mapping;
 use grebi_shared::load_groups_txt::load_id_to_group_mapping;
 use grebi_shared::check_id;
 
@@ -47,7 +46,7 @@ fn main() {
 
     let preserve_fields:HashSet<Vec<u8>> = args.preserve_field.iter().map(|x| x.as_bytes().to_vec()).collect();
 
-    let (id_to_group, group_to_ids) = load_id_to_group_bidirectional_mapping(&args.groups_txt);
+    let id_to_group = load_id_to_group_mapping(&args.groups_txt);
 
     let start_time = std::time::Instant::now();
 
@@ -85,7 +84,7 @@ fn main() {
             get_ids(&mut json, &mut ids);
         }
 
-        if !id.is_some() {
+        if ids.len() == 0 {
             eprintln!("!!! skipping object with no identifiers: {}", String::from_utf8_lossy(&line));
             continue;
         }
