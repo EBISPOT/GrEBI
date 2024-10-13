@@ -2,4 +2,4 @@ name: Metabolights
 enabled: true
 ingests:
   - globs: ["./eb-eye_metabolights_complete.xml"]
-    command: ./01_ingest/grebi_ingest_metabolights/ingest.py
+    command: $GREBI_HOME/01_ingest/grebi_ingest_metabolights/ingest.py

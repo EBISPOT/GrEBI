@@ -2,4 +2,4 @@ name: HETT_Pesticides.GB
 enabled: true
 ingests:
   - globs: ["./00_fetch_data/hett_pesticides/active-substance-register.xlsx"]
-    command: ./01_ingest/hett_pesticides_gb.py
+    command: $GREBI_HOME/01_ingest/hett_pesticides_gb.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME

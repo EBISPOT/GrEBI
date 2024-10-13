@@ -9,25 +9,10 @@ use grebi_shared::prefix_map::PrefixMapBuilder;
 use serde_json::json;
 use serde_yaml;
 
-#[derive(clap::Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-
-    #[arg(long)]
-    datasource_name: String,
-
-    #[arg(long)]
-    filename: String,
-}
-
 fn main() {
-
-    let args = Args::parse();
 
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
-
-    let datasource_name = args.datasource_name.as_str();
 
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);

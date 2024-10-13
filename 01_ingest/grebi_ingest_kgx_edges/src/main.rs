@@ -10,12 +10,6 @@ use serde_json::json;
 struct Args {
 
     #[arg(long)]
-    datasource_name: String,
-
-    #[arg(long)]
-    filename: String,
-
-    #[arg(long)]
     kgx_rename_field:Option<Vec<String>>,
 
     #[arg(long, default_value_t = String::from(""))]

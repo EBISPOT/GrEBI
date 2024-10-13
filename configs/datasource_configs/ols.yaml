@@ -4,5 +4,6 @@ ingests:
   - globs: ["/nfs/production/parkinso/spot/ols4/prod/slurm_pipeline/ontologies.json.gz"]
     command: '
       grebi_ingest_ols
+        --datasource-name $GREBI_INGEST_DATASOURCE_NAME
         --ontologies efo,mp,hp,go,ro,iao,uberon,pato,oba,chebi,bspo,iao,obi,bfo,cob,cl,so,eco,pr,ncbitaxon,oio,iao,biolink,mondo,doid,cheminf,dc,dcterms,ncit,edam,upheno
         --skip-obsolete'
