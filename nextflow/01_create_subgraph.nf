@@ -102,11 +102,11 @@ process ingest {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
+    export GREBI_INGEST_DATASOURCE_NAME=${file_listing.datasource.name}
+    export GREBI_INGEST_FILENAME=${file_listing.filename}
+    export PATH=\$PATH:${params.home}/target/release
     ${getStdinCommand(file_listing.ingest, file_listing.filename)} \
-        ${getIngestCommand(file_listing.ingest.ingest_script)} \
-            --datasource-name ${file_listing.datasource.name} \
-            --filename "${file_listing.filename}" \
-            ${buildIngestArgs(file_listing.ingest.ingest_args)} \
+        ${file_listing.ingest.command} \
         | ${params.home}/target/release/grebi_normalise_prefixes ${params.home}/prefix_maps/prefix_map_normalise.json \
         | tee >(${params.home}/target/release/grebi_extract_identifiers \
                 --identifier-properties ${identifier_props.iterator().join(",")} \
@@ -735,16 +735,6 @@ def getStdinCommand(ingest, filename) {
     } else {
         return "cat ${f} |"
     }
-}
-
-def getIngestCommand(script) {
-    return new File(params.home, script)
-}
-
-def buildIngestArgs(ingestArgs) {
-    def res = ""
-    ingestArgs.each { arg -> res += "${arg.name} ${arg.value} " }
-    return res
 }
 
 def buildAddEquivGroupArgs(equivGroups) {

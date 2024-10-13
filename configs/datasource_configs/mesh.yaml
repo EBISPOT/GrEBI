@@ -1,0 +1,10 @@
+name: MeSH
+enabled: true
+ingests:
+  - globs:
+    - ./00_fetch_data/mesh/mesh2024.nt.gz
+    - ./00_fetch_data/mesh/vocabulary_1.0.0.ttl
+    command: '
+      grebi_rdf2jsonl
+          --rdf-type rdf_triples_turtle
+          --rdf-types-are-grebi-types'

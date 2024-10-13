@@ -1,0 +1,5 @@
+name: HETT_Pesticides.APPRIL
+enabled: true
+ingests:
+  - globs: ["./00_fetch_data/hett_pesticides/apprildatadump_public.xlsx"]
+    command: $GREBI_HOME/01_ingest/hett_pesticides_appril.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME

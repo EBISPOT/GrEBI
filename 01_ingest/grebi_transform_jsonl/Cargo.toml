@@ -1,0 +1,14 @@
+[package]
+name = "grebi_transform_jsonl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+grebi_shared = { path = "../../grebi_shared" }
+serde_json = { version = "1.0.108", features=["preserve_order"] }
+struson = "0.3.0"
+jemallocator = "0.5.4"
+sha1 = "0.10.6"
+hex = "0.4.3"
+

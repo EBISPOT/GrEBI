@@ -1,0 +1,17 @@
+name: HGNC
+enabled: true
+ingests:
+  - globs: ["data/hgnc/hgnc.json"]
+    command: '
+      grebi_transform_jsonl
+          --json-rename-field hgnc_id:id
+          --json-inject-type hgnc:Gene
+          --json-inject-key-prefix hgnc:
+          --json-inject-value-prefix uniprot_ids:uniprot:
+          --json-inject-value-prefix omim_id:omim:
+          --json-inject-value-prefix ena:ena:
+          --json-inject-value-prefix vega_id:vega:
+          --json-inject-value-prefix ccds_id:ccds:
+          --json-inject-value-prefix entrez_id:entrez:
+          --json-inject-value-prefix pubmed_id:pmid:
+    '

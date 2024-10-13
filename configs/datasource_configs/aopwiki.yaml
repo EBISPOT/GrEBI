@@ -1,0 +1,9 @@
+name: AOPWiki
+enabled: true
+ingests:
+  - globs: ["./00_fetch_data/aopwiki/*.ttl.gz"]
+    command: '
+      grebi_rdf2jsonl
+          --rdf-type rdf_triples_turtle
+          --rdf-types-are-grebi-types
+    '

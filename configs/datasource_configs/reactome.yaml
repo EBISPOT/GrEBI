@@ -1,0 +1,5 @@
+name: Reactome
+enabled: true
+ingests:
+    - globs: ["./01_ingest/grebi_ingest_reactome/export/reactome.json"]
+      command: grebi_ingest_reactome

@@ -20,6 +20,7 @@ HPC pipeline to integrate knowledge graphs from [EMBL-EBI resources](https://www
 | [PHENIO](https://monarch-initiative.github.io/monarch-ingest/Sources/phenio/) | MONARCH
 | [PomBase](https://www.pombase.org) | MONARCH
 | [ZFIN](https://monarch-initiative.github.io/monarch-ingest/Sources/zfin/) | MONARCH
+| [MedGen](https://www.ncbi.nlm.nih.gov/mesh/) | [MONARCH](https://github.com/monarch-initiative/medgen)
 | [Protein ANalysis THrough Evolutionary Relationships (PANTHER)](http://pantherdb.org/) | MONARCH, ROBOKOP
 | [STRING](https://string-db.org/) | MONARCH, ROBOKOP
 | [Comparative Toxicogenomics Database (CTD)](http://ctdbase.org/about/) | MONARCH, ROBOKOP
@@ -43,6 +44,7 @@ HPC pipeline to integrate knowledge graphs from [EMBL-EBI resources](https://www
 | [Viral Proteome](https://www.ebi.ac.uk/GOA/proteomes) | ROBOKOP
 | [AOPWiki](https://aopwiki.org/) | [AOPWikiRDF](https://github.com/marvinm2/AOPWikiRDF)
 | [Ubergraph](https://github.com/INCATools/ubergraph)
+| [MeSH](https://www.ncbi.nlm.nih.gov/mesh/)
 | [Human Reference Atlas KG](https://humanatlas.io/)
 
 The resulting graphs can be downloaded from https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi/

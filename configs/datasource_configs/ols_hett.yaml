@@ -1,0 +1,8 @@
+name: OLS
+enabled: true
+ingests:
+  - globs: ["/data/ontologies/ontologies.json"]
+    command: '
+      grebi_ingest_ols
+            --ontologies cheminf,chebi,edam,dc,dcterms,go,pato,ncit,ro
+            --skip-obsolete'

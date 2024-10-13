@@ -6,6 +6,7 @@ use std::io::BufReader;
 use std::io::Write;
 use std::io::BufRead;
 use std::collections::HashSet;
+use std::collections::BTreeSet;
 use clap::Parser;
 use grebi_shared::json_lexer::JsonTokenType;
 use grebi_shared::slice_materialised_edge::SlicedEdge;
@@ -95,16 +96,24 @@ fn main() -> std::io::Result<()> {
     nodes_writer.write_all("grebi:nodeId:ID,:LABEL,grebi:datasources:string[],grebi:subgraph:string,grebi:displayType:string".as_bytes()).unwrap();
     for prop in &all_entity_props {
         nodes_writer.write_all(b",").unwrap();
-        nodes_writer.write_all(prop.as_bytes()).unwrap();
+        if prop.starts_with("mapped##") {
+            nodes_writer.write_all(prop.split("##").nth(2).unwrap().as_bytes());
+        } else {
+            nodes_writer.write_all(prop.as_bytes()).unwrap();
+        }
         nodes_writer.write_all(b":string[]").unwrap();
     }
     nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
-    edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string".as_bytes()).unwrap();
+    edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string,grebi:fromSourceIds:string[],grebi:toSourceId:string".as_bytes()).unwrap();
     for prop in &all_edge_props {
         edges_writer.write_all(b",").unwrap();
-        edges_writer.write_all(prop.as_bytes()).unwrap();
+        if prop.starts_with("mapped##") {
+            nodes_writer.write_all(prop.split("##").nth(2).unwrap().as_bytes());
+        } else {
+            nodes_writer.write_all(prop.as_bytes()).unwrap();
+        }
         edges_writer.write_all(b":string[]").unwrap();
     }
     edges_writer.write_all("\n".as_bytes()).unwrap();
@@ -186,7 +195,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
         if prop.key == "grebi:type".as_bytes() {
             for val in &prop.values {
                 nodes_writer.write_all(&[(31 as u8)]).unwrap();
-                parse_json_and_write(val.value, &refs, nodes_writer);
+                nodes_writer.write_all(&get_value_to_write(val.value, &refs));
             }
         }
     });
@@ -230,11 +239,12 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
                     continue; // already written above
                 }
                 if header_prop.as_bytes() == row_prop.key {
-                    if row_prop.key == "id".as_bytes() {
+                    if row_prop.key == "grebi:sourceIds".as_bytes() {
                         for val in row_prop.values.iter() {
                             write_id_row(val, id_edges_writer, &entity.id, &add_prefix);
                         }
                     }
+                    let mut written_values:BTreeSet<Vec<u8>> = BTreeSet::new();
                     for val in row_prop.values.iter() {
                         if !wrote_any {
                             nodes_writer.write_all(b"\"").unwrap();
@@ -245,11 +255,19 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
                         if val.kind == JsonTokenType::StartObject {
                             let reified = SlicedReified::from_json(&val.value); 
                             if reified.is_some() {
-                                parse_json_and_write(reified.unwrap().value, &refs, nodes_writer);
+                                let to_write = get_value_to_write(reified.unwrap().value, &refs);
+                                if !written_values.contains(&to_write) {
+                                    nodes_writer.write_all(&to_write).unwrap();
+                                    written_values.insert(to_write);
+                                }
                                 continue;
                             }
                         }
-                        parse_json_and_write(val.value, &refs, nodes_writer);
+                        let to_write = get_value_to_write(val.value, &refs);
+                        if !written_values.contains(&to_write) {
+                            nodes_writer.write_all(&to_write).unwrap();
+                            written_values.insert(to_write);
+                        }
                     }
                     continue;
                 }
@@ -269,15 +287,15 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, 
 
     edges_writer.write_all(b"\"").unwrap();
     write_escaped_value(&add_prefix, edges_writer);
-    write_escaped_value(edge.from, edges_writer);
+    write_escaped_value(edge.from_node_id, edges_writer); // START_ID
     edges_writer.write_all(b"\",\"").unwrap();
-    write_escaped_value(edge.edge_type, edges_writer);
-    edges_writer.write_all(b"\",\"").unwrap();
-    write_escaped_value(&add_prefix, edges_writer);
-    write_escaped_value(edge.to, edges_writer);
+    write_escaped_value(edge.edge_type, edges_writer); // TYPE
     edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(&add_prefix, edges_writer);
-    write_escaped_value(edge.edge_id, edges_writer);
+    write_escaped_value(edge.to_node_id, edges_writer); // END_ID
+    edges_writer.write_all(b"\",\"").unwrap();
+    write_escaped_value(&add_prefix, edges_writer);
+    write_escaped_value(edge.edge_id, edges_writer); // edge_id
     edges_writer.write_all(b"\",\"").unwrap();
 
     // grebi:datasources
@@ -291,10 +309,28 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, 
         edges_writer.write_all(ds).unwrap();
     });
 
+    // grebi:subgraph
     edges_writer.write_all(b"\",\"").unwrap();
     edges_writer.write_all(edge.subgraph).unwrap();
     edges_writer.write_all(b"\"").unwrap();
 
+    // grebi:fromSourceIds
+    edges_writer.write_all(b",\"").unwrap();
+    let mut is_first_sid = true;
+    edge.from_source_ids.iter().for_each(|sid| {
+        if is_first_sid {
+            is_first_sid = false;
+        } else {
+            edges_writer.write_all(&[(31 as u8)]).unwrap();
+        }
+        edges_writer.write_all(sid).unwrap();
+    });
+    edges_writer.write_all(b"\"").unwrap();
+
+    // grebi:toSourceId
+    edges_writer.write_all(b",\"").unwrap();
+    edges_writer.write_all(edge.to_source_id).unwrap();
+    edges_writer.write_all(b"\"").unwrap();
 
     for header_prop in all_edge_props {
         edges_writer.write_all(b",").unwrap();
@@ -308,7 +344,7 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, 
                     } else {
                         edges_writer.write_all(&[(31 as u8)]).unwrap();
                     }
-                    parse_json_and_write(val.value, &refs, edges_writer);
+                    edges_writer.write_all(&&get_value_to_write(val.value, &refs));
                     break;
                 }
             }
@@ -334,28 +370,30 @@ fn write_escaped_value(buf:&[u8], writer:&mut BufWriter<&File>) {
 }
 
 
-fn parse_json_and_write(buf:&[u8], refs:&Map<String,Value>, writer:&mut BufWriter<&File>) {
+fn get_value_to_write(buf:&[u8], refs:&Map<String,Value>) -> Vec<u8> {
 
     let mut json = JsonParser::parse(buf);
 
     match json.peek().kind {
         JsonTokenType::StartString => {
             let str = json.string();
-            write_escaped_value(str, writer);
+            let mut to_write = get_escaped_value(&str);
+
             let metadata = refs.get(&String::from_utf8_lossy(str).to_string());
             if metadata.is_some() {
                 let metadata_u = metadata.unwrap();
                 let names = metadata_u.get("grebi:name");
                 if names.is_some() {
                     for name in names.unwrap().as_array().unwrap() {
-                        writer.write_all(&[(31 as u8)]).unwrap();
-                        write_escaped_value(name.as_str().unwrap().as_bytes(), writer);
+                        to_write.push(31);
+                        to_write.extend(get_escaped_value(buf));
                     }
                 }
             }
+            to_write
         },
         _ => {
-            write_escaped_value(&buf, writer)
+            get_escaped_value(&buf)
         }
     }
 }
@@ -379,9 +417,22 @@ fn write_id_row(val:&SlicedPropertyValue, id_edges_writer:&mut BufWriter<&File>,
     write_escaped_value(&add_prefix, id_edges_writer);
     write_escaped_value(grebi_node_id, id_edges_writer);
     id_edges_writer.write_all(b"\",\"").unwrap();
-    write_escaped_value(b"id", id_edges_writer);
+    write_escaped_value(b"sourceId", id_edges_writer);
     id_edges_writer.write_all(b"\",\"").unwrap();
     write_escaped_value(actual_id, id_edges_writer);
     id_edges_writer.write_all(b"\"\n").unwrap();
 }
 
+
+fn get_escaped_value(buf:&[u8]) -> Vec<u8> {
+    return buf.iter().flat_map(|byte| {
+        match byte {
+            b'\n' => b"\\n".to_vec(),
+            b'\r' => b"\\r".to_vec(),
+            b'\t' => b"\\t".to_vec(),
+            b'\\' => b"\\\\".to_vec(),
+            b'"' => b"\"\"".to_vec(),
+            b => vec![*b],
+        }
+    }).collect();
+}

@@ -1,0 +1,6 @@
+name: OLS
+enabled: true
+ingests:
+  - globs: ["/data/ontologies/ontologies.json.gz"]
+    command: grebi_ingest_ols --ontologies efo,ro,hp
+

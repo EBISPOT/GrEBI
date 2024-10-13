@@ -1,0 +1,208 @@
+name: CTD
+enabled: true
+ingests:
+  - globs: ["./00_fetch_data/ctd/CTD_anatomy.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns grebi:name,grebi:equivalentTo,grebi:description,AltAnatomyIDs,ParentIDs,TreeNumbers,ParentTreeNumbers,Synonyms,ExternalSynonyms
+      | grebi_transform_jsonl
+          --json-inject-type ctd:Anatomy
+          --json-inject-key-prefix ctd:'
+  - globs: ["./00_fetch_data/ctd/CTD_chem_gene_ixns.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns grebi:name,ChemicalID,CasRN,GeneSymbol,GeneID,GeneForms,Organism,OrganismID,Interaction,InteractionActions,PubMedIDs
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:
+          --json-inject-value-prefix GeneID:ncbigene:
+          --json-inject-value-prefix OrganismID:ncbitaxon:
+          --json-inject-value-prefix PubMedIDs:pmid:
+      | grebi_nodes2edges
+          --from-field ctd:ChemicalID
+          --to-field ctd:GeneID
+          --edge-type biolink:chemical_gene_interaction_association'
+  - globs: ["./00_fetch_data/ctd/CTD_chem_go_enriched.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns ChemicalName,ChemicalID,CasRN,Ontology,GOTermName,GOTermID,HighestGOLevel,PValue,CorrectedPValue,TargetMatchQty,TargetTotalQty,BackgroundMatchQty,BackgroundTotalQty
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:
+      | grebi_nodes2edges
+          --from-field ctd:ChemicalID
+          --to-field ctd:GOTermID
+          --edge-type biolink:functional_association'
+  - globs: ["./00_fetch_data/ctd/CTD_chemicals_diseases.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns ChemicalName,ChemicalID,CasRN,DiseaseName,DiseaseID,DirectEvidence,InferenceGeneSymbol,InferenceScore,OmimIDs,PubMedIDs
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:
+          --json-inject-value-prefix PubMedIDs:pmid:
+          --json-inject-value-prefix OmimIDs:omim:
+      | grebi_nodes2edges
+          --from-field ctd:ChemicalID
+          --to-field ctd:DiseaseID
+          --edge-type biolink:chemical_to_disease_or_phenotypic_feature_association'
+  - globs: ["./00_fetch_data/ctd/CTD_chemicals.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns grebi:name,grebi:equivalentTo,CasRN,Definition,biolink:broad_match,TreeNumbers,ParentTreeNumbers,grebi:synonym
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:'
+  - globs: ["./00_fetch_data/ctd/CTD_chem_pathways_enriched.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns ChemicalName,ChemicalID,CasRN,PathwayName,PathwayID,PValue,CorrectedPValue,TargetMatchQty,TargetTotalQty,BackgroundMatchQty,BackgroundTotalQty
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:
+      | grebi_nodes2edges
+          --from-field ctd:ChemicalID
+          --to-field ctd:PathwayID
+          --edge-type biolink:chemical_to_pathway_association'
+  - globs: ["./00_fetch_data/ctd/CTD_curated_cas_nbrs.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns CasRN,ChemicalID,grebi:name,ctd:ChemicalURL 
+         --tsv-ignore-empty-fields
+      | grebi_transform_jsonl 
+          --json-inject-type ctd:Chemical
+          --json-inject-value-prefix CasRN:cas:
+      | grebi_transform_jsonl 
+          --json-rename-field ChemicalID:id
+          --json-rename-field CasRN:grebi:equivalentTo'
+  - globs: ["./00_fetch_data/ctd/CTD_curated_genes_diseases.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns GeneSymbol,GeneID,DiseaseName,DiseaseID,DirectEvidence,OmimIDs,PubMedIDs
+      | grebi_transform_jsonl 
+          --json-inject-value-prefix GeneID:ncbigene:
+          --json-inject-value-prefix PubMedIDs:pmid:
+          --json-inject-value-prefix OmimIDs:omim:
+          --json-inject-key-prefix ctd:
+      | grebi_nodes2edges
+          --from-field ctd:GeneID
+          --to-field ctd:DiseaseID
+          --edge-type biolink:gene_to_disease_association'
+  - globs: ["./00_fetch_data/ctd/CTD_genes_diseases.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns GeneSymbol,GeneID,DiseaseName,DiseaseID,DirectEvidence,InferenceChemicalName,InferenceScore,OmimIDs,PubMedIDs
+      | grebi_transform_jsonl 
+          --json-inject-value-prefix GeneID:ncbigene:
+          --json-inject-value-prefix PubMedIDs:pmid:
+          --json-inject-value-prefix OmimIDs:omim:
+          --json-inject-key-prefix ctd:
+      | grebi_nodes2edges
+          --from-field ctd:GeneID
+          --to-field ctd:DiseaseID
+          --edge-type biolink:gene_to_disease_association'
+  - globs: ["./00_fetch_data/ctd/CTD_Disease-GO_*"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns DiseaseName,DiseaseID,GOName,GOID,InferenceGeneQty,InferenceGeneSymbols
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:
+          --json-inject-value-prefix
+      | grebi_nodes2edges
+          --from-field ctd:DiseaseID
+          --to-field ctd:GOID
+          --edge-type biolink:functional_association'
+  - globs: ["./00_fetch_data/ctd/CTD_diseases_pathways.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns DiseaseName,DiseaseID,PathwayName,PathwayID,InferenceGeneSymbol
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:
+      | grebi_nodes2edges
+          --from-field ctd:DiseaseID
+          --to-field ctd:PathwayID
+          --edge-type biolink:affects'
+  - globs: ["./00_fetch_data/ctd/CTD_genes_pathways.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns GeneSymbol,GeneID,PathwayName,PathwayID
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:
+          --json-inject-value-prefix GeneID:ncbigene:
+      | grebi_nodes2edges
+          --from-field ctd:GeneID
+          --to-field ctd:PathwayID
+          --edge-type biolink:affects'
+  - globs: ["./00_fetch_data/ctd/CTD_exposure_events.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns exposurestressorname,exposurestressorid,stressorsourcecategory,stressorsourcedetails,numberofstressorsamples,stressornotes,numberofreceptors,receptors,receptornotes,smokingstatus,age,ageunitsofmeasurement,agequalifier,sex,race,methods,detectionlimit,detectionlimituom,detectionfrequency,medium,exposuremarker,exposuremarkerid,markerlevel,markerunitsofmeasurement,markermeasurementstatistic,assaynotes,studycountries,stateorprovince,citytownregionarea,exposureeventnotes,outcomerelationship,diseasename,diseaseid,phenotypename,phenotypeid,phenotypeactiondegreetype,anatomy,exposureoutcomenotes,reference,associatedstudytitles,enrollmentstartyear,enrollmentendyear,studyfactors
+      | grebi_transform_jsonl 
+          --json-inject-type ctd:ExposureEvent
+          --json-inject-key-prefix ctd:
+          --json-inject-value-prefix reference:pmid:
+          --json-inject-hashid'
+  - globs: ["./00_fetch_data/ctd/CTD_exposure_studies.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns reference,studyfactors,exposurestressors,receptors,studycountries,mediums,exposuremarkers,diseases,phenotypes,authorsummary
+      | grebi_transform_jsonl 
+          --json-inject-type ctd:ExposureStudy
+          --json-inject-key-prefix ctd:
+          --json-inject-value-prefix reference:pmid:
+          --json-inject-hashid'
+  - globs: ["./00_fetch_data/ctd/CTD_genes.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns GeneSymbol,grebi:name,id,AltGeneIDs,grebi:synonym,BioGRIDIDs,PharmGKBIDs,UniProtIDs
+      | grebi_transform_jsonl 
+          --json-inject-type biolink:Gene
+          --json-inject-value-prefix id:ncbigene:
+          --json-inject-value-prefix AltGeneIDs:ncbigene:
+          --json-inject-value-prefix BioGRIDIDs:biogrid:
+          --json-inject-value-prefix PharmGKBIDs:pharmgkb.gene:
+          --json-inject-value-prefix UniProtIDs:uniprot:
+          --json-inject-key-prefix ctd:'
+  - globs: ["./00_fetch_data/ctd/CTD_pathways.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns grebi:name,id'
+  - globs: ["./00_fetch_data/ctd/CTD_pheno_term_ixns.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns chemicalname,chemicalid,casrn,phenotypename,phenotypeid,comentionedterms,organism,organismid,interaction,interactionactions,anatomyterms,inferencegenesymbols,pubmedids
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:
+          --json-inject-value-prefix organismid:ncbitaxon:
+          --json-inject-value-prefix pubmedids:pmid:
+      | grebi_nodes2edges
+          --from-field ctd:chemicalid
+          --to-field ctd:phenotypeid
+          --edge-type biolink:affects'
+  - globs: ["./00_fetch_data/ctd/CTD_Phenotype-Disease_biological_process_associations.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+         --tsv-array-delimiter "|"
+         --tsv-columns GOName,GOID,DiseaseName,DiseaseID,InferenceChemicalQty,InferenceChemicalNames,InferenceGeneQty,InferenceGeneSymbols
+      | grebi_transform_jsonl 
+          --json-inject-key-prefix ctd:
+      | grebi_nodes2edges
+          --from-field ctd:DiseaseID
+          --to-field ctd:GOID
+          --edge-type biolink:has_phenotype'
+
+
+
+

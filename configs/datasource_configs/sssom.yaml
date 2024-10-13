@@ -1,0 +1,5 @@
+name: SSSOM
+enabled: true
+ingests:
+  - globs: ["./00_fetch_data/sssom/*.tsv.gz"]
+    command: grebi_ingest_sssom

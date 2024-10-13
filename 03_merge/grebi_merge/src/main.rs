@@ -172,15 +172,18 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
     let mut has_any_type:bool = false;
 
-    let mut datasources: Vec<&[u8]> = jsons
-        .iter()
-        .map(|json| {
-            if json.has_type {
-                has_any_type = true;
-            }
-            return json.datasource;
-        })
-        .collect();
+    let mut source_ids: Vec<&[u8]> = Vec::new();
+    let mut datasources: Vec<&[u8]> = Vec::new();
+
+    for json in &jsons {
+        if json.has_type {
+            has_any_type = true;
+        }
+        for &source_id in json.source_ids.iter() {
+            source_ids.push(source_id);
+        }
+        datasources.push(json.datasource);
+    }
 
     if !has_any_type {
         // skip if after merging the node has no type
@@ -194,11 +197,11 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     for json in &jsons {
         n_props_total += json.props.len();
     }
-    let mut merged_props = Vec::<(&[u8] /* datasource */, ParsedProperty)>::with_capacity(n_props_total);
+    let mut merged_props = Vec::<(&[u8] /* datasource */, &Vec<&[u8]> /* source ids */, ParsedProperty)>::with_capacity(n_props_total);
     for json in &jsons {
         for prop in json.props.iter() {
             if !exclude_props.contains(prop.key) {
-                merged_props.push(( json.datasource, prop.clone()));
+                merged_props.push(( json.datasource, &json.source_ids, prop.clone()));
             }
         }
     }
@@ -210,6 +213,9 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
     datasources.sort();
     datasources.dedup();
+
+    source_ids.sort();
+    source_ids.dedup();
 
     stdout.write_all(r#"{"grebi:nodeId":""#.as_bytes()).unwrap();
     stdout.write_all(jsons[0].id).unwrap();
@@ -227,6 +233,22 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     }
     stdout.write_all(r#"]"#.as_bytes()).unwrap();
 
+    // source ids here
+    stdout.write_all(r#","grebi:sourceIds":["#.as_bytes()).unwrap();
+    let mut is_first_sid = true;
+    for sid in source_ids {
+        if !is_first_sid {
+            stdout.write_all(r#","#.as_bytes()).unwrap();
+        } else {
+            is_first_sid = false;
+        }
+        stdout.write_all(r#"""#.as_bytes()).unwrap();
+        stdout.write_all(sid).unwrap();
+        stdout.write_all(r#"""#.as_bytes()).unwrap();
+    }
+    stdout.write_all(r#"]"#.as_bytes()).unwrap();
+
+
     if subgraph_name.is_some() {
         stdout.write_all(r#","grebi:subgraph":""#.as_bytes()).unwrap();
         stdout.write_all(&subgraph_name.as_ref().unwrap().as_bytes());
@@ -235,9 +257,9 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
     // sort by key, then value, then datasource
     merged_props.sort_by(|a, b| {
-        match a.1.key.cmp(&b.1.key) {
+        match a.2.key.cmp(&b.2.key) {
             Ordering::Equal => {
-                match a.1.value.cmp(&b.1.value) {
+                match a.2.value.cmp(&b.2.value) {
                     Ordering::Equal => {
                         return a.0.cmp(&b.0);
                     }
@@ -256,7 +278,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     // has multiple files that define the same thing (e.g. multiple ontologies that import
     // the same ontology when we import the whole lot as an "Ontologies" datasource)
     merged_props.dedup_by(|a, b| {
-        return a.1.key == b.1.key && a.1.value == b.1.value && a.0 == b.0;
+        return a.2.key == b.2.key && a.2.value == b.2.value && a.0 == b.0;
     });
 
     let mut index = 0;
@@ -264,7 +286,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     // for each of all the properties (key) that apply to this entity
     while index < merged_props.len() {
         stdout.write_all(r#",""#.as_bytes()).unwrap();
-        stdout.write_all(merged_props[index].1.key).unwrap();
+        stdout.write_all(merged_props[index].2.key).unwrap();
         stdout.write_all(r#"":["#.as_bytes()).unwrap();
 
         let mut is_first2 = true;
@@ -280,6 +302,8 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
             let start_value_index = index;
             stdout.write_all(r#"{"grebi:datasources":["#.as_bytes()).unwrap();
 
+            let mut source_ids:Vec<&[u8]> = Vec::new();
+
             let mut is_first3:bool = true;
             loop {
                 if !is_first3 {
@@ -292,6 +316,11 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
                 stdout.write_all(merged_props[index].0).unwrap();
                 stdout.write_all(r#"""#.as_bytes()).unwrap();
 
+                // piggybacking on this loop to find all the source IDs
+                for &source_id in merged_props[index].1.iter() {
+                    source_ids.push(&source_id);
+                }
+
                 index = index + 1;
                 
                 // if we hit the end of all the property definitions are are done
@@ -301,16 +330,33 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
                 // when we hit another key or value we are done; all the same key/value with different
                 // datasources should be right after us.
-                if merged_props[index].1.key != merged_props[start_value_index].1.key 
-                    ||merged_props[index].1.value != merged_props[start_value_index].1.value 
+                if merged_props[index].2.key != merged_props[start_value_index].2.key 
+                    ||merged_props[index].2.value != merged_props[start_value_index].2.value 
                 {
                     break;
                 }
             }
 
+            source_ids.sort_unstable();
+            stdout.write_all(r#"],"grebi:sourceIds":["#.as_bytes()).unwrap();
+            let mut last_source_id:Option<&[u8]> = None;
+            for index2 in 0..source_ids.len() {
+                let source_id = &source_ids[index2];
+                if last_source_id.is_some() {
+                    if *source_id == last_source_id.unwrap() {
+                        continue;
+                    }
+                    stdout.write_all(b",");
+                }
+                stdout.write_all(r#"""#.as_bytes()).unwrap();
+                stdout.write_all(source_id).unwrap();
+                stdout.write_all(r#"""#.as_bytes()).unwrap();
+                last_source_id = Some(source_id);
+            }
+
             // now write the value itself (from start_value_index; index should already be at the next value)
             stdout.write_all(r#"],"grebi:value":"#.as_bytes()).unwrap();
-            stdout.write_all(merged_props[start_value_index].1.value).unwrap();
+            stdout.write_all(merged_props[start_value_index].2.value).unwrap();
             stdout.write_all(r#"}"#.as_bytes()).unwrap();
 
             // if we hit the end of all the property definitions are are done
@@ -319,7 +365,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
             }   
 
             // if we changed key, we are done here (onto the next property)
-            if merged_props[index].1.key != merged_props[start_value_index].1.key {
+            if merged_props[index].2.key != merged_props[start_value_index].2.key {
                 break;
             }
         }

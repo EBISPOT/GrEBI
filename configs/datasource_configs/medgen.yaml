@@ -1,0 +1,8 @@
+name: MedGen
+enabled: true
+ingests:
+  - globs: ["./00_fetch_data/medgen/medgen.owl.gz"]
+    command: '
+      grebi_rdf2jsonl
+          --rdf-type rdf_triples_xml
+          --rdf-types-are-grebi-types'
