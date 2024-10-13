@@ -112,7 +112,6 @@ ingests:
          --tsv-columns DiseaseName,DiseaseID,GOName,GOID,InferenceGeneQty,InferenceGeneSymbols
       | grebi_transform_jsonl 
           --json-inject-key-prefix ctd:
-          --json-inject-value-prefix
       | grebi_nodes2edges
           --from-field ctd:DiseaseID
           --to-field ctd:GOID
