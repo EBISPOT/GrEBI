@@ -110,9 +110,9 @@ fn main() -> std::io::Result<()> {
     for prop in &all_edge_props {
         edges_writer.write_all(b",").unwrap();
         if prop.starts_with("mapped##") {
-            nodes_writer.write_all(prop.split("##").nth(2).unwrap().as_bytes());
+            edges_writer.write_all(prop.split("##").nth(2).unwrap().as_bytes());
         } else {
-            nodes_writer.write_all(prop.as_bytes()).unwrap();
+            edges_writer.write_all(prop.as_bytes()).unwrap();
         }
         edges_writer.write_all(b":string[]").unwrap();
     }
