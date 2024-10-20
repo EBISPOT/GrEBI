@@ -232,13 +232,14 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             if k.eq("ols:searchableAnnotationValues") {
                 continue;
             }
+            if k.eq("ols:relatedFrom") {
+                // we keep relatedTo but don't need both directions in the KG
+                continue;
+            }
 
             let v = obj.get(k).unwrap();
 
-            output_nodes.write_all(r#","#.as_bytes()).unwrap();
-            output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-
-            if k.eq("ols:relatedFrom") || k.eq("ols:relatedTo") {
+            if k.eq("ols:relatedTo") {
                 let vals = {
                     if v.is_array() {
                         v.as_array().unwrap().iter().map(|x| x).collect()
@@ -246,25 +247,26 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
                         vec!(v)
                     }
                 };
-                for related in vals {
-                    let v_as_obj = related.as_object().unwrap();
-                    let pred = v_as_obj.get("http://www.w3.org/2002/07/owl#onProperty");
-                    if pred.is_some() {
-                        output_nodes.write_all(pred.unwrap().as_str().unwrap().as_bytes()).unwrap();
-                    } else {
-                        output_nodes.write_all(k.as_bytes()).unwrap();
-                    }
-                }
-            } else {
-                output_nodes.write_all(k.as_bytes()).unwrap();
-            }
 
-            output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
+                // each relatedTo value has a "property" and a "value"
+                let pred_to_vals:HashMap<String,Vec<Value>> = vals.iter().map(|x| {
+                    let obj = x.as_object().unwrap();
+                    let pred = get_string_values(obj.get("ols:property").unwrap()).iter().next().unwrap().to_string();
+                    let val = obj.get("ols:value").unwrap();
+                    (pred, val.clone())
+                }).fold(HashMap::new(), |mut acc, (k,v)| {
+                    let entry = acc.entry(k).or_insert(Vec::new());
+                    entry.push(v);
+                    acc
+                });
 
-            output_nodes.write_all(r#"["#.as_bytes()).unwrap();
-                if v.is_array() {
+                for (pred, vals) in pred_to_vals.iter() {
+                    output_nodes.write_all(r#","#.as_bytes()).unwrap();
+                    output_nodes.write_all(r#"""#.as_bytes()).unwrap();
+                    output_nodes.write_all(pred.as_bytes()).unwrap();
+                    output_nodes.write_all(b"\":[").unwrap();
                     let mut arr_is_first = true;
-                    for el in v.as_array().unwrap() {
+                    for el in vals {
                         if arr_is_first {
                             arr_is_first = false;
                         } else {
@@ -272,10 +274,30 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
                         }
                         write_value(el, output_nodes);
                     }
-                } else {
-                    write_value(&v, output_nodes);
+                    output_nodes.write_all(b"]").unwrap();
                 }
-            output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
+            } else {
+                output_nodes.write_all(r#","#.as_bytes()).unwrap();
+                output_nodes.write_all(r#"""#.as_bytes()).unwrap();
+                output_nodes.write_all(k.as_bytes()).unwrap();
+                output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
+                output_nodes.write_all(r#"["#.as_bytes()).unwrap();
+                    if v.is_array() {
+                        let mut arr_is_first = true;
+                        for el in v.as_array().unwrap() {
+                            if arr_is_first {
+                                arr_is_first = false;
+                            } else {
+                                output_nodes.write_all(r#","#.as_bytes()).unwrap();
+                            }
+                            write_value(el, output_nodes);
+                        }
+                    } else {
+                        write_value(&v, output_nodes);
+                    }
+                output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
+            }
+
 
         }
 
