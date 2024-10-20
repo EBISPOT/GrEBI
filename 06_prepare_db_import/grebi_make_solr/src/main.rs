@@ -133,7 +133,6 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>) {
             k.eq("grebi:fromNodeId") ||
             k.eq("grebi:toNodeId") ||
             k.eq("grebi:fromSourceId") ||
-            k.eq("grebi:toSourceId") ||
             k.eq("grebi:subgraph") ||
             k.eq("grebi:sourceIds") ||
             k.eq("grebi:displayType") ||

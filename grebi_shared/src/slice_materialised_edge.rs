@@ -11,7 +11,6 @@ pub struct SlicedEdge<'a> {
     pub from_node_id:&'a [u8],
     pub from_source_ids:Vec<&'a [u8]>,
     pub to_node_id:&'a [u8],
-    pub to_source_id:&'a [u8],
     pub datasources:Vec<&'a [u8]>,
     pub props:Vec<SlicedProperty<'a>>,
     pub _refs:Option<&'a [u8]>
@@ -65,11 +64,6 @@ impl<'a> SlicedEdge<'a> {
         if k_to_nid != "grebi:toNodeId".as_bytes() { panic!("expected to as key, got {}", String::from_utf8( k_to_nid.to_vec() ).unwrap()); }
         let to_nid = parser.string();
 
-        // "toSourceId": ...
-        let k_to_sid = parser.name();
-        if k_to_sid != "grebi:toSourceId".as_bytes() { panic!("expected to as key, got {}", String::from_utf8( k_to_sid.to_vec() ).unwrap()); }
-        let to_sid = parser.string();
-
         // "grebi:datasources": ...
         let k_value_datasources = parser.name();
         if k_value_datasources != "grebi:datasources".as_bytes() { panic!(); }
@@ -115,7 +109,6 @@ impl<'a> SlicedEdge<'a> {
             from_node_id: from_nid,
             from_source_ids: from_sids,
             to_node_id: to_nid,
-            to_source_id: to_sid,
             datasources: entity_datasources,
             props,
             _refs

@@ -102,7 +102,7 @@ fn main() -> std::io::Result<()> {
     nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
-    edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string,grebi:fromSourceIds:string[],grebi:toSourceId:string".as_bytes()).unwrap();
+    edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string,grebi:fromSourceIds:string[]".as_bytes()).unwrap();
     for prop in &all_edge_props {
         edges_writer.write_all(b",").unwrap();
         edges_writer.write_all(prop.as_bytes()).unwrap();
@@ -317,11 +317,6 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, 
         }
         edges_writer.write_all(sid).unwrap();
     });
-    edges_writer.write_all(b"\"").unwrap();
-
-    // grebi:toSourceId
-    edges_writer.write_all(b",\"").unwrap();
-    edges_writer.write_all(edge.to_source_id).unwrap();
     edges_writer.write_all(b"\"").unwrap();
 
     for header_prop in all_edge_props {
