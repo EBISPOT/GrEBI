@@ -209,13 +209,7 @@ fn value_to_solr(v:&Value, refs:&Map<String,Value>) -> Vec<Value> {
 fn escape_key(k:&str) -> String {
     let mut res = String::new();
 
-    for c in {
-        if k.starts_with("mapped##") {
-            k.split("##").nth(2).unwrap().chars()
-        } else {
-            k.chars()
-        }
-    } {
+    for c in k.chars() {
         if c == ':' {
             res.push_str("__");
         } else {

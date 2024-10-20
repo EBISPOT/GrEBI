@@ -193,18 +193,6 @@ pub fn find_strings<'a>(json:&'a [u8])->Vec<(usize, usize)> {
 
 }
 
-pub fn split_mapped_value(val:&[u8])->(&[u8],&[u8]) {
-
-    if !val.starts_with(b"mapped##") {
-        panic!("expected mapped## prefix in {}", String::from_utf8(val.to_vec()).unwrap());
-    }
-
-    let mut i = "mapped##".len();
-    while val[i] != b'#' || val[i+1] != b'#' {
-        i = i + 1;
-    }
-    return (&val["mapped##".len()..i], &val[i+2..]);
-}
 
 
 

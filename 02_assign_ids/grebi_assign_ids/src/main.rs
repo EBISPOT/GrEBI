@@ -122,9 +122,6 @@ fn main() {
             writer.write_all(b",\"").unwrap();
             let name_group = id_to_group.get(name);
             if name_group.is_some() {
-                writer.write_all(b"mapped##").unwrap();
-                writer.write_all(name).unwrap();
-                writer.write_all(b"##").unwrap();
                 writer.write_all(name_group.unwrap()).unwrap();
             } else {
                 writer.write_all(name).unwrap();
@@ -168,9 +165,6 @@ fn write_value(writer:&mut BufWriter<io::StdoutLock>, value:&[u8], id_to_group:&
 
         let pv_group = id_to_group.get(str);
         if pv_group.is_some() {
-            writer.write_all(b"mapped##").unwrap();
-            writer.write_all(str).unwrap();
-            writer.write_all(b"##").unwrap();
             writer.write_all(pv_group.unwrap()).unwrap();
         } else {
             writer.write_all(str).unwrap();

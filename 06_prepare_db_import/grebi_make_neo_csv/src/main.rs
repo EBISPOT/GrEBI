@@ -96,11 +96,7 @@ fn main() -> std::io::Result<()> {
     nodes_writer.write_all("grebi:nodeId:ID,:LABEL,grebi:datasources:string[],grebi:subgraph:string,grebi:displayType:string".as_bytes()).unwrap();
     for prop in &all_entity_props {
         nodes_writer.write_all(b",").unwrap();
-        if prop.starts_with("mapped##") {
-            nodes_writer.write_all(prop.split("##").nth(2).unwrap().as_bytes());
-        } else {
-            nodes_writer.write_all(prop.as_bytes()).unwrap();
-        }
+        nodes_writer.write_all(prop.as_bytes()).unwrap();
         nodes_writer.write_all(b":string[]").unwrap();
     }
     nodes_writer.write_all("\n".as_bytes()).unwrap();
@@ -109,11 +105,7 @@ fn main() -> std::io::Result<()> {
     edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string,grebi:fromSourceIds:string[],grebi:toSourceId:string".as_bytes()).unwrap();
     for prop in &all_edge_props {
         edges_writer.write_all(b",").unwrap();
-        if prop.starts_with("mapped##") {
-            edges_writer.write_all(prop.split("##").nth(2).unwrap().as_bytes());
-        } else {
-            edges_writer.write_all(prop.as_bytes()).unwrap();
-        }
+        edges_writer.write_all(prop.as_bytes()).unwrap();
         edges_writer.write_all(b":string[]").unwrap();
     }
     edges_writer.write_all("\n".as_bytes()).unwrap();
