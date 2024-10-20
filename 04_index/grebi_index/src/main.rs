@@ -96,6 +96,10 @@ fn main() {
 
         let mut wrote_name = false;
 
+        for sid in sliced.source_ids {
+            all_ids.insert(sid.to_vec());
+        }
+
         sliced.props.iter().for_each(|prop| {
 
             let prop_key = prop.key;
@@ -181,17 +185,11 @@ fn main() {
                             if reified_u.value_kind == JsonTokenType::StartString {
                                 all_names.insert(reified_u.value[1..reified_u.value.len()-1].to_vec());
                             }
-                        } else if prop_key.eq(b"grebi:sourceIds") {
-                            if reified_u.value_kind == JsonTokenType::StartString {
-                                all_ids.insert(reified_u.value[1..reified_u.value.len()-1].to_vec());
-                            }
                         }
                     }
                 } else if val.kind == JsonTokenType::StartString {
                     if prop_key.eq(b"grebi:name") || prop.key.eq(b"grebi:synonym") {
                         all_names.insert(val.value[1..val.value.len()-1].to_vec());
-                    } else if prop_key.eq(b"grebi:sourceIds") {
-                        all_ids.insert(val.value[1..val.value.len()-1].to_vec());
                     }
                 }
             }
