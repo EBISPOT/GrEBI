@@ -44,7 +44,17 @@ fn main() {
         let yaml_header_curie_map = yaml_header.get("curie_map");
         if yaml_header_curie_map.is_some() {
             for (k, v) in yaml_header_curie_map.unwrap().as_mapping().unwrap() {
-                builder.add_mapping(k.as_str().unwrap().to_string() + ":", v.as_str().unwrap().to_string());
+                let mut to_prefix = v.as_str().unwrap().to_string();
+
+                // hack for broken https://data.monarchinitiative.org/mappings/latest/mesh_chebi_biomappings.sssom.tsv
+                // the mesh IRI does not have a trailing /
+                // so we check if the last ch is alphanumeric, if so add a /
+                //
+                if to_prefix.chars().last().unwrap().is_alphanumeric() {
+                    to_prefix = to_prefix + "/";
+                }
+
+                builder.add_mapping(k.as_str().unwrap().to_string() + ":", to_prefix);
             }
         }
         builder.build()
