@@ -315,7 +315,9 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, 
         } else {
             edges_writer.write_all(&[(31 as u8)]).unwrap();
         }
-        edges_writer.write_all(sid).unwrap();
+        edges_writer.write_all(
+            &get_escaped_value(JsonParser::parse(sid).string())
+        ).unwrap();
     });
     edges_writer.write_all(b"\"").unwrap();
 
