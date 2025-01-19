@@ -10,6 +10,7 @@ import DatasourceSelector from "../DatasourceSelector";
 import { DatasourceTags } from "../DatasourceTag";
 import DataTable from "../datatable/DataTable";
 import LoadingOverlay from "../LoadingOverlay";
+import { dir } from "console";
 
 export interface EdgesState {
     total:number,
@@ -19,13 +20,14 @@ export interface EdgesState {
     propertyColumns:string[]
 };
 
-export default function EdgesInList(params:{
+export default function EdgesList(params:{
     subgraph:string,
     node:GraphNode,
+    direction:'incoming'|'outgoing',
     onEdgesLoaded?:((edges:EdgesState) => void)|undefined,
     extraSearchParams?: string[][]|undefined
 }) {
-    let { subgraph, node, onEdgesLoaded, extraSearchParams } = params
+    let { direction, subgraph, node, onEdgesLoaded, extraSearchParams } = params
 
   let [edgesState, setEdgesState] = useState<null|EdgesState>(null)
 
@@ -42,7 +44,8 @@ export default function EdgesInList(params:{
         async function getEdges() {
             console.log('refreshing ', node.getNodeId(), JSON.stringify(dsEnabled), JSON.stringify(edgesState?.datasources))
             setLoading(true)
-            let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes/${node.getEncodedNodeId()}/incoming_edges?${
+            let endpoint = direction === 'incoming' ? 'incoming_edges' : 'outgoing_edges'
+            let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes/${node.getEncodedNodeId()}/${endpoint}?${
                 new URLSearchParams([
                     ['page', page],
                     ['size', rowsPerPage],
@@ -72,7 +75,7 @@ export default function EdgesInList(params:{
         }
         getEdges()
 
-    }, [ node.getNodeId(), JSON.stringify(dsEnabled), page, rowsPerPage, filter, sortColumn, sortDir ]);
+    }, [ direction, node.getNodeId(), JSON.stringify(dsEnabled), page, rowsPerPage, filter, sortColumn, sortDir ]);
 
     if(edgesState == null) {
         return <LoadingOverlay message="Loading edges..." />
@@ -92,14 +95,25 @@ export default function EdgesInList(params:{
                     },
                     sortable: true,
                 },
-                {
+                ...
+                (direction === 'incoming' ? [
+                    {
                     id: 'grebi:from',
                     name: 'From Node',
                     selector: (row:GraphEdge) => {
                         return  <NodeRefLink subgraph={subgraph} nodeRef={row.getFrom()} />
                     },
                     sortable: true,
-                },
+                } ,
+                {
+                    id: 'grebi:type',
+                    name: 'Edge Type',
+                    selector: (row:GraphEdge) => {
+                        return row.getType()
+                    },
+                    sortable: true,
+                }
+            ] : [
                 {
                     id: 'grebi:type',
                     name: 'Edge Type',
@@ -108,6 +122,15 @@ export default function EdgesInList(params:{
                     },
                     sortable: true,
                 },
+                 {
+                    id: 'grebi:to',
+                    name: 'To Node',
+                    selector: (row:GraphEdge) => {
+                        return  <NodeRefLink subgraph={subgraph} nodeRef={row.getTo()} />
+                    },
+                    sortable: true,
+                }
+            ]),
                 ...(edgesState?.propertyColumns || []).map((prop:string) => {
                     return {
                         name: prop,

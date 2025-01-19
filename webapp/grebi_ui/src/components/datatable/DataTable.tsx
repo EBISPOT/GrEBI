@@ -188,7 +188,7 @@ export default function DataTable({
                         className="text-md align-top py-2 px-4"
                         key={randomString()}
                       >
-                        <div style={{ ...( maxRowHeight ? {maxHeight: maxRowHeight, overflowY:"scroll"} : {}) }}>
+                        <div style={{ ...( maxRowHeight ? {maxHeight: maxRowHeight, overflowY:"auto"} : {}) }}>
                         {column.selector(row, column.id)
                           ? column.selector(row, column.id)
                           : "(no data)"}

@@ -358,7 +358,6 @@ color:'gray',
                         //     this.clearHighlightedDatasource()
                         // }
                         this.dsExclude = newExclude
-                        this.loadSingulars()
                         this.startLoading(false)
                         renderDsSelector()
                         await this.incrementalUpdate()
@@ -405,11 +404,6 @@ color:'gray',
         })
     }
 
-    loadSingulars() {
-
-
-    }
-
     async incrementalUpdate() {
 
         let {elements,style,layout} = this.renderToCytoscapeJson()
@@ -440,11 +434,44 @@ color:'gray',
         return Promise.all(toLoadShallow.map(node => this.loadShallow(node)))
     }
 
+    async loadIncoming(node:GraphNodeRef) {
+
+        let res = await get<any>(`api/v1/subgraphs/${this.subgraph}/nodes/${node.getEncodedNodeId()}/incoming_edge_counts`)
+
+        return this.resolveSingulars(res)
+    }
+
+    async loadOutgoing(node:GraphNodeRef) {
+
+        let res = await get<any>(`api/v1/subgraphs/${this.subgraph}/nodes/${node.getEncodedNodeId()}/outgoing_edge_counts`)
+
+
+        return this.resolveSingulars(res)
+    }
+
+    async resolveSingulars(res:any) {
+
+        // {p: datasource: count }}
+
+        let singulars = new Set<string>()
+        let singularToDs = new Map<string,string>()
+        for(let edgeType of Object.keys(res)) {
+            let dsToCount = res[edgeType]
+            let dss = Object.keys(dsToCount)
+            if(dss.length === 1) {
+                singulars.add(edgeType)
+                singularToDs.set(edgeType, dss[0])
+            }
+        }
+
+    }
+
+
     async loadShallow(node:GraphNodeRef) {
 
         let [incomingEdgeCounts,outgoingEdgeCounts] = (await Promise.all([
-            get<any>(`api/v1/subgraphs/${this.subgraph}/nodes/${node.getEncodedNodeId()}/incoming_edge_counts`),
-            get<any>(`api/v1/subgraphs/${this.subgraph}/nodes/${node.getEncodedNodeId()}/outgoing_edge_counts`)
+            this.loadIncoming(node),
+            this.loadOutgoing(node)
         ]))
 
         this.incoming_nodeIdToEdgeCountByTypeAndDs.set(node.getNodeId(), incomingEdgeCounts);

@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import GraphMetadata from "../../model/GraphMetadata"
 import MaterialisedQuery from "../../model/MaterialisedQuery";
 import LocalDataTable from "../datatable/LocalDataTable"
 import { get } from "../../app/api";
 import { Box, Button, CircularProgress, Link, Stack } from "@mui/material";
-import { Download } from "@mui/icons-material";
+import { Download, Info } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
 
@@ -19,7 +19,11 @@ const cols= [
         id:"id",
         name:"Query ID",
         selector:(row:any,key:string)=> {
-            return <Link className="link-default" target="_blank" href={`https://github.com/EBISPOT/GrEBI/blob/dev/materialised_queries/${row[key]}.yaml`}> <code>{row[key]}</code></Link>
+            return <Fragment>
+                <code>{row[key]}</code> <Link className="link-default" target="_blank" href={`https://github.com/EBISPOT/GrEBI/blob/dev/materialised_queries/${row[key]}.yaml`}>
+<span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Info style={{ fontSize: '1em' }} /></span>
+                </Link>
+                </Fragment>
         },
         sortable:true
     },
@@ -80,7 +84,6 @@ export default function MaterialisedQueryTable({
     return <LocalDataTable
                     data={matQs} 
                     addColumnsFromData={false}
-                    maxRowHeight={"1.5em"}
                     defaultSelector={(row,key)=>row[key]}
                     columns={cols}
                     onSelectRow={(row) => {

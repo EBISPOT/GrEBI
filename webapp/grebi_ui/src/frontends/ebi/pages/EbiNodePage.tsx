@@ -13,13 +13,14 @@ import { FormatListBulleted, CallReceived, CallMade, Share } from "@mui/icons-ma
 import { Typography, Grid, Tabs, Tab, Box } from "@mui/material";
 import { copyToClipboard } from "../../../app/util";
 import LoadingOverlay from "../../../components/LoadingOverlay";
-import EdgesInList from "../../../components/node_edge_list/EdgesInList";
+import EdgesInList from "../../../components/node_edge_list/EdgesList";
 import GraphView from "../../../components/node_graph_view/GraphView";
 import PropTable from "../../../components/node_prop_table/PropTable";
 import SearchBox from "../../../components/SearchBox";
 import GraphNode from "../../../model/GraphNode";
 import { get, getPaginated } from "../../../app/api";
 import encodeNodeId from "../../../encodeNodeId";
+import EdgesList from "../../../components/node_edge_list/EdgesList";
 
 
 export default function EbiNodePage() {
@@ -91,9 +92,10 @@ export default function EbiNodePage() {
           <PropTable lang={lang} subgraph={subgraph} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"edges_in"}>
-          <EdgesInList subgraph={subgraph} node={node} />
+          <EdgesList direction="incoming" subgraph={subgraph} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"edges_out"}>
+          <EdgesList direction="outgoing" subgraph={subgraph} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"graph"}>
          <GraphView subgraph={subgraph} node={node} />

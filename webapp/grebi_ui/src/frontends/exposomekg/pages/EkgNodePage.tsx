@@ -13,7 +13,7 @@ import { FormatListBulleted, CallReceived, CallMade, Share, Masks, Summarize, Un
 import { Typography, Grid, Tabs, Tab, Box } from "@mui/material";
 import { copyToClipboard } from "../../../app/util";
 import LoadingOverlay from "../../../components/LoadingOverlay";
-import EdgesInList from "../../../components/node_edge_list/EdgesInList";
+import EdgesList from "../../../components/node_edge_list/EdgesList";
 import GraphView from "../../../components/node_graph_view/GraphView";
 import PropTable from "../../../components/node_prop_table/PropTable";
 import SearchBox from "../../../components/SearchBox";
@@ -83,9 +83,10 @@ export default function EkgNodePage() {
           <PropTable lang={lang} subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"edges_in"}>
-          <EdgesInList subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} node={node} />
+          <EdgesList direction="incoming" subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"edges_out"}>
+          <EdgesList direction="outgoing" subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"graph"}>
          <GraphView subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} node={node} />
