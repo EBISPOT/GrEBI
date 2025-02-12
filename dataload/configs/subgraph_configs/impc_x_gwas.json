@@ -30,7 +30,8 @@
     "mondo:0000001",
     "efo:0000408",
     "chebi:36080",
-    "chebi:24431"
+    "chebi:24431",
+    "biolink:ChemicalEntity"
   ],
   "additional_equivalence_groups": [
     [
@@ -139,6 +140,7 @@
     "./configs/datasource_configs/ols.yaml",
     "./configs/datasource_configs/mondo_efo.yaml",
     "./configs/datasource_configs/monarch.yaml",
-    "./configs/datasource_configs/sssom.yaml"
+    "./configs/datasource_configs/sssom.yaml",
+    "./configs/datasource_configs/otar.yaml"
   ]
 }
