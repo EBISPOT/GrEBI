@@ -13,13 +13,19 @@ uses_datasources:
   - OLS.doid
   - OLS.oba
 cypher_query: |-
+  ////
+  //// gwas->oba->upheno->mp->impc
+  ////
   MATCH (snp:`gwas:SNP`)-[:`gwas:associated_with`]->(trait)
+  MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
   MATCH (trait)<-[:`upheno:phenotypeToTrait`]-(speciesNeutralPhenotype)
   MATCH (speciesNeutralPhenotype)<-[:`biolink:broad_match`]-(descendantPhenotype)-[:sourceId]->(descendantSourceId)
   WHERE "OLS.mp" IN descendantPhenotype.`grebi:datasources`
   MATCH (descendantPhenotype)<-[:`impc:phenotype`]-(mouseGene)
   RETURN DISTINCT "gwas->oba->upheno->mp->impc" AS graph_path,
   [id in snp.id WHERE id =~ "rs[0-9]*" | id][0] AS gwas_variant,
+  humanGene.`grebi:name`[0] AS human_gene_name,
+  [id in humanGene.id WHERE id =~ "hgnc:[0-9]*" | id][0] AS human_gene_id,
   [id in trait.id WHERE id =~ "oba:.*" | id][0] AS trait_id,
   trait.`grebi:name`[0] as trait_name,
   [id in speciesNeutralPhenotype.id WHERE id =~ "upheno:[0-9]*" | id][0] AS species_neutral_phenotype_id,
@@ -28,4 +34,69 @@ cypher_query: |-
   descendantPhenotype.`grebi:name`[0] AS mouse_phenotype_name,
   mouseGene.`grebi:name`[0] AS mouse_gene_name,
   [id in mouseGene.id WHERE id =~ "mgi:[0-9]*" | id][0] AS mouse_gene_id
+  UNION
+  ////
+  //// gwas->hp->mp->impc
+  ////
+  MATCH (snp:`gwas:SNP`)-[:`gwas:associated_with`]->(humanPhenotype)
+  MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
+  WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources`
+  MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
+  RETURN DISTINCT "gwas->hp->mp->impc" AS graph_path,
+  [id in snp.id WHERE id =~ "rs[0-9]*" | id][0] AS gwas_variant,
+  humanGene.`grebi:name`[0] AS human_gene_name,
+  [id in humanGene.id WHERE id =~ "hgnc:[0-9]*" | id][0] AS human_gene_id,
+  [id in humanPhenotype.id WHERE id =~ "hp:[0-9]*" | id][0] AS human_phenotype_id,
+  humanPhenotype.`grebi:name`[0] AS human_phenotype_name,
+  [id in mousePhenotype.id WHERE id =~ "mp:[0-9]*" | id][0] AS mouse_phenotype_id,
+  mousePhenotype.`grebi:name`[0] AS mouse_phenotype_name,
+  mouseGene.`grebi:name`[0] AS mouse_gene_name,
+  [id in mouseGene.id WHERE id =~ "mgi:[0-9]*" | id][0] AS mouse_gene_id
+  UNION
+  ////
+  //// gwas->oba->hp->mp->impc
+  ////
+  MATCH (snp:`gwas:SNP`)-[:`gwas:associated_with`]->(trait)
+  MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  MATCH (trait)<-[:`upheno:phenotypeToTrait`]-(humanPhenotype)
+  MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
+  WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources` AND "OLS.hp" IN humanPhenotype.`grebi:datasources`
+  MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
+    RETURN DISTINCT "gwas->oba->hp->mp->impc" AS graph_path,
+    [id in snp.id WHERE id =~ "rs[0-9]*" | id][0] AS gwas_variant,
+    humanGene.`grebi:name`[0] AS human_gene_name,
+    [id in humanGene.id WHERE id =~ "hgnc:[0-9]*" | id][0] AS human_gene_id,
+    [id in trait.id WHERE id =~ "oba:.*" | id][0] AS trait_id,
+    trait.`grebi:name`[0] as trait_name,
+    [id in humanPhenotype.id WHERE id =~ "hp:[0-9]*" | id][0] AS human_phenotype_id,
+    humanPhenotype.`grebi:name`[0] AS human_phenotype_name,
+    [id in mousePhenotype.id WHERE id =~ "mp:[0-9]*" | id][0] AS mouse_phenotype_id,
+    mousePhenotype.`grebi:name`[0] AS mouse_phenotype_name,
+    mouseGene.`grebi:name`[0] AS mouse_gene_name,
+    [id in mouseGene.id WHERE id =~ "mgi:[0-9]*" | id][0] AS mouse_gene_id
+  UNION
+  ////
+  //// gwas->{mondo,doid,efo}->hp->mp->impc
+  ////
+  MATCH (snp:`gwas:SNP`)-[:`gwas:associated_with`]->(disease)
+  MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  MATCH (humanPhenotype)<-[:(`biolink:has_phenotype`|`ro:disease_has_feature`)]-(disease)
+  MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
+  WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources`
+  MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
+      RETURN DISTINCT "gwas->oba->hp->mp->impc" AS graph_path,
+      [id in snp.id WHERE id =~ "rs[0-9]*" | id][0] AS gwas_variant,
+      humanGene.`grebi:name`[0] AS human_gene_name,
+      [id in humanGene.id WHERE id =~ "hgnc:[0-9]*" | id][0] AS human_gene_id,
+      [id in disease.id WHERE id =~ "mondo:.*" | id][0] AS disease_id,
+      disease.`grebi:name`[0] as disease_name,
+      [id in humanPhenotype.id WHERE id =~ "hp:[0-9]*" | id][0] AS human_phenotype_id,
+      humanPhenotype.`grebi:name`[0] AS human_phenotype_name,
+      [id in mousePhenotype.id WHERE id =~ "mp:[0-9]*" | id][0] AS mouse_phenotype_id,
+      mousePhenotype.`grebi:name`[0] AS mouse_phenotype_name,
+      mouseGene.`grebi:name`[0] AS mouse_gene_name,
+      [id in mouseGene.id WHERE id =~ "mgi:[0-9]*" | id][0] AS mouse_gene_id
+
+
 
