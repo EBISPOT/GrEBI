@@ -100,7 +100,7 @@ cypher_query: |-
   MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
   WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources`
   MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
-      RETURN DISTINCT "gwas->oba->hp->mp->impc" AS graph_path,
+      RETURN DISTINCT "gwas->{mondo,doid,efo}->hp->mp->impc" AS graph_path,
       [id in snp.id WHERE id =~ "rs[0-9]*" | id][0] AS gwas_variant,
       humanGene.`grebi:name`[0] AS human_gene_name,
       [id in humanGene.id WHERE id =~ "hgnc:[0-9]*" | id][0] AS human_gene_id,
