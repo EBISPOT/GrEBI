@@ -4,11 +4,7 @@ HPC pipeline to aggregate knowledge graphs from [EMBL-EBI resources](https://www
 
 The GrEBI pipeline is being applied to a number of projects including the [International Mouse Phenotyping Consortium (IMPC)](https://www.mousephenotype.org/) knowledge graph and the [EMBL Human Ecosystems Transversal Theme (HETT)](https://www.embl.org/about/info/human-ecosystems/) ExposomeKG.
 
-<img src="https://www.embl.org/guidelines/design/wp-content/uploads/2022/02/EMBL_logo_colour_DIGITAL.png" width=100 />
-&nbsp;
-<img src="https://monarch-initiative.github.io/monarch-ingest/images/monarch-initiative.png" width=100 />
-&nbsp;
-<img src="https://www.mousephenotype.org/wp-content/uploads/2022/08/IMPC_logo.svg" width=100 />
+<img src="https://www.embl.org/guidelines/design/wp-content/uploads/2022/02/EMBL_logo_colour_DIGITAL.png" width=100 />&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://monarch-initiative.github.io/monarch-ingest/images/monarch-initiative.png" width=100 />&nbsp;&nbsp;&nbsp;&nbsp;<img src="https://www.mousephenotype.org/wp-content/uploads/2022/08/IMPC_logo.svg" width=100 />
 
 ## Outputs
 
