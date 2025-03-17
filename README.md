@@ -12,11 +12,14 @@ GrEBI has two main outputs: **(1) materialised queries** and **(2) database expo
 
 ### 1. Materialised queries
 
-We run a collection of queries periodically at EBI and materialise the results as tables, which can be loaded using standard data processing libraries such as Pandas or Polars. The input queries are stored in YAML files in the [materialised_queries](https://github.com/EBISPOT/GrEBI/tree/dev/materialised_queries) directory of this repository, and the outputs are uploaded to our FTP server in the `query_results` directories. For example, the latest materialised query results for the `impc_x_gwas` graph can be found at [https://ftp.ebi.ac.uk/pub/databases/spot/kg/impc_x_gwas/latest/query_results/](https://ftp.ebi.ac.uk/pub/databases/spot/kg/impc_x_gwas/latest/query_results/).
+We run a collection of graph queries periodically at EBI and materialise the results as tables, which can be loaded using standard data processing libraries such as Pandas or Polars.
 
-The results are stored in [JSON Lines](https://jsonlines.org/) format which can be loaded using Pandas:
+* The **input Cypher queries** are stored in YAML files in the [materialised_queries](https://github.com/EBISPOT/GrEBI/tree/dev/materialised_queries) directory of this repository
+* The **output CSV files** are uploaded to our FTP server in the `query_results` directories. For example, the latest materialised query results for the `impc_x_gwas` graph can be found at [https://ftp.ebi.ac.uk/pub/databases/spot/kg/impc_x_gwas/latest/query_results/](https://ftp.ebi.ac.uk/pub/databases/spot/kg/impc_x_gwas/latest/query_results/).
 
-    pd.read_json('impc_x_gwas.results.jsonl', lines=True)
+The results are stored in gzipped CSV files which can be loaded using Pandas:
+
+    df = pd.read_csv('impc_x_gwas.results.csv.gz', dtype=str)
 
 ### 2. Database exports
 
