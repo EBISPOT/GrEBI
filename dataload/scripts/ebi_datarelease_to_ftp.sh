@@ -24,8 +24,13 @@ LATEST_PATH=/nfs/ftp/public/databases/spot/kg/$SUBGRAPH/latest
 echo "Copying $DATARELEASE_PATH to $FTP_PATH"
 
 rm -rf $FTP_PATH/*
+mkdir -p $FTP_PATH
+
 cp -Lr $DATARELEASE_PATH/* $FTP_PATH/
-ln -s $FTP_PATH $LATEST_PATH
+
+echo "Copying $FTP_PATH to $LATEST_PATH"
+rm -rf $LATEST_PATH
+cp -r $FTP_PATH $LATEST_PATH
 
 
 

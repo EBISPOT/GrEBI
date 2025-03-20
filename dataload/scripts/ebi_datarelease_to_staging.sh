@@ -32,6 +32,7 @@ echo Removing old files from staging
 rm -rf $STAGING_PATH/neo4j/${SUBGRAPH}_neo4j
 rm -rf $STAGING_PATH/solr/grebi_nodes_${SUBGRAPH}
 rm -rf $STAGING_PATH/solr/grebi_edges_${SUBGRAPH}
+rm -rf $STAGING_PATH/solr/grebi_autocomplete_${SUBGRAPH}
 rm -rf $STAGING_PATH/solr/grebi_results__${SUBGRAPH}__*
 rm -rf $STAGING_PATH/metadata/${SUBGRAPH}_metadata.json
 rm -rf $STAGING_PATH/sqlite/${SUBGRAPH}.sqlite3
@@ -42,21 +43,6 @@ tar --use-compress-program=pigz -xf $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz -C $
 tar --use-compress-program=pigz -xf $DATARELEASE_PATH/${SUBGRAPH}_solr.tgz -C $STAGING_PATH
 cp -f $DATARELEASE_PATH/${SUBGRAPH}_metadata.json $STAGING_PATH/metadata/
 cp -f $DATARELEASE_PATH/${SUBGRAPH}.sqlite3 $STAGING_PATH/sqlite/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
