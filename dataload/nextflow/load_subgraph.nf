@@ -421,7 +421,7 @@ process create_neo {
 process run_materialised_queries {
     cache "lenient"
     memory "8 GB" 
-    time "8h"
+    time "48h"
     cpus "8"
 
     publishDir "${params.out}", overwrite: true
@@ -451,19 +451,22 @@ process results_to_csv {
     time "8h"
     cpus "8"
 
+    publishDir "${params.out}", overwrite: true
+
     input:
     path(results_jsonl)
 
     output:
-    path("${results_jsonl.simpleName}.csv.gz")
+    path("query_results/${results_jsonl.simpleName}.csv.gz")
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
+    mkdir query_results
     cat ${results_jsonl} | \
     python3 ${params.home}/07_run_queries/jsonl_to_csv.py \
-    | pigz --best > ${results_jsonl.simpleName}.csv.gz
+    | pigz --best > query_results/${results_jsonl.simpleName}.results.csv.gz
     """
 }
 
