@@ -35,10 +35,10 @@ sleep 20
 
 echo Creating neo4j indexes...
 
-#cypher-shell -a neo4j://127.0.0.1:7687 --non-interactive -f /cypher/ic_scores_1.cypher
-#sleep 20
-#cypher-shell -a neo4j://127.0.0.1:7687 --non-interactive -f /cypher/ic_scores_2.cypher
-#sleep 20
+cypher-shell -a neo4j://127.0.0.1:7687 --non-interactive -f /cypher/ic_scores_1.cypher
+sleep 20
+cypher-shell -a neo4j://127.0.0.1:7687 --non-interactive -f /cypher/ic_scores_2.cypher
+sleep 20
 cypher-shell -a neo4j://127.0.0.1:7687 --non-interactive -f /cypher/create_indexes.cypher
 
 echo Creating neo4j indexes done
