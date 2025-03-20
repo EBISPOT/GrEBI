@@ -116,9 +116,6 @@
     -->
 
     <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-    <field name="iri" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-    <copyField source="iri" dest="str_iri"/>
-    <copyField source="iri" dest="lowercase_iri"/>
 
     <!-- docValues are enabled by default for long type so we don't need to index the version field  -->
     <field name="_version_" type="plong" indexed="false" stored="false"/>
@@ -131,11 +128,8 @@
 
     <field name="_text_" type="text_general" indexed="false" stored="false" multiValued="true"/>
 
-
-    <!-- OLS4: we are using dynamic fields for everything so no need to specify much of a schema.
-	 however we do need to specify the fields we DON'T want to be indexed
-    -->
     <field name="_refs" type="ols4json" indexed="false" stored="true" multiValued="false" />
+    <field name="_node_ids" type="string" indexed="true" stored="true" multiValued="true" />
 
     <!-- Type used for data-driven schema, to add a string copy for each text field -->
     <dynamicField name="str_*" type="strings" stored="false" docValues="true" indexed="false" useDocValuesAsStored="false"/>
