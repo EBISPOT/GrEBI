@@ -64,7 +64,7 @@ fn main() {
 
         for (k,v) in json.iter() {
 
-            if v.is_null() {
+            if !v.is_string() {
                 continue;
             }
 
@@ -89,7 +89,7 @@ fn main() {
             }
         }
 
-        json.insert("_refs".to_string(), Value::Object(refs));
+        json.insert("_refs".to_string(), Value::String(Value::Object(refs).to_string())    );
 	json.insert("_node_ids".to_string(), Value::Array( nodeids.iter().map(|id| Value::String(id.clone())).collect()));
 
     // sha1 not for security, just as a simple way to assign a unique
