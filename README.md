@@ -39,11 +39,15 @@ Note that the purpose of this pipeline is not to supply another knowledge graph,
 
 2. Download and extract the Neo4j export. For example to download the latest `impc_x_gwas` export:
 
-    curl https://ftp.ebi.ac.uk/pub/databases/spot/kg/impc_x_gwas/latest/impc_x_gwas_neo4j.tgz | tar xzf -
+```
+curl https://ftp.ebi.ac.uk/pub/databases/spot/kg/impc_x_gwas/latest/impc_x_gwas_neo4j.tgz | tar xzf -
+```
 
 3. Start a **Neo4j 5.18.0** server from the extracted folder. You can do this easily using Docker:
 
-    docker run -p 7474:7474 -p 7687:7687 -v $(pwd)/data:/data -e NEO4J_AUTH=none neo4j:5.18.0
+```
+docker run -p 7474:7474 -p 7687:7687 -v $(pwd)/data:/data -e NEO4J_AUTH=none neo4j:5.18.0
+```
 
 Your graph should now be accessible on port 7474. For example if you are running locally [http://localhost:7474](http://localhost:7474). You should now also be able to try out some of the [Jupyter notebooks](https://github.com/EBISPOT/GrEBI/tree/dev/notebooks).
 
@@ -53,34 +57,40 @@ The exact instructions will vary depending on your HPC environment. At EBI we us
 
 1. Start a shell on a Slurm worker with appropriate resources:
 
-    srun --pty --time 1-0:0:0 -c 32 --mem 300g bash
+```
+srun --pty --time 1-0:0:0 -c 32 --mem 300g bash
+```
 
 2. Download and extract Neo4j as shown above, ideally to local flash-based storage. If you have a very large HPC node you may be able to extract Neo4j to ramdisk e.g. `/dev/shm` for maximum performance.
 
 3. Find out the hostname of the worker so we can connect to it later:
 
-    hostname
+```
+hostname
+```
 
 4. Start Neo4j with Singularity:
 
-    mkdir -p neo4j_plugins tmp_neo && \
-    singularity run \
-    --bind "$(pwd)/data:/data" \
-    --bind "neo4j_plugins:/var/lib/neo4j/plugins" \
-    --writable-tmpfs \
-    --tmpdir tmp_neo \
-    --env NEO4J_AUTH=none \
-    --env NEO4J_server_memory_heap_initial__size=120G \
-    --env NEO4J_server_memory_heap_max__size=120G \
-    --env NEO4J_server_memory_pagecache_size=60G \
-    --env NEO4J_dbms_memory_transaction_total_max=60G \
-    --env NEO4J_apoc_export_file_enabled=true \
-    --env NEO4J_apoc_import_file_enabled=true \
-    --env NEO4J_apoc_import_file_use__neo4j__config=true \
-    --env NEO4J_dbms_security_procedures_unrestricted=apoc.* \
-    --env TINI_SUBREAPER=true \
-    --env NEO4J_PLUGINS=[\"apoc\"] \
-    docker://ghcr.io/ebispot/grebi_neo4j_with_extras:5.18.0
+```
+mkdir -p neo4j_plugins tmp_neo && \
+singularity run \
+--bind "$(pwd)/data:/data" \
+--bind "neo4j_plugins:/var/lib/neo4j/plugins" \
+--writable-tmpfs \
+--tmpdir tmp_neo \
+--env NEO4J_AUTH=none \
+--env NEO4J_server_memory_heap_initial__size=120G \
+--env NEO4J_server_memory_heap_max__size=120G \
+--env NEO4J_server_memory_pagecache_size=60G \
+--env NEO4J_dbms_memory_transaction_total_max=60G \
+--env NEO4J_apoc_export_file_enabled=true \
+--env NEO4J_apoc_import_file_enabled=true \
+--env NEO4J_apoc_import_file_use__neo4j__config=true \
+--env NEO4J_dbms_security_procedures_unrestricted=apoc.* \
+--env TINI_SUBREAPER=true \
+--env NEO4J_PLUGINS=[\"apoc\"] \
+docker://ghcr.io/ebispot/grebi_neo4j_with_extras:5.18.0
+```
 
 Now you should be able to connect to Neo4j at the host shown earlier by `hostname`.
 
