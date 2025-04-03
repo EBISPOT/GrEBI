@@ -18,7 +18,7 @@ cypher_query: |-
   ////
   MATCH (snp:`gwas:SNP`)-[:`gwas:associated_with`]->(trait)
   MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
-  MATCH (trait)<-[:`upheno:phenotypeToTrait`]-(speciesNeutralPhenotype)
+  MATCH (trait)-[:`biolink:broad_match` *0..1]->(trait_or_ancestor)<-[:`upheno:phenotypeToTrait`]-(speciesNeutralPhenotype)
   MATCH (speciesNeutralPhenotype)<-[:`biolink:broad_match`]-(descendantPhenotype)-[:sourceId]->(descendantSourceId)
   WHERE "OLS.mp" IN descendantPhenotype.`grebi:datasources`
   MATCH (descendantPhenotype)<-[:`impc:phenotype`]-(mouseGene)
@@ -78,7 +78,7 @@ cypher_query: |-
   ////
   MATCH (snp:`gwas:SNP`)-[:`gwas:associated_with`]->(trait)
   MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
-  MATCH (trait)<-[:`upheno:phenotypeToTrait`]-(humanPhenotype)
+  MATCH (trait)-[:`biolink:broad_match` *0..1]->(trait_or_ancestor)<-[:`upheno:phenotypeToTrait`]-(humanPhenotype)
   MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
   WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources` AND "OLS.hp" IN humanPhenotype.`grebi:datasources`
   MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
