@@ -36,7 +36,7 @@ spec:
             claimName: worker-{{.Values.neo_worker_n}}-local-pvc
       containers:
         - name: neo4j
-          image: ghcr.io/ebispot/grebi_neo4j_with_extras:5.18.0
+          image: ghcr.io/ebispot/grebi_neo4j_with_extras:2025.03.0
           volumeMounts:
             - mountPath: "/data_import"
               name: {{ .Release.Name }}-import
@@ -107,7 +107,7 @@ spec:
             claimName: worker-{{.Values.neo_worker_n}}-local-pvc
       containers:
         - name: neo4j
-          image: ghcr.io/ebispot/grebi_neo4j_with_extras:5.18.0
+          image: ghcr.io/ebispot/grebi_neo4j_with_extras:2025.03.0
           volumeMounts:
             - mountPath: "/data_import"
               name: {{ .Release.Name }}-import

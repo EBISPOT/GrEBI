@@ -39,7 +39,7 @@ def main():
             '--writable-tmpfs',
             '--network=none',
             '--env NEO4J_AUTH=none',
-            'docker://neo4j:5.18.0',
+            'docker://neo4j:2025.03.0',
             'bash /import.sh'
         ])
     else:
@@ -52,7 +52,7 @@ def main():
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_DATALOAD_HOME'], '06_create_neo_db/neo4j_import.dockersh')) + ':/import.sh',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_DATALOAD_HOME'], '06_create_neo_db/cypher')) + ':/cypher',
             '-e NEO4J_AUTH=none',
-            'neo4j:5.18.0',
+            'neo4j:2025.03.0',
             'bash /import.sh'
         ])
 

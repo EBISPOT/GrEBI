@@ -22,7 +22,7 @@ def main():
         '-v ' + shlex.quote(neo_data_path) + ':/data',
         '-e NEO4J_AUTH=none',
         '-e NEO4J_PLUGINS=\\[\\"apoc\\"\\]',
-        'neo4j:5.18.0'
+        'neo4j:2025.03.0'
     ])
 
     os.system(cmd)
