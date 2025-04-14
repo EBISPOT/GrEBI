@@ -5,10 +5,10 @@ import groovy.json.JsonSlurper
 jsonSlurper = new JsonSlurper()
 
 params.out = "$GREBI_OUT_DIR"
-params.home = "$GREBI_DATALOAD_HOME"
 params.subgraph = "$GREBI_SUBGRAPH"
 params.solr_mem = "140g"
 params.neo_tmp_path = "/dev/shm"
+params.dataload_home = "/opt/grebi_dataload"
 
 workflow {
 
@@ -16,7 +16,7 @@ workflow {
 
     files_listing = prepare() | splitText | map { row -> parseJson(row) }
 
-    ingest(files_listing, Channel.value(config.identifier_props))
+    ingest(files_listing, file_listing | map { listing -> listing.filename }, Channel.value(config.identifier_props))
     groups_txt = build_equiv_groups(ingest.out.identifiers.collect(), Channel.value(config.additional_equivalence_groups))
     assigned = assign_ids(ingest.out.nodes, groups_txt, Channel.value(config.identifier_props), Channel.value(config.type_superclasses)).collect(flat: false)
 
@@ -70,7 +70,7 @@ process prepare {
 
     script: 
     """
-    PYTHONUNBUFFERED=true python3 ${params.home}/scripts/dataload_00_prepare.py
+    PYTHONUNBUFFERED=true python3 ${params.dataload_home}/scripts/dataload_00_prepare.py
     """
 }
 
@@ -83,6 +83,7 @@ process ingest {
     
     input:
     val(file_listing)
+    path(filename)
     val(identifier_props)
 
     output:
@@ -94,12 +95,11 @@ process ingest {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     export GREBI_INGEST_DATASOURCE_NAME=${file_listing.datasource.name}
-    export GREBI_INGEST_FILENAME=${file_listing.filename}
-    export PATH=\$PATH:${params.home}/target/release
-    ${getStdinCommand(file_listing.ingest, file_listing.filename)} \
+    export GREBI_INGEST_FILENAME=${filename}
+    ${getStdinCommand(file_listing.ingest, filename)} \
         ${file_listing.ingest.command} \
-        | ${params.home}/target/release/grebi_normalise_prefixes ${params.home}/prefix_maps/prefix_map_normalise.json \
-        | tee >(${params.home}/target/release/grebi_extract_identifiers \
+        | grebi_normalise_prefixes ${params.dataload_home}/prefix_maps/prefix_map_normalise.json \
+        | tee >(grebi_extract_identifiers \
                 --identifier-properties ${identifier_props.iterator().join(",")} \
                     > identifiers_${task.index}.tsv) \
         | pigz --fast > nodes_${task.index}.jsonl.gz
@@ -123,7 +123,7 @@ process build_equiv_groups {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cat ${identifiers_tsv} \
-        | ${params.home}/target/release/grebi_identifiers2groups \
+        | grebi_identifiers2groups \
             ${buildAddEquivGroupArgs(additional_equivalence_groups)} \
         > groups.txt
     """
@@ -150,10 +150,10 @@ process assign_ids {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     zcat ${nodes_jsonl} \
-        | ${params.home}/target/release/grebi_assign_ids \
+        | grebi_assign_ids \
             --identifier-properties ${identifier_props.iterator().join(",")} \
             --groups-txt ${groups_txt} \
-        | ${params.home}/target/release/grebi_superclasses2types \
+        | grebi_superclasses2types \
             --type-superclasses ${type_superclasses.iterator().join(",")} \
             --groups-txt ${groups_txt} \
         > nodes_with_ids.jsonl
@@ -180,7 +180,7 @@ process merge_ingests {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    ${params.home}/target/release/grebi_merge \
+    grebi_merge \
         --exclude-props ${exclude_props.iterator().join(",")} \
         --annotate-subgraph-name ${params.subgraph} \
         ${buildMergeArgs(assigned)} \
@@ -207,7 +207,7 @@ process index {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cat ${merged_filenames.iterator().join(" ")} \
-        | ${params.home}/target/release/grebi_index \
+        | grebi_index \
         --subgraph-name ${params.subgraph} \
         --out-entity-metadata-jsonl-path entity_metadata.jsonl \
         --out-graph-metadata-json-path graph_metadata.json \
@@ -242,7 +242,7 @@ process link {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cat ${merged_filename} \
-        | ${params.home}/target/release/grebi_link \
+        | grebi_link \
           --in-metadata-jsonl ${entity_metadata_jsonl} \
           --in-graph-metadata-json ${index_graph_metadata_json} \
           --groups-txt ${groups_txt} \
@@ -269,7 +269,7 @@ process merge_graph_metadata_jsons {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    python3 ${params.home}/05_link/merge_graph_metadata_jsons.py ${graph_metadata_jsons} > ${params.subgraph}_metadata_merged.json
+    python3 ${params.dataload_home}/05_link/merge_graph_metadata_jsons.py ${graph_metadata_jsons} > ${params.subgraph}_metadata_merged.json
     """
 }
 
@@ -288,7 +288,7 @@ process create_compressed_blobs {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    cat ${mat_jsonl} | ${params.home}/target/release/grebi_make_compressed_blob > ${params.subgraph}_${task.index}_compressed.blob
+    cat ${mat_jsonl} | grebi_make_compressed_blob > ${params.subgraph}_${task.index}_compressed.blob
     """
 }
 
@@ -313,7 +313,7 @@ process create_sqlite {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cat ${compressed_blobs.iterator().join(" ")} \
-        | ${params.home}/target/release/grebi_make_sqlite \
+        | grebi_make_sqlite \
             --db-path ${params.subgraph}.sqlite3 \
             --batch-size 450 \
             --page-size 16384 \
@@ -340,7 +340,7 @@ process prepare_neo {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    ${params.home}/target/release/grebi_make_neo_csv \
+    grebi_make_neo_csv \
       --in-graph-metadata-jsons ${graph_metadata_json} \
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-edges-jsonl ${edges_jsonl} \
@@ -368,7 +368,7 @@ process prepare_solr {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    ${params.home}/target/release/grebi_make_solr  \
+    grebi_make_solr  \
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-edges-jsonl ${edges_jsonl} \
       --out-nodes-jsonl-path solr_nodes_${params.subgraph}_${task.index}.jsonl \
@@ -392,7 +392,7 @@ process create_neo_ids_csv {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    cat ${ids_txt} | ${params.home}/target/release/grebi_make_neo_ids_csv > neo_nodes_ids_${params.subgraph}.csv
+    cat ${ids_txt} | grebi_make_neo_ids_csv > neo_nodes_ids_${params.subgraph}.csv
     """
 }
 
@@ -412,7 +412,7 @@ process create_neo {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    PYTHONUNBUFFERED=true python3 ${params.home}/06_create_neo_db/neo4j_import.slurm.py \
+    PYTHONUNBUFFERED=true ${params.dataload_home}/06_create_neo_db/neo4j_import.dockersh \
         --in-csv-path . \
         --out-db-path ${params.subgraph}_neo4j
     """
@@ -439,7 +439,7 @@ process run_materialised_queries {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cp -r ${neo_db}/* ${params.neo_tmp_path}
-    PYTHONUNBUFFERED=true python3 ${params.home}/07_run_queries/run_queries.py \
+    PYTHONUNBUFFERED=true python3 ${params.dataload_home}/07_run_queries/run_queries.py \
         --in-db-path ${params.neo_tmp_path} \
         --out-jsons-path query_results
     """
@@ -465,7 +465,7 @@ process results_to_csv {
     set -Eeuo pipefail
     mkdir query_results
     cat ${results_jsonl} | \
-    python3 ${params.home}/07_run_queries/jsonl_to_csv.py \
+    python3 ${params.dataload_home}/07_run_queries/jsonl_to_csv.py \
     | pigz --best > query_results/${results_jsonl.simpleName}.results.csv.gz
     """
 }
@@ -489,7 +489,7 @@ process link_results {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cat ${results_jsonl} | \
-    ${params.home}/target/release/grebi_link_results \
+    ${params.dataload_home}/target/release/grebi_link_results \
           --in-metadata-jsonl ${entity_metadata_jsonl} \
           --groups-txt ${groups_txt} \
           > ${results_jsonl.simpleName}.linked_results.jsonl
@@ -516,7 +516,7 @@ process add_query_metadatas_to_graph_metadata {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    python3 ${params.home}/07_run_queries/add_query_metadatas_to_graph_metadata.py \
+    python3 ${params.dataload_home}/07_run_queries/add_query_metadatas_to_graph_metadata.py \
         ${graph_metadata_json} \
         ${metadata_jsons} \
         > ${params.subgraph}_metadata.json
@@ -542,7 +542,7 @@ process csvs_to_sqlite {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cp -r ${neo_db}/* ${params.neo_tmp_path}
-    PYTHONUNBUFFERED=true python3 ${params.home}/07_run_queries/csvs_to_sqlite.py --out-sqlite-path materialised_queries.sqlite3
+    PYTHONUNBUFFERED=true python3 ${params.dataload_home}/07_run_queries/csvs_to_sqlite.py --out-sqlite-path materialised_queries.sqlite3
     pigz --best materialised_queries.sqlite3
     """
 }
@@ -566,13 +566,14 @@ process create_solr_nodes_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    python3 ${params.home}/08_create_other_dbs/solr/make_solr_config.py \
+    mkdir -p solr/data
+    python3 ${params.dataload_home}/08_create_other_dbs/solr/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
         --in-graph-metadata-json ${graph_metadata_json} \
-        --in-template-config-dir ${params.home}/08_create_other_dbs/solr/solr_config_template \
-        --out-config-dir solr_config
-    python3 ${params.home}/08_create_other_dbs/solr/solr_import.slurm.py \
-        --solr-config solr_config --core grebi_nodes_${params.subgraph} --in-data . --out-path solr --port 8985 --mem ${params.solr_mem}
+        --in-template-config-dir ${params.dataload_home}/08_create_other_dbs/solr/solr_config_template \
+        --out-config-dir ./solr/data
+    python3 ${params.dataload_home}/08_create_other_dbs/solr/solr_import.dockerpy \
+        grebi_nodes_${params.subgraph} 8985 ${params.solr_mem}
     """
 }
 
@@ -594,14 +595,14 @@ process create_solr_edges_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    python3 ${params.home}/08_create_other_dbs/solr/make_solr_config.py \
+    mkdir -p solr/data
+    python3 ${params.dataload_home}/08_create_other_dbs/solr/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
         --in-graph-metadata-json ${graph_metadata_json} \
-        --in-template-config-dir ${params.home}/08_create_other_dbs/solr/solr_config_template \
-        --out-config-dir solr_config
-    python3 ${params.home}/08_create_other_dbs/solr/solr_import.slurm.py \
-        --solr-config solr_config --core grebi_edges_${params.subgraph} --in-data . --out-path /dev/shm/solr --port 8986 --mem ${params.solr_mem}
-    mv /dev/shm/solr solr
+        --in-template-config-dir ${params.dataload_home}/08_create_other_dbs/solr/solr_config_template \
+        --out-config-dir ./solr/data
+    python3 ${params.dataload_home}/08_create_other_dbs/solr/solr_import.dockerpy \
+       grebi_edges_${params.subgraph} 8986 ${params.solr_mem}
     """
 }
 
@@ -621,12 +622,13 @@ process create_solr_autocomplete_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    python3 ${params.home}/08_create_other_dbs/solr/make_solr_autocomplete_config.py \
+    mkdir -p solr/data
+    python3 ${params.dataload_home}/08_create_other_dbs/solr/make_solr_autocomplete_config.py \
         --subgraph-name ${params.subgraph} \
-        --in-template-config-dir ${params.home}/08_create_other_dbs/solr/solr_config_template \
-        --out-config-dir solr_config
-    python3 ${params.home}/08_create_other_dbs/solr/solr_import.slurm.py \
-        --solr-config solr_config --core grebi_autocomplete_${params.subgraph} --in-data . --in-names-txt ${names_txt} --out-path solr --port 8987 --mem ${params.solr_mem}
+        --in-template-config-dir ${params.dataload_home}/08_create_other_dbs/solr/solr_config_template \
+        --out-config-dir ./solr/data
+    python3 ${params.dataload_home}/08_create_other_dbs/solr/solr_import.dockerpy \
+        grebi_autocomplete_${params.subgraph} 8987 ${params.solr_mem}
     """
 }
 
@@ -646,13 +648,14 @@ process create_solr_results_cores {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    python3 ${params.home}/08_create_other_dbs/solr/make_solr_results_config.py \
+    mkdir -p solr/data
+    python3 ${params.dataload_home}/08_create_other_dbs/solr/make_solr_results_config.py \
         --subgraph-name ${params.subgraph} \
         --query-id ${results_jsonl.simpleName} \
-        --in-template-config-dir ${params.home}/08_create_other_dbs/solr/solr_config_template \
-        --out-config-dir solr_config
-    python3 ${params.home}/08_create_other_dbs/solr/solr_import.slurm.py \
-        --solr-config solr_config --core grebi_results__${params.subgraph}__${results_jsonl.simpleName} --in-data . --out-path solr --port 8987 --mem ${params.solr_mem}
+        --in-template-config-dir ${params.dataload_home}/08_create_other_dbs/solr/solr_config_template \
+        --out-config-dir ./solr/data
+    python3 ${params.dataload_home}/08_create_other_dbs/solr/solr_import.dockerpy \
+        grebi_results__${params.subgraph}__${results_jsonl.simpleName} 8987 ${params.solr_mem}
     """
 }
 
@@ -694,8 +697,8 @@ process package_solr {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    cp -f ${params.home}/08_create_other_dbs/solr/solr_config_template/*.xml .
-    cp -f ${params.home}/08_create_other_dbs/solr/solr_config_template/*.cfg .
+    cp -f ${params.dataload_home}/08_create_other_dbs/solr/solr_config_template/*.xml .
+    cp -f ${params.dataload_home}/08_create_other_dbs/solr/solr_config_template/*.cfg .
     tar -chf ${params.subgraph}_solr.tgz --transform 's,^,solr/,' --use-compress-program="pigz --fast" \
 	*.xml *.cfg ${cores}
     """
@@ -710,9 +713,6 @@ def getStdinCommand(ingest, filename) {
         return ""
     }
     def f = filename
-    if (filename.startsWith(".")) {
-        f = new File(params.home, filename).toString()
-    }
     if (f.endsWith(".gz")) {
         return "zcat ${f} |"
     } else if (f.endsWith(".xz")) {

@@ -43,10 +43,10 @@ Note that the purpose of this pipeline is not to supply another knowledge graph,
 curl https://ftp.ebi.ac.uk/pub/databases/spot/kg/impc_x_gwas/latest/impc_x_gwas_neo4j.tgz | tar xzf -
 ```
 
-3. Start a **Neo4j 5.18.0** server from the extracted folder. You can do this easily using Docker:
+3. Start a **Neo4j 2025.03.0-community** server from the extracted folder. You can do this easily using Docker:
 
 ```
-docker run -p 7474:7474 -p 7687:7687 -v $(pwd)/data:/data -e NEO4J_AUTH=none neo4j:5.18.0
+docker run -p 7474:7474 -p 7687:7687 -v $(pwd)/data:/data -e NEO4J_AUTH=none neo4j:2025.03.0-community
 ```
 
 Your graph should now be accessible on port 7474. For example if you are running locally [http://localhost:7474](http://localhost:7474). You should now also be able to try out some of the [Jupyter notebooks](https://github.com/EBISPOT/GrEBI/tree/dev/notebooks).
@@ -168,7 +168,6 @@ The pipeline is implemented as [Rust](https://www.rust-lang.org/) programs with 
 * Cliques of equivalent nodes are merged into single nodes
 * Cliques of equivalent properties are merged into single properties (and for ontology-defined properties, the [qualified safe labels](https://github.com/VirtualFlyBrain/neo4j2owl/blob/master/README.md) are used)
 
-The primary output of the pipeline is a [property graph](https://docs.oracle.com/en/database/oracle/property-graph/22.2/spgdg/what-are-property-graphs.html) for [Neo4j](https://github.com/neo4j/neo4j). The nodes and edges are also loaded into [Solr](https://solr.apache.org/) for full-text search and sqlite for id->compressed object resolution.
 
 
 
