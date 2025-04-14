@@ -39,7 +39,7 @@ def main():
             '--bind ' + os.path.abspath(os.path.join(os.environ['GREBI_DATALOAD_HOME'], '08_create_other_dbs/solr/solr_import.dockerpy')) + ':/import.py',
             #'--writable-tmpfs',
             '--net --network=none',
-            'docker://ghcr.io/ebispot/grebi_solr_with_extras:9.5.0',
+            'docker://ghcr.io/ebispot/grebi_solr_with_extras:9.8.1',
             'python3 /import.py', args.core, args.port, args.mem
         ])
     else:
@@ -54,7 +54,7 @@ def main():
             '-v ' + os.path.abspath(args.solr_config) + ':/config',
             '-v ' + os.path.abspath(args.out_path) + ':/var/solr',
             '-v ' + os.path.abspath(os.path.join(os.environ['GREBI_DATALOAD_HOME'], '08_create_other_dbs/solr/solr_import.dockerpy')) + ':/import.py',
-            'ghcr.io/ebispot/grebi_solr_with_extras:9.5.0',
+            'ghcr.io/ebispot/grebi_solr_with_extras:9.8.1',
             'python3 /import.py', args.core, args.port, args.mem
         ])
 

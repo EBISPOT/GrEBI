@@ -15,7 +15,7 @@ def main():
         'docker run',
         '-p 8983:8983',
         '-v ' + shlex.quote(solr_data_path) + ':/var/solr',
-        'solr:9.5.0'
+        'solr:9.8.1'
     ])
 
     os.system(cmd)
