@@ -1,6 +1,6 @@
 name: PrimeKG
 enabled: true
 ingests:
-  - globs: ["./00_fetch_data/primekg/kg.csv"]
+  - globs: ["dataload/00_fetch_data/primekg/kg.csv"]
     command: $GREBI_DATALOAD_HOME/01_ingest/primekg.py
 

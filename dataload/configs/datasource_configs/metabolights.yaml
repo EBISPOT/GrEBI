@@ -1,5 +1,5 @@
 name: Metabolights
 enabled: true
 ingests:
-  - globs: ["./eb-eye_metabolights_complete.xml"]
+  - globs: ["dataload/00_fetch_data/metabolights/eb-eye_metabolights_complete.xml"]
     command: $GREBI_DATALOAD_HOME/01_ingest/metabolights.py

@@ -25,6 +25,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build and push GrEBI dataload Docker image
+        run: |
+          cd dataload
+          docker build -t ghcr.io/ebispot/grebi_dataload:${{ github.sha }} .
+          docker tag ghcr.io/ebispot/grebi_dataload:${{github.sha}} ghcr.io/ebispot/grebi_dataload:${{ github.ref_name }}
+          docker push --all-tags ghcr.io/ebispot/grebi_dataload
+
       - name: Build and push GrEBI API Docker image
         run: |
           cd webapp/grebi_api

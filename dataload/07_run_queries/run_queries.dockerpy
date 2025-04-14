@@ -5,8 +5,7 @@ from pathlib import Path
 from pandas import DataFrame
 import json
 from datetime import datetime
-
-os.system('echo "dbms.security.auth_enabled=false" >> /var/lib/neo4j/conf/neo4j.conf')
+import sys
 
 os.system("neo4j start")
 os.system("sleep 20")
@@ -17,7 +16,7 @@ graph = Graph("bolt://localhost:7687")
 
 metadatas = []
 
-for file in os.listdir("/materialised_queries"):
+for file in os.listdir(sys.argv[1]):
     if not file.endswith(".yaml"):
         continue
 
@@ -33,7 +32,7 @@ for file in os.listdir("/materialised_queries"):
     print(f"Running query {query_id}")
 
     n=0
-    with open(f"/out/{query_id}.results.jsonl", "w") as f:
+    with open(f"./query_results/{query_id}.results.jsonl", "w") as f:
         for row in graph.run(query['cypher_query']).data():
             n=n+1
             json.dump(row, f, skipkeys=True)
@@ -50,10 +49,10 @@ for file in os.listdir("/materialised_queries"):
 
     metadatas.append(query)
 
-    with open(f"/out/{query_id}.json", "w") as f:
+    with open(f"./query_results/{query_id}.json", "w") as f:
         json.dump(query, f, skipkeys=True)
 
-with open(f"/out/queries.json", "w") as f:
+with open(f"./query_results/queries.json", "w") as f:
     json.dump(metadatas, f, skipkeys=True)
 
 os.system("sleep 20")
