@@ -27,7 +27,7 @@ services:
         - GREBI_RESOLVER_HOST=http://grebi-resolver-service:8080/
         - GREBI_METADATA_HOST=http://grebi-metadata-service:8081/
     grebi-neo4j:
-      image: neo4j:2025.03.0
+      image: neo4j:2025.03.0-community
       ports:
         - 7474:7474
         - 7687:7687
