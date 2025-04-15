@@ -6,6 +6,7 @@ jsonSlurper = new JsonSlurper()
 
 params.out = "$GREBI_OUT_DIR"
 params.subgraph = "$GREBI_SUBGRAPH"
+params.query_yamls_path "$GREBI_QUERY_YAMLS_PATH"
 params.solr_mem = "140g"
 params.neo_tmp_path = "/dev/shm"
 params.dataload_home = "/opt/grebi_dataload"
@@ -43,7 +44,7 @@ workflow {
         ids_csv.collect()
     )
 
-    run_materialised_queries(neo_db)
+    run_materialised_queries(neo_db, params.query_yamls_path)
 
     csv_results = results_to_csv(run_materialised_queries.out.results.flatten())
     linked_results = link_results(run_materialised_queries.out.results.flatten(), indexed.entity_metadata_jsonl, groups_txt)
@@ -401,6 +402,7 @@ process create_neo {
     memory "4 GB" 
     time "8h"
     cpus "8"
+    scratch "ram-disk"
 
     input:
     path(neo_inputs)
@@ -412,8 +414,8 @@ process create_neo {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
+    export NEO4J_HOME=$(pwd)/${params.subgraph}_neo4j
     PYTHONUNBUFFERED=true ${params.dataload_home}/06_create_neo_db/neo4j_import.dockersh \
-        --in-csv-path . \
         --out-db-path ${params.subgraph}_neo4j
     """
 }
@@ -423,11 +425,13 @@ process run_materialised_queries {
     memory "8 GB" 
     time "48h"
     cpus "8"
+    scratch "ram-disk"
 
     publishDir "${params.out}", overwrite: true
 
     input:
     path(neo_db)
+    path(query_yamls_path)
 
     output:
     path("query_results/queries.json"), emit: metadata
@@ -438,10 +442,9 @@ process run_materialised_queries {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    cp -r ${neo_db}/* ${params.neo_tmp_path}
-    PYTHONUNBUFFERED=true python3 ${params.dataload_home}/07_run_queries/run_queries.py \
-        --in-db-path ${params.neo_tmp_path} \
-        --out-jsons-path query_results
+    export NEO4J_HOME=$(pwd)/${neo_db}
+    mkdir query_results
+    PYTHONUNBUFFERED=true python3 ${params.dataload_home}/07_run_queries/run_queries.dockerpy ${query_yamls_path}
     """
 }
 
@@ -553,6 +556,7 @@ process create_solr_nodes_core {
     memory "4 GB" 
     time "23h"
     cpus "8"
+    scratch "ram-disk"
 
     input:
     path(solr_inputs)
@@ -582,6 +586,7 @@ process create_solr_edges_core {
     memory "1500 GB" 
     time "23h"
     cpus "8"
+    scratch "ram-disk"
 
     input:
     path(solr_inputs)
@@ -611,6 +616,7 @@ process create_solr_autocomplete_core {
     memory "4 GB" 
     time "4h"
     cpus "4"
+    scratch "ram-disk"
 
     input:
     path(names_txt)

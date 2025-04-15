@@ -28,7 +28,7 @@ ENV PATH="$PATH:/opt/neo4j/bin:/opt/solr/bin"
 
 RUN apt-get update && \
         apt-get install -y cmake clang pigz python3-pip && \
-        pip3 install pandas tabulate openpyxl
+        pip3 install pandas tabulate openpyxl pyyaml py2neo
 
 COPY . /opt/grebi_dataload
 

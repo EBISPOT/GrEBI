@@ -5,7 +5,6 @@ if [ -z "$GREBI_SUBGRAPH" ]; then
   exit 1
 fi
 
-export GREBI_DATALOAD_HOME=/nfs/production/parkinso/spot/grebi/dataload
 export GREBI_QUERY_YAMLS_PATH=/nfs/production/parkinso/spot/grebi/materialised_queries
 export GREBI_OUT_DIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/out
 export GREBI_CONFIG=ebi
