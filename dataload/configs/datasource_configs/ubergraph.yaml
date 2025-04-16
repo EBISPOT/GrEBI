@@ -1,7 +1,7 @@
 name: UberGraph
 enabled: true
 ingests:
-  - globs: ["./ubergraph.nq.gz"]
+  - globs: ["dataload/00_fetch_data/ubergraph/ubergraph.nq.gz"]
     command: '
       grebi_rdf2jsonl
         --rdf-type rdf_quads_nq
