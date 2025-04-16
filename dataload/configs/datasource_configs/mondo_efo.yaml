@@ -1,5 +1,5 @@
 name: EFO.mappings
 enabled: true
 ingests:
-  - globs: ["./00_fetch_data/mondo_efo/mondo_efo_mappings.tsv"]
+  - globs: ["dataload/00_fetch_data/mondo_efo/mondo_efo_mappings.tsv"]
     command: $GREBI_DATALOAD_HOME/01_ingest/mondo_efo_mappings.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME

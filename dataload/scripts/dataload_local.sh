@@ -1,17 +1,18 @@
 #!/bin/bash
+
+if [ -z "$GREBI_SUBGRAPH" ]; then
+  echo "Set GREBI_SUBGRAPH to run this script"
+  exit 1
+fi
+
 export GREBI_DATALOAD_HOME=~/grebi/dataload
 export GREBI_QUERY_YAMLS_PATH=~/grebi/materialised_queries
-export GREBI_TMP=$(pwd)
-export GREBI_CONFIG=ebi
-export GREBI_IS_EBI=false
-export GREBI_TIMESTAMP=$(date +%Y_%m_%d__%H_%M)
-export RUST_BACKTRACE=full
+export GREBI_OUT_DIR=~/grebi/$GREBI_SUBGRAPH/out
+export GREBI_TIMESTAMP=$(date +"%Y-%b-%d")
+export GREBI_MAX_ENTITIES=1000000000
 export GREBI_NEXTFLOW_CONFIG=$GREBI_DATALOAD_HOME/nextflow/local_nextflow.config
-cd $GREBI_TMP
-export PYTHONUNBUFFERED=true
-source ~/grebi/.venv/bin/activate
-rm -rf work tmp
-python3 ${GREBI_DATALOAD_HOME}/scripts/dataload.py
 
+mkdir -p $GREBI_OUT_DIR
 
+nextflow $GREBI_DATALOAD_HOME/nextflow/load_subgraph.nf -c $GREBI_NEXTFLOW_CONFIG -resume
 

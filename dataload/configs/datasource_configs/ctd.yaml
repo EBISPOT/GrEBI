@@ -1,7 +1,7 @@
 name: CTD
 enabled: true
 ingests:
-  - globs: ["./00_fetch_data/ctd/CTD_anatomy.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_anatomy.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -9,7 +9,7 @@ ingests:
       | grebi_transform_jsonl
           --json-inject-type ctd:Anatomy
           --json-inject-key-prefix ctd:'
-  - globs: ["./00_fetch_data/ctd/CTD_chem_gene_ixns.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_chem_gene_ixns.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -24,7 +24,7 @@ ingests:
           --from-field ctd:ChemicalID
           --to-field ctd:GeneID
           --edge-type biolink:chemical_gene_interaction_association'
-  - globs: ["./00_fetch_data/ctd/CTD_chem_go_enriched.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_chem_go_enriched.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -36,7 +36,7 @@ ingests:
           --from-field ctd:ChemicalID
           --to-field ctd:GOTermID
           --edge-type biolink:functional_association'
-  - globs: ["./00_fetch_data/ctd/CTD_chemicals_diseases.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_chemicals_diseases.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -50,14 +50,14 @@ ingests:
           --from-field ctd:ChemicalID
           --to-field ctd:DiseaseID
           --edge-type biolink:chemical_to_disease_or_phenotypic_feature_association'
-  - globs: ["./00_fetch_data/ctd/CTD_chemicals.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_chemicals.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
          --tsv-columns grebi:name,grebi:equivalentTo,CasRN,Definition,biolink:broad_match,TreeNumbers,ParentTreeNumbers,grebi:synonym
       | grebi_transform_jsonl 
           --json-inject-key-prefix ctd:'
-  - globs: ["./00_fetch_data/ctd/CTD_chem_pathways_enriched.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_chem_pathways_enriched.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -69,7 +69,7 @@ ingests:
           --from-field ctd:ChemicalID
           --to-field ctd:PathwayID
           --edge-type biolink:chemical_to_pathway_association'
-  - globs: ["./00_fetch_data/ctd/CTD_curated_cas_nbrs.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_curated_cas_nbrs.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -82,7 +82,7 @@ ingests:
       | grebi_transform_jsonl 
           --json-rename-field ChemicalID:id
           --json-rename-field CasRN:grebi:equivalentTo'
-  - globs: ["./00_fetch_data/ctd/CTD_curated_genes_diseases.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_curated_genes_diseases.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -96,7 +96,7 @@ ingests:
           --from-field ctd:GeneID
           --to-field ctd:DiseaseID
           --edge-type biolink:gene_to_disease_association'
-  - globs: ["./00_fetch_data/ctd/CTD_genes_diseases.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_genes_diseases.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -110,7 +110,7 @@ ingests:
           --from-field ctd:GeneID
           --to-field ctd:DiseaseID
           --edge-type biolink:gene_to_disease_association'
-  - globs: ["./00_fetch_data/ctd/CTD_Disease-GO_*"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_Disease-GO_*"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -121,7 +121,7 @@ ingests:
           --from-field ctd:DiseaseID
           --to-field ctd:GOID
           --edge-type biolink:functional_association'
-  - globs: ["./00_fetch_data/ctd/CTD_diseases_pathways.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_diseases_pathways.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -132,7 +132,7 @@ ingests:
           --from-field ctd:DiseaseID
           --to-field ctd:PathwayID
           --edge-type biolink:affects'
-  - globs: ["./00_fetch_data/ctd/CTD_genes_pathways.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_genes_pathways.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -144,7 +144,7 @@ ingests:
           --from-field ctd:GeneID
           --to-field ctd:PathwayID
           --edge-type biolink:affects'
-  - globs: ["./00_fetch_data/ctd/CTD_exposure_events.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_exposure_events.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -154,7 +154,7 @@ ingests:
           --json-inject-key-prefix ctd:
           --json-inject-value-prefix reference:pmid:
           --json-inject-hashid'
-  - globs: ["./00_fetch_data/ctd/CTD_exposure_studies.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_exposure_studies.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -164,7 +164,7 @@ ingests:
           --json-inject-key-prefix ctd:
           --json-inject-value-prefix reference:pmid:
           --json-inject-hashid'
-  - globs: ["./00_fetch_data/ctd/CTD_genes.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_genes.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -177,12 +177,12 @@ ingests:
           --json-inject-value-prefix PharmGKBIDs:pharmgkb.gene:
           --json-inject-value-prefix UniProtIDs:uniprot:
           --json-inject-key-prefix ctd:'
-  - globs: ["./00_fetch_data/ctd/CTD_pathways.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_pathways.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
          --tsv-columns grebi:name,id'
-  - globs: ["./00_fetch_data/ctd/CTD_pheno_term_ixns.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_pheno_term_ixns.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"
@@ -195,7 +195,7 @@ ingests:
           --from-field ctd:chemicalid
           --to-field ctd:phenotypeid
           --edge-type biolink:affects'
-  - globs: ["./00_fetch_data/ctd/CTD_Phenotype-Disease_biological_process_associations.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/ctd/CTD_Phenotype-Disease_biological_process_associations.tsv.gz"]
     command: '
       grebi_tsv2jsonl
          --tsv-array-delimiter "|"

@@ -1,11 +1,11 @@
 name: Robokop.IntAct
 enabled: true
 ingests:
-  - globs: ["./00_fetch_data/robokop/intact_edges.jsonl.gz"]
+  - globs: ["dataload/00_fetch_data/robokop/intact_edges.jsonl.gz"]
     command: '
       grebi_ingest_kgx_edges
           --kgx-inject-key-prefix robokop:'
-  - globs: ["./00_fetch_data/robokop/intact_nodes.jsonl.gz"]
+  - globs: ["dataload/00_fetch_data/robokop/intact_nodes.jsonl.gz"]
     command: '
       grebi_transform_jsonl
           --json-rename-field category:grebi:type

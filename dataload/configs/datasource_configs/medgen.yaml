@@ -1,6 +1,6 @@
 name: MedGen
 enabled: true
 ingests:
-  - globs: ["./00_fetch_data/medgen/medgen.json.gz"]
+  - globs: ["dataload/00_fetch_data/medgen/medgen.json.gz"]
     command: grebi_ingest_ols --datasource-name $GREBI_INGEST_DATASOURCE_NAME --ontologies medgen
 
