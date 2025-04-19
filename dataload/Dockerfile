@@ -18,7 +18,12 @@ RUN mkdir /opt/neo4j && \
 RUN mkdir /opt/solr && \
     curl https://archive.apache.org/dist/solr/solr/9.8.1/solr-9.8.1.tgz | tar -xz --strip-components=1 -C /opt/solr
 
-RUN echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf
+RUN echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
+        echo "dbms.usage_report.enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
+        echo "db.recovery.fail_on_missing_files=false" >> /opt/neo4j/conf/neo4j.conf 
+
+# we set this in nextflow with an env var so don't want it to be overriden by the config file
+RUN sed -i '/^server\.directories\.logs=/d' /opt/neo4j/conf/neo4j.conf
 
 
 ENV PATH="$PATH:/opt/neo4j/bin:/opt/solr/bin"
@@ -28,7 +33,7 @@ ENV PATH="$PATH:/opt/neo4j/bin:/opt/solr/bin"
 
 RUN apt-get update && \
         apt-get install -y cmake clang pigz python3-pip && \
-        pip3 install pandas tabulate openpyxl pyyaml py2neo
+        pip3 install pandas tabulate openpyxl pyyaml py2neo requests
 
 COPY . /opt/grebi_dataload
 

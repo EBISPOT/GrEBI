@@ -1,7 +1,4 @@
 #!/bin/bash
 
-rm -f blazegraph.jnl
-wget https://cdn.humanatlas.io/digital-objects/blazegraph.jnl
-
-docker run --entrypoint /data/entrypoint.dockersh -v $(pwd):/data ghcr.io/ebispot/blazegraph-docker:2.1.5 
-
+rm -f graph.nt
+curl https://cdn.humanatlas.io/digital-objects/collection/hra/v2.2/graph.nt | pigz --best > graph.nt.gz

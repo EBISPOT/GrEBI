@@ -22,10 +22,11 @@ for file in os.listdir(sys.argv[1]):
 
     query_id = Path(file).stem
 
-    query = yaml.safe_load(open(f"/materialised_queries/{file}"))
+    query = yaml.safe_load(open(f"{sys.argv[1]}/{file}"))
 
-    if os.environ['GREBI_SUBGRAPH'] not in query['run_for_subgraphs']:
-        continue
+    if 'run_for_subgraphs' in query:
+        if os.environ['GREBI_SUBGRAPH'] not in query['run_for_subgraphs']:
+            continue
 
     start_time = datetime.now()
 

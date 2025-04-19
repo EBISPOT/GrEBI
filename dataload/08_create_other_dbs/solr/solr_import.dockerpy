@@ -35,6 +35,9 @@ def main():
     os.environ['SOLR_SECURITY_MANAGER_ENABLED'] = 'false'
     os.environ['JAVA_TOOL_OPTIONS'] = '-Djava.net.useSystemProxies=false'
 
+    os.makedirs('./solr/logs', exist_ok=True)
+    os.environ['SOLR_LOGS_DIR'] = os.getcwd() + '/solr/logs'
+
     cmd = ['solr', 'start', '-m', mem, '-p', port, '-noprompt', '-force', '--solr-home', './solr']
     print(' '.join(cmd))
     subprocess.run(cmd)

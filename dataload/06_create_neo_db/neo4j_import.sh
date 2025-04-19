@@ -1,5 +1,7 @@
 #!/bin/bash
 
+MAX_MEM=$1
+
 function get_nodes {
     for f in ./neo_nodes_*
     do
@@ -22,7 +24,7 @@ neo4j-admin database import full \
     --ignore-empty-strings=true \
     --array-delimiter="U+001F" \
     --threads=32 \
-    --max-off-heap-memory=50G \
+    --max-off-heap-memory=$MAX_MEM \
     --verbose \
     --read-buffer-size=256m
 

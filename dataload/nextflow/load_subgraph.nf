@@ -35,8 +35,6 @@ workflow {
         }
      }) | flatten
 
-    datasource_files | view
-     
     ingest(datasource_files, datasource_files | map { listing -> listing.filename }, Channel.value(config.identifier_props))
 
     groups_txt = build_equiv_groups(ingest.out.identifiers.collect(), Channel.value(config.additional_equivalence_groups))
@@ -104,6 +102,7 @@ process ingest {
     set -Eeuo pipefail
     export GREBI_INGEST_DATASOURCE_NAME=${file_listing.datasource.name}
     export GREBI_INGEST_FILENAME=${filename}
+    export GREBI_DATALOAD_HOME=${params.dataload_home_inside_container}
     echo "Files in ingest working dir: \$(ls)"
     ${getStdinCommand(file_listing.ingest, filename)} \
         ${file_listing.ingest.command} \
@@ -140,7 +139,7 @@ process build_equiv_groups {
 
 process assign_ids {
     cache "lenient"
-    memory { 32.GB + 32.GB * (task.attempt-1) }
+    memory { 4.GB + 32.GB * (task.attempt-1) }
     time { 1.hour + 8.hour * (task.attempt-1) }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 5
@@ -303,7 +302,7 @@ process create_compressed_blobs {
 
 process create_sqlite {
     cache "lenient"
-    memory "128 GB" 
+    memory "4 GB" 
     time "23h"
     cpus "8"
     errorStrategy 'retry'
@@ -410,7 +409,6 @@ process create_neo {
     memory "4 GB" 
     time "8h"
     cpus "8"
-    scratch "ram-disk"
 
     input:
     path(neo_inputs)
@@ -422,9 +420,11 @@ process create_neo {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
+    cp -r /opt/neo4j ${params.subgraph}_neo4j
     export NEO4J_HOME=\$(pwd)/${params.subgraph}_neo4j
-    PYTHONUNBUFFERED=true ${params.dataload_home_inside_container}/06_create_neo_db/neo4j_import.dockersh \
-        --out-db-path ${params.subgraph}_neo4j
+    export NEO4J_db_recovery_fail_on_missing_files=false
+    export MAX_MEM=\$((\$(echo \$NXF_MEM | grep -oE '[0-9]+') - 2))G
+    bash ${params.dataload_home_inside_container}/06_create_neo_db/neo4j_import.sh
     """
 }
 
@@ -433,7 +433,6 @@ process run_materialised_queries {
     memory "8 GB" 
     time "48h"
     cpus "8"
-    scratch "ram-disk"
 
     publishDir "${params.out}", overwrite: true
 
@@ -450,7 +449,7 @@ process run_materialised_queries {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    export NEO4J_HOME=\$(pwd)/${neo_db}
+    export NEO4J_HOME=${neo_db}
     export GREBI_SUBGRAPH=${params.subgraph}
     mkdir query_results
     PYTHONUNBUFFERED=true python3 ${params.dataload_home_inside_container}/07_run_queries/run_queries.dockerpy ${query_yamls_path}
@@ -565,7 +564,6 @@ process create_solr_nodes_core {
     memory "4 GB" 
     time "23h"
     cpus "8"
-    scratch "ram-disk"
 
     input:
     path(solr_inputs)
@@ -579,7 +577,6 @@ process create_solr_nodes_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    mkdir -p solr/data
     python3 ${params.dataload_home_inside_container}/08_create_other_dbs/solr/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
         --in-graph-metadata-json ${graph_metadata_json} \
@@ -592,10 +589,9 @@ process create_solr_nodes_core {
 
 process create_solr_edges_core {
     cache "lenient"
-    memory "1500 GB" 
+    memory "4 GB" 
     time "23h"
     cpus "8"
-    scratch "ram-disk"
 
     input:
     path(solr_inputs)
@@ -609,7 +605,6 @@ process create_solr_edges_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    mkdir -p solr/data
     python3 ${params.dataload_home_inside_container}/08_create_other_dbs/solr/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
         --in-graph-metadata-json ${graph_metadata_json} \
@@ -625,7 +620,6 @@ process create_solr_autocomplete_core {
     memory "4 GB" 
     time "4h"
     cpus "4"
-    scratch "ram-disk"
 
     input:
     path(names_txt)
@@ -637,7 +631,6 @@ process create_solr_autocomplete_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    mkdir -p solr/data
     python3 ${params.dataload_home_inside_container}/08_create_other_dbs/solr/make_solr_autocomplete_config.py \
         --subgraph-name ${params.subgraph} \
         --in-template-config-dir ${params.dataload_home_inside_container}/08_create_other_dbs/solr/solr_config_template \
@@ -663,7 +656,6 @@ process create_solr_results_cores {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    mkdir -p solr/data
     python3 ${params.dataload_home_inside_container}/08_create_other_dbs/solr/make_solr_results_config.py \
         --subgraph-name ${params.subgraph} \
         --query-id ${results_jsonl.simpleName} \

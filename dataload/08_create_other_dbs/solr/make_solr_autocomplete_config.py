@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--out-config-dir', type=str, help='Path to write config', required=True)
     args = parser.parse_args()
    
-    os.makedirs(args.out_config_dir)
+    os.makedirs(args.out_config_dir, exist_ok=True)
 
     autocomplete_core_path = os.path.join(args.out_config_dir, f'grebi_autocomplete_{args.subgraph_name}')
     os.system('cp -r ' + shlex.quote(os.path.join(args.in_template_config_dir, "grebi_autocomplete")) + ' ' + shlex.quote(autocomplete_core_path))

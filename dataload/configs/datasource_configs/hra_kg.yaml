@@ -1,8 +1,5 @@
 name: HRA
 enabled: true
 ingests:
-  - globs: ["/nfs/production/parkinso/spot/hra/dataload/tmp/out/ontologies.json"]
-    command: '
-      grebi_ingest_ols --datasource-name $GREBI_INGEST_DATASOURCE_NAME
-          --ontologies ccf,hra
-    ' 
+  - globs: ["dataload/00_fetch_data/hra_kg/graph.nt.gz"]
+    command: grebi_rdf2jsonl --rdf-type rdf_triples_turtle --rdf-types-are-grebi-types

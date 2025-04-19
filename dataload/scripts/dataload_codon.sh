@@ -9,10 +9,9 @@ export GREBI_DATALOAD_HOME=/nfs/production/parkinso/spot/grebi/dataload
 export GREBI_QUERY_YAMLS_PATH=/nfs/production/parkinso/spot/grebi/materialised_queries
 export GREBI_OUT_DIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/out
 export GREBI_IS_EBI=true
-export GREBI_TIMESTAMP=$(date +"%Y-%b-%d")
-export GREBI_MAX_ENTITIES=1000000000
 export GREBI_NEXTFLOW_CONFIG=$GREBI_DATALOAD_HOME/nextflow/codon_nextflow.config
-module load nextflow-22.10.1-gcc-11.2.0-ju5saqw
+module load nextflow/24.10.3
+
 
 srun --time 1:0:0 --mem 4g mkdir -p $GREBI_OUT_DIR
 

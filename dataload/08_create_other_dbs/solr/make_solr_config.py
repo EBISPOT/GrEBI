@@ -18,7 +18,7 @@ def main():
     parser.add_argument('--out-config-dir', type=str, help='Path to write config', required=True)
     args = parser.parse_args()
    
-    os.makedirs(args.out_config_dir)
+    os.makedirs(args.out_config_dir, exist_ok=True)
 
     nodes_core_path = os.path.join(args.out_config_dir, f'grebi_nodes_{args.subgraph_name}')
     edges_core_path = os.path.join(args.out_config_dir, f'grebi_edges_{args.subgraph_name}')
