@@ -417,14 +417,14 @@ process create_neo {
     path("${params.subgraph}_neo4j")
 
     script:
+    def neo_mem = task.memory - 2.GB
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cp -r /opt/neo4j ${params.subgraph}_neo4j
     export NEO4J_HOME=\$(pwd)/${params.subgraph}_neo4j
     export NEO4J_db_recovery_fail_on_missing_files=false
-    export MAX_MEM=\$((\$(echo \$NXF_MEM | grep -oE '[0-9]+') - 2))G
-    bash ${params.dataload_home_inside_container}/06_create_neo_db/neo4j_import.sh
+    bash ${params.dataload_home_inside_container}/06_create_neo_db/neo4j_import.sh ${neo_mem.toGiga()}G
     """
 }
 
@@ -468,7 +468,7 @@ process results_to_csv {
     path(results_jsonl)
 
     output:
-    path("query_results/${results_jsonl.simpleName}.csv.gz")
+    path("query_results/${results_jsonl.simpleName}.results.csv.gz")
 
     script:
     """
@@ -577,6 +577,7 @@ process create_solr_nodes_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
+    mkdir -p solr/data solr/logs
     python3 ${params.dataload_home_inside_container}/08_create_other_dbs/solr/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
         --in-graph-metadata-json ${graph_metadata_json} \
@@ -605,6 +606,7 @@ process create_solr_edges_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
+    mkdir -p solr/data solr/logs
     python3 ${params.dataload_home_inside_container}/08_create_other_dbs/solr/make_solr_config.py \
         --subgraph-name ${params.subgraph} \
         --in-graph-metadata-json ${graph_metadata_json} \
@@ -631,6 +633,7 @@ process create_solr_autocomplete_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
+    mkdir -p solr/data solr/logs
     python3 ${params.dataload_home_inside_container}/08_create_other_dbs/solr/make_solr_autocomplete_config.py \
         --subgraph-name ${params.subgraph} \
         --in-template-config-dir ${params.dataload_home_inside_container}/08_create_other_dbs/solr/solr_config_template \
@@ -656,6 +659,7 @@ process create_solr_results_cores {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
+    mkdir -p solr/data solr/logs
     python3 ${params.dataload_home_inside_container}/08_create_other_dbs/solr/make_solr_results_config.py \
         --subgraph-name ${params.subgraph} \
         --query-id ${results_jsonl.simpleName} \
