@@ -44,7 +44,7 @@ spec:
             - mountPath: "/data"
               name: {{ .Release.Name }}-neo4j
           command: ["/bin/bash", "-c"]
-          args: ["echo Synchronizing data... && rsync --mkpath -arv --delete /data_import/neo4j/{{.Values.subgraph1}}_neo4j/ /data/{{.Values.subgraph1}}_neo4j/ && echo Done && tini -g -- /startup/docker-entrypoint.sh neo4j"]
+          args: ["echo Synchronizing data... && rm -rf $NEO4J_dbms_directories_data/* && cp -r /data_import/neo4j/{{.Values.subgraph1}}_neo4j/ $NEO4J_dbms_directories_data/ && echo Done && tini -g -- /startup/docker-entrypoint.sh neo4j"]
           resources:
             requests:
               memory: 30Gi
@@ -114,7 +114,7 @@ spec:
             - mountPath: "/data"
               name: {{ .Release.Name }}-neo4j
           command: ["/bin/bash", "-c"]
-          args: ["echo Synchronizing data... && rsync --mkpath -arv --delete /data_import/neo4j/{{.Values.subgraph2}}_neo4j/ $NEO4J_dbms_directories_data/ && echo Done && tini -g -- /startup/docker-entrypoint.sh neo4j"]
+          args: ["echo Synchronizing data... && rm -rf $NEO4J_dbms_directories_data/* && cp -r /data_import/neo4j/{{.Values.subgraph2}}_neo4j/ $NEO4J_dbms_directories_data/ && echo Done && tini -g -- /startup/docker-entrypoint.sh neo4j"]
           resources:
             requests:
               memory: 8Gi

@@ -14,6 +14,7 @@ import EkgErrorPage from "./pages/EkgErrorPage";
 import EkgHomePage from "./pages/EkgHomePage";
 import EkgNodePage from "./pages/EkgNodePage";
 import EkgSearchPage from "./pages/EkgSearchPage";
+import EkgDownloadsPage from "./pages/EkgDownloadsPage";
 
 const theme = createTheme({
   palette: {
@@ -44,6 +45,8 @@ class EkgApp extends React.Component {
           <Route path={`/`} element={<EkgHomePage />} />
           <Route path={`/search`} element={<EkgSearchPage />} />
           <Route path={`/nodes/:nodeId`} element={<EkgNodePage />} />
+
+          <Route path={`/downloads`} element={<EkgDownloadsPage />} />
         </Routes>
         {/* <EkgFooter /> */}
       </BrowserRouter>

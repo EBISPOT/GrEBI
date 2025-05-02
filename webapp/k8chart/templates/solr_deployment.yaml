@@ -44,14 +44,14 @@ spec:
             - mountPath: "/data"
               name: {{ .Release.Name }}-solr
           command: ["/bin/bash", "-c"]
-          args: ["echo Synchronizing data... && rsync --mkpath -arv --no-t --omit-dir-times --delete /data_import/solr/ $SOLR_HOME/ && echo Done && solr-foreground -a -XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put"]
+          args: ["echo Synchronizing data... && rm -rf $SOLR_HOME/* && cp -r /data_import/solr/* $SOLR_HOME/ && echo Done && solr-foreground -m 20g -a -XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put"]
           resources:
             requests:
-              memory: 4Gi
-              cpu: 1
+              memory: 24Gi
+              cpu: 2
             limits:
-              memory: 4Gi
-              cpu: 1
+              memory: 24Gi
+              cpu: 2
           env:
             - name: SOLR_HOME
               value: /data/solr

@@ -95,7 +95,7 @@ export default function EbiHomePage() {
           </div>
           <div>
                 <p className="mb-3">
-                  This website enables you to search and explore data from multiple EBI resources, linked together using knowledge graphs including the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link> and <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link> and ontology relationships from <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link> and <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>.
+                  This website enables you to search and explore data from multiple EBI resources, linked together using knowledge graphs and ontologies via the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other datasources.
                 </p>
                 <p className="mb-3">
                   GrEBI is a very early work in progress. No querying service is currently provided other than simple search/browsing functionality. If you are interested in querying GrEBI and/or have a potential application please <Link className="link-default" to="mailto:jmcl@ebi.ac.uk">get in touch</Link>.

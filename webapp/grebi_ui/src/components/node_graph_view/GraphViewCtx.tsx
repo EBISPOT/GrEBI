@@ -438,31 +438,38 @@ color:'gray',
 
         let res = await get<any>(`api/v1/subgraphs/${this.subgraph}/nodes/${node.getEncodedNodeId()}/incoming_edge_counts`)
 
-        return this.resolveSingulars(res)
+        let singulars =  this.getEdgeTypesWithSingularEndpoints(res)
+
+        let resolvedSingulars = await Promise.all(singulars.map(edgeType =>
+            get(`api/v1/subgraphs/${this.subgraph}/nodes/${node.getEncodedNodeId()}/incoming_edges?grebi:type=${edgeType}`)))
+
+        for(let edgeType of singulars) {
+
+        }
+
+        return res
     }
 
     async loadOutgoing(node:GraphNodeRef) {
 
         let res = await get<any>(`api/v1/subgraphs/${this.subgraph}/nodes/${node.getEncodedNodeId()}/outgoing_edge_counts`)
 
-
-        return this.resolveSingulars(res)
+        return res
     }
 
-    async resolveSingulars(res:any) {
+    private getEdgeTypesWithSingularEndpoints(res:any):string[] {
 
         // {p: datasource: count }}
 
         let singulars = new Set<string>()
-        let singularToDs = new Map<string,string>()
         for(let edgeType of Object.keys(res)) {
             let dsToCount = res[edgeType]
             let dss = Object.keys(dsToCount)
             if(dss.length === 1) {
                 singulars.add(edgeType)
-                singularToDs.set(edgeType, dss[0])
             }
         }
+        return singulars
 
     }
 

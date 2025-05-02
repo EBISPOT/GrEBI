@@ -50,7 +50,14 @@ export default class GraphNode extends GraphNodeRef {
     }
 
     getRefs():Refs {
-        return new Refs(this.props['_refs'])
+
+        let refs = this.props['_refs']
+
+        if(!refs) {
+            throw new Error("No refs in node")
+        }
+
+        return new Refs(refs)
     }
 
     getProps():{[key:string]:PropVal[]} {

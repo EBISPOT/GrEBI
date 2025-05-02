@@ -17,18 +17,30 @@ interface SearchBoxEntry {
   li: JSX.Element;
 }
 
+function joinSearchParams(a:URLSearchParams, b?:URLSearchParams):URLSearchParams {
+  let res = new URLSearchParams(a.toString())
+  if(b) {
+    for (let p of b) {
+      res.append(p[0], p[1])
+    }
+  }
+  return res
+}
+
 export default function SearchBox({
   subgraph,
   initialQuery,
   placeholder,
   collectionId,
   showExact,
+  additionalParams
 }: {
   subgraph:string,
   initialQuery?: string;
   placeholder?: string;
   collectionId?: string;
   showExact?: boolean;
+  additionalParams?:URLSearchParams
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   //   let lang = searchParams.get("lang") || "en";
@@ -83,7 +95,7 @@ export default function SearchBox({
 
       const [nodes, autocomplete] = await Promise.all([
         getPaginated<any>(
-          `api/v1/subgraphs/${subgraph}/search?${new URLSearchParams({
+          `api/v1/subgraphs/${subgraph}/search?${joinSearchParams(new URLSearchParams({
             q: query,
             size: "5",
             lang: "en",
@@ -91,15 +103,15 @@ export default function SearchBox({
             includeObsoleteEntries: obsolete.toString(),
             ...(collectionId ? { collectionId } : {}),
             ...((canonical ? { isDefiningcollection: true } : {}) as any),
-          })}`
+          }), additionalParams)}`
         ),
         showSuggestions
           ? get<string[]>(
-              `api/v1/subgraphs/${subgraph}/suggest?${new URLSearchParams({
+              `api/v1/subgraphs/${subgraph}/suggest?${joinSearchParams(new URLSearchParams({
                 q: query,
                 exactMatch: exact.toString(),
                 includeObsoleteEntries: obsolete.toString(),
-              })}`
+              }), additionalParams)}`
             )
           : null
       ]);

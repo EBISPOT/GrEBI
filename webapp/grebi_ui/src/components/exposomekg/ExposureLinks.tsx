@@ -93,6 +93,10 @@ function DefaultSelector(row:any, key:string) {
 
     console.dir(vals)
 
+    if(!row['_refs']) {
+        throw new Error("No refs in row")
+    }
+
     return <PropVals 
      subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} 
     refs={new Refs(row['_refs'])}

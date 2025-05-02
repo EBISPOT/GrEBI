@@ -11,7 +11,7 @@ export default function EkgErrorPage() {
   document.title = "Ontology Lookup Service (OLS)";
   return (
     <Fragment>
-      <Header />
+      <Header section="error" />
       <main className="container mx-auto px-4">
         <img
           src={urlJoin(process.env.PUBLIC_URL!, "/not-found.jpg")}

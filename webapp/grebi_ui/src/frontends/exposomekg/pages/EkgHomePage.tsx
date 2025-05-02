@@ -7,9 +7,21 @@ import { get } from "../../../app/api";
 import EkgHeader from "../EkgHeader";
 import SearchBox from "../../../components/SearchBox";
 
+
 export default function EkgHomePage() {
 
   let [tab, setTab] = useState<string>('exposures');
+
+  let getAdditionalSearchParams = () => {
+    let params = new URLSearchParams()
+    if(tab === 'exposures') {
+      params.append('grebi:type', 'cheminf:DrugBank_identifier')
+      params.append('grebi:type', 'biolink:ChemicalEntity')
+    } else {
+      params.append('grebi:type', 'biolink:Disease')
+    }
+    return params
+  }
 
   return (
     <div>
@@ -23,11 +35,11 @@ export default function EkgHomePage() {
               </div>
               <Tabs orientation="horizontal" value={tab} onChange={(e, v) => setTab(v)}>
                 <Tab label="Search by Exposure" value="exposures" />
-                <Tab label="Search by Disease/Phenotype" value="diseases" />
+                <Tab label="Search by Disease/Phenotype" value="phenotypes" />
               </Tabs>
               <TabPanel value={tab} index="exposures">
                 <div className="flex flex-nowrap gap-4 mb-4">
-                  <SearchBox subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} placeholder="Search by exposure..." showExact={false} />
+                  <SearchBox subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} placeholder="Search by exposure..." showExact={false} additionalParams={getAdditionalSearchParams()} />
                 </div>
                 <div className="grid md:grid-cols-2 grid-cols-1 gap-2">
                   <div className="text-neutral-black">
@@ -43,6 +55,25 @@ export default function EkgHomePage() {
                       &#44;&nbsp;
                       <Link to={"/search?q=fipronil"} className="link-default">
                         fipronil
+                      </Link>
+                    </span>
+                  </div>
+                </div>
+              </TabPanel>
+              <TabPanel value={tab} index="phenotypes">
+                <div className="flex flex-nowrap gap-4 mb-4">
+                  <SearchBox subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} placeholder="Search by disease or phenotype..." showExact={false} additionalParams={getAdditionalSearchParams()} />
+                </div>
+                <div className="grid md:grid-cols-2 grid-cols-1 gap-2">
+                  <div className="text-neutral-black">
+                    <span>
+                      Examples:&nbsp;
+                      <Link to={"/search?q=diabetes"} className="link-default">
+                        diabetes
+                      </Link>
+                      &#44;&nbsp;
+                      <Link to={"/search?q=hypertension"} className="link-default">
+                        hypertension
                       </Link>
                     </span>
                   </div>

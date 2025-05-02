@@ -98,6 +98,10 @@ function DefaultSelector(row:any, key:string) {
 
     console.dir(vals)
 
+    if(!row['_refs']) {
+        throw new Error("No refs in row")
+    }
+
     return <PropVals 
      subgraph={row['subgraph']} 
     refs={new Refs(row['_refs'])}

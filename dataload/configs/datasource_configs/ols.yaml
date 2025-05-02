@@ -5,5 +5,5 @@ ingests:
     command: '
       grebi_ingest_ols
         --datasource-name $GREBI_INGEST_DATASOURCE_NAME
-        --ontologies efo,mp,hp,go,ro,iao,uberon,pato,oba,chebi,bspo,iao,obi,bfo,cob,cl,so,eco,pr,ncbitaxon,oio,iao,biolink,mondo,doid,cheminf,dc,dcterms,ncit,edam,upheno
+        --ontologies efo,mp,hp,go,ro,iao,uberon,pato,oba,chebi,bspo,iao,obi,bfo,cob,cl,so,eco,pr,ncbitaxon,oio,iao,biolink,mondo,doid,cheminf,dc,dcterms,ncit,edam,upheno,ecto
         --skip-obsolete'
