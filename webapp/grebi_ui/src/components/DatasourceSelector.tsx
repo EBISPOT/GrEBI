@@ -25,13 +25,13 @@ export default function DatasourceSelector({
                 {datasources.map((ds, i) => {
                   if (ds.startsWith("OLS.")) {
                     return <span className="mr-1" onMouseOver={() => onMouseoverDs && onMouseoverDs(ds)} onMouseOut={() => onMouseoutDs && onMouseoutDs(ds)}>
-                    { datasources.length > 1 && <Checkbox size="small" style={{padding:0, color:'rgb(0 130 124)'}} checked={dsEnabled.indexOf(ds) !== -1} onChangeCapture={() => toggleDsEnabled(ds)} />}
+                    { datasources.length > 1 && <Checkbox size="small" style={{padding:0}} className="grebi-color" checked={dsEnabled.indexOf(ds) !== -1} onChangeCapture={() => toggleDsEnabled(ds)} />}
                       <span
                       className="link-ontology px-2 py-0.5 rounded-md text-xs text-white uppercase"
                       title={ds.split('.')[1]}>{ds.split('.')[1]}</span></span>
                   } else {
                     return <span className="mr-1" onMouseOver={() => onMouseoverDs && onMouseoverDs(ds)} onMouseOut={() => onMouseoutDs && onMouseoutDs(ds)}>
-                    { datasources.length > 1 && <Checkbox size="small" style={{padding:0, color:'rgb(115 35 183)'}} checked={dsEnabled.indexOf(ds) !== -1} onChangeCapture={() => toggleDsEnabled(ds)} />}
+                    { datasources.length > 1 && <Checkbox size="small" style={{padding:0}} className="grebi-color" checked={dsEnabled.indexOf(ds) !== -1} onChangeCapture={() => toggleDsEnabled(ds)} />}
                       <span
                       className="link-datasource px-2 py-0.5 rounded-md text-xs text-white uppercase"
                       title={ds}>{ds}

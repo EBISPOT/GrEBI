@@ -42,6 +42,8 @@
     disabled:cursor-not-allowed
     disabled:bg-neutral-default
     disabled:border-neutral-default;
+    border-color: var(--grebi-base-color);
+    color: var(--grebi-base-color);
   }
   .button-secondary-active {
     @apply text-link-default px-4 py-2 mb-2 mr-2 h-fit rounded-md bg-white border-4 border-link-default transition-all ease-linear
@@ -75,6 +77,9 @@
     hover:shadow-button-orange-active
     hover:translate-x-2
     hover:translate-y-2;
+  }
+  input {
+    color: var(--grebi-base-color);
   }
   .input-default {
     @apply outline-none w-full h-fit bg-white p-2 rounded-md border-2 border-neutral-default
@@ -133,6 +138,7 @@
     hover:outline
     hover:outline-2
     hover:outline-link-default;
+    border-color: var(--grebi-base-color);
   }
   .link-datasource {
     @apply text-white cursor-pointer bg-link-default
@@ -141,6 +147,13 @@
     hover:outline
     hover:outline-2
     hover:outline-link-default;
+    border-color: var(--grebi-base-color);
+  }
+  .link-ontology:hover {
+    background-color: white;
+  }
+  .link-datasource:hover {
+    background-color: white;
   }
   .link-entity {
     @apply text-white cursor-pointer bg-orange-default
@@ -1320,44 +1333,24 @@ filter: gray;
 }
 
 
-.link-datasource {
+.link-datasource,.link-ontology {
   cursor: pointer;
   --tw-bg-opacity: 1;
   --tw-text-opacity: 1;
-  color: rgb(255 255 255 / var(--tw-text-opacity));
+  background-color: var(--grebi-base-color);
+  color: var(--grebi-base-color);
 }
-.link-datasource:hover {
+.link-datasource:hover,.link-ontology:hover {
   --tw-bg-opacity: 1;
-  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
   --tw-text-opacity: 1;
   outline-style: solid;
   outline-width: 2px;
-}
-.link-datasource {
-  background-color: rgb(115 35 183 / var(--tw-bg-opacity));
-}
-.link-datasource:hover {
-  color: rgb(115 35 183 / var(--tw-text-opacity));
-  outline-color: rgb(115 35 183);
+  outline-color: var(--grebi-base-color);
+  border-color: var(--grebi-base-color);
+  color: var(--grebi-base-color);
+  background-color: white;
 }
 
-
-.link-ontology {
-  cursor: pointer;
-  --tw-bg-opacity: 1;
-  background-color: rgb(0 130 124 / var(--tw-bg-opacity));
-  --tw-text-opacity: 1;
-  color: rgb(255 255 255 / var(--tw-text-opacity));
-}
-.link-ontology:hover {
-  --tw-bg-opacity: 1;
-  background-color: rgb(255 255 255 / var(--tw-bg-opacity));
-  --tw-text-opacity: 1;
-  color: rgb(0 130 124 / var(--tw-text-opacity));
-  outline-style: solid;
-  outline-width: 2px;
-  outline-color: #00827c;
-}
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity));
@@ -1407,4 +1400,8 @@ filter: gray;
 .grebi-subtab {
   color: black !important;
   text-transform: none !important;
+}
+
+.grebi-color {
+  color: var(--grebi-base-color) !important;
 }
