@@ -174,6 +174,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
     let mut source_ids: Vec<&[u8]> = Vec::new();
     let mut datasources: Vec<&[u8]> = Vec::new();
+    let mut embedding_vector:Option<&[u8]> = None;
 
     for json in &jsons {
         if json.has_type {
@@ -183,6 +184,16 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
             source_ids.push(source_id);
         }
         datasources.push(json.datasource);
+
+        if json.embedding_vector.is_some() {
+            if embedding_vector.is_none() {
+                embedding_vector = json.embedding_vector;
+            } else {
+                if json.embedding_vector != embedding_vector {
+                    panic!("Each node may only have one embedding vector");
+                }
+            }
+        }
     }
 
     if !has_any_type {
@@ -370,6 +381,11 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
             }
         }
         stdout.write_all(r#"]"#.as_bytes()).unwrap(); // close properties array
+    }
+
+    if embedding_vector.is_some() {
+        stdout.write_all(r#","grebi:embeddingVector":"#.as_bytes()).unwrap();
+        stdout.write_all(embedding_vector.unwrap()).unwrap();
     }
 
     stdout.write_all(

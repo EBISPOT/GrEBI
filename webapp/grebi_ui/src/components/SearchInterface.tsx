@@ -4,7 +4,7 @@ import { Pagination } from "@mui/material";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getPaginated } from "../app/api";
-import { usePrevious, copyToClipboard } from "../app/util";
+import { usePrevious, copyToClipboard, joinSearchParams } from "../app/util";
 import GraphNode from "../model/GraphNode";
 import CollapsingIdList from "./CollapsingIdList";
 import { DatasourceTags } from "./DatasourceTag";
@@ -17,8 +17,6 @@ export default function SeachInterface(opts:{ subgraph:string }
 
   const [searchParams] = useSearchParams();
   const search = searchParams.get("q") || "";
-
-  const params = useParams();
 
   let [loadingResults, setLoadingResults] = useState<boolean>(true);
   let [results, setResults] = useState<GraphNode[]>([]);
@@ -99,13 +97,13 @@ export default function SeachInterface(opts:{ subgraph:string }
     async function doSearch() {
       setLoadingResults(true)
 
-      let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, {
+      let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, joinSearchParams(searchParams, {
         page: page.toString(), size: rowsPerPage.toString(), q: search,
         facet: ['grebi:datasources','grebi:type']
         /*grebi__datasource: datasourceFacetselected,
         type: typeFacetSelected,
         searchParams,*/
-      })).map(r => new GraphNode(r))
+      }))).map(r => new GraphNode(r))
 
       setResults(res.elements)
       setFacets(res.facetFieldsToCounts)

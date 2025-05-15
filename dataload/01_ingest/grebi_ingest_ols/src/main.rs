@@ -236,6 +236,10 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
                 // we keep relatedTo but don't need both directions in the KG
                 continue;
             }
+            if k.eq("ols:linkedEntities") {
+                // GrEBI has its own refs system for linked entities so we don't need the OLS ones.
+                continue;
+            }
 
             let v = obj.get(k).unwrap();
 
@@ -279,7 +283,13 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             } else {
                 output_nodes.write_all(r#","#.as_bytes()).unwrap();
                 output_nodes.write_all(r#"""#.as_bytes()).unwrap();
-                output_nodes.write_all(k.as_bytes()).unwrap();
+
+                if k.eq("ols:embeddings") {
+                    output_nodes.write_all(b"grebi:embeddingVector").unwrap();
+                } else {
+                    output_nodes.write_all(k.as_bytes()).unwrap();
+                }
+
                 output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
                 output_nodes.write_all(r#"["#.as_bytes()).unwrap();
                     if v.is_array() {
