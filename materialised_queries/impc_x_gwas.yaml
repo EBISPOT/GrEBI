@@ -22,6 +22,7 @@ cypher_query: |-
   MATCH (speciesNeutralPhenotype)<-[:`biolink:broad_match`]-(descendantPhenotype)-[:sourceId]->(descendantSourceId)
   WHERE "OLS.mp" IN descendantPhenotype.`grebi:datasources`
   MATCH (descendantPhenotype)<-[:`impc:phenotype`]-(mouseGene)
+  MATCH (mouseGene)-[:`impc:humanGeneOrthologues`]->(humanGene)<-[`gwas:snp_gene_ids`]-(snp)
   RETURN DISTINCT
     "gwas->oba->upheno->mp->impc" AS graph_path,
     [id in snp.id WHERE id =~ "rs[0-9]*" | id][0] AS gwas_variant,
@@ -52,6 +53,7 @@ cypher_query: |-
   MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
   WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources`
   MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
+  MATCH (mouseGene)-[:`impc:humanGeneOrthologues`]->(humanGene)<-[`gwas:snp_gene_ids`]-(snp)
   RETURN DISTINCT "gwas->hp->mp->impc" AS graph_path,
   [id in snp.id WHERE id =~ "rs[0-9]*" | id][0] AS gwas_variant,
   humanGene.`grebi:name`[0] AS human_gene_name,
@@ -82,6 +84,7 @@ cypher_query: |-
   MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
   WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources` AND "OLS.hp" IN humanPhenotype.`grebi:datasources`
   MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
+  MATCH (mouseGene)-[:`impc:humanGeneOrthologues`]->(humanGene)<-[`gwas:snp_gene_ids`]-(snp)
     RETURN DISTINCT "gwas->oba->hp->mp->impc" AS graph_path,
     [id in snp.id WHERE id =~ "rs[0-9]*" | id][0] AS gwas_variant,
     humanGene.`grebi:name`[0] AS human_gene_name,
@@ -112,6 +115,7 @@ cypher_query: |-
   MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
   WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources`
   MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
+  MATCH (mouseGene)-[:`impc:humanGeneOrthologues`]->(humanGene)<-[`gwas:snp_gene_ids`]-(snp)
       RETURN DISTINCT "gwas->{mondo,doid,efo}->hp->mp->impc" AS graph_path,
       [id in snp.id WHERE id =~ "rs[0-9]*" | id][0] AS gwas_variant,
       humanGene.`grebi:name`[0] AS human_gene_name,
