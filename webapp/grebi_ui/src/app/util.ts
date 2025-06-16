@@ -80,3 +80,14 @@ export function readabilityScore(name:string) {
 export function difference(a:any[], b:any[]) {
     return a.filter(x => b.indexOf(x) === -1)
 }
+
+export function joinSearchParams(a:URLSearchParams, b?:URLSearchParams):URLSearchParams {
+  let res = new URLSearchParams(a.toString())
+  if(b) {
+    for (let p of b) {
+      res.append(p[0], p[1])
+    }
+  }
+  return res
+}
+

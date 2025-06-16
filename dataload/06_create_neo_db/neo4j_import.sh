@@ -1,4 +1,5 @@
 #!/bin/bash
+set -Eeuo pipefail
 
 MAX_MEM=$1
 
@@ -30,6 +31,7 @@ neo4j-admin database import full \
 
 sleep 5
 
+export HEAP_SIZE=$MAX_MEM
 neo4j start
 sleep 20
 
@@ -45,4 +47,8 @@ echo Creating neo4j indexes done
 
 sleep 20
 neo4j stop
+
+sleep 20
+ls -hl $NEO4J_HOME/run
+
 

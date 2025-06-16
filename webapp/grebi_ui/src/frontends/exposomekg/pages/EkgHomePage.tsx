@@ -39,7 +39,7 @@ export default function EkgHomePage() {
               </Tabs>
               <TabPanel value={tab} index="exposures">
                 <div className="flex flex-nowrap gap-4 mb-4">
-                  <SearchBox subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} placeholder="Search by exposure..." showExact={false} additionalParams={getAdditionalSearchParams()} />
+                  <SearchBox subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} placeholder="Search by exposure..." showExact={false} showSuggestions={false} additionalParams={getAdditionalSearchParams()} />
                 </div>
                 <div className="grid md:grid-cols-2 grid-cols-1 gap-2">
                   <div className="text-neutral-black">
@@ -62,7 +62,7 @@ export default function EkgHomePage() {
               </TabPanel>
               <TabPanel value={tab} index="phenotypes">
                 <div className="flex flex-nowrap gap-4 mb-4">
-                  <SearchBox subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} placeholder="Search by disease or phenotype..." showExact={false} additionalParams={getAdditionalSearchParams()} />
+                  <SearchBox subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} placeholder="Search by disease or phenotype..." showExact={false} showSuggestions={false} additionalParams={getAdditionalSearchParams()} />
                 </div>
                 <div className="grid md:grid-cols-2 grid-cols-1 gap-2">
                   <div className="text-neutral-black">

@@ -7,7 +7,11 @@ import json
 from datetime import datetime
 import sys
 
-os.system("neo4j start")
+ret = os.system("neo4j start --verbose")
+if ret != 0:
+    print("Neo4j did not start correctly. Exiting.")
+    sys.exit(1)
+
 os.system("sleep 20")
 
 from py2neo import Graph

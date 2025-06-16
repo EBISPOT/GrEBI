@@ -3,12 +3,13 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { get, getPaginated } from "../app/api";
 import { theme } from "../app/mui";
-import { randomString } from "../app/util";
+import { joinSearchParams, randomString } from "../app/util";
 import React from "react";
 import GraphNode from "../model/GraphNode";
 import encodeNodeId from "../encodeNodeId";
 import { DatasourceTags } from "./DatasourceTag";
 import NodeTypeChip from "./NodeTypeChip";
+import { join } from "path";
 
 let curSearchToken: any = null;
 
@@ -17,15 +18,6 @@ interface SearchBoxEntry {
   li: JSX.Element;
 }
 
-function joinSearchParams(a:URLSearchParams, b?:URLSearchParams):URLSearchParams {
-  let res = new URLSearchParams(a.toString())
-  if(b) {
-    for (let p of b) {
-      res.append(p[0], p[1])
-    }
-  }
-  return res
-}
 
 export default function SearchBox({
   subgraph,
@@ -33,6 +25,7 @@ export default function SearchBox({
   placeholder,
   collectionId,
   showExact,
+  showSuggestions,
   additionalParams
 }: {
   subgraph:string,
@@ -40,6 +33,7 @@ export default function SearchBox({
   placeholder?: string;
   collectionId?: string;
   showExact?: boolean;
+  showSuggestions?: boolean;
   additionalParams?:URLSearchParams
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -73,8 +67,9 @@ export default function SearchBox({
     [searchParams, setSearchParams]
   );
 
-  const searchForcollections = collectionId === undefined;
-  const showSuggestions = collectionId === undefined;
+  if(showSuggestions === undefined) {
+    showSuggestions = true;
+  }
 
   const mounted = useRef(false);
   useEffect(() => {
@@ -305,11 +300,12 @@ export default function SearchBox({
                   }
                   onClick={() => {
                     if (query) {
-                      searchParams.set("q", query);
+                      let params = additionalParams ? joinSearchParams(searchParams, additionalParams) : searchParams;
+                      params.set("q", query);
                       if (collectionId)
-                        searchParams.set("collection", collectionId);
+                        params.set("collection", collectionId);
 
-      var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ? `/search?${new URLSearchParams(searchParams)}` : `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
+      var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ? `/search?${new URLSearchParams(params)}` : `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
                       navigate(linkUrl);
                     }
                   }}
@@ -325,10 +321,11 @@ export default function SearchBox({
               className="button-primary text-lg font-bold self-center"
               onClick={() => {
                 if (query) {
-                  searchParams.set("q", query);
-                  if (collectionId) searchParams.set("collection", collectionId);
+                  let params = additionalParams ? joinSearchParams(searchParams, additionalParams) : searchParams;
+                  params.set("q", query);
+                  if (collectionId) params.set("collection", collectionId);
 
-      var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ? `/search?${new URLSearchParams(searchParams)}` : `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
+      var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ? `/search?${new URLSearchParams(params)}` : `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
                   navigate(linkUrl);
                 }
               }}

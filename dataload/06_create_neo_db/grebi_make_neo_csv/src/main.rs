@@ -99,7 +99,7 @@ fn main() -> std::io::Result<()> {
         nodes_writer.write_all(prop.as_bytes()).unwrap();
         nodes_writer.write_all(b":string[]").unwrap();
     }
-    nodes_writer.write_all("\n".as_bytes()).unwrap();
+    nodes_writer.write_all(",grebi:embeddingVector:float[]\n".as_bytes()).unwrap();
 
 
     edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string,grebi:fromSourceIds:string[]".as_bytes()).unwrap();
@@ -222,54 +222,73 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
     nodes_writer.write_all(b"\"").unwrap();
 
     for header_prop in all_node_props {
-            nodes_writer.write_all(b",").unwrap();
-            let mut wrote_any = false;
-            for row_prop in entity.props.iter() {
-                if row_prop.key == "grebi:nodeId".as_bytes() {
-                    continue; // already put in first column
-                }
-                if row_prop.key == "grebi:type".as_bytes() {
-                    continue; // already put in :LABEL column
-                }
-                if row_prop.key == "grebi:displayType".as_bytes() {
-                    continue; // already written above
-                }
-                if header_prop.as_bytes() == row_prop.key {
-                    let mut written_values:BTreeSet<Vec<u8>> = BTreeSet::new();
-                    for val in row_prop.values.iter() {
-                        if !wrote_any {
-                            nodes_writer.write_all(b"\"").unwrap();
-                            wrote_any = true;
-                        } else {
-                            nodes_writer.write_all(&[(31 as u8)]).unwrap();
-                        }
-                        if val.kind == JsonTokenType::StartObject {
-                            let reified = SlicedReified::from_json(&val.value); 
-                            if reified.is_some() {
-                                let to_write = get_value_to_write(reified.unwrap().value, &refs);
-                                if !written_values.contains(&to_write) {
-                                    nodes_writer.write_all(&to_write).unwrap();
-                                    written_values.insert(to_write);
-                                }
-                                continue;
+        nodes_writer.write_all(b",").unwrap();
+        let mut wrote_any = false;
+        for row_prop in entity.props.iter() {
+            if row_prop.key == "grebi:nodeId".as_bytes() {
+                continue; // already put in first column
+            }
+            if row_prop.key == "grebi:type".as_bytes() {
+                continue; // already put in :LABEL column
+            }
+            if row_prop.key == "grebi:displayType".as_bytes() {
+                continue; // already written above
+            }
+            if header_prop.as_bytes() == row_prop.key {
+                let mut written_values:BTreeSet<Vec<u8>> = BTreeSet::new();
+                for val in row_prop.values.iter() {
+                    if !wrote_any {
+                        nodes_writer.write_all(b"\"").unwrap();
+                        wrote_any = true;
+                    } else {
+                        nodes_writer.write_all(&[(31 as u8)]).unwrap();
+                    }
+                    if val.kind == JsonTokenType::StartObject {
+                        let reified = SlicedReified::from_json(&val.value); 
+                        if reified.is_some() {
+                            let to_write = get_value_to_write(reified.unwrap().value, &refs);
+                            if !written_values.contains(&to_write) {
+                                nodes_writer.write_all(&to_write).unwrap();
+                                written_values.insert(to_write);
                             }
-                        }
-                        let to_write = get_value_to_write(val.value, &refs);
-                        if !written_values.contains(&to_write) {
-                            nodes_writer.write_all(&to_write).unwrap();
-                            written_values.insert(to_write);
+                            continue;
                         }
                     }
-                    continue;
+                    let to_write = get_value_to_write(val.value, &refs);
+                    if !written_values.contains(&to_write) {
+                        nodes_writer.write_all(&to_write).unwrap();
+                        written_values.insert(to_write);
+                    }
                 }
-            }
-            if wrote_any {
-                nodes_writer.write_all(b"\"").unwrap();
+                continue;
             }
         }
+        if wrote_any {
+            nodes_writer.write_all(b"\"").unwrap();
+        }
+    }
 
+    // Embedding vectors:
+    // Instead of parsing the JSON and rewriting it we do an ugly hack to convert the JSON to CSV.
+    // This is so that we don't make anything weird happen to the floats when parsing and re-serializing them.
+    nodes_writer.write_all(b",").unwrap();
+    if entity.embedding_vector.is_some() {
+        for byte in entity.embedding_vector.unwrap().iter() {
+            match byte {
+                b'[' => nodes_writer.write_all(b"\"").unwrap(),
+                b']' => nodes_writer.write_all(b"\"").unwrap(),
+                b',' => nodes_writer.write_all(&[(31 as u8)]).unwrap(),
+                b' ' => nodes_writer.write_all(b"").unwrap(),
+                b'\n' => nodes_writer.write_all(b"").unwrap(),
+                b'\r' => nodes_writer.write_all(b"").unwrap(),
+                b'\t' => nodes_writer.write_all(b"").unwrap(),
+                b => nodes_writer.write_all(&[*b]).unwrap()
+            }
+        }
+    }
 
     nodes_writer.write_all(b"\n").unwrap();
+
 }
 
 fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, edges_writer: &mut BufWriter<&File>, add_prefix:&[u8]) {

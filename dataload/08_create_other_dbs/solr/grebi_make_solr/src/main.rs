@@ -124,6 +124,11 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>) {
             continue;
         }
 
+        if k.eq("grebi:embeddingVector") {
+            // TODO: not used in solr yet
+            continue;
+        }
+
         // some special properties aren't structured like normal properties, so
         // just copy the value
         //

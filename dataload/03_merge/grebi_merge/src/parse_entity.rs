@@ -15,7 +15,8 @@ pub struct ParsedEntity<'a> {
     pub source_ids:Vec<&'a [u8]>,
     pub props:Vec<ParsedProperty<'a>>,
     pub datasource:&'a [u8],
-    pub has_type:bool
+    pub has_type:bool,
+    pub embedding_vector:Option<&'a [u8]>
 }
 
 impl<'a> ParsedEntity<'a> {
@@ -28,6 +29,7 @@ impl<'a> ParsedEntity<'a> {
         let mut has_type = false;
         let mut ds:&[u8] = datasource;
         let mut source_ids:Vec<&[u8]> = Vec::new();
+        let mut embedding_vector:Option<&[u8]> = None;
 
         // {
         parser.begin_object();
@@ -54,6 +56,10 @@ impl<'a> ParsedEntity<'a> {
                     let prop_value = parser.string();
                     ds = prop_value;
                     continue;
+                } else if prop_key == "grebi:embeddingVector".as_bytes() {
+                    let prop_value = parser.value();
+                    embedding_vector = Some(prop_value);
+                    continue;
                 }
 
                 // All property values will be arrays in the merged output
@@ -77,7 +83,7 @@ impl<'a> ParsedEntity<'a> {
         parser.end_object();
 
 
-        return ParsedEntity { id, source_ids, props, datasource: ds, has_type };
+        return ParsedEntity { id, source_ids, props, datasource: ds, has_type, embedding_vector };
 
     }
 

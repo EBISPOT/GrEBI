@@ -2,7 +2,7 @@ use flate2::read::GzDecoder;
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, VecDeque};
 use std::fs::File;
-use std::io::{Write, BufWriter};
+use std::io::{BufWriter, Cursor, Write};
 use std::io::{BufRead, BufReader };
 use clap::Parser;
 use std::{env, io};
@@ -174,6 +174,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
     let mut source_ids: Vec<&[u8]> = Vec::new();
     let mut datasources: Vec<&[u8]> = Vec::new();
+    let mut embedding_vectors:Vec<&[u8]> = Vec::new();
 
     for json in &jsons {
         if json.has_type {
@@ -183,6 +184,10 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
             source_ids.push(source_id);
         }
         datasources.push(json.datasource);
+
+        if json.embedding_vector.is_some() {
+            embedding_vectors.push(json.embedding_vector.unwrap());
+        }
     }
 
     if !has_any_type {
@@ -372,11 +377,61 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         stdout.write_all(r#"]"#.as_bytes()).unwrap(); // close properties array
     }
 
+    if embedding_vectors.len() > 0 {
+
+        let avg_embedding = average_embeddings(&embedding_vectors);
+
+        stdout.write_all(r#","grebi:embeddingVector":"#.as_bytes()).unwrap();
+        stdout.write_all(&avg_embedding).unwrap();
+    }
+
     stdout.write_all(
             r#"}
 "#
             .as_bytes(),
-        ).unwrap(); // close the lline
+        ).unwrap(); // close the line
 }
+
+fn average_embeddings(embeddings: &Vec<&[u8]>) -> Vec<u8> {
+    if embeddings.is_empty() {
+        return vec![];
+    }
+
+    let mut parsed_embeddings: Vec<Vec<f32>> = Vec::new();
+
+    for emb in embeddings {
+        let s = std::str::from_utf8(emb).expect("Invalid UTF-8");
+        let trimmed = s.trim().trim_start_matches('[').trim_end_matches(']');
+        let numbers: Vec<f32> = trimmed
+            .split(',')
+            .map(|x| x.trim().parse::<f32>().expect("Invalid float"))
+            .collect();
+        parsed_embeddings.push(numbers);
+    }
+
+    let len = parsed_embeddings[0].len();
+    let mut averages = vec![0.0f32; len];
+
+    for emb in &parsed_embeddings {
+        assert_eq!(emb.len(), len, "All embeddings must be the same length");
+        for (i, &val) in emb.iter().enumerate() {
+            averages[i] += val;
+        }
+    }
+
+    for avg in &mut averages {
+        *avg /= embeddings.len() as f32;
+    }
+
+    return format!(
+        "[{}]",
+        averages
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .join(", ")
+    ).as_bytes().to_vec();
+}
+
 
 
