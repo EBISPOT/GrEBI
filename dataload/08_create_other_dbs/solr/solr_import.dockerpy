@@ -52,7 +52,7 @@ def main():
         print("Uploading names.txt")
         response = session.get(f"http://127.0.0.1:{port}/solr/{core}/update",
                                 params={
-                                    'stream.file': '/names.txt',
+                                    'stream.file': os.path.realpath('names.txt'),
                                     'fieldnames': 'label',
                                     'separator': '\x00',
                                     'stream.contentType': 'application/csv;charset=utf-8',
@@ -84,7 +84,7 @@ def upload_file(core, port, filename):
     print(f"Uploading {core.split('_')[1]} file: {filename}")
     response = session.get(f"http://127.0.0.1:{port}/solr/{core}/update/json/docs",
                             params={
-                                'stream.file': filename,
+                                'stream.file': os.path.realpath(filename),
                                 'stream.contentType': 'application/json;charset=utf-8',
                                 'commit': 'true'
                             })

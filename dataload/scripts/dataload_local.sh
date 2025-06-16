@@ -19,5 +19,5 @@ docker run \
   -e NXF_USRMAP=$(id -u) \
   ghcr.io/ebispot/grebi_nextflow:latest \
   bash -c "cd $GREBI_HOME && nextflow dataload/nextflow/load_subgraph.nf \
-    -c dataload/nextflow/local_4g_nextflow.config -resume"
+    -c dataload/nextflow/local_64g_nextflow.config -resume"
 

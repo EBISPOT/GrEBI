@@ -271,16 +271,19 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
     // Embedding vectors:
     // Instead of parsing the JSON and rewriting it we do an ugly hack to convert the JSON to CSV.
     // This is so that we don't make anything weird happen to the floats when parsing and re-serializing them.
-    for byte in entity.embedding_vector.unwrap().iter() {
-        match byte {
-            b'[' => nodes_writer.write_all(b"\"").unwrap(),
-            b']' => nodes_writer.write_all(b"\"").unwrap(),
-            b',' => nodes_writer.write_all(&[(31 as u8)]).unwrap(),
-            b' ' => nodes_writer.write_all(b"").unwrap(),
-            b'\n' => nodes_writer.write_all(b"").unwrap(),
-            b'\r' => nodes_writer.write_all(b"").unwrap(),
-            b'\t' => nodes_writer.write_all(b"").unwrap(),
-            b => nodes_writer.write_all(&[*b]).unwrap()
+    nodes_writer.write_all(b",").unwrap();
+    if entity.embedding_vector.is_some() {
+        for byte in entity.embedding_vector.unwrap().iter() {
+            match byte {
+                b'[' => nodes_writer.write_all(b"\"").unwrap(),
+                b']' => nodes_writer.write_all(b"\"").unwrap(),
+                b',' => nodes_writer.write_all(&[(31 as u8)]).unwrap(),
+                b' ' => nodes_writer.write_all(b"").unwrap(),
+                b'\n' => nodes_writer.write_all(b"").unwrap(),
+                b'\r' => nodes_writer.write_all(b"").unwrap(),
+                b'\t' => nodes_writer.write_all(b"").unwrap(),
+                b => nodes_writer.write_all(&[*b]).unwrap()
+            }
         }
     }
 

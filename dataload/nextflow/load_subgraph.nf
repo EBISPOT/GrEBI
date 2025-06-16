@@ -11,6 +11,8 @@ params.out = "$GREBI_OUT_DIR"
 params.subgraph = "$GREBI_SUBGRAPH"
 params.query_yamls_path = "$GREBI_QUERY_YAMLS_PATH"
 params.solr_mem = "140g"
+params.neo_mem = "140g"
+params.neo_query_mem = "140g"
 params.neo_tmp_path = "/dev/shm"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
 params.dataload_home_inside_container = "/opt/grebi_dataload"
@@ -417,14 +419,13 @@ process create_neo {
     path("${params.subgraph}_neo4j")
 
     script:
-    def neo_mem = task.memory - 2.GB
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
     cp -r /opt/neo4j ${params.subgraph}_neo4j
     export NEO4J_HOME=\$(pwd)/${params.subgraph}_neo4j
     export NEO4J_db_recovery_fail_on_missing_files=false
-    bash ${params.dataload_home_inside_container}/06_create_neo_db/neo4j_import.sh ${neo_mem.toGiga()}G
+    bash ${params.dataload_home_inside_container}/06_create_neo_db/neo4j_import.sh ${params.neo_mem}
     """
 }
 
@@ -433,6 +434,7 @@ process run_materialised_queries {
     memory "8 GB" 
     time "48h"
     cpus "8"
+    stageInMode "copy"
 
     publishDir "${params.out}", overwrite: true
 
@@ -451,6 +453,7 @@ process run_materialised_queries {
     set -Eeuo pipefail
     export NEO4J_HOME=${neo_db}
     export GREBI_SUBGRAPH=${params.subgraph}
+    export HEAP_SIZE=${params.neo_query_mem}
     mkdir query_results
     PYTHONUNBUFFERED=true python3 ${params.dataload_home_inside_container}/07_run_queries/run_queries.dockerpy ${query_yamls_path}
     """

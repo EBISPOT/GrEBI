@@ -28,6 +28,8 @@ struct Args {
 
 }
 
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 fn main() {
 
     let args = Args::parse();
@@ -134,7 +136,8 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         } else if key.eq("individuals") {
             read_entities(json, output_nodes, &datasource, "ols:Individual", defining_only, skip_obsolete);
         } else {
-            panic!();
+            eprintln!("Skipping unknown key in ontology: {}", key);
+            json.skip_value().unwrap();
         }
         if json.has_next().unwrap() {
             key = json.next_name().unwrap().to_string();
