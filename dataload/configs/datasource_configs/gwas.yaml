@@ -7,6 +7,5 @@ ingests:
     command: '
       grebi_ingest_gwas
           --datasource-name $GREBI_INGEST_DATASOURCE_NAME
-          --filename $GREBI_INGEST_FILENAME
-    '
+          --filename $GREBI_INGEST_FILENAME'
     

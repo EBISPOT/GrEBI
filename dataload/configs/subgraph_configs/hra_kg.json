@@ -30,7 +30,8 @@
     "mondo:0000001",
     "efo:0000408",
     "chebi:36080",
-    "chebi:24431"
+    "chebi:24431",
+    "biolink:ChemicalEntity"
   ],
   "additional_equivalence_groups": [
     [
