@@ -1,7 +1,7 @@
 name: HGNC
 enabled: true
 ingests:
-  - globs: ["00_fetch_data/hgnc/hgnc.json"]
+  - globs: ["dataload/00_fetch_data/hgnc/hgnc.json"]
     command: '
       grebi_transform_jsonl
           --json-rename-field hgnc_id:id
