@@ -1,7 +1,7 @@
 name: HGNC
 enabled: true
 ingests:
-  - globs: ["data/hgnc/hgnc.json"]
+  - globs: ["00_fetch_data/hgnc/hgnc.json"]
     command: '
       grebi_transform_jsonl
           --json-rename-field hgnc_id:id
@@ -13,5 +13,4 @@ ingests:
           --json-inject-value-prefix vega_id:vega:
           --json-inject-value-prefix ccds_id:ccds:
           --json-inject-value-prefix entrez_id:entrez:
-          --json-inject-value-prefix pubmed_id:pmid:
-    '
+          --json-inject-value-prefix pubmed_id:pmid:'

@@ -10,5 +10,4 @@ ingests:
           --exclude-objects-of-predicate "http://rdf.ebi.ac.uk/terms/chembl#hasDocument"
           --reif-pointer-predicate "http://semanticscience.org/resource/SIO_000008"
           --reif-predicate-predicate "http://www.w3.org/2000/01/rdf-schema#type"
-          --reif-value-predicate "http://semanticscience.org/resource/SIO_000300"
-    '
+          --reif-value-predicate "http://semanticscience.org/resource/SIO_000300"'

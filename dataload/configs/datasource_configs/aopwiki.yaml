@@ -5,5 +5,4 @@ ingests:
     command: '
       grebi_rdf2jsonl
           --rdf-type rdf_triples_turtle
-          --rdf-types-are-grebi-types
-    '
+          --rdf-types-are-grebi-types'

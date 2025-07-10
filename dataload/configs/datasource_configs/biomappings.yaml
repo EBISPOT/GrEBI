@@ -1,6 +1,6 @@
 name: Biomappings
 enabled: true
 ingests:
-  - globs: ["dataload/00_fetch_data/biomappings/mappings.tsv.gz"]
+  - globs: ["dataload/00_fetch_data/biomappings/biomappings.jsonl.gz"]
     command: '
       grebi_transform_jsonl --json-inject-key-prefix biomappings:'
