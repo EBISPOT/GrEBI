@@ -7,6 +7,9 @@ import json
 from datetime import datetime
 import sys
 
+neo_mem = os.environ['NEO_MEM']
+os.environ['JAVA_OPTS'] = f"--add-modules jdk.incubator.vector -Xms{neo_mem} -Xmx{neo_mem}"
+
 ret = os.system("neo4j start --verbose")
 if ret != 0:
     print("Neo4j did not start correctly. Exiting.")

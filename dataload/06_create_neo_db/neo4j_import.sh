@@ -1,7 +1,12 @@
 #!/bin/bash
 set -Eeuo pipefail
 
-MAX_MEM=$1
+NEO_MEM=$1
+
+export HEAP_SIZE=$NEO_MEM
+export JAVA_OPTS="--add-modules jdk.incubator.vector --add-opens=java.base/java.nio=ALL-UNNAMED -Xms$NEO_MEM -Xmx$NEO_MEM"
+export NEO4J_dbms_memory_transaction_total_max=0
+export NEO4J_dbms_memory_transaction_max=0
 
 function get_nodes {
     for f in ./neo_nodes_*
@@ -25,13 +30,12 @@ neo4j-admin database import full \
     --ignore-empty-strings=true \
     --array-delimiter="U+001F" \
     --threads=32 \
-    --max-off-heap-memory=$MAX_MEM \
+    --max-off-heap-memory=$NEO_MEM \
     --verbose \
     --read-buffer-size=256m
 
 sleep 5
 
-export HEAP_SIZE=$MAX_MEM
 neo4j start
 sleep 20
 

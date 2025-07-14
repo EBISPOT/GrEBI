@@ -13,5 +13,7 @@ FOR (n:GraphNode) ON n.`grebi:embeddingVector` OPTIONS { indexConfig: {
  `vector.similarity_function`: 'cosine'
 }}
 ;
-CALL db.awaitIndexes(10800)
+CALL db.awaitIndexes(86400)
 ;
+
+
