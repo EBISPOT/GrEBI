@@ -21,4 +21,5 @@ graph.db
 work
 __pycache__
 *.pyc
+.idea
 

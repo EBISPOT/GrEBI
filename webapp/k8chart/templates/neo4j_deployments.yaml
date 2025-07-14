@@ -65,6 +65,8 @@ spec:
               value: 12g
             - name: NEO4J_PLUGINS
               value: \["apoc"\]
+            - name: JAVA_OPTS
+              value: --add-modules jdk.incubator.vector
           ports:
             - containerPort: 7474
             - containerPort: 7687
@@ -135,6 +137,8 @@ spec:
               value: 4g
             - name: NEO4J_PLUGINS
               value: \["apoc"\]
+            - name: JAVA_OPTS
+              value: --add-modules jdk.incubator.vector
           ports:
             - containerPort: 7474
             - containerPort: 7687

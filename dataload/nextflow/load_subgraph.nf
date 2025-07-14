@@ -389,7 +389,7 @@ process prepare_solr {
 process create_neo_ids_csv {
     cache "lenient"
     memory "4 GB" 
-    time "8h"
+    time "48h"
     cpus "8"
 
     input:
@@ -453,7 +453,7 @@ process run_materialised_queries {
     set -Eeuo pipefail
     export NEO4J_HOME=${neo_db}
     export GREBI_SUBGRAPH=${params.subgraph}
-    export HEAP_SIZE=${params.neo_query_mem}
+    export NEO_MEM=${params.neo_query_mem}
     mkdir query_results
     PYTHONUNBUFFERED=true python3 ${params.dataload_home_inside_container}/07_run_queries/run_queries.dockerpy ${query_yamls_path}
     """
