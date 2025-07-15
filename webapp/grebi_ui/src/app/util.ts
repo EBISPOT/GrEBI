@@ -85,6 +85,9 @@ export function joinSearchParams(a:URLSearchParams, b?:URLSearchParams):URLSearc
   let res = new URLSearchParams(a.toString())
   if(b) {
     for (let p of b) {
+      if(res.has(p[0])) {
+        res.delete(p[0])
+      }
       res.append(p[0], p[1])
     }
   }

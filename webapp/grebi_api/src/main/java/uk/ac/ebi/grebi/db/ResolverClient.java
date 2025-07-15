@@ -2,6 +2,7 @@
 package uk.ac.ebi.grebi.db;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,7 @@ public class ResolverClient {
         HttpPost request = new HttpPost(resolverHost + "/" + subgraph + "/resolve");
         request.setEntity(new StringEntity(gson.toJson(ids), ContentType.APPLICATION_JSON));
 
-//        System.out.println("calling resolver at " + resolverHost + "/resolve" + " with " + gson.toJson(ids));
+    //    System.out.println("calling resolver at " + resolverHost + "/" + subgraph + "/resolve" + " with " + gson.toJson(ids));
 
         try {
             HttpResponse response = client.execute(request);
@@ -75,7 +76,8 @@ public class ResolverClient {
                 System.out.println("Resolved " + ids.size() + " ids in " + timer.stop().toString());
 
                 String json = EntityUtils.toString(entity);
-//                System.out.println("response was " + json);
+
+            //    System.out.println("response was " + json);
                 return gson.fromJson(json, Map.class);
             } else {
                 // Handle empty response

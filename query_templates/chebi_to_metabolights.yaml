@@ -1,0 +1,25 @@
+title: Metabolights studies for a chemical 
+description: Given a chemical, find all Metabolights studies that reference it as a metabolite
+subgraphs:
+  - ebi_monarch_xspecies
+topics:
+  - chebi
+  - metabolights
+  - metabolomics
+cypher_match_fragment: |-
+  MATCH (chemical:`biolink:ChemicalEntity`)-[:sourceId]->(:Id { id: $chemical_id })
+  MATCH (study:`metabolights:Study`)-[:`metabolights:ref`]->(chemical)
+cypher_return_fragment: |-
+  RETURN study.`grebi:nodeId` AS study
+cypher_count_fragment: |-
+  RETURN count(*) AS count
+parameters:
+  - param_id: chemical_id
+    param_name: Chemical
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'biolink:ChemicalEntity'
+result_columns:
+  - column_id: study
+    column_type: GraphNodeId
+

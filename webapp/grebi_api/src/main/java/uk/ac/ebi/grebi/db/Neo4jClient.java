@@ -31,7 +31,12 @@ public class Neo4jClient {
 
     public Session getSession() {
 
-        return getDriver().session(SessionConfig.forDatabase("neo4j"));
+        return getDriver().session(
+            SessionConfig.builder()
+                .withDatabase("neo4j")
+                .withDefaultAccessMode(AccessMode.READ)
+                .build()
+        );
 
     }
 

@@ -10,7 +10,7 @@ import HelpIcon from '@mui/icons-material/Help';
 import InfoIcon from '@mui/icons-material/Info';
 import DownloadIcon from '@mui/icons-material/Download';
 import TravelExplore from '@mui/icons-material/TravelExplore';
-import { FeaturedPlayList, LibraryBooks, ManageSearch, Science, ViewList } from "@mui/icons-material";
+import { FeaturedPlayList, Hub, LibraryBooks, ManageSearch, Polyline, Science, Search, Share, ViewList } from "@mui/icons-material";
 
 
 export default function EbiHeader({ section }: { section?: string }) {
@@ -57,23 +57,38 @@ export default function EbiHeader({ section }: { section?: string }) {
                 }`}
               >
                 <Stack alignItems="center" direction="row" gap={1}>
-                  <TravelExplore />
+                  <Hub />
                   Explore
                 </Stack>
               </li>
             </Link>
-            <Link to="/results">
+            <Link to="/queries">
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
-                  section === "ontologies"
+                  section === "queries"
+                    ? " bg-opacity-30 bg-neutral-500"
+                    : "hover:bg-opacity-50 hover:bg-neutral-500 "
+                }`}
+              >
+                <Stack alignItems="center" direction="row" gap={1}>
+                  <TravelExplore />
+                  Queries
+                </Stack>
+              </li>
+            </Link>
+            <Link to="/tables">
+              <li
+                role="menuitem"
+                className={`px-4 py-3 ${
+                  section === "tables"
                     ? " bg-opacity-30 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500 "
                 }`}
               >
                 <Stack alignItems="center" direction="row" gap={1}>
                   <ManageSearch />
-                  Results
+                  Tables
                 </Stack>
               </li>
             </Link>

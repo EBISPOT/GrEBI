@@ -40,7 +40,7 @@ spec:
             - mountPath: "/data"
               name: {{ .Release.Name }}-resolver
           command: ["/bin/bash", "-c"]
-          args: ["echo Synchronizing data... && rm -rf $GREBI_SQLITE_SEARCH_PATH/* && cp -r /data_import/sqlite/* $GREBI_SQLITE_SEARCH_PATH/ && echo Done && java -jar /opt/target/grebi_resolver_service-1.0-SNAPSHOT-jar-with-dependencies.jar"]
+          args: ["echo Synchronizing data... && mkdir -p $GREBI_SQLITE_SEARCH_PATH && rm -rf $GREBI_SQLITE_SEARCH_PATH/* && cp -r /data_import/sqlite/* $GREBI_SQLITE_SEARCH_PATH/ && echo Done && java -jar /opt/target/grebi_resolver_service-1.0-SNAPSHOT-jar-with-dependencies.jar"]
           imagePullPolicy: Always
           resources:
             requests:

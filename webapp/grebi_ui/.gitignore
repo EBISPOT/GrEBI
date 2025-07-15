@@ -31,3 +31,7 @@ dist/bundle.js
 dist/bundle.js.map
 dist/styles.css
 
+.env.ebi
+.env.exposomekg
+
+

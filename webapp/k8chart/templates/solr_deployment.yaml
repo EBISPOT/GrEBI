@@ -55,6 +55,8 @@ spec:
           env:
             - name: SOLR_HOME
               value: /data/solr
+            - name: JAVA_OPTS
+              value: --add-modules jdk.incubator.vector
           ports:
             - containerPort: 8983
 

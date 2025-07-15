@@ -2,6 +2,10 @@ package uk.ac.ebi.grebi.repo;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+
 import org.neo4j.driver.EagerResult;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Value;
@@ -9,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import uk.ac.ebi.grebi.GrebiApi;
 import uk.ac.ebi.grebi.db.Neo4jClient;
 import uk.ac.ebi.grebi.db.ResolverClient;
+import uk.ac.ebi.grebi.repo.QueryTemplate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -18,13 +23,12 @@ import java.util.stream.StreamSupport;
 
 public class GrebiNeoRepo {
 
-    static final String[] NEO4J_HOSTS =
-            System.getenv("GREBI_NEO4J_HOSTS").split(";");
-
     public static String[] getNeo4jHosts() {
-        if(NEO4J_HOSTS != null)
-            return NEO4J_HOSTS;
-        return List.of("bolt://localhost:7687/").toArray(new String[0]);
+        var env = System.getenv("GREBI_NEO4J_HOSTS");
+        if(env != null)
+            return env.split(";");
+        else
+            return List.of("bolt://localhost:7687/").toArray(new String[0]);
     }
 
     Map<String, Neo4jClient> subgraphToClient = new HashMap<>();
@@ -115,6 +119,118 @@ public class GrebiNeoRepo {
         res.put("grebi:type", StreamSupport.stream(value.asNode().labels().spliterator(), false).collect(Collectors.toList()));
         return res;
     }
+
+    public Page<Map<String,Object>> runQueryFromTemplate(
+        String subgraph, 
+        QueryTemplate template,
+        Map<String, List<String>> params,
+        Pageable pageable
+        ) {
+
+        if(!template.subgraphs.contains(subgraph)) {
+            throw new IllegalArgumentException("Query template " + template.id + " is not available for subgraph " + subgraph);
+        }
+
+        if(template.parameters.size() != params.size() || 
+              !template.parameters.stream().allMatch(p -> params.containsKey(p.param_id))) {
+                throw new IllegalArgumentException("Incorrect parameters for query template " + template.id + "; expected parameters: " +
+                    template.parameters.stream().map(p -> p.param_id).collect(Collectors.joining(", ")));
+        }
+
+        Map<String, Object> paramMap = new HashMap<>();
+        for (QueryTemplate.Parameter p : template.parameters) {
+            var values = params.get(p.param_id);
+            if(p.param_type.equals("SourceId")) {
+                if(values == null || values.isEmpty()) {
+                    throw new IllegalArgumentException("SourceId param " + p.param_id + " cannot be empty");
+                }
+                if(values.size() > 1) {
+                    throw new IllegalArgumentException("SourceId param " + p.param_id + " cannot have multiple values");
+                }
+                var nodeId = values.get(0);
+                paramMap.put(p.param_id, nodeId);
+            } else {
+                throw new IllegalArgumentException("Unknown parameter type " + p.param_type + " for parameter " + p.param_id);
+            }
+        }
+
+        String query =
+            template.cypher_match_fragment.trim()
+                + "\n" + template.cypher_return_fragment.trim()
+                + "\nSKIP " + pageable.getOffset()
+                + "\nLIMIT " + pageable.getPageSize();
+
+        String countQuery = template.cypher_match_fragment.trim() + "\n" + template.cypher_count_fragment.trim();
+
+        System.err.println("Running query: " + query + "\nWith parameters: " + paramMap + "\nCount query: " + countQuery);
+
+        EagerResult res = getClient(subgraph).getDriver().executableQuery(query)
+            .withParameters(paramMap)
+            .withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
+
+        EagerResult countRes = getClient(subgraph).getDriver().executableQuery(countQuery)
+            .withParameters(paramMap)
+            .withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
+        
+        if(countRes.records().isEmpty() || countRes.records().get(0).get("count") == null) {
+            throw new RuntimeException("Count query did not return a count");
+        }
+
+        var count = countRes.records().get(0).get("count").asInt();
+        if(count == 0) {
+            return new org.springframework.data.domain.PageImpl<>(List.of(), pageable, 0);
+        }
+
+
+        List<QueryTemplate.ResultColumn> columns = template.result_columns;
+
+        var resolved = resolver.resolveToMap(
+            subgraph,
+            res.records().stream()
+                .flatMap(record -> columns.stream()
+                    .filter(column -> column.column_type.equals("GraphNodeId"))
+                    .map(column -> {
+                        var id = record.get(column.column_id).asString();
+
+                        // TODO ?? 
+                        if(id.startsWith(subgraph + ":")) {
+                            id = id.substring(subgraph.length() + 1);
+                        }
+
+                        return id;
+                    })
+                )
+                .collect(Collectors.toSet())
+        );
+
+        var results =  res.records().stream().map(record -> {
+            Map<String, Object> row = new HashMap<>();
+            for (QueryTemplate.ResultColumn column : columns) {
+                String columnId = column.column_id;
+                if (column.column_type.equals("GraphNodeId")) {
+                    String nodeId = record.get(columnId).asString();
+
+                    // TODO ??
+                    if(nodeId.startsWith(subgraph + ":")) {
+                        nodeId = nodeId.substring(subgraph.length() + 1);
+                    }
+
+                    row.put(columnId, resolved.get(nodeId));
+                } else {
+                    row.put(columnId, record.get(columnId).asObject());
+                }
+            }
+            return row;
+        }).collect(Collectors.toList());
+
+        return new PageImpl<Map<String, Object>>(
+            results,
+            pageable,
+            count
+        );
+
+    }
+
 
 
 }

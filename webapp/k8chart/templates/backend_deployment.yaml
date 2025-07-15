@@ -14,10 +14,18 @@ spec:
       labels:
         app: {{ .Release.Name }}-backend
     spec:
+      volumes:
+        - name: {{ .Release.Name }}-import
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-import-pvc
       containers:
         - name: web
           image: ghcr.io/ebispot/grebi_api:{{.Values.imageTag}}
           imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: "/data_import"
+              name: {{ .Release.Name }}-import
+              readOnly: true
           ports:
             - containerPort: 8090
           resources:
@@ -40,4 +48,6 @@ spec:
               value: /kg
             - name: JDK_JAVA_OPTIONS
               value: "-XX:InitialRAMPercentage=60.0 -XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=80.0"
+            - name: GREBI_QUERY_TEMPLATES_PATH
+              value: /data_import/query_templates
               

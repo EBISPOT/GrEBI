@@ -29,6 +29,7 @@ public class GrebiMetadataSvc {
         }
 
         Javalin app = Javalin.create(config -> {
+            config.http.gzipOnlyCompression();
         }).start("0.0.0.0", 8081);
 
         app.get("/", ctx -> {

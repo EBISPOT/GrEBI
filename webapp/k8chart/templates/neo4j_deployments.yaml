@@ -44,7 +44,7 @@ spec:
             - mountPath: "/data"
               name: {{ .Release.Name }}-neo4j
           command: ["/bin/bash", "-c"]
-          args: ["echo Synchronizing data... && rm -rf $NEO4J_dbms_directories_data/* && cp -r /data_import/neo4j/{{.Values.subgraph1}}_neo4j/ $NEO4J_dbms_directories_data/ && echo Done && tini -g -- /startup/docker-entrypoint.sh neo4j"]
+          args: ["echo Synchronizing data... && mkdir -p $NEO4J_server_directories_data && rm -rf $NEO4J_server_directories_data/* && cp -r /data_import/neo4j/{{.Values.subgraph1}}_neo4j/data/* $NEO4J_server_directories_data/ && echo Done && tini -g -- /startup/docker-entrypoint.sh neo4j"]
           resources:
             requests:
               memory: 30Gi
@@ -53,7 +53,7 @@ spec:
               memory: 30Gi
               cpu: 2
           env:
-            - name: NEO4J_dbms_directories_data
+            - name: NEO4J_server_directories_data
               value: /data/{{.Values.subgraph1}}_neo4j/data
             - name: NEO4J_AUTH
               value: none
@@ -64,7 +64,7 @@ spec:
             - name: NEO4J_server_memory_pagecache_size
               value: 12g
             - name: NEO4J_PLUGINS
-              value: \["apoc"\]
+              value: "[\"apoc\"]"
             - name: JAVA_OPTS
               value: --add-modules jdk.incubator.vector
           ports:
@@ -116,7 +116,7 @@ spec:
             - mountPath: "/data"
               name: {{ .Release.Name }}-neo4j
           command: ["/bin/bash", "-c"]
-          args: ["echo Synchronizing data... && rm -rf $NEO4J_dbms_directories_data/* && cp -r /data_import/neo4j/{{.Values.subgraph2}}_neo4j/ $NEO4J_dbms_directories_data/ && echo Done && tini -g -- /startup/docker-entrypoint.sh neo4j"]
+          args: ["echo Synchronizing data... && mkdir -p $NEO4J_server_directories_data && rm -rf $NEO4J_server_directories_data/* && cp -r /data_import/neo4j/{{.Values.subgraph2}}_neo4j/data/* $NEO4J_server_directories_data/ && echo Done && tini -g -- /startup/docker-entrypoint.sh neo4j"]
           resources:
             requests:
               memory: 8Gi
@@ -125,7 +125,7 @@ spec:
               memory: 8Gi
               cpu: 2
           env:
-            - name: NEO4J_dbms_directories_data
+            - name: NEO4J_server_directories_data
               value: /data/{{.Values.subgraph2}}_neo4j
             - name: NEO4J_AUTH
               value: none
@@ -136,7 +136,7 @@ spec:
             - name: NEO4J_server_memory_pagecache_size
               value: 4g
             - name: NEO4J_PLUGINS
-              value: \["apoc"\]
+              value: "[\"apoc\"]"
             - name: JAVA_OPTS
               value: --add-modules jdk.incubator.vector
           ports:

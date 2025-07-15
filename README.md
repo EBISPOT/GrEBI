@@ -1,6 +1,6 @@
 # GrEBI (Graphs@EBI)
 
-HPC pipeline to aggregate knowledge graphs from [EMBL-EBI resources](https://www.ebi.ac.uk/services/data-resources-and-tools), the [MONARCH Initiative KG](https://monarch-initiative.github.io/monarch-ingest/Sources/), [ROBOKOP](https://robokop.renci.org/), [Ubergraph](https://github.com/INCATools/ubergraph), and other sources into large (up to multi-terabyte) transient Neo4j+Solr databases, perform queries, and materialise result tables for dissemination.
+HPC pipeline using ontologies and LLM embeddings to (a) aggregate knowledge graphs from [EMBL-EBI resources](https://www.ebi.ac.uk/services/data-resources-and-tools), the [MONARCH Initiative KG](https://monarch-initiative.github.io/monarch-ingest/Sources/), [ROBOKOP](https://robokop.renci.org/), [Ubergraph](https://github.com/INCATools/ubergraph), and other sources into large (up to multi-terabyte) transient Neo4j+Solr databases; (b) perform queries; and (c) materialise result tables for dissemination.
 
 The GrEBI pipeline is being applied to a number of projects including the [International Mouse Phenotyping Consortium (IMPC)](https://www.mousephenotype.org/) knowledge graph and the [EMBL Human Ecosystems Transversal Theme (HETT)](https://www.embl.org/about/info/human-ecosystems/) ExposomeKG.
 
@@ -89,7 +89,7 @@ singularity run \
 --env NEO4J_dbms_security_procedures_unrestricted=apoc.* \
 --env TINI_SUBREAPER=true \
 --env NEO4J_PLUGINS=[\"apoc\"] \
-docker://ghcr.io/ebispot/grebi_neo4j_with_extras:5.18.0
+docker://ghcr.io/ebispot/grebi_neo4j_with_extras:2025.03.0-community
 ```
 
 Now you should be able to connect to Neo4j at the host shown earlier by `hostname`.

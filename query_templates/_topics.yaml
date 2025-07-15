@@ -1,0 +1,16 @@
+topics:
+  - id: chebi
+    name: ChEBI
+    type: Resource
+    description: Chemical Entities of Biological Interest (ChEBI) is a freely available dictionary of molecular entities focused on "small" chemical compounds.
+    url: https://www.ebi.ac.uk/chebi/
+  - id: metabolights
+    name: ChEBI
+    type: Resource
+    description: MetaboLights is a database for Metabolomics experiments and derived information. The database is cross-species, cross-technique and covers metabolite structures and their reference spectra as well as their biological roles, locations and concentrations, and experimental data from metabolic experiments. MetaboLights is the recommended Metabolomics repository for a number of leading journals.
+    url: https://www.ebi.ac.uk/metabolights/
+  - id: metabolomics
+    name: Metabolomics
+    type: Domain
+
+  

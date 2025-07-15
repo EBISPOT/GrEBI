@@ -18,6 +18,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.repo.GrebiNeoRepo;
+import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
 import uk.ac.ebi.grebi.db.GrebiSolrQuery;
 import uk.ac.ebi.grebi.db.ResolverClient;
 import uk.ac.ebi.grebi.db.MetadataClient;
@@ -32,6 +33,7 @@ public class GrebiApi {
         GrebiNeoRepo neo = null;
         GrebiSolrRepo solr = null;
         GrebiMetadataRepo metadata= null;
+        GrebiQueryTemplatesRepo queryTemplates = new GrebiQueryTemplatesRepo();
 
         Set<String> sqliteSubgraphs = null;
         Set<String> solrSubgraphs = null;
@@ -90,18 +92,21 @@ public class GrebiApi {
 
         if(neo == null) {
             System.out.println("Neo4j is unavailable; some graph query API endpoints will be disabled");
+        } else {
+            System.out.println("Neo4j is available");
         }
 
         System.out.println("Found subgraphs: " + String.join(",", solrSubgraphs));
 
-        run(neo, solr, metadata, solrSubgraphs);
+        run(neo, solr, metadata, solrSubgraphs, queryTemplates);
     }
 
     static void run(
         final GrebiNeoRepo neo,
         final GrebiSolrRepo solr,
         final GrebiMetadataRepo metadata,
-        final Set<String> subgraphs
+        final Set<String> subgraphs,
+        final GrebiQueryTemplatesRepo queryTemplates
     ) {
 
         var stats = neo != null ? neo.getStats() : null;
@@ -191,6 +196,40 @@ public class GrebiApi {
                     var res = solr.searchResultsPaginated(ctx.pathParam("subgraph"), ctx.pathParam("queryid"), q, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
+                })
+                .get("/api/v1/subgraphs/{subgraph}/query_templates", ctx -> {
+                    var subgraph = ctx.pathParam("subgraph");
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(queryTemplates.queryTemplates.stream()
+                            .filter(qt -> qt.subgraphs == null || qt.subgraphs.contains(subgraph))
+                            .collect(Collectors.toList())));
+                })
+                .get("/api/v1/subgraphs/{subgraph}/query/{templateId}", ctx -> {
+                    var subgraph = ctx.pathParam("subgraph");
+                    var templateId = ctx.pathParam("templateId");
+                    var template = queryTemplates.queryTemplates.stream()
+                            .filter(qt -> qt.id.equals(templateId))
+                            .findFirst()
+                            .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found"));
+
+                    ctx.contentType("application/json");
+
+                    var page_num = ctx.queryParam("page");
+                    if(page_num == null) {
+                        page_num = "0";
+                    }
+                    var size = ctx.queryParam("size");
+                    if(size == null) {
+                        size = "10";
+                    }
+                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
+                    var res = neo.runQueryFromTemplate(subgraph, template, ctx.queryParamMap(), page);
+
+                    ctx.result(
+                        gson.toJson(
+                            res
+                        )
+                    );
                 })
                 .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");
@@ -369,6 +408,12 @@ public class GrebiApi {
                     var res = solr.autocomplete(ctx.pathParam("subgraph"), ctx.queryParam("q"));
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
+                })
+                .exception(Exception.class, (e, ctx) -> {
+                    ctx.status(500);
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(Map.of("error", e.getMessage())));
+                    e.printStackTrace();
                 })
                 .start("0.0.0.0", 8090);
     }

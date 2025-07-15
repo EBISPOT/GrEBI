@@ -1,7 +1,10 @@
 
 type ReqParams = {[k:string]:(string|string[])}|undefined 
 
-function buildSearchParams(reqParams:ReqParams):string {
+function buildSearchParams(reqParams:ReqParams|URLSearchParams):string {
+  if( reqParams instanceof URLSearchParams) {
+    return reqParams.toString()
+  }
   let params = new URLSearchParams()
   for(let key in reqParams) {
     let val = reqParams[key]
@@ -18,7 +21,7 @@ function buildSearchParams(reqParams:ReqParams):string {
 
 export async function request(
   path: string,
-  reqParams:ReqParams,
+  reqParams:ReqParams|URLSearchParams,
   init?: RequestInit | undefined,
   apiUrl?: string
 ): Promise<any> {
@@ -64,7 +67,7 @@ export class Page<T> {
 
 export async function getPaginated<ResType>(
   path: string,
-  reqParams?: ReqParams,
+  reqParams?: ReqParams|URLSearchParams,
   apiUrl?: string
 ): Promise<Page<ResType>> {
   const res = await get<any>(path, reqParams, apiUrl);
@@ -79,7 +82,7 @@ export async function getPaginated<ResType>(
   );
 }
 
-export async function get<ResType>(path: string, reqParams?:ReqParams, apiUrl?: string): Promise<ResType> {
+export async function get<ResType>(path: string, reqParams?:ReqParams|URLSearchParams, apiUrl?: string): Promise<ResType> {
   return request(path, reqParams, undefined, apiUrl);
 }
 

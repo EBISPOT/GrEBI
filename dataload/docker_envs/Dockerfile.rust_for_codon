@@ -1,5 +1,9 @@
 
 FROM rust:1.79-buster as builder
 
-RUN apt-get update && apt-get install -y cmake clang
+RUN sed -i 's|http://deb.debian.org/debian|http://archive.debian.org/debian|g' /etc/apt/sources.list && \
+    sed -i 's|http://deb.debian.org/debian-security|http://archive.debian.org/debian-security|g' /etc/apt/sources.list && \
+    apt-get update
+
+RUN apt-get install -y cmake clang
 

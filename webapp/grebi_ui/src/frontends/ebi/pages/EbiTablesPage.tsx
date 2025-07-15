@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Link, Typography } from "@mui/material";
 import ResultsTable from "../../../components/matq/ResultsTable";
 
-export default function EbiResultsPage() {
+export default function EbiTablesPage() {
 
   let params = useParams();
   let [searchParams, setSearchParams] = useSearchParams();
@@ -18,7 +18,7 @@ export default function EbiResultsPage() {
 
     return (
         <div>
-        <EbiHeader section="results" />
+        <EbiHeader section="tables" />
         <main className="container mx-auto px-4 h-fit pt-2">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
             <Typography variant="h4">{queryid}</Typography>
