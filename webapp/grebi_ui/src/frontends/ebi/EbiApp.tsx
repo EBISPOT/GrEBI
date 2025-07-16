@@ -16,7 +16,7 @@ import EbiNodePage from "./pages/EbiNodePage";
 import EbiSearchPage from "./pages/EbiSearchPage";
 import EbiTablesPage from "./pages/EbiTablesPage";
 import EbiTablesHomePage from "./pages/EbiTablesHomePage";
-import EbiQueriesPage from "./pages/EbiQueriesPage";
+import EbiQueryPage from "./pages/EbiQueryPage";
 import EbiQueriesHomePage from "./pages/EbiQueriesHomePage";
 
 const theme = createTheme({
@@ -56,7 +56,7 @@ class EbiApp extends React.Component {
 
 
           <Route path={`/subgraphs/:subgraph/queries`} element={<EbiQueriesHomePage />} />
-          <Route path={`/subgraphs/:subgraph/queries/:queryid`} element={<EbiQueriesPage />} />
+          <Route path={`/subgraphs/:subgraph/queries/:queryid`} element={<EbiQueryPage />} />
 
 
 

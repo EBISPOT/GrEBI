@@ -95,6 +95,7 @@ export default function SearchBox({
             size: "5",
             lang: "en",
             exactMatch: exact.toString(),
+            resolve: "false",
             includeObsoleteEntries: obsolete.toString(),
             ...(collectionId ? { collectionId } : {}),
             ...((canonical ? { isDefiningcollection: true } : {}) as any),

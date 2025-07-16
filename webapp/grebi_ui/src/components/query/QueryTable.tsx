@@ -10,12 +10,8 @@ import { QueryTemplate } from "../../model/QueryTemplate";
 import QueryTopic from "../../model/QueryTopic";
 import hardcodedNodeTypes from "../../hardcoded_node_types.json";
 import NodeTypeChip from "../NodeTypeChip";
+import addLinksToText from "../../addLinksToText";
 import * as Muicon from "@mui/icons-material";
-
-function DynamicIcon({ iconName }: { iconName: string }) {
-    const IconComponent = Muicon[iconName as keyof typeof Muicon];
-    return IconComponent ? <IconComponent fontSize="small" /> : null;
-}
 
 export default function QueryTable({
     subgraph
@@ -51,9 +47,9 @@ export default function QueryTable({
                     addColumnsFromData={false}
                     defaultSelector={(row,key)=>row[key]}
                     columns={cols}
-                    // onSelectRow={(row) => {
-                    //     navigate(`/subgraphs/${subgraph}/results/${row['id']}`)
-                    // }}
+                    onSelectRow={(row) => {
+                        navigate(`/subgraphs/${subgraph}/queries/${row['id']}`)
+                    }}
                     />
 
 }
@@ -76,8 +72,7 @@ function getColumns(subgraph:string|undefined, topics:QueryTopic[]|null) {
                         return <Chip key={topic.id} label={topic.name} />
                     })}
                 </Stack>
-            },
-            sortable:true
+            }
         },
         {
             id:"title",
@@ -85,15 +80,14 @@ function getColumns(subgraph:string|undefined, topics:QueryTopic[]|null) {
             selector:(row:any,key:string)=>{
                 return addLinksToText(row[key], subgraph)
             },
-            sortable:true
+            className: "group-hover:text-blue-600 group-hover:underline"
         },
         {
             id:"description",
             name:"Description",
             selector:(row:any,key:string)=>{
                 return addLinksToText(row[key], subgraph)
-            },
-            sortable:true
+            }
         },
         {
             id:"examples",
@@ -105,42 +99,15 @@ function getColumns(subgraph:string|undefined, topics:QueryTopic[]|null) {
                 }
                 return <Stack direction="column">
                     {examples.map((e:any) => {
-                        return <Link key={e} href={`/subgraphs/${subgraph}/query/${row.id}`} underline="hover">
+                        // encode example params as a query string
+                        let exampleParams = new URLSearchParams(e.params).toString();
+                        return <Link key={e} href={`/subgraphs/${subgraph}/queries/${row.id}?${exampleParams}`} underline="hover">
                             <Muicon.Search fontSize="small" sx={{ verticalAlign: 'middle' }} />
                             {e.title}
                         </Link>
                     })}
                 </Stack>
-            },
-            sortable:true
+            }
         }
     ]
-}
-
-function addLinksToText(text:string, subgraph:string|undefined) {
-    if(!subgraph)
-        return text;
-
-    let curieRegex = /\b([a-z]+:[a-z0-9_]+)\b/gi;
-
-    return text.split(curieRegex).map((part, index) => {
-        if(index % 2 === 0) {
-            return part; // Non-CURIE part
-        } else {
-            // CURIE part
-            let curie = part;
-            for(let nodeType of hardcodedNodeTypes) {
-                if(nodeType.types.indexOf(curie) !== -1) {
-                    return <span
-                className={`px-2 py-0.5 rounded-md text-xs uppercase font-bold ml-1`} style={{backgroundColor:nodeType.bgColor}} title={nodeType.longName}>
-
-{ nodeType.icon &&
-                    <DynamicIcon iconName={nodeType.icon} /> }
-                    
-                    {nodeType.longName}</span>
-                }
-            }
-            return curie;
-        }
-    });
 }

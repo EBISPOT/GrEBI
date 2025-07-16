@@ -1405,3 +1405,12 @@ filter: gray;
 .grebi-color {
   color: var(--grebi-base-color) !important;
 }
+
+.grebi-row-highlight {
+  border-left: 2px solid transparent;
+  box-sizing: border-box;
+}
+
+.grebi-row-highlight:hover {
+  border-left: 2px solid var(--grebi-base-color) !important;
+}

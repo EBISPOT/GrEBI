@@ -8,8 +8,9 @@ export interface QueryTemplate {
   cypher_match_fragment: string;
   cypher_return_fragment: string;
   cypher_count_fragment: string;
-  parameters: Parameter[];
+  params: Parameter[];
   result_columns: ResultColumn[];
+  examples: Example[];
 }
 
 export interface Parameter {
@@ -24,3 +25,8 @@ export interface ResultColumn {
   column_type: string;
 }
 
+
+export interface Example {
+    title: string;
+    params: Record<string, any>;
+}

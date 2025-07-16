@@ -47,8 +47,28 @@ public class GrebiSolrRepo {
         return solrClient.autocomplete(subgraph, q);
     }
 
-    public GrebiFacetedResultsPage<Map<String, Object>> searchNodesPaginated(String subgraph, GrebiSolrQuery query, Pageable pageable) {
-        return resolveNodeIds(subgraph, solrClient.searchSolrPaginated("grebi_nodes_" + subgraph, query, pageable));
+    public GrebiFacetedResultsPage<Map<String,Object>> mapSolrFields(GrebiFacetedResultsPage<SolrDocument> solrDocs) {
+        return solrDocs.map(doc -> {
+            Map<String, Object> map = new LinkedTreeMap<>();
+            for (String fieldName : doc.getFieldNames()) {
+                if(fieldName.startsWith("str_")) {
+                    continue;
+                }
+                Object value = doc.getFieldValue(fieldName);
+                fieldName = fieldName.replace("__", ":");
+                if (value instanceof Collection) {
+                    map.put(fieldName, new ArrayList<>((Collection<?>) value));
+                } else {
+                    map.put(fieldName, value);
+                }
+            }
+            return map;
+        });
+    }
+
+    public GrebiFacetedResultsPage<Map<String, Object>> searchNodesPaginated(String subgraph, GrebiSolrQuery query, boolean resolve, Pageable pageable) {
+        var res = solrClient.searchSolrPaginated("grebi_nodes_" + subgraph, query, pageable);
+        return resolve ? resolveNodeIds(subgraph, res) : mapSolrFields(res);
     }
 
     public Map<String, Object> getFirstNode(String subgraph, GrebiSolrQuery query) {
