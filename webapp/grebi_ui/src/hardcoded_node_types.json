@@ -1,0 +1,76 @@
+[
+  {
+    "types": ["cheminf:DrugBank_identifier"],
+    "longName": "Drug",
+    "shortName": "Drug",
+    "bgColor": "rgb(186, 230, 253)"
+  },
+  {
+    "types": ["impc:MouseGene"],
+    "longName": "Gene",
+    "shortName": "Gene",
+    "bgColor": "rgb(190, 242, 100)"
+  },
+  {
+    "types": ["biolink:Gene"],
+    "longName": "Gene",
+    "shortName": "Gene",
+    "bgColor": "rgb(190, 242, 100)"
+  },
+  {
+    "types": ["biolink:ChemicalEntity"],
+    "longName": "Chemical",
+    "shortName": "Chemical",
+    "bgColor": "rgb(253, 230, 138)",
+    "icon": "Science"
+  },
+  {
+    "types": ["biolink:Disease"],
+    "longName": "Disease",
+    "shortName": "Disease",
+    "bgColor": "rgb(252, 165, 165)"
+  },
+  {
+    "types": ["gwas:SNP"],
+    "longName": "SNP",
+    "shortName": "SNP",
+    "bgColor": "rgb(191, 219, 254)"
+  },
+  {
+    "types": ["reactome:ReferenceDNASequence"],
+    "longName": "DNA",
+    "shortName": "DNA",
+    "bgColor": "rgb(190, 242, 100)"
+  },
+  {
+    "types": ["reactome:Person"],
+    "longName": "Person",
+    "shortName": "Person",
+    "bgColor": "rgb(203, 213, 225)"
+  },
+  {
+    "types": ["ols:Class"],
+    "longName": "Ontology Class",
+    "shortName": "Class",
+    "bgColor": "rgb(103, 232, 249)"
+  },
+  {
+    "types": ["ols:Property"],
+    "longName": "Ontology Property",
+    "shortName": "Property",
+    "bgColor": "rgb(203, 213, 225)"
+  },
+  {
+    "types": ["ols:Individual"],
+    "longName": "Ontology Individual",
+    "shortName": "Individual",
+    "bgColor": "rgb(103, 232, 249)"
+  },
+  {
+    "types": ["metabolights:Study"],
+    "longName": "Study",
+    "shortName": "Study",
+    "bgColor": "rgb(196, 181, 253)",
+    "icon": "Feed"
+  }
+]

@@ -13,8 +13,9 @@ public class QueryTemplate {
     public String cypher_match_fragment;
     public String cypher_return_fragment;
     public String cypher_count_fragment;
-    public List<Parameter> parameters;
+    public List<Parameter> params;
     public List<ResultColumn> result_columns;
+    public List<Example> examples;
 
     public static class Parameter {
         public String param_id;
@@ -26,6 +27,10 @@ public class QueryTemplate {
     public static class ResultColumn {
         public String column_id;
         public String column_type;
+    }
+    public static class Example {
+        public String title;
+        public Map<String, String> params;
     }
 
 }

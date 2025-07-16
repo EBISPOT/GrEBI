@@ -62,7 +62,7 @@ export default function EkgNodePage() {
         <SearchBox subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH} />
         <div className="text-center pb-5">
         <Typography variant="h5">{pageTitle} {
-          node.extractType()?.long && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.long}</span>}</Typography>
+          node.extractType()?.longName && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.longName}</span>}</Typography>
         </div>
         <Typography className="text-center pb-3">{pageDesc}</Typography>
         <Grid container spacing={1} direction="column">

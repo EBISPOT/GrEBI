@@ -13,7 +13,7 @@ export default async function getExposureLinksTabs(node:GraphNode):Promise<Links
     let type = node.extractType()
     let metadata_promises:any = []
 
-    if(type?.short === 'Gene') {
+    if(type?.shortName === 'Gene') {
         metadata_promises.push(getGeneLinksTabs(node))
     }
 

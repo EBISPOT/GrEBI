@@ -18,7 +18,7 @@ export default function EbiQueriesPage() {
 
     return (
         <div>
-        <EbiHeader section="queries" />
+        <EbiHeader section="queries" subgraph={subgraph} />
         <main className="container mx-auto px-4 h-fit pt-2">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
             <Typography variant="h4">{queryid}</Typography>

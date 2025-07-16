@@ -3,6 +3,8 @@ import PropVal from "./PropVal";
 import { pickBestDisplayName, pickWorstDisplayName, readabilityScore } from "../app/util";
 import encodeNodeId from "../encodeNodeId";
 
+import hardcodedNodeTypes from "../hardcoded_node_types.json";
+
 export default class GraphNodeRef {
 
     props:any
@@ -76,44 +78,17 @@ export default class GraphNodeRef {
     }
 
 
-    extractType():{long:string,short:string}|undefined {
+    extractType():{longName:string,shortName:string}|undefined {
 
         let types:string[] = PropVal.arrFrom(this.props['grebi:type']).map(t => t.value)
 
-        if(types.indexOf("cheminf:DrugBank_identifier") !== -1) {
-            return {long:'Drug',short:'Drug'}
+        for(let ourType of types) {
+            for(let knownType of hardcodedNodeTypes) {
+                if(knownType.types.indexOf(ourType) !== -1) {
+                    return knownType
+                }
+            }
         }
-        if(types.indexOf('impc:MouseGene') !== -1) {
-            return {long:'Gene',short:'Gene'}
-        }
-        if(types.indexOf('biolink:Gene') !== -1) {
-            return {long:'Gene',short:'Gene'}
-        }
-        if(types.indexOf('biolink:ChemicalEntity') !== -1) {
-            return {long:'Chemical',short:'Chemical'}
-        }
-        if(types.indexOf('biolink:Disease') !== -1) {
-            return {long:'Disease',short:'Disease'}
-        }
-        if(types.indexOf('gwas:SNP') !== -1) {
-            return {long:'SNP',short:'SNP'}
-        }
-        if(types.indexOf('reactome:ReferenceDNASequence') !== -1) {
-            return {long:'DNA',short:'DNA'}
-        }
-        if(types.indexOf('reactome:Person') !== -1) {
-            return {long:'Person',short:'Person'}
-        }
-        if(types.indexOf('ols:Class') !== -1) {
-            return {long:'Ontology Class',short:'Class'}
-        }
-        if(types.indexOf('ols:Property') !== -1) {
-            return {long:'Ontology Property',short:'Property'}
-        }
-        if(types.indexOf('ols:Individual') !== -1) {
-            return {long:'Ontology Individual',short:'Individual'}
-        }
-
     }
 
 }

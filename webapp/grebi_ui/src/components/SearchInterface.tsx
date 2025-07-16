@@ -328,7 +328,7 @@ export default function SeachInterface(opts:{ subgraph:string }
                           {graphNode.getName()}
                         </Link>
                       { nodeType &&
-                      <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px',marginRight:'12px'}}>{nodeType.long}</span>
+                      <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px',marginRight:'12px'}}>{nodeType.longName}</span>
                     }
             <DatasourceTags dss={graphNode.getDatasources()} />
                     </div>

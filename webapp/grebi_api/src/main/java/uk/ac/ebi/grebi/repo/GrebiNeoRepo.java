@@ -131,14 +131,14 @@ public class GrebiNeoRepo {
             throw new IllegalArgumentException("Query template " + template.id + " is not available for subgraph " + subgraph);
         }
 
-        if(template.parameters.size() != params.size() || 
-              !template.parameters.stream().allMatch(p -> params.containsKey(p.param_id))) {
+        if(template.params.size() != params.size() || 
+              !template.params.stream().allMatch(p -> params.containsKey(p.param_id))) {
                 throw new IllegalArgumentException("Incorrect parameters for query template " + template.id + "; expected parameters: " +
-                    template.parameters.stream().map(p -> p.param_id).collect(Collectors.joining(", ")));
+                    template.params.stream().map(p -> p.param_id).collect(Collectors.joining(", ")));
         }
 
         Map<String, Object> paramMap = new HashMap<>();
-        for (QueryTemplate.Parameter p : template.parameters) {
+        for (QueryTemplate.Parameter p : template.params) {
             var values = params.get(p.param_id);
             if(p.param_type.equals("SourceId")) {
                 if(values == null || values.isEmpty()) {

@@ -130,6 +130,10 @@ public class GrebiApi {
                         ctx.result("{\"error\":\"neo4j is not available\"}");
                     }
                 })
+                .get("/api/v1/topics", ctx -> {
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(queryTemplates.queryTopics));
+                })
                 .get("/api/v1/subgraphs", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(subgraphs));

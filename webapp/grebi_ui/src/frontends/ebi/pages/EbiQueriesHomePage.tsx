@@ -3,6 +3,7 @@ import MaterialisedQueryTable from "../../../components/matq/MaterialisedQueryTa
 import EbiHeader from "../EbiHeader";
 import { useState } from "react";
 import { Link, Typography } from "@mui/material";
+import QueryTable from "../../../components/query/QueryTable";
 
 export default function EbiTablesHomePage() {
 
@@ -10,14 +11,25 @@ export default function EbiTablesHomePage() {
   let [searchParams, setSearchParams] = useSearchParams();
   let subgraph:string|undefined = params.subgraph
   let queryid:string|undefined = params.queryid
+
+  if(!subgraph) {
+    throw new Error("Subgraph is required");
+  }
   
     return (
         <div>
-        <EbiHeader section="queries" />
+        <EbiHeader
+            section="queries"
+            subgraph={subgraph}
+            showBreadcrumbs={true}
+        />
         <main className="container mx-auto px-4 h-fit pt-2">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
             <Typography variant="h4">Graph Queries</Typography>
-
+            <p>
+            Here a selection of query templates are provided, for which you can fill in the parameters to query the graph.
+            </p>
+            <QueryTable subgraph={subgraph} />
         </div>
         </main>
         </div>

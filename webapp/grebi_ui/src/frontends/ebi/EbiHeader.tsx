@@ -10,11 +10,19 @@ import HelpIcon from '@mui/icons-material/Help';
 import InfoIcon from '@mui/icons-material/Info';
 import DownloadIcon from '@mui/icons-material/Download';
 import TravelExplore from '@mui/icons-material/TravelExplore';
-import { FeaturedPlayList, Hub, LibraryBooks, ManageSearch, Polyline, Science, Search, Share, ViewList } from "@mui/icons-material";
+import { FeaturedPlayList, Hub, LibraryBooks, ManageSearch, Polyline, Science, Search, Share, SnippetFolder, TableChart, ViewList } from "@mui/icons-material";
+import SubgraphPicker from "../../components/SubgraphPicker";
 
 
-export default function EbiHeader({ section }: { section?: string }) {
-
+export default function EbiHeader({
+  section,
+  subgraph,
+  showBreadcrumbs
+}: {
+  section?: string,
+  subgraph: string,
+  showBreadcrumbs?: boolean,
+}) {
   return (
     <header
       className="bg-black bg-right bg-cover"
@@ -57,12 +65,12 @@ export default function EbiHeader({ section }: { section?: string }) {
                 }`}
               >
                 <Stack alignItems="center" direction="row" gap={1}>
-                  <Hub />
+                  <TravelExplore />
                   Explore
                 </Stack>
               </li>
             </Link>
-            <Link to="/queries">
+            <Link to={`/subgraphs/${subgraph}/queries`}>
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -72,12 +80,12 @@ export default function EbiHeader({ section }: { section?: string }) {
                 }`}
               >
                 <Stack alignItems="center" direction="row" gap={1}>
-                  <TravelExplore />
+                  <ManageSearch />
                   Queries
                 </Stack>
               </li>
             </Link>
-            <Link to="/tables">
+            <Link to={`/subgraphs/${subgraph}/tables`}>
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -87,7 +95,7 @@ export default function EbiHeader({ section }: { section?: string }) {
                 }`}
               >
                 <Stack alignItems="center" direction="row" gap={1}>
-                  <ManageSearch />
+                  <TableChart />
                   Tables
                 </Stack>
               </li>
@@ -110,11 +118,28 @@ export default function EbiHeader({ section }: { section?: string }) {
           </ul>
         </nav>
       </div>
+        {
+          showBreadcrumbs &&
+          <div className="bg-stone-100 pt-1 pl-1 pr-2 pl-2 pb-1 flex flex-row justify-end">
+            <SubgraphPicker 
+              subgraph={subgraph}
+              setSubgraph={setSubgraph}
+              compact
+            />
+          </div>
+        }
     </header>
   );
 }
 
 function caps(str) {
     return str[0].toUpperCase() + str.slice(1);
+}
+
+function setSubgraph(subgraph: string) {
+  let currentUrl = window.location.href;
+  let newUrl = currentUrl.replace(/subgraphs\/[^/]+/, `subgraphs/${subgraph}`);
+  window.history.pushState({}, '', newUrl);
+  window.location.reload();
 }
 

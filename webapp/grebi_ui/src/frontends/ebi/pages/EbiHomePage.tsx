@@ -6,6 +6,7 @@ import { MenuItem, Select } from "@mui/material";
 import { get } from "../../../app/api";
 import EbiHeader from "../EbiHeader";
 import SearchBox from "../../../components/SearchBox";
+import SubgraphPicker from "../../../components/SubgraphPicker";
 
 export default function EbiHomePage() {
 
@@ -25,9 +26,13 @@ export default function EbiHomePage() {
     });
   }, []);
 
+  if(!subgraphs || !subgraph) {
+    return <div className="spinner-default w-7 h-7" />
+  }
+
   return (
     <div>
-      <EbiHeader section="home" />
+      <EbiHeader section="home" subgraph={subgraph} />
       <main className="container mx-auto px-4 h-fit">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
           <div className="lg:col-span-3">
@@ -38,15 +43,11 @@ export default function EbiHomePage() {
               {subgraphs && subgraph ?
                 <Fragment>
                   <div className="flex flex-nowrap gap-4 mb-4">
-                    <Select
-                      value={subgraph}
-                      label="Subgraph"
-                      onChange={(e) => setSubgraph(e.target.value)}
-                    >
-                      {subgraphs.map((s) => (
-                        <MenuItem key={s} value={s}>{s}</MenuItem>
-                      ))}
-                    </Select>
+                    <SubgraphPicker
+                      subgraph={subgraph}
+                      setSubgraph={setSubgraph}
+                      compact={false}
+                    />
                   </div>
                   <div className="flex flex-nowrap gap-4 mb-4">
                     <SearchBox subgraph={subgraph} />

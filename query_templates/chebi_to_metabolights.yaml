@@ -1,5 +1,5 @@
-title: Metabolights studies for a chemical 
-description: Given a chemical, find all Metabolights studies that reference it as a metabolite
+title: Search MetaboLights by chemical
+description: Given a biolink:ChemicalEntity, find every metabolights:Study in MetaboLights that references it as a metabolite
 subgraphs:
   - ebi_monarch_xspecies
 topics:
@@ -13,7 +13,7 @@ cypher_return_fragment: |-
   RETURN study.`grebi:nodeId` AS study
 cypher_count_fragment: |-
   RETURN count(*) AS count
-parameters:
+params:
   - param_id: chemical_id
     param_name: Chemical
     param_type: SourceId
@@ -22,4 +22,13 @@ parameters:
 result_columns:
   - column_id: study
     column_type: GraphNodeId
-
+examples:
+  - title: glucose
+    params:
+      chemical_id: chebi:17234
+  - title: lactate
+    params:
+      chemical_id: chebi:24996
+  - title: ATP
+    params:
+      chemical_id: chebi:15422

@@ -62,7 +62,7 @@ export default function EbiNodePage() {
         <SearchBox subgraph={subgraph} />
         <div className="text-center pb-5">
         <Typography variant="h5">{pageTitle} {
-          node.extractType()?.long && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.long}</span>}</Typography>
+          node.extractType()?.longName && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.longName}</span>}</Typography>
         </div>
 
         <div style={{width:'90%'}} className="mx-auto">

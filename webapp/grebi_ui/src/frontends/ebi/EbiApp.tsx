@@ -55,8 +55,7 @@ class EbiApp extends React.Component {
           <Route path={`/subgraphs/:subgraph/tables/:queryid`} element={<EbiTablesPage />} />
 
 
-          <Route path={`/queries`} element={<EbiQueriesHomePage />} />
-          <Route path={`/subgraphs/:subgraph/queries`} element={<EbiQueriesPage />} />
+          <Route path={`/subgraphs/:subgraph/queries`} element={<EbiQueriesHomePage />} />
           <Route path={`/subgraphs/:subgraph/queries/:queryid`} element={<EbiQueriesPage />} />
 
 
