@@ -11,7 +11,9 @@ cypher_match_fragment: |-
   MATCH (subclass)-[:`biolink:broad_match`*0..]->(chemical)
   MATCH (study:`metabolights:Study`)-[:`metabolights:ref`]->(subclass)
 cypher_return_fragment: |-
-  RETURN subclass.`grebi:nodeId` AS chemical, study.`grebi:nodeId` AS study
+  RETURN
+    subclass { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(subclass) } AS chemical,
+    study { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study
 cypher_count_fragment: |-
   RETURN count(*) AS count
 params:

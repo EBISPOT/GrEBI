@@ -124,6 +124,7 @@ public class GrebiNeoRepo {
         String subgraph, 
         QueryTemplate template,
         Map<String, List<String>> params,
+        boolean resolve,
         Pageable pageable
         ) {
 
@@ -184,50 +185,88 @@ public class GrebiNeoRepo {
 
         List<QueryTemplate.ResultColumn> columns = template.result_columns;
 
-        var resolved = resolver.resolveToMap(
-            subgraph,
-            res.records().stream()
-                .flatMap(record -> columns.stream()
-                    .filter(column -> column.column_type.equals("GraphNodeId"))
-                    .map(column -> {
-                        var id = record.get(column.column_id).asString();
+        if(resolve) {
 
-                        // TODO ?? 
-                        if(id.startsWith(subgraph + ":")) {
-                            id = id.substring(subgraph.length() + 1);
+            var resolved = resolver.resolveToMap(
+                subgraph,
+                res.records().stream()
+                    .flatMap(record -> columns.stream()
+                        .filter(column -> column.column_type.equals("GraphNodeId"))
+                        .map(column -> {
+                            String columnId = column.column_id;
+                            var value = record.get(columnId).asMap();
+                            String nodeId = value.get("grebi:nodeId").toString();
+
+                            // TODO ?? 
+                            if(nodeId.startsWith(subgraph + ":")) {
+                                nodeId = nodeId.substring(subgraph.length() + 1);
+                            }
+
+                            return nodeId;
+                        })
+                    )
+                    .collect(Collectors.toSet())
+            );
+
+            var results =  res.records().stream().map(record -> {
+                Map<String, Object> row = new HashMap<>();
+                for (QueryTemplate.ResultColumn column : columns) {
+                    String columnId = column.column_id;
+                    if (column.column_type.equals("GraphNodeId")) {
+
+                        var value = record.get(columnId).asMap();
+                        String nodeId = value.get("grebi:nodeId").toString();
+
+                        // TODO ??
+                        if(nodeId.startsWith(subgraph + ":")) {
+                            nodeId = nodeId.substring(subgraph.length() + 1);
                         }
 
-                        return id;
-                    })
-                )
-                .collect(Collectors.toSet())
-        );
-
-        var results =  res.records().stream().map(record -> {
-            Map<String, Object> row = new HashMap<>();
-            for (QueryTemplate.ResultColumn column : columns) {
-                String columnId = column.column_id;
-                if (column.column_type.equals("GraphNodeId")) {
-                    String nodeId = record.get(columnId).asString();
-
-                    // TODO ??
-                    if(nodeId.startsWith(subgraph + ":")) {
-                        nodeId = nodeId.substring(subgraph.length() + 1);
+                        row.put(columnId, resolved.get(nodeId));
+                    } else {
+                        row.put(columnId, record.get(columnId).asObject());
                     }
-
-                    row.put(columnId, resolved.get(nodeId));
-                } else {
-                    row.put(columnId, record.get(columnId).asObject());
                 }
-            }
-            return row;
-        }).collect(Collectors.toList());
+                return row;
+            }).collect(Collectors.toList());
 
-        return new PageImpl<Map<String, Object>>(
-            results,
-            pageable,
-            count
-        );
+            return new PageImpl<Map<String, Object>>(
+                results,
+                pageable,
+                count
+            );
+
+        } else {
+            return new PageImpl<Map<String, Object>>(
+                res.records().stream()
+                    .map(record -> {
+                        Map<String, Object> row = new HashMap<>();
+
+                        for (QueryTemplate.ResultColumn column : columns) {
+                            String columnId = column.column_id;
+                            if (column.column_type.equals("GraphNodeId")) {
+                                var value = record.get(columnId).asMap();
+                                String nodeId = value.get("grebi:nodeId").toString();
+
+                                // TODO ??
+                                if(nodeId.startsWith(subgraph + ":")) {
+                                    nodeId = nodeId.substring(subgraph.length() + 1);
+                                }
+
+                                row.put(columnId, nodeId);
+                            } else {
+                                row.put(columnId, record.get(columnId).asObject());
+                            }
+                        }
+
+                        return row;
+                    })
+                    .collect(Collectors.toList()),
+                pageable,
+                count
+            );
+        }
+
 
     }
 

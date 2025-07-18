@@ -204,6 +204,7 @@ public class GrebiApi {
                 .get("/api/v1/subgraphs/{subgraph}/query_templates", ctx -> {
                     var subgraph = ctx.pathParam("subgraph");
                     ctx.contentType("application/json");
+                    ctx.header("cache-control", "no-cache");
                     ctx.result(gson.toJson(queryTemplates.queryTemplates.stream()
                             .filter(qt -> qt.subgraphs == null || qt.subgraphs.contains(subgraph))
                             .collect(Collectors.toList())));
@@ -216,6 +217,7 @@ public class GrebiApi {
                             .findFirst()
                             .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found for subgraph " + subgraph));
                     ctx.contentType("application/json");
+                    ctx.header("cache-control", "no-cache");
                     ctx.result(gson.toJson(template));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/query/{templateId}", ctx -> {
@@ -248,8 +250,9 @@ public class GrebiApi {
                         params.put(param.getKey(), param.getValue());
                     }
 
+                    var resolve = ! "false".equals(ctx.queryParam("resolve"));
 
-                    var res = neo.runQueryFromTemplate(subgraph, template, params, page);
+                    var res = neo.runQueryFromTemplate(subgraph, template, params, resolve, page);
 
                     ctx.result(
                         gson.toJson(
