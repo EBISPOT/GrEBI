@@ -21,6 +21,7 @@ public class QueryTemplate {
         public String param_id;
         public String param_name;
         public String param_type;
+        public String param_default;
         public Map<String, String> param_opts;
     }
 

@@ -204,9 +204,21 @@ public class GrebiApi {
                 .get("/api/v1/subgraphs/{subgraph}/query_templates", ctx -> {
                     var subgraph = ctx.pathParam("subgraph");
                     ctx.contentType("application/json");
+                    ctx.header("cache-control", "no-cache");
                     ctx.result(gson.toJson(queryTemplates.queryTemplates.stream()
                             .filter(qt -> qt.subgraphs == null || qt.subgraphs.contains(subgraph))
                             .collect(Collectors.toList())));
+                })
+                .get("/api/v1/subgraphs/{subgraph}/query_templates/{templateId}", ctx -> {
+                    var subgraph = ctx.pathParam("subgraph");
+                    var templateId = ctx.pathParam("templateId");
+                    var template = queryTemplates.queryTemplates.stream()
+                            .filter(qt -> qt.id.equals(templateId) && (qt.subgraphs == null || qt.subgraphs.contains(subgraph)))
+                            .findFirst()
+                            .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found for subgraph " + subgraph));
+                    ctx.contentType("application/json");
+                    ctx.header("cache-control", "no-cache");
+                    ctx.result(gson.toJson(template));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/query/{templateId}", ctx -> {
                     var subgraph = ctx.pathParam("subgraph");
@@ -215,25 +227,68 @@ public class GrebiApi {
                             .filter(qt -> qt.id.equals(templateId))
                             .findFirst()
                             .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found"));
+                    var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), template.result_columns.get(0).column_id);
+                    var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
+                    var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
+                    var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
+                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size),
+                            Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
 
                     ctx.contentType("application/json");
 
-                    var page_num = ctx.queryParam("page");
-                    if(page_num == null) {
-                        page_num = "0";
+                    var params = new HashMap<String, List<String>>();
+                    for (var param : ctx.queryParamMap().entrySet()) {
+                        if (param.getKey().equals("page") || param.getKey().equals("size") ||
+                                param.getKey().equals("templateId") || param.getKey().equals("subgraph") ||
+                                param.getKey().equals("sortBy") || param.getKey().equals("sortDir") ||
+                                param.getKey().equals("resolve")) {
+                            continue;
+                        }
+                        params.put(param.getKey(), param.getValue());
                     }
-                    var size = ctx.queryParam("size");
-                    if(size == null) {
-                        size = "10";
-                    }
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
-                    var res = neo.runQueryFromTemplate(subgraph, template, ctx.queryParamMap(), page);
+
+                    var resolve = ! "false".equals(ctx.queryParam("resolve"));
+
+                    var res = neo.runQueryFromTemplate(subgraph, template, params, resolve, page);
 
                     ctx.result(
                         gson.toJson(
                             res
                         )
                     );
+                })
+                .get("/api/v1/subgraphs/{subgraph}/nodes", ctx -> {
+                    ctx.contentType("application/json");
+                    ctx.result("{}");
+
+                    var q = new GrebiSolrQuery();
+                    for(var param : ctx.queryParamMap().entrySet()) {
+                        if(param.getKey().equals("q") ||
+                                param.getKey().equals("page") ||
+                                param.getKey().equals("size") ||
+                                param.getKey().equals("exactMatch") ||
+                                param.getKey().equals("includeObsoleteEntries") ||
+                                param.getKey().equals("resolve") ||
+                                param.getKey().equals("lang") ||
+                                    param.getKey().equals("facet")
+                        ) {
+                            continue;
+                        }
+                        q.addFilter(param.getKey(), param.getValue(), SearchType.WHOLE_FIELD, false);
+                    }
+
+                    var res = solr.searchNodesPaginated(
+                        ctx.pathParam("subgraph"),
+                        q,
+                        ! "false".equals(ctx.queryParam("resolve")),
+                        PageRequest.of(
+                            Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("page"), "0")),
+                            Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("size"), "10"))
+                        )
+                    );
+
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");
@@ -385,6 +440,7 @@ public class GrebiApi {
                                 param.getKey().equals("size") ||
                                 param.getKey().equals("exactMatch") ||
                                 param.getKey().equals("includeObsoleteEntries") ||
+                                param.getKey().equals("resolve") ||
                                 param.getKey().equals("lang") ||
                                     param.getKey().equals("facet")
                         ) {
@@ -392,6 +448,12 @@ public class GrebiApi {
                         }
                         q.addFilter(param.getKey(), param.getValue(), SearchType.WHOLE_FIELD, false);
                     }
+                    q.addReturnField("grebi:nodeId");
+                    q.addReturnField("ols:curie");
+                    q.addReturnField("grebi:datasources");
+                    q.addReturnField("grebi:name");
+                    q.addReturnField("grebi:type");
+                    q.addReturnField("grebi:sourceIds");
                     for(var facetField : ctx.queryParams("facet")) {
                         q.addFacetField(facetField);
                     }
@@ -403,8 +465,9 @@ public class GrebiApi {
                     if(size == null) {
                         size = "10";
                     }
+                    var resolve = ! "false".equals(ctx.queryParam("resolve"));
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
-                    var res = solr.searchNodesPaginated(ctx.pathParam("subgraph"), q, page);
+                    var res = solr.searchNodesPaginated(ctx.pathParam("subgraph"), q, resolve, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })

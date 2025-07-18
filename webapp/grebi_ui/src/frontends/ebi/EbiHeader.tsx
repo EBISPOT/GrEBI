@@ -12,16 +12,20 @@ import DownloadIcon from '@mui/icons-material/Download';
 import TravelExplore from '@mui/icons-material/TravelExplore';
 import { FeaturedPlayList, Hub, LibraryBooks, ManageSearch, Polyline, Science, Search, Share, SnippetFolder, TableChart, ViewList } from "@mui/icons-material";
 import SubgraphPicker from "../../components/SubgraphPicker";
+import { HistoryItem } from "../../History";
+import Breadcrumbs, { BreadcrumbsEntry } from "../../components/Breadcrumbs";
 
 
 export default function EbiHeader({
   section,
   subgraph,
-  showBreadcrumbs
+  showBreadcrumbsBar,
+  breadcrumbs
 }: {
   section?: string,
   subgraph: string,
-  showBreadcrumbs?: boolean,
+  showBreadcrumbsBar?: boolean,
+  breadcrumbs?: BreadcrumbsEntry[]
 }) {
   return (
     <header
@@ -118,16 +122,21 @@ export default function EbiHeader({
           </ul>
         </nav>
       </div>
-        {
-          showBreadcrumbs &&
-          <div className="bg-stone-100 pt-1 pl-1 pr-2 pl-2 pb-1 flex flex-row justify-end">
-            <SubgraphPicker 
-              subgraph={subgraph}
-              setSubgraph={setSubgraph}
-              compact
-            />
-          </div>
-        }
+{
+  showBreadcrumbsBar && (
+    <div className="bg-stone-100 pt-1 pl-2 pr-2 pb-1 flex flex-row justify-between items-center">
+      
+      {breadcrumbs && <Breadcrumbs entries={breadcrumbs} />}
+      
+      <SubgraphPicker 
+        subgraph={subgraph}
+        setSubgraph={setSubgraph}
+        compact
+      />
+    </div>
+  )
+}
+
     </header>
   );
 }
@@ -142,4 +151,5 @@ function setSubgraph(subgraph: string) {
   window.history.pushState({}, '', newUrl);
   window.location.reload();
 }
+
 

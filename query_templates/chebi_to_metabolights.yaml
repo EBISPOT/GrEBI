@@ -1,5 +1,5 @@
-title: Search MetaboLights by chemical
-description: Given a biolink:ChemicalEntity, find every metabolights:Study in MetaboLights that references it as a metabolite
+title: Search MetaboLights by chemical or chemical classification
+description: Given a biolink:ChemicalEntity or chemical classification, find every metabolights:Study in MetaboLights that references it or its subclasses as a metabolite
 subgraphs:
   - ebi_monarch_xspecies
 topics:
@@ -8,9 +8,12 @@ topics:
   - metabolomics
 cypher_match_fragment: |-
   MATCH (chemical:`biolink:ChemicalEntity`)-[:sourceId]->(:Id { id: $chemical_id })
-  MATCH (study:`metabolights:Study`)-[:`metabolights:ref`]->(chemical)
+  MATCH (subclass)-[:`biolink:broad_match`*0..]->(chemical)
+  MATCH (study:`metabolights:Study`)-[:`metabolights:ref`]->(subclass)
 cypher_return_fragment: |-
-  RETURN study.`grebi:nodeId` AS study
+  RETURN
+    subclass { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(subclass) } AS chemical,
+    study { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study
 cypher_count_fragment: |-
   RETURN count(*) AS count
 params:
@@ -20,6 +23,8 @@ params:
     param_opts:
       'biolink:broad_match': 'biolink:ChemicalEntity'
 result_columns:
+  - column_id: chemical
+    column_type: GraphNodeId
   - column_id: study
     column_type: GraphNodeId
 examples:

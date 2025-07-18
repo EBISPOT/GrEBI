@@ -41,7 +41,9 @@ export default function EbiNodePage() {
     getNode()
   }, [nodeId, lang]);
 
-  if(!node) {
+
+
+  if(!node || !subgraph) {
     return <LoadingOverlay message="Loading node..." />
   }
 
@@ -52,7 +54,7 @@ export default function EbiNodePage() {
 
   return (
     <div>
-      <EbiHeader section="explore" />
+      <EbiHeader section="explore" subgraph={subgraph} />
         <Helmet>
           <meta charSet="utf-8" />
           {pageTitle && <title>{pageTitle}</title>}

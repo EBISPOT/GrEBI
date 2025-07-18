@@ -10,7 +10,7 @@ export interface Column {
   minWidth?: number;
   align?: "right";
   selector: (row: any, key:string) => any;
-  sortable: boolean;
+  sortable?: boolean;
 }
 
 export default function DataTable({
@@ -178,8 +178,8 @@ export default function DataTable({
                   onClick={() => {
                     if (onSelectRow) onSelectRow(row);
                   }}
-                  className={`even:bg-grey-50 ${
-                    onSelectRow ? "cursor-pointer" : ""
+                  className={`even:bg-grey-50 group hover:bg-neutral-50 ${
+                    onSelectRow ? "cursor-pointer grebi-row-highlight" : ""
                   }`}
                 >
                   {columns.map((column: any) => {
@@ -188,7 +188,7 @@ export default function DataTable({
                         className="text-md align-top py-2 px-4"
                         key={randomString()}
                       >
-                        <div style={{ ...( maxRowHeight ? {maxHeight: maxRowHeight, overflowY:"auto"} : {}) }}>
+                        <div className={column.className||""} style={{ ...( maxRowHeight ? {maxHeight: maxRowHeight, overflowY:"auto"} : {}) }}>
                         {column.selector(row, column.id)
                           ? column.selector(row, column.id)
                           : "(no data)"}

@@ -12,5 +12,17 @@ topics:
   - id: metabolomics
     name: Metabolomics
     type: Domain
+  - id: impc
+    name: IMPC
+    type: Resource
+    description: The International Mouse Phenotyping Consortium (IMPC) is an international effort by 21 research institutions to identify the function of every protein-coding gene in the mouse genome.
+    url: https://www.mousephenotype.org/
+  - id: opentargets
+    name: OpenTargets
+    type: Resource
+    description: OpenTargets is a public-private partnership that aims to provide a systematic and unbiased platform for drug target identification and prioritisation.
+    url: https://www.opentargets.org/
+
+
 
   

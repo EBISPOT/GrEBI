@@ -18,6 +18,7 @@ import uk.ac.ebi.grebi.repo.QueryTemplate;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -124,6 +125,7 @@ public class GrebiNeoRepo {
         String subgraph, 
         QueryTemplate template,
         Map<String, List<String>> params,
+        boolean resolve,
         Pageable pageable
         ) {
 
@@ -131,33 +133,80 @@ public class GrebiNeoRepo {
             throw new IllegalArgumentException("Query template " + template.id + " is not available for subgraph " + subgraph);
         }
 
-        if(template.params.size() != params.size() || 
-              !template.params.stream().allMatch(p -> params.containsKey(p.param_id))) {
-                throw new IllegalArgumentException("Incorrect parameters for query template " + template.id + "; expected parameters: " +
+        for(var param : params.entrySet()) {
+            if(!template.params.stream().anyMatch(p -> p.param_id.equals(param.getKey()))) {
+                throw new IllegalArgumentException("Unknown parameter " + param.getKey() + " provided for query template " + template.id + "; valid parameters are: " +
                     template.params.stream().map(p -> p.param_id).collect(Collectors.joining(", ")));
+            }
         }
 
         Map<String, Object> paramMap = new HashMap<>();
         for (QueryTemplate.Parameter p : template.params) {
+
             var values = params.get(p.param_id);
-            if(p.param_type.equals("SourceId")) {
-                if(values == null || values.isEmpty()) {
-                    throw new IllegalArgumentException("SourceId param " + p.param_id + " cannot be empty");
+
+            if(values == null || values.isEmpty()) {
+                if(p.param_default != null) {
+                    values = List.of(p.param_default);
+                } else {
+                    throw new IllegalArgumentException("Parameter " + p.param_id + " is required but not provided");
                 }
+            }
+
+            if(p.param_type.equals("SourceId")) {
                 if(values.size() > 1) {
                     throw new IllegalArgumentException("SourceId param " + p.param_id + " cannot have multiple values");
                 }
                 var nodeId = values.get(0);
                 paramMap.put(p.param_id, nodeId);
+            } else if(p.param_type.equals("string")) {
+
+                if(values.size() > 1) {
+                    throw new IllegalArgumentException("String param " + p.param_id + " cannot have multiple values");
+                }
+                var stringValue = values.get(0);
+                paramMap.put(p.param_id, stringValue);
+
+            } else if(p.param_type.equals("float")) {
+
+                if(values.size() > 1) {
+                    throw new IllegalArgumentException("Float param " + p.param_id + " cannot have multiple values");
+                }
+                try {
+                    var floatValue = Double.parseDouble(values.get(0));
+                    paramMap.put(p.param_id, floatValue);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid float value for parameter " + p.param_id + ": " + values.get(0));
+                }
+
             } else {
                 throw new IllegalArgumentException("Unknown parameter type " + p.param_type + " for parameter " + p.param_id);
             }
         }
 
-        String query =
-            template.cypher_match_fragment.trim()
-                + "\n" + template.cypher_return_fragment.trim()
-                + "\nSKIP " + pageable.getOffset()
+        String query = template.cypher_match_fragment.trim()
+                + "\n" + template.cypher_return_fragment.trim();
+
+
+        if(pageable.getSort() != null && !pageable.getSort().isUnsorted()) {
+            var sort = pageable.getSort().stream().collect(Collectors.toList());
+            if(sort.size() != 1) {
+                throw new IllegalArgumentException("Sorting by multiple columns is not supported");
+            }
+            var sortField = sort.get(0).getProperty();
+            if(!template.result_columns.stream().anyMatch(c -> c.column_id.equals(sortField))) {
+                throw new IllegalArgumentException("Sort column " + sortField + " not found; valid columns are: " +
+                    template.result_columns.stream().map(c -> c.column_id).collect(Collectors.joining(", ")));
+            }
+            if(sort.get(0).isAscending()) {
+                query += "\nORDER BY " + sortField + " ASC";
+            } else {
+                query += "\nORDER BY " + sortField + " DESC";
+            }
+        }
+
+
+        query = query + "\nSKIP " + pageable.getOffset()
                 + "\nLIMIT " + pageable.getPageSize();
 
         String countQuery = template.cypher_match_fragment.trim() + "\n" + template.cypher_count_fragment.trim();
@@ -184,50 +233,91 @@ public class GrebiNeoRepo {
 
         List<QueryTemplate.ResultColumn> columns = template.result_columns;
 
-        var resolved = resolver.resolveToMap(
-            subgraph,
-            res.records().stream()
-                .flatMap(record -> columns.stream()
-                    .filter(column -> column.column_type.equals("GraphNodeId"))
-                    .map(column -> {
-                        var id = record.get(column.column_id).asString();
+        if(resolve) {
 
-                        // TODO ?? 
-                        if(id.startsWith(subgraph + ":")) {
-                            id = id.substring(subgraph.length() + 1);
+            var resolved = resolver.resolveToMap(
+                subgraph,
+                res.records().stream()
+                    .flatMap(record -> columns.stream()
+                        .filter(column -> column.column_type.equals("GraphNodeId"))
+                        .map(column -> {
+                            String columnId = column.column_id;
+                            var value = record.get(columnId).asMap();
+                            String nodeId = value.get("grebi:nodeId").toString();
+
+                            // TODO ?? 
+                            if(nodeId.startsWith(subgraph + ":")) {
+                                nodeId = nodeId.substring(subgraph.length() + 1);
+                            }
+
+                            return nodeId;
+                        })
+                    )
+                    .collect(Collectors.toSet())
+            );
+
+            var results =  res.records().stream().map(record -> {
+                Map<String, Object> row = new HashMap<>();
+                for (QueryTemplate.ResultColumn column : columns) {
+                    String columnId = column.column_id;
+                    if (column.column_type.equals("GraphNodeId")) {
+
+                        var value = record.get(columnId).asMap();
+                        String nodeId = value.get("grebi:nodeId").toString();
+
+                        // TODO ??
+                        if(nodeId.startsWith(subgraph + ":")) {
+                            nodeId = nodeId.substring(subgraph.length() + 1);
                         }
 
-                        return id;
-                    })
-                )
-                .collect(Collectors.toSet())
-        );
-
-        var results =  res.records().stream().map(record -> {
-            Map<String, Object> row = new HashMap<>();
-            for (QueryTemplate.ResultColumn column : columns) {
-                String columnId = column.column_id;
-                if (column.column_type.equals("GraphNodeId")) {
-                    String nodeId = record.get(columnId).asString();
-
-                    // TODO ??
-                    if(nodeId.startsWith(subgraph + ":")) {
-                        nodeId = nodeId.substring(subgraph.length() + 1);
+                        row.put(columnId, resolved.get(nodeId));
+                    } else {
+                        row.put(columnId, record.get(columnId).asObject());
                     }
-
-                    row.put(columnId, resolved.get(nodeId));
-                } else {
-                    row.put(columnId, record.get(columnId).asObject());
                 }
-            }
-            return row;
-        }).collect(Collectors.toList());
+                return row;
+            }).collect(Collectors.toList());
 
-        return new PageImpl<Map<String, Object>>(
-            results,
-            pageable,
-            count
-        );
+            return new PageImpl<Map<String, Object>>(
+                results,
+                pageable,
+                count
+            );
+
+        } else {
+            return new PageImpl<Map<String, Object>>(
+                res.records().stream()
+                    .map(record -> {
+                        Map<String, Object> row = new HashMap<>();
+
+                        for (QueryTemplate.ResultColumn column : columns) {
+                            String columnId = column.column_id;
+                            if (column.column_type.equals("GraphNodeId")) {
+                                var value = record.get(columnId).asMap();
+                                String nodeId = value.get("grebi:nodeId").toString();
+
+                                var valueCopy = new TreeMap<>(value);
+
+                                // TODO ??
+                                if(nodeId.startsWith(subgraph + ":")) {
+                                    nodeId = nodeId.substring(subgraph.length() + 1);
+                                }
+                                valueCopy.put("grebi:nodeId", nodeId);
+
+                                row.put(columnId, valueCopy);
+                            } else {
+                                row.put(columnId, record.get(columnId).asObject());
+                            }
+                        }
+
+                        return row;
+                    })
+                    .collect(Collectors.toList()),
+                pageable,
+                count
+            );
+        }
+
 
     }
 

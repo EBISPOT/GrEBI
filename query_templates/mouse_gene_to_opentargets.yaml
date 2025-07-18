@@ -1,0 +1,49 @@
+title: Search OpenTargets disease associations by mouse gene
+description: Given a mouse biolink:Gene, find every disease association for its human ortholog in OpenTargets
+subgraphs:
+  - ebi_monarch_xspecies
+  - impc_x_gwas
+topics:
+  - impc
+  - opentargets
+cypher_match_fragment: |-
+  MATCH (mouse_gene:`impc:MouseGene`)-[:sourceId]->(:Id { id: $mouse_gene_id })
+  MATCH (mouse_gene)-[:`impc:humanGeneOrthologues`]->(human_gene:`hgnc:Gene`)
+  MATCH (human_gene)<-[:`otar:targetId`]-(evidence:`otar:Evidence`)
+  MATCH (evidence)-[:`otar:diseaseId`]->(disease:`ols:Class`)
+  WHERE toFloat(evidence.`otar:score`[0]) >= $min_score
+cypher_return_fragment: |-
+  RETURN
+    human_gene { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(human_gene) } AS human_gene,
+    disease { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
+    evidence.`otar:score`[0] AS score
+cypher_count_fragment: |-
+  RETURN count(*) AS count
+params:
+  - param_id: mouse_gene_id
+    param_name: Mouse Gene
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'impc:MouseGene'
+  - param_id: min_score
+    param_name: Minimum Score
+    param_type: float
+    param_default: '0.9'
+result_columns:
+  - column_id: human_gene
+    column_type: GraphNodeId
+  - column_id: disease
+    column_type: GraphNodeId
+  - column_id: score
+    column_type: float
+examples:
+  - title: Lepr
+    params:
+      mouse_gene_id: mgi:104993
+  - title: App
+    params:
+      mouse_gene_id: mgi:88059
+  - title: Htt
+    params:
+      mouse_gene_id: mgi:96067
+  

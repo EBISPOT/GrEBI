@@ -14,6 +14,7 @@ public class GrebiSolrQuery {
     List<BoostField> boostFields = new ArrayList<>();
     List<String> facetFields = new ArrayList<>();
     List<Filter> filters = new ArrayList<>();
+    List<String> returnFields = new ArrayList<>();
 
     public GrebiSolrQuery() {
     }
@@ -53,15 +54,21 @@ public class GrebiSolrQuery {
                 addFilter(propertyName, Set.of(possibleValue), SearchType.WHOLE_FIELD, true);
             }
         }
+    }
 
+    public void addReturnField(String fieldName) {
+        this.returnFields.add(fieldName);
     }
 
     public SolrQuery constructQuery() {
 
         SolrQuery query = new SolrQuery();
         query.set("defType", "edismax");
-        //query.setFields("grebi:nodeId");
         query.set("q.op", "AND");
+
+        if(this.returnFields.size() > 0) {
+            query.setFields(this.returnFields.stream().map(f -> f.replace(":", "__")).toArray(String[]::new));
+        }
 
         if(searchText != null) {
 
