@@ -237,7 +237,19 @@ public class GrebiApi {
                         size = "10";
                     }
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
-                    var res = neo.runQueryFromTemplate(subgraph, template, ctx.queryParamMap(), page);
+
+                    var params = new HashMap<String, List<String>>();
+                    for (var param : ctx.queryParamMap().entrySet()) {
+                        if (param.getKey().equals("page") || param.getKey().equals("size") ||
+                                param.getKey().equals("templateId") || param.getKey().equals("subgraph") ||
+                                param.getKey().equals("resolve")) {
+                            continue;
+                        }
+                        params.put(param.getKey(), param.getValue());
+                    }
+
+
+                    var res = neo.runQueryFromTemplate(subgraph, template, params, page);
 
                     ctx.result(
                         gson.toJson(

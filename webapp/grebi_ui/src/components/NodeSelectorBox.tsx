@@ -1,18 +1,22 @@
-import { Checkbox, FormControlLabel, ThemeProvider } from "@mui/material";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import React, { useState, useEffect, useRef, Fragment } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+
 import { getPaginated } from "../app/api";
-import { theme } from "../app/mui";
 import { joinSearchParams, randomString } from "../app/util";
-import React from "react";
+
 import GraphNodeRef from "../model/GraphNodeRef";
-import encodeNodeId from "../encodeNodeId";
 import { DatasourceTags } from "./DatasourceTag";
 import NodeTypeChip from "./NodeTypeChip";
 
-interface SearchBoxEntry {
-  linkUrl: string;
-  li: JSX.Element;
+interface NodeSelectorBoxProps {
+  subgraph: string;
+  placeholder?: string;
+  selectedNode?: GraphNodeRef;
+  onNodeSelect: (node: GraphNodeRef) => void;
+  onClear: () => void;
+  additionalParams?: URLSearchParams;
 }
 
 export default function NodeSelectorBox({
@@ -20,28 +24,25 @@ export default function NodeSelectorBox({
   placeholder,
   selectedNode,
   onNodeSelect,
+  onClear,
   additionalParams,
-}: {
-  subgraph: string;
-  placeholder?: string;
-  selectedNode?: GraphNodeRef;
-  onNodeSelect: (node: GraphNodeRef) => void;
-  additionalParams?: URLSearchParams;
-}) {
+}: NodeSelectorBoxProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const [suggestions, setSuggestions] = useState<GraphNodeRef[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [query, setQuery] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [arrowKeySelectedN, setArrowKeySelectedN] = useState<number | undefined>(undefined);
+  const [arrowKeySelectedN, setArrowKeySelectedN] = useState<number>();
 
   const mounted = useRef(false);
   const cancelPromisesRef = useRef(false);
   const searchTokenRef = useRef("");
-  const debounceRef = useRef<number | null>(null);
+  const debounceRef = useRef<number>();
+  const inputRef = useRef<HTMLInputElement>(null);
 
+  // track mounted state
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -50,6 +51,7 @@ export default function NodeSelectorBox({
     };
   }, []);
 
+  // fetch suggestions
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -73,9 +75,7 @@ export default function NodeSelectorBox({
             additionalParams
           )}`
         );
-
         if (cancelPromisesRef.current || !mounted.current) return;
-
         if (searchTokenRef.current === token) {
           setSuggestions(nodes.elements.map((node) => new GraphNodeRef(node)));
         }
@@ -96,6 +96,9 @@ export default function NodeSelectorBox({
     setQuery("");
     setSuggestions([]);
     onNodeSelect(node);
+    // blur input and clear focus state
+    inputRef.current?.blur();
+    setIsFocused(false);
   };
 
   return (
@@ -103,37 +106,72 @@ export default function NodeSelectorBox({
       <div className="flex space-x-4 items-center mb-2">
         <div className="relative grow">
           <input
+            ref={inputRef}
             type="text"
             autoComplete="off"
-            placeholder={
-              selectedNode ? selectedNode.getName() : placeholder || "Type to search..."
-            }
-            className={`input-default text-lg pl-3 ${
-              query !== "" && isFocused ? "rounded-b-sm shadow-input" : ""
-            }`}
-            onBlur={() => setTimeout(() => mounted.current && setIsFocused(false), 500)}
-            onFocus={() => setIsFocused(true)}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            placeholder={!selectedNode && !query ? placeholder || "Type to search…" : ""}
+            value={query !== "" ? query : selectedNode?.getName() ?? ""}
+            className={`
+              input-default
+              text-lg
+              pl-3
+              pr-8
+              placeholder:text-neutral-500
+              ${selectedNode && !query ? "bg-slate-100 text-neutral-900" : ""}
+              ${query !== "" && isFocused ? "rounded-b-sm shadow-input" : ""}
+            `}
+            onBlur={() => setTimeout(() => mounted.current && setIsFocused(false), 200)}
+            onFocus={() => {
+              setIsFocused(true);
+              // if focusing into a selected node, let them type anew
+              if (selectedNode && !query) {
+                onClear();
+                setSuggestions([]);
+              }
+            }}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (selectedNode) onClear();
+            }}
             onKeyDown={(ev) => {
               if (ev.key === "Enter") {
-                if (arrowKeySelectedN !== undefined && arrowKeySelectedN < suggestions.length) {
+                if (arrowKeySelectedN != null && arrowKeySelectedN < suggestions.length) {
                   handleSelectNode(suggestions[arrowKeySelectedN]!);
                 }
               } else if (ev.key === "ArrowDown") {
                 setArrowKeySelectedN((prev) =>
-                  prev !== undefined ? Math.min(prev + 1, suggestions.length - 1) : 0
+                  prev != null ? Math.min(prev + 1, suggestions.length - 1) : 0
                 );
               } else if (ev.key === "ArrowUp") {
                 setArrowKeySelectedN((prev) =>
-                  prev !== undefined ? Math.max(prev - 1, 0) : suggestions.length - 1
+                  prev != null ? Math.max(prev - 1, 0) : suggestions.length - 1
                 );
               }
             }}
           />
+
+        {/* Clear button, vertically centered on the right */}
+        {selectedNode && !query && (
+        <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+            <IconButton
+            size="small"
+            onClick={() => {
+                onClear();
+                setQuery("");
+                setSuggestions([]);
+            }}
+            >
+            <CloseIcon fontSize="small" />
+            </IconButton>
+        </div>
+        )}
+
+          {/* Loading spinner */}
           {loading && (
             <div className="spinner-default w-7 h-7 absolute right-3 top-2.5 z-10" />
           )}
+
+          {/* Suggestions dropdown */}
           <ul
             className={
               query !== "" && (isFocused || suggestions.length > 0)

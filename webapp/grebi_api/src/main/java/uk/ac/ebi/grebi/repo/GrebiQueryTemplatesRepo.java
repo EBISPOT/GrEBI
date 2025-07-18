@@ -30,8 +30,8 @@ public class GrebiQueryTemplatesRepo {
         queryTemplates = new ArrayList<>();
         queryTopics = new ArrayList<>();
 
-        loadQueryTemplates("query_templates/");
-        loadQueryTopics("query_templates/_topics.yaml");
+        loadQueryTemplates(getQueryTemplatesPath());
+        loadQueryTopics(getQueryTemplatesPath() + "/_topics.yaml");
     }
 
     private void loadQueryTemplates(String directoryPath) {

@@ -10,7 +10,7 @@ export interface Column {
   minWidth?: number;
   align?: "right";
   selector: (row: any, key:string) => any;
-  sortable: boolean;
+  sortable?: boolean;
 }
 
 export default function DataTable({

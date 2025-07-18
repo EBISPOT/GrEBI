@@ -1,11 +1,15 @@
+
+
 import { useEffect, useState } from "react";
 import { QueryTemplate } from "../../model/QueryTemplate";
 import QueryTopic from "../../model/QueryTopic";
 import {get, getPaginated} from "../../app/api";
 import NodeSelectorBox from "../NodeSelectorBox";
-import { Box, Typography, FormControl, TextField, InputLabel, Button, Table, TableBody, TableCell, TableRow, Link } from "@mui/material";
+import { Box, Typography, FormControl, TextField, InputLabel, Button, Table, TableBody, TableCell, TableRow, Link, Stack } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import GraphNodeRef from "../../model/GraphNodeRef";
+import { Search } from "@mui/icons-material";
+import ResultsTable from "./ResultsTable";
 
 export default function QueryInterface({
     subgraph,
@@ -19,6 +23,8 @@ export default function QueryInterface({
     let [queryParams, setQueryParams] = useSearchParams();
 
     let [paramValues, setParamValues] = useState<Record<string, any>>({});
+    let [paramValuesSubmitted, setParamValuesSubmitted] = useState<Record<string, any>|undefined>(undefined);
+
 
     useEffect(() => {
 
@@ -43,7 +49,7 @@ export default function QueryInterface({
                     }
 
                 } else {
-                    initialValues[param.param_id] = "";
+                    initialValues[param.param_id] = undefined;
                 }
             }
             setParamValues(initialValues);
@@ -53,32 +59,35 @@ export default function QueryInterface({
 
     }, [params, queryParams]);
 
-return (
-  <Box sx={{ p: 3 }}>
-    <Box
-      component="form"
-      onSubmit={(e) => {
-        e.preventDefault();
+    useEffect(() => {
+        submit()
+    }, [paramValues]);
+
+    function submit() {
 
         const valuesToSend: Record<string, any> = {};
         for (let param of params) {
           if (param.param_type === "SourceId") {
-            valuesToSend[param.param_id] = paramValues[param.param_id]?.id?.[0];
+            if(!paramValues[param.param_id]) {
+                // incomplete params
+                return;
+            } else {
+                valuesToSend[param.param_id] = paramValues[param.param_id].getId().value;
+            }
           } else {
             valuesToSend[param.param_id] = paramValues[param.param_id];
           }
         }
 
-        console.log("Running query with parameters:", valuesToSend);
+        console.log("Submitting values:", valuesToSend);
 
-        get(`api/v1/subgraphs/${subgraph}/query/${queryTemplate.id}`, valuesToSend)
-          .then((response) => {
-            console.log("Query response:", response);
-          })
-          .catch((error) => {
-            console.error("Error running query:", error);
-          });
-      }}
+        setParamValuesSubmitted(valuesToSend);
+    }
+
+return (
+  <Box sx={{ p: 3 }}>
+    <Box
+      component="form"
     >
         <Typography variant="h5" gutterBottom>
         Examples
@@ -86,18 +95,19 @@ return (
 
         <Box sx={{ mb: 3 }}>
             {queryTemplate.examples && queryTemplate.examples.length > 0 ? (
-                <ul>
-                {queryTemplate.examples.map((example, index) => {
-
-                    let exampleParams = new URLSearchParams(example.params).toString();
-
-                    return <li key={index}> 
-                    <Link underline="hover" href={`/subgraphs/${subgraph}/queries/${queryTemplate.id}?${exampleParams}`}>
-                        {example.title}
-                    </Link>
-                    </li>
-                })}
-                </ul>
+                <Stack direction="column" spacing={0}>
+                    {queryTemplate.examples.map((example, index) => {
+                        let exampleParams = new URLSearchParams(example.params).toString();
+                        return (
+                            <Link key={index} href={`/subgraphs/${subgraph}/queries/${queryTemplate.id}?${exampleParams}`} underline="hover">
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <Search fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
+                                    {example.title}
+                                </Box>
+                            </Link>
+                        );
+                    })}
+                </Stack>
             ) : (
                 <Typography variant="body2" color="textSecondary">
                 No examples available for this query.
@@ -123,7 +133,7 @@ return (
                     fullWidth
                     variant="outlined"
                     size="small"
-                    value={paramValues[param.param_id] || ""}
+                    value={paramValues[param.param_id] || undefined}
                     onChange={(e) =>
                       setParamValues({
                         ...paramValues,
@@ -143,6 +153,12 @@ return (
                         [param.param_id]: node,
                       })
                     }
+                    onClear={() => {
+                        setParamValues({
+                            ...paramValues,
+                            [param.param_id]: undefined,
+                        });
+                    }}
                     additionalParams={param.param_opts ? new URLSearchParams(param.param_opts) : undefined}
                   />
                 )}
@@ -151,13 +167,12 @@ return (
           ))}
         </TableBody>
       </Table>
-
-      <Button type="submit" variant="contained" color="primary">
-        Run Query
-      </Button>
     </Box>
+
+    {paramValuesSubmitted && <ResultsTable subgraph={subgraph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} />}
   </Box>
 );
 }
+
 
 
