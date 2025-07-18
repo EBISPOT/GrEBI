@@ -1,5 +1,5 @@
 title: Search OpenTargets disease associations by mouse gene
-description: Given a mouse biolink:Gene, find every disease association for its human ortholog in OpenTargets
+description: Given a mouse biolink:Gene, find disease associations for its human ortholog in OpenTargets
 subgraphs:
   - ebi_monarch_xspecies
   - impc_x_gwas

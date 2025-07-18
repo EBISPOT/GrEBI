@@ -22,7 +22,9 @@ topics:
     type: Resource
     description: OpenTargets is a public-private partnership that aims to provide a systematic and unbiased platform for drug target identification and prioritisation.
     url: https://www.opentargets.org/
-
-
-
+  - id: gwas_catalog
+    name: GWAS Catalog
+    type: Resource
+    description: The NHGRI-EBI GWAS Catalog is a curated collection of published genome-wide association studies (GWAS) and their associated variants.
+    url: https://www.ebi.ac.uk/gwas/
   

@@ -3,7 +3,7 @@ import { useState, useEffect, Fragment, useMemo } from "react";
 import GraphMetadata from "../../model/GraphMetadata"
 import LocalDataTable from "../datatable/LocalDataTable"
 import { get } from "../../app/api";
-import { Box, Button, Chip, CircularProgress, Link, Stack } from "@mui/material";
+import { Box, Button, Chip, CircularProgress, Stack } from "@mui/material";
 import { Download, Info } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { QueryTemplate } from "../../model/QueryTemplate";
@@ -12,6 +12,7 @@ import hardcodedNodeTypes from "../../hardcoded_node_types.json";
 import NodeTypeChip from "../NodeTypeChip";
 import addLinksToText from "../../addLinksToText";
 import * as Muicon from "@mui/icons-material";
+import { Link } from "react-router-dom";
 
 export default function QueryTable({
     subgraph
@@ -101,7 +102,7 @@ function getColumns(subgraph:string|undefined, topics:QueryTopic[]|null) {
                     {examples.map((e:any) => {
                         // encode example params as a query string
                         let exampleParams = new URLSearchParams(e.params).toString();
-                        return <Link key={e} href={`/subgraphs/${subgraph}/queries/${row.id}?${exampleParams}`} underline="hover">
+                        return <Link key={e} className="link-default" to={`/subgraphs/${subgraph}/queries/${row.id}?${exampleParams}`}>
                             <Muicon.Search fontSize="small" sx={{ verticalAlign: 'middle' }} />
                             {e.title}
                         </Link>

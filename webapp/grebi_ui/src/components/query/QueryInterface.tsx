@@ -5,11 +5,12 @@ import { QueryTemplate } from "../../model/QueryTemplate";
 import QueryTopic from "../../model/QueryTopic";
 import {get, getPaginated} from "../../app/api";
 import NodeSelectorBox from "../NodeSelectorBox";
-import { Box, Typography, FormControl, TextField, InputLabel, Button, Table, TableBody, TableCell, TableRow, Link, Stack } from "@mui/material";
+import { Box, Typography, FormControl, TextField, InputLabel, Button, Table, TableBody, TableCell, TableRow, Stack } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import GraphNodeRef from "../../model/GraphNodeRef";
 import { Search } from "@mui/icons-material";
 import ResultsTable from "./ResultsTable";
+import { Link } from "react-router-dom";
 
 export default function QueryInterface({
     subgraph,
@@ -99,7 +100,7 @@ return (
                     {queryTemplate.examples.map((example, index) => {
                         let exampleParams = new URLSearchParams(example.params).toString();
                         return (
-                            <Link key={index} href={`/subgraphs/${subgraph}/queries/${queryTemplate.id}?${exampleParams}`} underline="hover">
+                            <Link key={index} to={`/subgraphs/${subgraph}/queries/${queryTemplate.id}?${exampleParams}`} className="link-default">
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <Search fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
                                     {example.title}
