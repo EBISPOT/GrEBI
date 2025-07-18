@@ -1,5 +1,5 @@
-title: Search MetaboLights by chemical or chemical type
-description: Given a biolink:ChemicalEntity or type of chemical, find every metabolights:Study in MetaboLights that references it or its subclasses as a metabolite
+title: Search MetaboLights by chemical or chemical classification
+description: Given a biolink:ChemicalEntity or chemical classification, find every metabolights:Study in MetaboLights that references it or its subclasses as a metabolite
 subgraphs:
   - ebi_monarch_xspecies
 topics:

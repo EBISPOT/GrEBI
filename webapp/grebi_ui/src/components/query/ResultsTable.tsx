@@ -41,6 +41,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
       if (filterKey) {
         reqParams.set('filter', filterKey);
       }
+      reqParams.set('resolve', 'false');
       const response = await getPaginated<any>(
         `api/v1/subgraphs/${subgraph}/query/${queryId}`,
         reqParams

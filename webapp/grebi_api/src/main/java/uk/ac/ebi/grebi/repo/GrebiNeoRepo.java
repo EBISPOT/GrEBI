@@ -248,12 +248,15 @@ public class GrebiNeoRepo {
                                 var value = record.get(columnId).asMap();
                                 String nodeId = value.get("grebi:nodeId").toString();
 
+                                var valueCopy = new TreeMap<>(value);
+
                                 // TODO ??
                                 if(nodeId.startsWith(subgraph + ":")) {
                                     nodeId = nodeId.substring(subgraph.length() + 1);
                                 }
+                                valueCopy.put("grebi:nodeId", nodeId);
 
-                                row.put(columnId, nodeId);
+                                row.put(columnId, valueCopy);
                             } else {
                                 row.put(columnId, record.get(columnId).asObject());
                             }
