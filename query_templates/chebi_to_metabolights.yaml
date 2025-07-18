@@ -21,6 +21,8 @@ params:
     param_opts:
       'biolink:broad_match': 'biolink:ChemicalEntity'
 result_columns:
+  - column_id: chemical
+    column_type: GraphNodeId
   - column_id: study
     column_type: GraphNodeId
 examples:
