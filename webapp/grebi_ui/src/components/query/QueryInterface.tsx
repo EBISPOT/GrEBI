@@ -1,6 +1,6 @@
 
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { QueryTemplate } from "../../model/QueryTemplate";
 import QueryTopic from "../../model/QueryTopic";
 import {get, getPaginated} from "../../app/api";
@@ -11,6 +11,8 @@ import GraphNodeRef from "../../model/GraphNodeRef";
 import { Search } from "@mui/icons-material";
 import ResultsTable from "./ResultsTable";
 import { Link } from "react-router-dom";
+import CypherSourceSection from "./CypherSourceSection";
+
 
 export default function QueryInterface({
     subgraph,
@@ -25,7 +27,7 @@ export default function QueryInterface({
 
     let [paramValues, setParamValues] = useState<Record<string, any>>({});
     let [paramValuesSubmitted, setParamValuesSubmitted] = useState<Record<string, any>|undefined>(undefined);
-
+    let [showSource, setShowSource] = useState(false);
 
     useEffect(() => {
 
@@ -85,8 +87,13 @@ export default function QueryInterface({
         setParamValuesSubmitted(valuesToSend);
     }
 
+ let cypherSource = queryTemplate.cypher_match_fragment.trim() + "\n" + queryTemplate.cypher_return_fragment.trim();
+
 return (
-  <Box sx={{ p: 3 }}>
+  <Fragment>
+
+    <CypherSourceSection source={cypherSource} />
+
     <Box
       component="form"
     >
@@ -186,7 +193,7 @@ return (
     </Box>
 
     {paramValuesSubmitted && <ResultsTable subgraph={subgraph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} />}
-  </Box>
+  </Fragment>
 );
 }
 

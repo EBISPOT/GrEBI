@@ -13,11 +13,12 @@ cypher_match_fragment: |-
   MATCH (evidence)-[:`otar:diseaseId`]->(disease:`ols:Class`)
   WHERE toFloat(evidence.`otar:score`[0]) >= $min_score
 cypher_return_fragment: |-
-  RETURN
+  RETURN DISTINCT
     human_gene { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(human_gene) } AS human_gene,
     disease { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
     evidence.`otar:score`[0] AS score
 cypher_count_fragment: |-
+  WITH DISTINCT human_gene, disease, evidence
   RETURN count(*) AS count
 params:
   - param_id: mouse_gene_id
