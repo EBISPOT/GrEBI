@@ -17,6 +17,7 @@ export interface Parameter {
   param_id: string;
   param_name: string;
   param_type: string;
+  param_default?: string;
   param_opts: Record<string, string>;
 }
 

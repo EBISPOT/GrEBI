@@ -62,7 +62,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
   const columns: Column[] = resultColumns.map(col => ({
     id: col.column_id,
     name: col.column_id,
-    sortable: false,
+    sortable: true,
     selector: (row: any) => {
       const val = row[col.column_id];
       if (col.column_type === 'GraphNodeId') {
@@ -109,10 +109,10 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
         onPageChange={setPage}
         onRowsPerPageChange={setRowsPerPage}
         // onFilter={setFilterKey}
-        // sortColumn={sortColumn}
-        // setSortColumn={setSortColumn}
-        // sortDir={sortDir}
-        // setSortDir={setSortDir}
+        sortColumn={sortColumn}
+        setSortColumn={setSortColumn}
+        sortDir={sortDir}
+        setSortDir={setSortDir}
         addColumnsFromData={false}
       />
     </Box>

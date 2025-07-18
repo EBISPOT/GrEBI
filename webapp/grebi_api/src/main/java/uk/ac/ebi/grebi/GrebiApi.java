@@ -227,23 +227,20 @@ public class GrebiApi {
                             .filter(qt -> qt.id.equals(templateId))
                             .findFirst()
                             .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found"));
+                    var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), template.result_columns.get(0).column_id);
+                    var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
+                    var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
+                    var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
+                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size),
+                            Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
 
                     ctx.contentType("application/json");
-
-                    var page_num = ctx.queryParam("page");
-                    if(page_num == null) {
-                        page_num = "0";
-                    }
-                    var size = ctx.queryParam("size");
-                    if(size == null) {
-                        size = "10";
-                    }
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
 
                     var params = new HashMap<String, List<String>>();
                     for (var param : ctx.queryParamMap().entrySet()) {
                         if (param.getKey().equals("page") || param.getKey().equals("size") ||
                                 param.getKey().equals("templateId") || param.getKey().equals("subgraph") ||
+                                param.getKey().equals("sortBy") || param.getKey().equals("sortDir") ||
                                 param.getKey().equals("resolve")) {
                             continue;
                         }

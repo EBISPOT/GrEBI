@@ -49,7 +49,7 @@ export default function QueryInterface({
                     }
 
                 } else {
-                    initialValues[param.param_id] = undefined;
+                    initialValues[param.param_id] = param.param_default; // maybe undefined
                 }
             }
             setParamValues(initialValues);
@@ -67,13 +67,13 @@ export default function QueryInterface({
 
         const valuesToSend: Record<string, any> = {};
         for (let param of params) {
-          if (param.param_type === "SourceId") {
-            if(!paramValues[param.param_id]) {
-                // incomplete params
+          if(paramValues[param.param_id] === undefined) {
+                // incomplete params, don't submit
                 return;
-            } else {
-                valuesToSend[param.param_id] = paramValues[param.param_id].getId().value;
-            }
+           }
+
+          if (param.param_type === "SourceId") {            
+            valuesToSend[param.param_id] = paramValues[param.param_id].getId().value;
           } else {
             valuesToSend[param.param_id] = paramValues[param.param_id];
           }
@@ -143,6 +143,21 @@ return (
                   />
                 )}
 
+                {param.param_type === "float" && (
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    type="number"
+                    value={paramValues[param.param_id] || undefined}
+                    onChange={(e) =>
+                      setParamValues({
+                        ...paramValues,
+                        [param.param_id]: e.target.value,
+                      })
+                    }
+                  />
+                )}
                 {param.param_type === "SourceId" && (
                   <NodeSelectorBox
                     subgraph={subgraph}
