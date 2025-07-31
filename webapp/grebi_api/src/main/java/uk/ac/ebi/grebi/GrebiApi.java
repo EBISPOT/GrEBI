@@ -220,6 +220,37 @@ public class GrebiApi {
                     ctx.header("cache-control", "no-cache");
                     ctx.result(gson.toJson(template));
                 })
+                .get("/api/v1/subgraphs/{subgraph}/query/{templateId}.csv", ctx -> {
+                    var subgraph = ctx.pathParam("subgraph");
+                    var templateId = ctx.pathParam("templateId");
+                    var template = queryTemplates.queryTemplates.stream()
+                            .filter(qt -> qt.id.equals(templateId))
+                            .findFirst()
+                            .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found"));
+                    var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), template.result_columns.get(0).column_id);
+                    var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
+
+                    var params = new HashMap<String, List<String>>();
+                    for (var param : ctx.queryParamMap().entrySet()) {
+                        if (param.getKey().equals("page") || param.getKey().equals("size") ||
+                                param.getKey().equals("templateId") || param.getKey().equals("subgraph") ||
+                                param.getKey().equals("sortBy") || param.getKey().equals("sortDir") ||
+                                param.getKey().equals("resolve")) {
+                            continue;
+                        }
+                        params.put(param.getKey(), param.getValue());
+                    }
+
+                    var sort = Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
+
+                    ctx.future(() -> {
+                        try {
+                            return neo.runQueryFromTemplateStreamed(subgraph, template, params, sort, ctx.res());
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to write CSV response", e);
+                        }
+                    });
+                })
                 .get("/api/v1/subgraphs/{subgraph}/query/{templateId}", ctx -> {
                     var subgraph = ctx.pathParam("subgraph");
                     var templateId = ctx.pathParam("templateId");
@@ -247,9 +278,9 @@ public class GrebiApi {
                         params.put(param.getKey(), param.getValue());
                     }
 
-                    var resolve = ! "false".equals(ctx.queryParam("resolve"));
+                    var resolve = "true".equals(ctx.queryParam("resolve"));
 
-                    var res = neo.runQueryFromTemplate(subgraph, template, params, resolve, page);
+                    var res = neo.runQueryFromTemplatePaginated(subgraph, template, params, resolve, page);
 
                     ctx.result(
                         gson.toJson(

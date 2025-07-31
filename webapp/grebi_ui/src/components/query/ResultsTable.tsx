@@ -5,6 +5,7 @@ import { getPaginated } from "../../app/api";
 import GraphNodeRef from "../../model/GraphNodeRef";
 import DataTable, { Column } from "../datatable/DataTable";
 import LoadingOverlay from "../LoadingOverlay";
+import { Download } from "@mui/icons-material";
 
 interface ResultsTableProps {
   subgraph: string;
@@ -85,36 +86,42 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
   }
 
   return (
-    <Box sx={{ mt: 4 }}>
-      {/* <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-        <Link
-          to={`/api/v1/subgraphs/${subgraph}/query/${queryId}?${new URLSearchParams(params).toString()}`}
-          target="_blank"
-          rel="noopener"
-        >
-          Raw JSON
-        </Link>
-        <Button size="small" variant="outlined">
-          Download CSV
-        </Button>
-      </Stack> */}
-      <DataTable
-        columns={columns}
-        defaultSelector={(row, key) => row[key]}
-        data={data}
-        dataCount={dataCount}
-        placeholder={loading ? 'Loading...' : 'No results found'}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={setPage}
-        onRowsPerPageChange={setRowsPerPage}
-        // onFilter={setFilterKey}
-        sortColumn={sortColumn}
-        setSortColumn={setSortColumn}
-        sortDir={sortDir}
-        setSortDir={setSortDir}
-        addColumnsFromData={false}
-      />
-    </Box>
+<div className="relative mt-4 w-full">
+
+  <a href={process.env.REACT_APP_APIURL + `api/v1/subgraphs/${subgraph}/query/${queryId}.csv?` + new URLSearchParams(params).toString()}>
+  <button
+    className="
+      absolute top-2 right-4 z-10
+      px-3 py-1
+      border border-gray-300
+      text-sm font-medium
+      rounded
+      hover:bg-gray-50
+    "
+  >
+    <Download />
+    &nbsp;
+    All Results as CSV
+  </button>
+  </a>
+
+  <DataTable
+    columns={columns}
+    defaultSelector={(row, key) => row[key]}
+    data={data}
+    dataCount={dataCount}
+    placeholder={loading ? 'Loading...' : 'No results found'}
+    page={page}
+    rowsPerPage={rowsPerPage}
+    onPageChange={setPage}
+    onRowsPerPageChange={setRowsPerPage}
+    sortColumn={sortColumn}
+    setSortColumn={setSortColumn}
+    sortDir={sortDir}
+    setSortDir={setSortDir}
+    addColumnsFromData={false}
+  />
+</div>
+
   );
 }

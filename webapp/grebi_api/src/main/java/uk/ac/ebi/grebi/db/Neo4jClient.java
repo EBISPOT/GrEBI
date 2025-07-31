@@ -11,7 +11,8 @@ package uk.ac.ebi.grebi.db;
         import org.neo4j.driver.*;
         import org.neo4j.driver.Record;
         import org.neo4j.driver.exceptions.NoSuchRecordException;
-        import org.springframework.data.domain.*;
+import org.neo4j.driver.reactive.ReactiveSession;
+import org.springframework.data.domain.*;
 
         import static org.neo4j.driver.Values.parameters;
 
@@ -32,6 +33,18 @@ public class Neo4jClient {
     public Session getSession() {
 
         return getDriver().session(
+            SessionConfig.builder()
+                .withDatabase("neo4j")
+                .withDefaultAccessMode(AccessMode.READ)
+                .build()
+        );
+
+    }
+
+    public ReactiveSession getReactiveSession() {
+
+        return getDriver().session(
+            ReactiveSession.class,
             SessionConfig.builder()
                 .withDatabase("neo4j")
                 .withDefaultAccessMode(AccessMode.READ)

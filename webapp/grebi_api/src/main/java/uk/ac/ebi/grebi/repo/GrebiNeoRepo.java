@@ -3,21 +3,39 @@ package uk.ac.ebi.grebi.repo;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
+import io.javalin.http.Context;
+import io.netty.util.concurrent.CompleteFuture;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import reactor.adapter.JdkFlowAdapter;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 
 import org.neo4j.driver.EagerResult;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.reactive.ReactiveResult;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.neo4j.driver.Record;
+
 import uk.ac.ebi.grebi.GrebiApi;
 import uk.ac.ebi.grebi.db.Neo4jClient;
 import uk.ac.ebi.grebi.db.ResolverClient;
 import uk.ac.ebi.grebi.repo.QueryTemplate;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow.Publisher;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -121,13 +139,18 @@ public class GrebiNeoRepo {
         return res;
     }
 
-    public Page<Map<String,Object>> runQueryFromTemplate(
+    class PreparedQuery {
+        public String query;
+        public String countQuery;
+        public Map<String, Object> params;
+    }
+
+    PreparedQuery prepareQuery(
         String subgraph, 
         QueryTemplate template,
         Map<String, List<String>> params,
-        boolean resolve,
-        Pageable pageable
-        ) {
+        Sort sort
+    ) {
 
         if(!template.subgraphs.contains(subgraph)) {
             throw new IllegalArgumentException("Query template " + template.id + " is not available for subgraph " + subgraph);
@@ -184,32 +207,49 @@ public class GrebiNeoRepo {
             }
         }
 
-        String query = template.cypher_match_fragment.trim()
+        PreparedQuery preparedQuery = new PreparedQuery();
+
+        preparedQuery.query = template.cypher_match_fragment.trim()
                 + "\n" + template.cypher_return_fragment.trim();
+        preparedQuery.countQuery = template.cypher_match_fragment.trim() + "\n" + template.cypher_count_fragment.trim();
+        preparedQuery.params = paramMap;
 
-
-        if(pageable.getSort() != null && !pageable.getSort().isUnsorted()) {
-            var sort = pageable.getSort().stream().collect(Collectors.toList());
-            if(sort.size() != 1) {
+        if(sort != null && !sort.isUnsorted()) {
+            var sorts = sort.stream().collect(Collectors.toList());
+            if(sorts.size() != 1) {
                 throw new IllegalArgumentException("Sorting by multiple columns is not supported");
             }
-            var sortField = sort.get(0).getProperty();
+            var sortField = sorts.get(0).getProperty();
             if(!template.result_columns.stream().anyMatch(c -> c.column_id.equals(sortField))) {
                 throw new IllegalArgumentException("Sort column " + sortField + " not found; valid columns are: " +
                     template.result_columns.stream().map(c -> c.column_id).collect(Collectors.joining(", ")));
             }
-            if(sort.get(0).isAscending()) {
-                query += "\nORDER BY " + sortField + " ASC";
+            if(sorts.get(0).isAscending()) {
+                preparedQuery.query += "\nORDER BY " + sortField + " ASC";
             } else {
-                query += "\nORDER BY " + sortField + " DESC";
+                preparedQuery.query += "\nORDER BY " + sortField + " DESC";
             }
         }
 
+        return preparedQuery;
+    }
+
+
+    public Page<Map<String,Object>> runQueryFromTemplatePaginated(
+        String subgraph, 
+        QueryTemplate template,
+        Map<String, List<String>> params,
+        boolean resolve,
+        Pageable pageable
+        ) {
+
+        var preparedQuery = prepareQuery(subgraph, template, params, pageable.getSort());
+        var query = preparedQuery.query;
+        var countQuery = preparedQuery.countQuery;
+        var paramMap = preparedQuery.params;
 
         query = query + "\nSKIP " + pageable.getOffset()
                 + "\nLIMIT " + pageable.getPageSize();
-
-        String countQuery = template.cypher_match_fragment.trim() + "\n" + template.cypher_count_fragment.trim();
 
         System.err.println("Running query: " + query + "\nWith parameters: " + paramMap + "\nCount query: " + countQuery);
 
@@ -229,7 +269,6 @@ public class GrebiNeoRepo {
         if(count == 0) {
             return new org.springframework.data.domain.PageImpl<>(List.of(), pageable, 0);
         }
-
 
         List<QueryTemplate.ResultColumn> columns = template.result_columns;
 
@@ -317,9 +356,101 @@ public class GrebiNeoRepo {
                 count
             );
         }
-
-
     }
+
+public CompletableFuture<Void> runQueryFromTemplateStreamed(
+        String subgraph,
+        QueryTemplate template,
+        Map<String, List<String>> params,
+        Sort sort,
+        HttpServletResponse res
+) throws IOException {
+
+    List<QueryTemplate.ResultColumn> columns = template.result_columns;
+
+    res.setContentType("text/csv");
+    res.setCharacterEncoding("UTF-8");
+    res.setHeader("Content-Disposition", "attachment; filename=\"" + template.id + ".csv\"");
+    res.setStatus(HttpServletResponse.SC_OK);
+
+    PrintWriter writer = res.getWriter();
+
+    var csvColumns = new ArrayList<String>();
+
+    for (QueryTemplate.ResultColumn column : columns) {
+        String columnId = column.column_id;
+        if (column.column_type.equals("GraphNodeId")) {
+            csvColumns.add(columnId + "_id");
+            csvColumns.add(columnId + "_label");
+        } else {
+            csvColumns.add(columnId);
+        }
+    }
+
+    writer.write(String.join(",", csvColumns));
+    writer.write("\n");
+
+    var preparedQuery = prepareQuery(subgraph, template, params, sort);
+    var session = getClient(subgraph).getReactiveSession();
+
+    Flux<ReactiveResult> results = JdkFlowAdapter
+        .flowPublisherToFlux(session.run(preparedQuery.query, preparedQuery.params));
+
+        CompletableFuture<Void> future = new CompletableFuture<>();
+
+     results
+        .flatMap(result -> JdkFlowAdapter.flowPublisherToFlux(result.records()))
+        .doOnNext(record -> {
+
+                boolean first = true;
+
+                for (QueryTemplate.ResultColumn column : columns) {
+
+                    if(first) {
+                        first = false;
+                    } else {
+                        writer.write(",");
+                    }
+
+                    String columnId = column.column_id;
+                    if (column.column_type.equals("GraphNodeId")) {
+                        var value = record.get(columnId).asMap();
+                        String nodeId = value.get("grebi:nodeId").toString();
+
+                        // TODO ??
+                        if(nodeId.startsWith(subgraph + ":")) {
+                            nodeId = nodeId.substring(subgraph.length() + 1);
+                        }
+
+                        String nodeLabel = ((List) value.get("grebi:name")).get(0).toString();
+
+                        writer.write("\"" + nodeId.replace("\"", "\"\"") + "\",");
+                        writer.write("\"" + nodeLabel.replace("\"", "\"\"") + "\"");
+
+                    } else {
+                        String raw = Objects.toString(record.get(columnId).asObject(), "");
+                        writer.write("\"" + raw.replace("\"", "\"\"") + "\"");
+                    }
+                }
+
+                writer.write("\n");
+        })
+        .doOnError(error -> {
+                writer.write("ERROR: " + error.getMessage() + "\n");
+        })
+          .doFinally(sig -> {
+            writer.flush();      // best‐effort
+            future.complete(null);
+          })
+          .subscribe(
+            rec -> {
+                // written in doOnNext
+            },
+            future::completeExceptionally
+          );
+
+        return future;
+}
 
 
 
