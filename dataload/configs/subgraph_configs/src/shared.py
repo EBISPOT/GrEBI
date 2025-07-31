@@ -93,6 +93,7 @@ config = {
         "ols:relatedFrom",
         "robokop:smiles",
         "ctd:ChemicalURL",
-        "ctd:UniProtIDs"
+        "ctd:UniProtIDs",
+        "ols:linksTo"
      ]
 }

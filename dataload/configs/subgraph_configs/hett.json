@@ -132,7 +132,8 @@
     "ols:relatedFrom",
     "robokop:smiles",
     "ctd:ChemicalURL",
-    "ctd:UniProtIDs"
+    "ctd:UniProtIDs",
+    "ols:linksTo"
   ],
   "datasource_configs": [
     "./configs/datasource_configs/hett_pesticides_appril.yaml",
