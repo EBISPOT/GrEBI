@@ -95,5 +95,18 @@ config = {
         "ctd:ChemicalURL",
         "ctd:UniProtIDs",
         "ols:linksTo"
+     ],
+     "prioritise_datasources": [
+        "OLS.biolink",
+        "OLS.ro",
+        "OLS.chebi",
+        "OLS.hp",
+        "OLS.mp",
+        "OLS.mondo",
+        "OLS.oba",
+        "OLS.efo",
+        "OLS.doid",
+        "HGNC",
+        "IMPC"
      ]
 }
