@@ -415,12 +415,11 @@ public CompletableFuture<Void> runQueryFromTemplateStreamed(
                     String columnId = column.column_id;
                     if (column.column_type.equals("GraphNodeId")) {
                         var value = record.get(columnId).asMap();
-                        String nodeId = value.get("grebi:nodeId").toString();
 
-                        // TODO ??
-                        if(nodeId.startsWith(subgraph + ":")) {
-                            nodeId = nodeId.substring(subgraph.length() + 1);
-                        }
+                        var sourceIds = (List<String>) value.get("id");
+                        var nodeId = pickFavouriteSourceId(sourceIds);
+
+                        System.err.println("Source IDs for " + columnId + ": " + sourceIds);
 
                         String nodeLabel = ((List) value.get("grebi:name")).get(0).toString();
 
@@ -451,6 +450,48 @@ public CompletableFuture<Void> runQueryFromTemplateStreamed(
 
         return future;
 }
+
+
+
+// TODO: move to config
+//
+private static List<String> FAVOURITE_PREFIXES = List.of(
+    "grebi:",
+    "biolink:",
+    "ro:",
+    "hp:",
+    "mp:",
+    "mondo:",
+    "oba:",
+    "efo:",
+    "doid:",
+    "hgnc:",
+    "mgi:",
+    "uniprot:",
+    "pmid:",
+    "chebi:",
+    "MTBLS",
+    "MTBLC"
+);
+
+private String pickFavouriteSourceId(List<String> ids) {
+
+    if(ids == null || ids.isEmpty()) {
+        return null;
+    }
+
+    for(String prefix : FAVOURITE_PREFIXES) {
+        for(String id : ids) {
+                if(id.startsWith(prefix)) {
+                    return id;
+                }
+            }
+        }
+    
+
+    return ids.get(0);
+}
+
 
 
 

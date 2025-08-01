@@ -12,8 +12,8 @@ cypher_match_fragment: |-
   MATCH (study:`metabolights:Study`)-[:`metabolights:ref`]->(subclass)
 cypher_return_fragment: |-
   RETURN DISTINCT
-    subclass { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(subclass) } AS chemical,
-    study { .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study
+    subclass { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(subclass) } AS chemical,
+    study { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study
 cypher_count_fragment: |-
   WITH DISTINCT subclass, study
   RETURN count(*) AS count

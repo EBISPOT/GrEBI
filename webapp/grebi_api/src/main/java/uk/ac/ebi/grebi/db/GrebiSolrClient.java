@@ -124,10 +124,10 @@ public class GrebiSolrClient {
             }
         }
 
-        logger.info("solr rows: {} ", query.getRows());
-        logger.info("solr query to core " + coreName + ": {} ", query.toQueryString());
-        logger.info("solr query urldecoded: {}", URLDecoder.decode(query.toQueryString()));
-        logger.info("solr host: {}", SOLR_HOST);
+        logger.error("solr rows: {} ", query.getRows());
+        logger.error("solr query to core " + coreName + ": {} ", query.toQueryString());
+        logger.error("solr query urldecoded: {}", URLDecoder.decode(query.toQueryString()));
+        logger.error("solr host: {}", SOLR_HOST);
 
         org.apache.solr.client.solrj.SolrClient mySolrClient = new HttpSolrClient.Builder(getSolrHost() + "/solr/" + coreName).build();
 
