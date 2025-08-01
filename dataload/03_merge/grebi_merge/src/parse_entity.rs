@@ -1,6 +1,6 @@
 
 
-use grebi_shared::json_lexer::{lex, JsonTokenType};
+use grebi_shared::json_lexer::{JsonTokenType};
 use grebi_shared::json_parser::JsonParser;
 
 #[derive(Clone)]

@@ -2,10 +2,10 @@ use flate2::read::GzDecoder;
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, VecDeque};
 use std::fs::File;
-use std::io::{BufWriter, Cursor, Write};
+use std::io::{BufWriter, Write};
 use std::io::{BufRead, BufReader };
 use clap::Parser;
-use std::{env, io};
+use std::{io};
 
 use grebi_shared::get_id;
 
@@ -27,7 +27,7 @@ struct Input {
 struct Args {
 
     #[arg(long)]
-    exclude_props: String,
+    exclude_props: Option<String>,
 
     #[arg(long)]
     annotate_subgraph_name: Option<String>,
@@ -49,11 +49,10 @@ fn main() -> std::io::Result<()> {
     let stdout = io::stdout().lock();
     let mut writer = BufWriter::with_capacity(1024*1024*32,stdout);
 
-    let exclude_props:BTreeSet<Vec<u8>> = args.exclude_props.split(",").map(|s| s.to_string().as_bytes().to_vec()).collect();
+    let exclude_props:BTreeSet<Vec<u8>> = args.exclude_props.as_deref().unwrap_or_default().split(",").map(|s| s.to_string().as_bytes().to_vec()).collect();
 
     let mut input_filenames: Vec<String> = args._files.to_vec();
-    input_filenames.sort();
-    input_filenames.dedup();
+    dedup_in_unsorted_vec(&mut input_filenames);
 
     let subgraph_name:Option<String> = args.annotate_subgraph_name;
 
@@ -159,6 +158,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
+
 #[inline(always)]
 fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWriter<std::io::StdoutLock>, inputs: &Vec<Input>, exclude_props:&BTreeSet<Vec<u8>>, subgraph_name:&Option<String>) {
 
@@ -198,15 +198,21 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     }
 
     // merge all the {prop_key, prop_value, datasource} into a single list for sorting
+
+    struct MergedProp<'a> {
+        datasource:&'a [u8],
+        source_ids:&'a Vec<&'a [u8]>,
+        prop:ParsedProperty<'a>
+    }
     let mut n_props_total = 0;
     for json in &jsons {
         n_props_total += json.props.len();
     }
-    let mut merged_props = Vec::<(&[u8] /* datasource */, &Vec<&[u8]> /* source ids */, ParsedProperty)>::with_capacity(n_props_total);
+    let mut merged_props = Vec::<MergedProp>::with_capacity(n_props_total);
     for json in &jsons {
         for prop in json.props.iter() {
             if !exclude_props.contains(prop.key) {
-                merged_props.push(( json.datasource, &json.source_ids, prop.clone()));
+                merged_props.push(MergedProp { datasource: json.datasource, source_ids: &json.source_ids, prop: prop.clone() });
             }
         }
     }
@@ -216,11 +222,11 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         return;
     }
 
-    datasources.sort();
-    datasources.dedup();
-
-    source_ids.sort();
-    source_ids.dedup();
+    // we don't sort because the datasources (and therefore the source IDs) are ordered
+    // by the order of the input files which indicates the priority of the datasources
+    //
+    dedup_in_unsorted_vec(&mut datasources);
+    dedup_in_unsorted_vec(&mut source_ids);
 
     stdout.write_all(r#"{"grebi:nodeId":""#.as_bytes()).unwrap();
     stdout.write_all(jsons[0].id).unwrap();
@@ -256,17 +262,17 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
     if subgraph_name.is_some() {
         stdout.write_all(r#","grebi:subgraph":""#.as_bytes()).unwrap();
-        stdout.write_all(&subgraph_name.as_ref().unwrap().as_bytes());
+        stdout.write_all(&subgraph_name.as_ref().unwrap().as_bytes()).unwrap();
         stdout.write_all(r#"""#.as_bytes()).unwrap();
     }
 
     // sort by key, then value, then datasource
     merged_props.sort_by(|a, b| {
-        match a.2.key.cmp(&b.2.key) {
+        match a.prop.key.cmp(&b.prop.key) {
             Ordering::Equal => {
-                match a.2.value.cmp(&b.2.value) {
+                match a.prop.value.cmp(&b.prop.value) {
                     Ordering::Equal => {
-                        return a.0.cmp(&b.0);
+                        return a.datasource.cmp(&b.datasource);
                     }
                     other => {
                         return other;
@@ -283,62 +289,121 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
     // has multiple files that define the same thing (e.g. multiple ontologies that import
     // the same ontology when we import the whole lot as an "Ontologies" datasource)
     merged_props.dedup_by(|a, b| {
-        return a.2.key == b.2.key && a.2.value == b.2.value && a.0 == b.0;
+        return a.prop.key == b.prop.key && a.prop.value == b.prop.value && a.datasource == b.datasource;
     });
+
+
+    // now each key is together, with each value together, then each datasource together
+    // and duplicates have been removed. However we want to prioritise the values provided
+    // by some datasources. For example we want to take always put labels from MONDO first so
+    // the UI can just show the first label and not get a mix of labels from MONDO, EFO, DOID, etc.
+    //
+    // We do this by sorting the values in the order of the datasources provided on the command line
+    // to grebi_merge.
+    //
+    // The other thing we want to do is put the most popular values (greatest number of datasources) first. 
+    // This will address things like in the cross-species graph where "diabetes mellitus" is merged
+    // with "diabetes mellitus, domestic guinea pig". Both are in MONDO but obviously we want "diabetes mellitus"
+    // to be the prioritised label. Because it is also asserted by EFO, DOID, etc it will have
+    // the most datasources and be prioritised.
+    //
+    // So: (a) order of datasources provided on command line
+    //     (b) number of datasources that define each value
+    // 
+
+    // locations of each block of the same value
+    let mut value_blocks:Vec<(usize, usize)> = Vec::new();
+    for index in 0..merged_props.len() {
+        if index == 0 || merged_props[index].prop.key != merged_props[index - 1].prop.key 
+            || merged_props[index].prop.value != merged_props[index - 1].prop.value 
+        {
+            value_blocks.push((index, index)); // new value block
+        } else {
+            value_blocks.last_mut().unwrap().1 = index; // continue
+        }
+    }
+
+    value_blocks.sort_by(|a, b| {
+
+        let value_block_a = &merged_props[a.0..a.1 + 1];
+        let value_block_b = &merged_props[b.0..b.1 + 1];
+
+        let lowest_ds_a = inputs.iter()
+            .position(|input| input.datasource == value_block_a[0].datasource)
+            .unwrap_or(usize::MAX);
+
+        let lowest_ds_b = inputs.iter()
+            .position(|input| input.datasource == value_block_b[0].datasource)
+            .unwrap_or(usize::MAX);
+
+        match lowest_ds_a.cmp(&lowest_ds_b) {
+            Ordering::Equal => {
+                // if the lowest datasource is the same, sort by number of datasources
+                let count_a = value_block_a.len();
+                let count_b = value_block_b.len();
+                return count_b.cmp(&count_a); // more datasources first
+            }
+            other => {
+                return other; // lowest datasource first
+            }
+        }
+    });
+
+
 
     let mut index = 0;
 
-    // for each of all the properties (key) that apply to this entity
-    while index < merged_props.len() {
+    // each block is all the entries with the same key and value, but different datasources
+    'each_key: while index < value_blocks.len() {
+
+        let key = merged_props[value_blocks[index].0].prop.key;
+
+        // start with the property key
         stdout.write_all(r#",""#.as_bytes()).unwrap();
-        stdout.write_all(merged_props[index].2.key).unwrap();
+        stdout.write_all(key).unwrap(); // key from the first entry will do
         stdout.write_all(r#"":["#.as_bytes()).unwrap();
 
+        // enumerate each value block until we find one that has a different key
         let mut is_first2 = true;
+        while index < value_blocks.len() {
 
-        // for each value, print (a) the datasources which define it and (b) the value itself
-        while index < merged_props.len() {
+            if merged_props[value_blocks[index].0].prop.key != key {
+                continue 'each_key; // we are done with the value blocks and on to a different key
+            }
+
+            // each value starts here
+
+            let start_value_index = index;
+
+            let mut source_ids:Vec<&[u8]> = Vec::new();
+
             if !is_first2 {
                 stdout.write_all(r#","#.as_bytes()).unwrap();
             } else {
                 is_first2 = false;
             }
-
-            let start_value_index = index;
             stdout.write_all(r#"{"grebi:datasources":["#.as_bytes()).unwrap();
 
-            let mut source_ids:Vec<&[u8]> = Vec::new();
 
             let mut is_first3:bool = true;
-            loop {
+
+            for i in value_blocks[index].0..=value_blocks[index].1 {
+                let entry = &merged_props[i];
+
                 if !is_first3 {
                     stdout.write_all(r#","#.as_bytes()).unwrap();
                 } else {
                     is_first3 = false;
                 }
+
                 // print the datasource
                 stdout.write_all(r#"""#.as_bytes()).unwrap();
-                stdout.write_all(merged_props[index].0).unwrap();
+                stdout.write_all(entry.datasource).unwrap();
                 stdout.write_all(r#"""#.as_bytes()).unwrap();
 
                 // piggybacking on this loop to find all the source IDs
-                for &source_id in merged_props[index].1.iter() {
+                for &source_id in entry.source_ids.iter() {
                     source_ids.push(&source_id);
-                }
-
-                index = index + 1;
-                
-                // if we hit the end of all the property definitions are are done
-                if index == merged_props.len() {
-                    break;
-                }   
-
-                // when we hit another key or value we are done; all the same key/value with different
-                // datasources should be right after us.
-                if merged_props[index].2.key != merged_props[start_value_index].2.key 
-                    ||merged_props[index].2.value != merged_props[start_value_index].2.value 
-                {
-                    break;
                 }
             }
 
@@ -348,7 +413,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
             for index2 in 0..source_ids.len() {
                 let source_id = &source_ids[index2];
                 if last_source_id.is_some() {
-                    if *source_id == last_source_id.unwrap() {
+                    if *source_id == last_source_id.unwrap() { // deduplication of source ids
                         continue;
                     }
                     stdout.write_all(b",");
@@ -361,19 +426,12 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
             // now write the value itself (from start_value_index; index should already be at the next value)
             stdout.write_all(r#"],"grebi:value":"#.as_bytes()).unwrap();
-            stdout.write_all(merged_props[start_value_index].2.value).unwrap();
+            stdout.write_all(merged_props[start_value_index].prop.value).unwrap();
             stdout.write_all(r#"}"#.as_bytes()).unwrap();
 
-            // if we hit the end of all the property definitions are are done
-            if index == merged_props.len() {
-                break;
-            }   
-
-            // if we changed key, we are done here (onto the next property)
-            if merged_props[index].2.key != merged_props[start_value_index].2.key {
-                break;
-            }
+            index = index + 1;
         }
+        
         stdout.write_all(r#"]"#.as_bytes()).unwrap(); // close properties array
     }
 
@@ -433,5 +491,17 @@ fn average_embeddings(embeddings: &Vec<&[u8]>) -> Vec<u8> {
     ).as_bytes().to_vec();
 }
 
-
-
+fn dedup_in_unsorted_vec<T: PartialEq>(vec: &mut Vec<T>) {
+    let mut i = 0;
+    while i < vec.len() {
+        let mut j = i + 1;
+        while j < vec.len() {
+            if vec[i] == vec[j] {
+                vec.remove(j);
+            } else {
+                j += 1;
+            }
+        }
+        i += 1;
+    }
+}
