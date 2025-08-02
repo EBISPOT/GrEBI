@@ -10,12 +10,14 @@ for file in *.jsonl; do
 done
 
 
-echo === With CatDB first
+echo === With CatDB prioritised
 
-$GREBI_MERGE CatDB:input/catdb.test.jsonl.gz MoreCats:input/morecats.test.jsonl.gz
+$GREBI_MERGE --prioritise-datasources CatDB CatDB:input/catdb.test.jsonl.gz MoreCats:input/morecats.test.jsonl.gz
 
-echo === With MoreCats first
+echo === With MoreCats prioritised
 
-$GREBI_MERGE MoreCats:input/morecats.test.jsonl.gz CatDB:input/catdb.test.jsonl.gz
+$GREBI_MERGE --prioritise-datasources MoreCats CatDB:input/catdb.test.jsonl.gz MoreCats:input/morecats.test.jsonl.gz
+
+
 
 
