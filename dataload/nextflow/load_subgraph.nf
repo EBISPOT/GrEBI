@@ -45,6 +45,7 @@ workflow {
     merged = merge_ingests(
         assigned,
         Channel.value(config.exclude_props),
+        Channel.value(config.prioritise_datasources),
         Channel.value(config.bytes_per_merged_file))
 
     indexed = index(merged.collect())
@@ -181,6 +182,7 @@ process merge_ingests {
     input:
     val(assigned)
     val(exclude_props)
+    val(prioritise_datasources)
     val(bytes_per_merged_file)
 
     output:
@@ -192,6 +194,7 @@ process merge_ingests {
     set -Eeuo pipefail
     grebi_merge \
         --exclude-props ${exclude_props.iterator().join(",")} \
+        --prioritise-datasources ${prioritise_datasources.iterator().join(",")} \
         --annotate-subgraph-name ${params.subgraph} \
         ${buildMergeArgs(assigned)} \
         | split -a 6 -d -C ${bytes_per_merged_file} - merged.jsonl.

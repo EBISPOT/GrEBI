@@ -222,7 +222,17 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         }
 
         output_nodes.write_all(r#"{"id":"#.as_bytes()).unwrap();
-        output_nodes.write_all(Value::String(qualified_safe_label).to_string().as_bytes()).unwrap();
+
+
+        if grebitype.eq("ols:Property") {
+            output_nodes.write_all(Value::String(qualified_safe_label).to_string().as_bytes()).unwrap();
+        } else {
+            let iri = get_string_values(
+                obj.get("ols:iri").iter().next().unwrap()
+            )[0].to_string();
+            output_nodes.write_all(Value::String(iri).to_string().as_bytes()).unwrap();
+        }
+
         output_nodes.write_all(r#","grebi:datasource":""#.as_bytes()).unwrap();
         output_nodes.write_all(datasource.as_bytes()).unwrap();
         output_nodes.write_all(r#"","grebi:type":[""#.as_bytes()).unwrap();
