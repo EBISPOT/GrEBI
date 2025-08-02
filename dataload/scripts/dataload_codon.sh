@@ -10,10 +10,15 @@ export GREBI_QUERY_YAMLS_PATH=/nfs/production/parkinso/spot/grebi/materialised_q
 export GREBI_OUT_DIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/out
 export GREBI_IS_EBI=true
 export GREBI_NEXTFLOW_CONFIG=$GREBI_DATALOAD_HOME/nextflow/codon_nextflow.config
+export NXF_WORK=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/NXF_WORK
+export NXF_HOME=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/NXF_HOME
+export NXF_TEMP=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/NXF_TEMP
+export NXF_CACHE_DIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/NXF_CACHE_DIR
+export NXF_SINGULARITY_CACHE_DIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/NXF_SINGULARITY_CACHE_DIR
 module load nextflow/24.10.3
 
 
-srun --time 1:0:0 --mem 4g mkdir -p $GREBI_OUT_DIR
+srun --time 1:0:0 --mem 4g mkdir -p $GREBI_OUT_DIR $NXF_HOME $NXF_WORK $NXF_TEMP $NXF_CACHE_DIR $NXF_SINGULARITY_CACHE_DIR
 
 srun --time 6-0:0:0 --mem 32g nextflow $GREBI_DATALOAD_HOME/nextflow/load_subgraph.nf -c $GREBI_NEXTFLOW_CONFIG -resume
 
