@@ -4,7 +4,6 @@ use grebi_shared::get_id;
 use std::io::BufReader;
 use std::io::BufRead;
 use std::io::BufWriter;
-use std::io::StdinLock;
 use std::io;
 use std::io::Write;
 
@@ -42,7 +41,13 @@ fn main() {
 
         let mut enc = ZlibEncoder::new(Vec::new(), Compression::new(9));
 
-        enc.write_all(&line).unwrap();
+        // The embedding vector is already stored in Neo4j and Solr so we don't also need it in
+        // the compressed blob for sqlite.
+        //
+        let (before, after) = remove_embedding_vector(&line);
+        enc.write_all(&before).unwrap();
+        enc.write_all(&after).unwrap();
+
         let compressed = enc.finish().unwrap();
 
         writer.write_all(&(compressed.len() as u32).to_le_bytes()).unwrap();
@@ -51,3 +56,18 @@ fn main() {
 
 }
 
+fn remove_embedding_vector(line: &Vec<u8>) -> (&[u8], &[u8]) {
+    let pattern_start = br#""grebi:embeddingVector":["#;
+    
+    if let Some(start_idx) = line.windows(pattern_start.len())
+                                 .position(|w| w == pattern_start) 
+    {
+        if let Some(end_idx) = line[start_idx..].iter().position(|&b| b == b']') {
+            let before = &line[..start_idx];
+            let after = &line[start_idx + end_idx + 1..];
+            return (before, after);
+        }
+    }
+    
+    (&line[..], &[])
+}
