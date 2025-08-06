@@ -57,7 +57,7 @@ fn main() {
 }
 
 fn remove_embedding_vector(line: &Vec<u8>) -> (&[u8], &[u8]) {
-    let pattern_start = br#""grebi:embeddingVector":["#;
+    let pattern_start = br#","grebi:embeddingVector":["#;
     
     if let Some(start_idx) = line.windows(pattern_start.len())
                                  .position(|w| w == pattern_start) 
