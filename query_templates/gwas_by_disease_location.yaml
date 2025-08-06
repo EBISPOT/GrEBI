@@ -1,0 +1,46 @@
+title: Search GWAS Catalog by disease location
+description: Given an anatomical location from UBERON, find GWAS associations for linked diseases
+subgraphs:
+  - ebi_monarch_xspecies
+  - impc_x_gwas
+topics:
+  - gwas_catalog
+  - uberon
+cypher_match_fragment: |-
+  MATCH (location)-[:sourceId]->(:Id {id: $location_id })
+  MATCH (disease)-[:`biolink:disease_has_location`]->(location)
+  MATCH (snp:`gwas:SNP`)-[:`gwas:associated_with`]->(disease)
+  MATCH (human_gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+cypher_return_fragment: |-
+  RETURN DISTINCT
+    disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
+    snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
+    human_gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(human_gene) } AS human_gene,
+cypher_count_fragment: |-
+  WITH DISTINCT disease, snp, human_gene
+  RETURN count(*) AS count
+params:
+  - param_id: location_id
+    param_name: Anatomical Location
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'uberon:0001062'
+result_columns:
+  - column_id: disease
+    column_type: GraphNodeId
+  - column_id: snp
+    column_type: GraphNodeId
+  - column_id: human_gene
+    column_type: GraphNodeId
+examples:
+  - title: lung
+    params:
+      location_id: uberon:0002048 
+  - title: liver
+    params:
+      location_id: uberon:0002107
+  - title: retina
+    params:
+      location_id: uberon:0000966
+
+  

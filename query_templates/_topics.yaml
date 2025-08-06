@@ -27,4 +27,8 @@ topics:
     type: Resource
     description: The NHGRI-EBI GWAS Catalog is a curated collection of published genome-wide association studies (GWAS) and their associated variants.
     url: https://www.ebi.ac.uk/gwas/
-  
+  - id: uberon
+    name: UBERON
+    type: Ontology
+    description: Uberon is an integrated cross-species anatomy ontology representing a variety of entities classified according to traditional anatomical criteria such as structure, function and developmental lineage.
+    url: https://obophenotype.github.io/uberon/
