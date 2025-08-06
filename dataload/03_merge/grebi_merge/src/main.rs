@@ -174,9 +174,27 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         panic!();
     }
 
-    let jsons:Vec<ParsedEntity> = lines_to_write.iter().map(|line| {
+    let mut jsons:Vec<ParsedEntity> = lines_to_write.iter().map(|line| {
         return ParsedEntity::from_json(&line.line, &inputs[line.input_index].datasource );
     }).collect();
+
+    // sort by ds_priorities, then by datasource alphabetically
+    jsons.sort_unstable_by(|a, b| {
+        let ds_a = a.datasource;
+        let ds_b = b.datasource;
+
+        let pos_a = ds_priorities.iter().position(|x| x == ds_a).unwrap_or(usize::MAX);
+        let pos_b = ds_priorities.iter().position(|x| x == ds_b).unwrap_or(usize::MAX);
+
+        match pos_a.cmp(&pos_b) {
+            Ordering::Equal => {
+                return ds_a.cmp(ds_b);
+            }
+            other => {
+                return other;
+            }
+        }
+    });
 
     let mut has_any_type:bool = false;
 
@@ -231,8 +249,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         return;
     }
 
-    // we don't sort because the datasources (and therefore the source IDs) are ordered
-    // by the order of the input files which indicates the priority of the datasources
+    // we don't sort because the datasources (and therefore the source IDs) were ordered by ds_priority
     //
     dedup_in_unsorted_vec(&mut datasources);
     dedup_in_unsorted_vec(&mut source_ids);
