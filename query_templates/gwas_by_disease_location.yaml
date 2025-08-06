@@ -15,7 +15,7 @@ cypher_return_fragment: |-
   RETURN DISTINCT
     disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
     snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
-    human_gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(human_gene) } AS human_gene,
+    human_gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(human_gene) } AS human_gene
 cypher_count_fragment: |-
   WITH DISTINCT disease, snp, human_gene
   RETURN count(*) AS count
