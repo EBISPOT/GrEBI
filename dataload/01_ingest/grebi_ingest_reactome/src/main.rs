@@ -59,6 +59,10 @@ fn main() {
 
             let mut equivalences:Vec<Value> = Vec::new();
 
+            if properties.contains_key("stId") {
+                equivalences.push(Value::String("reactome:".to_owned() + properties.get("stId").unwrap().as_str().unwrap()));
+            }
+
             let p_url = properties.get("url");
             if p_url.is_some() {
                 let url = p_url.unwrap().as_str().unwrap();
