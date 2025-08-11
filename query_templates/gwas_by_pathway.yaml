@@ -1,0 +1,55 @@
+title: Search GWAS Catalog by Reactome pathway
+description: Given a pathway from Reactome, find variants, traits, and studies for its genes in the GWAS Catalog
+subgraphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+  - reactome
+cypher_match_fragment: |-
+  MATCH (pathway)-[:sourceId]->(id:Id { id: $pathway_id })
+  MATCH (gene)-[:`biolink:participates_in`]->(pathway)
+  MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  MATCH (snp)-[assoc:`gwas:associated_with`]->(trait)
+cypher_return_fragment: |-
+  WITH
+      gene,
+      snp,
+      trait,
+      [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id
+  MATCH
+      (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
+  RETURN DISTINCT
+      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
+      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
+      trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
+      study { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study
+cypher_count_fragment: |-
+  WITH DISTINCT gene, snp, trait, study
+  RETURN count(*) AS count
+params:
+  - param_id: pathway_id
+    param_name: Reactome Pathway
+    param_type: SourceId
+    param_opts:
+      'grebi:type': 'reactome:Pathway'
+result_columns:
+  - column_id: gene
+    column_type: GraphNodeId
+  - column_id: snp
+    column_type: GraphNodeId
+  - column_id: trait
+    column_type: GraphNodeId
+  - column_id: study
+    column_type: GraphNodeId
+examples:
+  - title: Glycolysis
+    params:
+      pathway_id: reactome:R-HSA-70171
+  - title: Citric acid cycle
+    params:
+      pathway_id: reactome:R-HSA-71403
+  - title: Wnt signaling
+    params:
+      pathway_id: reactome:R-HSA-195721
+
+  
