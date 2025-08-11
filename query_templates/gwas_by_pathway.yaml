@@ -10,7 +10,6 @@ cypher_match_fragment: |-
   MATCH (gene)-[:`biolink:participates_in`]->(pathway)
   MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
   MATCH (snp)-[assoc:`gwas:associated_with`]->(trait)
-cypher_return_fragment: |-
   WITH
       gene,
       snp,
@@ -18,6 +17,7 @@ cypher_return_fragment: |-
       [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id
   MATCH
       (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
+cypher_return_fragment: |-
   RETURN DISTINCT
       gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
       snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
