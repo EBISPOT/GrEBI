@@ -1,0 +1,5 @@
+name: MGnify
+enabled: true
+ingests:
+  - globs: ["dataload/00_fetch_data/mgnify/*.jsonl.gz"]
+    command: cat

@@ -16,6 +16,7 @@ config['datasource_configs'] = [
     "./configs/datasource_configs/metabolights.yaml",
     "./configs/datasource_configs/mondo_efo.yaml",
     "./configs/datasource_configs/ctd.yaml",
+    "./configs/datasource_configs/mgnify.yaml",
     "./configs/datasource_configs/hett_pesticides_appril.yaml",
     "./configs/datasource_configs/hett_pesticides_eu.yaml",
     "./configs/datasource_configs/hett_pesticides_gb.yaml",
