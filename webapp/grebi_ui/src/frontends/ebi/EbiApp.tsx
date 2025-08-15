@@ -46,12 +46,13 @@ class EbiApp extends React.Component {
           <Route path={`/error`} element={<EbiErrorPage />} />
 
           <Route path={`/`} element={<EbiHomePage />} />
+          <Route path={`/subgraphs/:subgraph`} element={<EbiHomePage />} />
           <Route path={`/subgraphs/:subgraph/search`} element={<EbiSearchPage />} />
           <Route path={`/subgraphs/:subgraph/nodes/:nodeId`} element={<EbiNodePage />} />
 
           <Route path={`/tables`} element={<EbiTablesHomePage />} />
           {/* <Route path={`/results/:queryid`} element={<EbiResultsPage />} /> */}
-          <Route path={`/subgraphs/:subgraph/tables`} element={<EbiTablesPage />} />
+          <Route path={`/subgraphs/:subgraph/tables`} element={<EbiTablesHomePage />} />
           <Route path={`/subgraphs/:subgraph/tables/:queryid`} element={<EbiTablesPage />} />
 
 
@@ -60,7 +61,7 @@ class EbiApp extends React.Component {
 
 
 
-          <Route path={`/downloads`} element={<EbiDownloadsPage />} />
+          <Route path={`/subgraphs/:subgraph/downloads`} element={<EbiDownloadsPage />} />
         </Routes>
         {/* <EbiFooter /> */}
       </BrowserRouter>

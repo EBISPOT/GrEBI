@@ -22,7 +22,9 @@ export default async function getExposureLinksTabs(node:GraphNode):Promise<Links
 
 async function getGeneLinksTabs(node:GraphNode) {
 
-    let page = await (getPaginated<any>(`api/v1/subgraphs/${node.getSubgraph()}/nodes/${encodeNodeId(node.getNodeId())}/incoming_edges`, {
+    let page = await (getPaginated<any>(`api/v1/subgraphs/${
+        process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH
+    }/nodes/${encodeNodeId(node.getNodeId())}/incoming_edges`, {
             'size': "1",
             'grebi:type': 'biolink:chemical_gene_interaction_association'
         }));

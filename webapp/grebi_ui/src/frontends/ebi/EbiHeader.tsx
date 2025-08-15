@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import urlJoin from "url-join";
 import { Helmet } from 'react-helmet';
-import React, { Fragment } from "react";
+import React, { Fragment, useLayoutEffect } from "react";
 import HomeIcon from '@mui/icons-material/Home';
 import MediationIcon from '@mui/icons-material/Mediation';
 import { List, Stack } from "@mui/material";
@@ -12,7 +12,6 @@ import DownloadIcon from '@mui/icons-material/Download';
 import TravelExplore from '@mui/icons-material/TravelExplore';
 import { FeaturedPlayList, Hub, LibraryBooks, ManageSearch, Polyline, Science, Search, Share, SnippetFolder, TableChart, ViewList } from "@mui/icons-material";
 import SubgraphPicker from "../../components/SubgraphPicker";
-import { HistoryItem } from "../../History";
 import Breadcrumbs, { BreadcrumbsEntry } from "../../components/Breadcrumbs";
 
 
@@ -23,10 +22,20 @@ export default function EbiHeader({
   breadcrumbs
 }: {
   section?: string,
-  subgraph: string,
+  subgraph?: string,
   showBreadcrumbsBar?: boolean,
   breadcrumbs?: BreadcrumbsEntry[]
 }) {
+  let loc = useLocation();
+  let navigate = useNavigate();
+
+function setSubgraph(subgraph: string) {
+  let currentUrl = loc.pathname;
+  let newUrl = currentUrl.replace(/subgraphs\/[^/]+/, `subgraphs/${subgraph}`);
+  navigate(newUrl);
+}
+
+
   return (
     <header
       className="bg-black bg-right bg-cover"
@@ -59,7 +68,7 @@ export default function EbiHeader({
             role="menubar"
             data-dropdown-menu="6mg2ht-dropdown-menu"
           >
-            <Link to="/">
+            <Link to={`/subgraphs/${subgraph}`}>
               <li
                 role="menuitem"
                 className={`rounded-l-md px-4 py-3  ${
@@ -104,7 +113,7 @@ export default function EbiHeader({
                 </Stack>
               </li>
             </Link>
-            <Link to={`/downloads`}>
+            <Link to={`/subgraphs/${subgraph}/downloads`}>
               <li
                 role="menuitem"
                 className={`rounded-r-md px-4 py-3 ${
@@ -126,8 +135,10 @@ export default function EbiHeader({
   showBreadcrumbsBar && (
     <div className="bg-stone-100 pt-1 pl-2 pr-2 pb-1 flex flex-row justify-between items-center">
       
-      {breadcrumbs && <Breadcrumbs entries={breadcrumbs} />}
-      
+    {breadcrumbs !== undefined 
+      ? <Breadcrumbs subgraph={subgraph} entries={breadcrumbs} /> 
+      : <div />}
+
       <SubgraphPicker 
         subgraph={subgraph}
         setSubgraph={setSubgraph}
@@ -144,12 +155,4 @@ export default function EbiHeader({
 function caps(str) {
     return str[0].toUpperCase() + str.slice(1);
 }
-
-function setSubgraph(subgraph: string) {
-  let currentUrl = window.location.href;
-  let newUrl = currentUrl.replace(/subgraphs\/[^/]+/, `subgraphs/${subgraph}`);
-  window.history.pushState({}, '', newUrl);
-  window.location.reload();
-}
-
 

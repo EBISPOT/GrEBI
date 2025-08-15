@@ -18,11 +18,13 @@ export default function EbiTablesPage() {
 
     return (
         <div>
-        <EbiHeader section="tables" />
+        <EbiHeader subgraph={subgraph} section="tables" showBreadcrumbsBar={true} breadcrumbs={[
+          { url: `/subgraphs/${subgraph}/tables`, label: "Tables" },
+          { url: `/subgraphs/${subgraph}/tables/${queryid}`, label: <code>{queryid}</code> }
+        ]} />
         <main className="container mx-auto px-4 h-fit pt-2">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
             <Typography variant="h4">{queryid}</Typography>
-
             <ResultsTable subgraph={subgraph} queryid={queryid} />
         </div>
         </main>

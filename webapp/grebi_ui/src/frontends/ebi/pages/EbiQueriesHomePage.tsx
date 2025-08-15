@@ -22,12 +22,15 @@ export default function EbiTablesHomePage() {
             section="queries"
             subgraph={subgraph}
             showBreadcrumbsBar={true}
+            breadcrumbs={[
+              { url: `/subgraphs/${subgraph}/queries`, label: "Queries" }
+            ]}
         />
         <main className="container mx-auto px-4 h-fit pt-2">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
             <Typography variant="h4">Graph Queries</Typography>
             <p>
-            Here a selection of query templates are provided, for which you can fill in the parameters to query the graph.
+            The EBI KG can be queried using a selection of graph query templates, for which you can fill in your own parameters. Results are returned in a tabular format and can be downloaded as CSV.
             </p>
             <QueryTable subgraph={subgraph} />
         </div>

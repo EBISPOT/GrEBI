@@ -24,15 +24,11 @@ export default class GraphNode extends GraphNodeRef {
         return PropVal.arrFrom(this.getDescriptions())[0]?.value
     }
 
-    getSubgraph():string {
-        return this.props['grebi:subgraph']
-    }
-
-    getLinkUrl():string {
+    getLinkUrl(subgraph:string):string {
         if(process.env.GREBI_FRONTEND === 'exposomekg') {
             return `/nodes/${encodeNodeId(this.getNodeId())}`;
         } else {
-            return `/subgraphs/${this.getSubgraph()}/nodes/${encodeNodeId(this.getNodeId())}`;
+            return `/subgraphs/${subgraph}/nodes/${encodeNodeId(this.getNodeId())}`;
         }
     }
 

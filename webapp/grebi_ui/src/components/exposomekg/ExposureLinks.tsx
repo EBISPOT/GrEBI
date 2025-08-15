@@ -110,7 +110,9 @@ function GeneExposureLinks({node}:{node:GraphNode}) {
     useEffect(() => {
 
         async function getAffectedBy() {
-            let res = await getPaginated<any>(`api/v1/subgraphs/${node.getSubgraph()}/nodes/${encodeNodeId(node.getNodeId())}/incoming_edges`, {
+            let res = await getPaginated<any>(`api/v1/subgraphs/${
+                    process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH
+                }/nodes/${encodeNodeId(node.getNodeId())}/incoming_edges`, {
                 'grebi:type': 'biolink:chemical_gene_interaction_association'
             });
             setAffectedBy(res)

@@ -10,12 +10,6 @@ import { useNavigate } from "react-router-dom";
 
 const cols= [
     {
-        id:"subgraph",
-        name:"Subgraph",
-        selector:(row:any,key:string)=><code>{row[key]}</code>,
-        sortable:true
-    },
-    {
         id:"id",
         name:"Query ID",
         selector:(row:any,key:string)=> {
@@ -65,8 +59,8 @@ export default function MaterialisedQueryTable({
   const navigate = useNavigate();
 
     useEffect(() => {
-        get<MaterialisedQuery[]>(`api/v1/materialised_queries`).then(r => setMatQs(r));
-    }, []);
+        get<MaterialisedQuery[]>(`api/v1/subgraphs/${subgraph}/materialised_queries`).then(r => setMatQs(r));
+    }, [subgraph]);
 
     useEffect(() => {
         if(subgraph)
@@ -87,7 +81,7 @@ export default function MaterialisedQueryTable({
                     defaultSelector={(row,key)=>row[key]}
                     columns={cols}
                     onSelectRow={(row) => {
-                        navigate(`/subgraphs/${row['subgraph']}/results/${row['id']}`)
+                        navigate(`/subgraphs/${row['subgraph']}/tables/${row['id']}`)
                     }}
                     />
 

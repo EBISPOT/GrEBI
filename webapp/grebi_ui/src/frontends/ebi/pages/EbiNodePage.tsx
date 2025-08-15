@@ -54,7 +54,12 @@ export default function EbiNodePage() {
 
   return (
     <div>
-      <EbiHeader section="explore" subgraph={subgraph} />
+      <EbiHeader section="explore" subgraph={subgraph} showBreadcrumbsBar={true} breadcrumbs={[
+
+        { url: `/subgraphs/${subgraph}/nodes/${encodeNodeId(nodeId)}`, label: node.getName() }
+      
+
+      ]} />
         <Helmet>
           <meta charSet="utf-8" />
           {pageTitle && <title>{pageTitle}</title>}

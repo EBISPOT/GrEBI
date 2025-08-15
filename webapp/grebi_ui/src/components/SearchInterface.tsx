@@ -320,7 +320,7 @@ export default function SeachInterface(opts:{ subgraph:string }
                   return (
                     <div className="my-5">
                       <div className="my-2 leading-loose truncate flex flex-row items-center">
-                        <Link to={graphNode.getLinkUrl()}
+                        <Link to={graphNode.getLinkUrl(subgraph)}
                           className={`link-default text-xl mr-2 ${
                             graphNode.isBoldForQuery(search) ? "font-bold" : ""
                           } ${graphNode.isDeprecated() ? "line-through" : ""}`}

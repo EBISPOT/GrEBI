@@ -1,38 +1,56 @@
-import moment from "moment";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import React, { Fragment } from "react";
 import { MenuItem, Select } from "@mui/material";
 import { get } from "../../../app/api";
 import EbiHeader from "../EbiHeader";
 import SearchBox from "../../../components/SearchBox";
 import SubgraphPicker from "../../../components/SubgraphPicker";
+import urlJoin from "url-join";
 
 export default function EbiHomePage() {
 
   document.title = "EMBL-EBI Knowledge Graph";
 
+  let params = useParams();
+  let loc = useLocation();
+  let navigate = useNavigate();
+
   let [stats, setStats] = useState<any|null>(null);
   let [subgraphs, setSubgraphs] = useState<string[]|null>(null);
-  let [subgraph, setSubgraph] = useState<string|null>(null);
-  
+  let [subgraph, setSubgraph] = useState<string|null>(params.subgraph || null);
+
+function navigateToSubgraph(sg: string) {
+  let currentUrl = loc.pathname;
+    setSubgraph(sg);
+  if(currentUrl.indexOf("subgraphs") !== -1) {
+    let newUrl = currentUrl.replace(/subgraphs\/[^/]+/, `subgraphs/${sg}`);
+    navigate(newUrl);
+  } 
+}
+
+
   useEffect(() => {
     get<Stats>("api/v1/stats").then(r => setStats(r));
-  }, []);
+  }, [subgraph]);
   useEffect(() => {
     get<string[]>("api/v1/subgraphs").then(r => {
       setSubgraphs(r)
-      setSubgraph(r[0])
+
+      if(!subgraph)
+        setSubgraph(r[0])
     });
   }, []);
 
-  if(!subgraphs || !subgraph) {
+  if(!subgraph) {
     return <div className="spinner-default w-7 h-7" />
   }
 
   return (
     <div>
-      <EbiHeader section="home" subgraph={subgraph} />
+        {/* <EbiHeader subgraph={subgraph} section="home" showBreadcrumbsBar={true} breadcrumbs={[
+        ]} /> */}
+        <EbiHeader subgraph={subgraph} section="home" />
       <main className="container mx-auto px-4 h-fit">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
           <div className="lg:col-span-3">
@@ -45,7 +63,7 @@ export default function EbiHomePage() {
                   <div className="flex flex-nowrap gap-4 mb-4">
                     <SubgraphPicker
                       subgraph={subgraph}
-                      setSubgraph={setSubgraph}
+                      setSubgraph={navigateToSubgraph}
                       compact={false}
                     />
                   </div>
@@ -99,12 +117,36 @@ export default function EbiHomePage() {
                   This website enables you to search and explore data from multiple EBI resources, linked together using LLM-mediated knowledge graphs and ontologies via the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other datasources.
                 </p>
                 <p className="mb-3">
-                  GrEBI is a very early work in progress. No querying service is currently provided other than simple search/browsing functionality. If you are interested in querying GrEBI and/or have a potential application please <Link className="link-default" to="mailto:jmcl@ebi.ac.uk">get in touch</Link>.
+                  The EMBL-EBI KG is an early prototype. If you are interested in querying the KG and/or have a potential application please <Link className="link-default" to="mailto:jmcl@ebi.ac.uk">get in touch</Link>.
                 </p>
                 <p>
-                  For source code and more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI GitHub repository</Link>.
+                  For source code and more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI (Graphs@EBI) GitHub repository</Link>.
                 </p>
           </div>
+<div className="flex justify-left items-center mt-8 gap-4">
+  <a target="_blank" href="https://www.ebi.ac.uk/">
+    <img 
+      style={{width:'100px'}}
+      src={urlJoin(process.env.PUBLIC_URL!, "/ebi.png")}
+      alt="EMBL-EBI" 
+    />
+  </a>
+  <a target="_blank" href="https://monarchinitiative.org/">
+    <img 
+      style={{width:'100px'}}
+      src={urlJoin(process.env.PUBLIC_URL!, "/monarch.png")}
+      alt="MONARCH Initiative" 
+    />
+  </a>
+  <a target="_blank" href="https://mousephenotype.org/">
+    <img 
+      style={{width:'100px'}}
+      src={urlJoin(process.env.PUBLIC_URL!, "/impc.svg")}
+      alt="International Mouse Phenotyping Consortium (IMPC)" 
+    />
+  </a>
+</div>
+
       </main>
     </div>
   );
