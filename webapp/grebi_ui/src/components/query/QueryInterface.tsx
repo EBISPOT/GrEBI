@@ -11,7 +11,8 @@ import GraphNodeRef from "../../model/GraphNodeRef";
 import { Search } from "@mui/icons-material";
 import ResultsTable from "./ResultsTable";
 import { Link } from "react-router-dom";
-import CypherSourceSection from "./CypherSourceSection";
+import SourceCodeSection from "./SourceCodeSection";
+import query2code from "./query2code";
 
 
 export default function QueryInterface({
@@ -27,7 +28,6 @@ export default function QueryInterface({
 
     let [paramValues, setParamValues] = useState<Record<string, any>>({});
     let [paramValuesSubmitted, setParamValuesSubmitted] = useState<Record<string, any>|undefined>(undefined);
-    let [showSource, setShowSource] = useState(false);
 
     useEffect(() => {
 
@@ -88,11 +88,15 @@ export default function QueryInterface({
     }
 
  let cypherSource = queryTemplate.cypher_match_fragment.trim() + "\n" + queryTemplate.cypher_return_fragment.trim();
+ let codeSnippets = query2code(queryTemplate, paramValues)
 
 return (
   <Fragment>
 
-    <CypherSourceSection source={cypherSource} />
+    <SourceCodeSection title="Cypher Query" source={cypherSource} lang="cypher" />
+    {Object.keys(codeSnippets).map(srcLang =>
+      <SourceCodeSection key={srcLang} title={srcLang} source={codeSnippets[srcLang]} lang={srcLang} />
+    )}
 
     <Box
       component="form"

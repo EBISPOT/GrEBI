@@ -109,7 +109,7 @@ export default function EdgesList(params:{
                     id: 'grebi:type',
                     name: 'Edge Type',
                     selector: (row:GraphEdge) => {
-                        return row.getType()
+                        return <code>{row.getType()}</code>
                     },
                     sortable: true,
                 }
@@ -118,7 +118,7 @@ export default function EdgesList(params:{
                     id: 'grebi:type',
                     name: 'Edge Type',
                     selector: (row:GraphEdge) => {
-                        return row.getType()
+                        return <code>{row.getType()}</code>
                     },
                     sortable: true,
                 },

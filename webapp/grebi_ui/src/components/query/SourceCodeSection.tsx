@@ -1,18 +1,19 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Box, Typography, IconButton, Collapse } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 import prismjs from "prismjs";
 import "prismjs/components/prism-cypher";
+import "prismjs/components/prism-python";
 
-export default function CypherSourceSection({ source }) {
+export default function SourceCodeSection({ title, source, lang }) {
 
   const [expanded, setExpanded] = useState(false);
 
     let highlightedSource = useMemo<string>(() => {
 
-        return prismjs.highlight(source, prismjs.languages.cypher, 'cypher');
+        return prismjs.highlight(source, prismjs.languages[lang.toLowerCase()], lang.toLowerCase());
 
     }, [source]);
 
@@ -27,15 +28,14 @@ export default function CypherSourceSection({ source }) {
   };
 
   return (
-    <Box>
+    <Fragment>
       <Box
         onClick={() => setExpanded(!expanded)}
         sx={{
           display: 'flex',
           alignItems: 'center',
           cursor: 'pointer',
-          userSelect: 'none',
-          mb: 1,
+          userSelect: 'none'
         }}
       >
         <ExpandMoreIcon
@@ -45,7 +45,7 @@ export default function CypherSourceSection({ source }) {
             mr: 1,
           }}
         />
-        <Typography variant="h7">Cypher Query</Typography>
+        <Typography variant="h7">{title}</Typography>
       </Box>
 
       <Collapse in={expanded}>
@@ -88,7 +88,7 @@ export default function CypherSourceSection({ source }) {
           />
         </Box>
       </Collapse>
-    </Box>
+    </Fragment>
   );
 }
 

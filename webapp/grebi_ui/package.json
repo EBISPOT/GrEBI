@@ -51,10 +51,7 @@
     "start": "dotenv -e .env.$REACT_APP_ENV -e .env -- concurrently -n 'Build,Serve' 'npm run watch' 'node dev_server.mjs'",
     "build:ebi": "REACT_APP_ENV=ebi npm run build",
     "watch:ebi": "REACT_APP_ENV=ebi npm run watch",
-    "start:ebi": "REACT_APP_ENV=ebi npm run start",
-    "build:exposomekg": "REACT_APP_ENV=exposomekg npm run build",
-    "watch:exposomekg": "REACT_APP_ENV=exposomekg npm run watch",
-    "start:exposomekg": "REACT_APP_ENV=exposomekg npm run start"
+    "start:ebi": "REACT_APP_ENV=ebi npm run start"
   },
   "eslintConfig": {
     "extends": [

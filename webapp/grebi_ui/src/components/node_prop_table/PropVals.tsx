@@ -106,12 +106,11 @@ function PropValue(params:{subgraph:string,refs:Refs,value:PropVal,monospace:boo
   
     // todo mapped value datasources
     if(mapped_value) {
-        var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ?
-        "/nodes/" + encodeNodeId(value.value) : "/subgraphs/" + subgraph + "/nodes/" + encodeNodeId(value.value);
+        var linkUrl =  "/subgraphs/" + subgraph + "/nodes/" + encodeNodeId(value.value);
       return (
         <span className="mr-0">
           {separator} <Link className="link-default" to={linkUrl}>{
-            (mapped_value.name && pickBestDisplayName(mapped_value.name)) || value.value
+            mapped_value.getName()
           }</Link>
         </span>
       )

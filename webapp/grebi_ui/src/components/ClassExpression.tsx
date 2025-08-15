@@ -20,11 +20,7 @@ export default function ClassExpression({
   if (typeof expr !== "object") {
     let mapped_value = refs?.get(expr);
     if(mapped_value) {
-      if(process.env.GREBI_FRONTEND === 'exposomekg') {
-        return <Link className="link-default" style={{color:'black'}} to={"/nodes/" + encodeNodeId(expr)}>{mapped_value.getName()}</Link>
-      } else {
-        return <Link className="link-default" style={{color:'black'}} to={"/subgraphs/" + subgraph + "/nodes/" + encodeNodeId(expr)}>{mapped_value.getName()}</Link>
-      }
+      return <Link className="link-default" style={{color:'black'}} to={"/subgraphs/" + subgraph + "/nodes/" + encodeNodeId(expr)}>{mapped_value.getName()}</Link>
     } else {
       return <Link className="link-default" style={{color:'black'}} to={"https://www.ebi.ac.uk/ols4/search?q=" + encodeURIComponent(expr)}>expr</Link>
     }

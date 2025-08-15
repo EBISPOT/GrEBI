@@ -1,24 +1,24 @@
 import { Fragment, useEffect, useState } from "react";
-import GraphNode from "../../model/GraphNode";
-import { getPaginated, Page } from "../../app/api";
-import encodeNodeId from "../../encodeNodeId";
+import GraphNode from "../model/GraphNode";
+import { getPaginated, Page } from "../app/api";
+import encodeNodeId from "../encodeNodeId";
 import { CircularProgress, Grid, Tab, Tabs, Typography } from "@mui/material";
-import { asArray, copyToClipboard } from "../../app/util";
-import LocalDataTable from "../datatable/LocalDataTable";
-import NodeRefLink from "../node_edge_list/NodeRefLink";
-import GraphEdge from "../../model/GraphEdge";
-import GraphNodeRef from "../../model/GraphNodeRef";
-import { DatasourceTags } from "../DatasourceTag";
-import Refs from "../../model/Refs";
-import PropVals from "../node_prop_table/PropVals";
-import PropVal from "../../model/PropVal";
+import { asArray, copyToClipboard } from "../app/util";
+import LocalDataTable from "./datatable/LocalDataTable";
+import NodeRefLink from "./node_edge_list/NodeRefLink";
+import GraphEdge from "../model/GraphEdge";
+import GraphNodeRef from "../model/GraphNodeRef";
+import { DatasourceTags } from "./DatasourceTag";
+import Refs from "../model/Refs";
+import PropVals from "./node_prop_table/PropVals";
+import PropVal from "../model/PropVal";
 import { useSearchParams } from "react-router-dom";
-import getExposureLinksTabs, { LinksTab } from "./getExposureLinksTabs";
+import getExposureLinksTabs, { LinksTab } from "./getNodeLinksTabs";
 import { OpenInNew, Share } from "@mui/icons-material";
-import TabPanel from "../TabPanel";
+import TabPanel from "./TabPanel";
 
 
-export default function ExposureLinks({node}:{node:GraphNode}) {
+export default function NodeLinks({node, subgraph}:{node:GraphNode, subgraph:string}) {
 
   let [searchParams, setSearchParams] = useSearchParams();
   let linksTab = searchParams.get("linksTab") || "sourceids";
@@ -27,7 +27,7 @@ export default function ExposureLinks({node}:{node:GraphNode}) {
 
   useEffect(() => {
     async function getLinksTabs() {
-        let tabs = await getExposureLinksTabs(node)
+        let tabs = await getExposureLinksTabs(node, subgraph)
         setLinksTabs(tabs)
     }
     getLinksTabs()
@@ -65,7 +65,7 @@ export default function ExposureLinks({node}:{node:GraphNode}) {
     {!linksTabs && <CircularProgress />}
     {linksTabs && linksTabs.filter(tab => tab.tabId === 'chemical_gene_interactions').length > 0 &&
     <TabPanel value={linksTab} index={"chemical_gene_interactions"}>
-        <GeneExposureLinks node={node} />
+        <GeneExposureLinks node={node} subgraph={subgraph} />
     </TabPanel>
     }
              </Grid>
@@ -73,22 +73,9 @@ export default function ExposureLinks({node}:{node:GraphNode}) {
 }
 
 
-let fixedCols = [
-    {
-        id: "grebi:datasources",
-        name: "Datasources",
-        selector: (edge:GraphEdge, key:string) => <DatasourceTags dss={edge['grebi:datasources']} />,
-        sortable:true
-    },
-    {
-        id: "from",
-        name: "Chemical",
-        selector: (edge:GraphEdge, key:string) => <NodeRefLink subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} nodeRef={new GraphNodeRef(edge['from'])} showTypeChip={false} />,
-        sortable:true
-    }
-];
+function getDefaultSelector(subgraph:string) {
 
-function DefaultSelector(row:any, key:string) {
+    return function DefaultSelector(row:any, key:string) {
     let vals = asArray(row[key]).map(PropVal.from);
 
     console.dir(vals)
@@ -98,12 +85,14 @@ function DefaultSelector(row:any, key:string) {
     }
 
     return <PropVals 
-     subgraph={process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH!} 
+     subgraph={subgraph} 
     refs={new Refs(row['_refs'])}
     values={vals} />
 }
 
-function GeneExposureLinks({node}:{node:GraphNode}) {
+}
+
+function GeneExposureLinks({node, subgraph}:{node:GraphNode, subgraph:string}) {
 
     let [affectedBy, setAffectedBy] = useState<Page<any>|null>(null)
 
@@ -111,7 +100,7 @@ function GeneExposureLinks({node}:{node:GraphNode}) {
 
         async function getAffectedBy() {
             let res = await getPaginated<any>(`api/v1/subgraphs/${
-                    process.env.REACT_APP_EXPOSOMEKG_SUBGRAPH
+                    subgraph
                 }/nodes/${encodeNodeId(node.getNodeId())}/incoming_edges`, {
                 'grebi:type': 'biolink:chemical_gene_interaction_association'
             });
@@ -126,12 +115,27 @@ function GeneExposureLinks({node}:{node:GraphNode}) {
         return <CircularProgress/>
     }
 
+let fixedCols = [
+    {
+        id: "grebi:datasources",
+        name: "Datasources",
+        selector: (edge:GraphEdge, key:string) => <DatasourceTags dss={edge['grebi:datasources']} />,
+        sortable:true
+    },
+    {
+        id: "from",
+        name: "Chemical",
+        selector: (edge:GraphEdge, key:string) => <NodeRefLink subgraph={subgraph} nodeRef={new GraphNodeRef(edge['from'])} showTypeChip={false} />,
+        sortable:true
+    }
+];
+
     return <LocalDataTable
                     data={affectedBy?.elements} 
                     addColumnsFromData={true}
                     columns={fixedCols}
                     maxRowHeight={"1.5em"}
-                    defaultSelector={DefaultSelector}
+                    defaultSelector={getDefaultSelector(subgraph)}
                     hideColumns={[
                         "_refs",
                         "grebi:edgeId",

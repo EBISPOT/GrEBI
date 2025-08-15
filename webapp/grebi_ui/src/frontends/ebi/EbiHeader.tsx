@@ -72,7 +72,7 @@ function setSubgraph(subgraph: string) {
               <li
                 role="menuitem"
                 className={`rounded-l-md px-4 py-3  ${
-                  section === "home"
+                  section === "home" || section === "explore"
                     ? "bg-opacity-30 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
                 }`}

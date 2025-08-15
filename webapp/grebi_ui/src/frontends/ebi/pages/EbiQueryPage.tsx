@@ -45,7 +45,9 @@ export default function EbiQueriesPage() {
             <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
               <Typography variant="h4">{addLinksToText(queryTemplate.title, subgraph)}</Typography>
               <p>{addLinksToText(queryTemplate.description, subgraph)}</p>
+              <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-2">
               <QueryInterface subgraph={subgraph} queryTemplate={queryTemplate} />
+              </div>
             </div>
           }
 

@@ -25,11 +25,7 @@ export default class GraphNode extends GraphNodeRef {
     }
 
     getLinkUrl(subgraph:string):string {
-        if(process.env.GREBI_FRONTEND === 'exposomekg') {
-            return `/nodes/${encodeNodeId(this.getNodeId())}`;
-        } else {
-            return `/subgraphs/${subgraph}/nodes/${encodeNodeId(this.getNodeId())}`;
-        }
+        return `/subgraphs/${subgraph}/nodes/${encodeNodeId(this.getNodeId())}`;
     }
 
     isBoldForQuery(q:string) {

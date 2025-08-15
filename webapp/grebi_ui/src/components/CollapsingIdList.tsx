@@ -6,9 +6,8 @@ let MAX_IDS = 3
 export default function CollapsingIdList({ids}) {
     let [ expanded, setExpanded ] = useState<boolean>(false);
     if(ids.length > MAX_IDS && !expanded) {
-        return <div className="my-1 leading-relaxed">
+        return <div className="my-1 leading-relaxed flex flex-wrap gap-1">
               {ids.slice(0, MAX_IDS).map(id => <Id id={id}/>)}
-              &nbsp;
               <span
                 className="link-default italic"
                 onClick={() => setExpanded(true)}
@@ -17,7 +16,7 @@ export default function CollapsingIdList({ids}) {
               </span>
             </div>
     } else {
-        return <div className="my-1 leading-relaxed">
+        return <div className="my-1 leading-relaxed flex flex-wrap gap-1">
             {ids.map(id => <Id id={id}/>)}</div>
     }
 

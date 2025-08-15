@@ -136,9 +136,7 @@ export default function SearchBox({
       searchParams.set("q", text);
       if (collectionId) searchParams.set("collection", collectionId);
 
-      var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ?
-        `/search?${new URLSearchParams(searchParams)}` :
-          `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
+      var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
 
       return {
         linkUrl,
@@ -251,9 +249,7 @@ export default function SearchBox({
                     searchParams.set("q", query);
                     if (collectionId) searchParams.set("collection", collectionId);
 
-                    var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ?
-                        `/search?${new URLSearchParams(searchParams)}` :
-                        `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
+                    var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
                     navigate(linkUrl);
                   }
                 } else if (ev.key === "ArrowDown") {
@@ -310,9 +306,7 @@ export default function SearchBox({
                       if (collectionId)
                         params.set("collection", collectionId);
 
-                      var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ?
-                        `/search?${new URLSearchParams(params)}` :
-                        `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
+                      var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
 
                       navigate(linkUrl);
                     }
@@ -333,9 +327,7 @@ export default function SearchBox({
                   params.set("q", query);
                   if (collectionId) params.set("collection", collectionId);
 
-                  var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ?
-                      `/search?${new URLSearchParams(params)}` :
-                      `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
+                  var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
 
                   navigate(linkUrl);
                 }

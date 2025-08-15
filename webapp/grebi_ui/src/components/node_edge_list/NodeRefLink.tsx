@@ -14,9 +14,7 @@ export default function NodeRefLink({
 }) {
     let type = nodeRef.extractType()
 
-    var linkUrl = process.env.GREBI_FRONTEND === 'exposomekg' ?
-     `/nodes/${nodeRef.getEncodedNodeId()}`
-     :  `/subgraphs/${subgraph}/nodes/${nodeRef.getEncodedNodeId()}`;
+    var linkUrl = `/subgraphs/${subgraph}/nodes/${nodeRef.getEncodedNodeId()}`;
 
     return <Link to={linkUrl}>
         {nodeRef.getName()}

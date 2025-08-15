@@ -97,13 +97,13 @@ export default function SeachInterface(opts:{ subgraph:string }
     async function doSearch() {
       setLoadingResults(true)
 
-      let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, joinSearchParams(searchParams, new URLSearchParams({
-        page: page.toString(), size: rowsPerPage.toString(), q: search,
-        facet: ['grebi:datasources','grebi:type']
-        /*grebi__datasource: datasourceFacetselected,
-        type: typeFacetSelected,
-        searchParams,*/
-      })))).map(r => new GraphNode(r))
+      let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, joinSearchParams(searchParams, new URLSearchParams([
+        ['page', page.toString()],
+        ['size', rowsPerPage.toString()],
+        ['q', search],
+        ['facet', 'grebi:datasources'],
+        ['facet', 'grebi:type']
+      ])))).map(r => new GraphNode(r))
 
       setResults(res.elements)
       setFacets(res.facetFieldsToCounts)
