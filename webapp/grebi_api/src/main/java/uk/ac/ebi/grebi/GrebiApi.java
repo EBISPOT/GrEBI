@@ -3,6 +3,7 @@
 
 package uk.ac.ebi.grebi;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.internal.LinkedTreeMap;
@@ -14,7 +15,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import io.javalin.plugin.bundled.CorsPluginConfig;
+import io.modelcontextprotocol.server.McpAsyncServer;
+import io.modelcontextprotocol.server.McpServer;
+import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
+import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
+
 import org.apache.solr.client.solrj.SolrQuery;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.repo.GrebiNeoRepo;
@@ -108,12 +115,21 @@ public class GrebiApi {
         final Set<String> subgraphs,
         final GrebiQueryTemplatesRepo queryTemplates
     ) {
-
         var stats = neo != null ? neo.getStats() : null;
 
         Gson gson = new Gson();
 
+        GrebiMcpServer mcpServer = new GrebiMcpServer(
+            neo, solr, metadata, subgraphs, queryTemplates
+        );
+
         Javalin.create(config -> {
+                    config.jetty.modifyServletContextHandler(ctx -> {
+                        var holder = new ServletHolder(mcpServer.getTransportProvider());
+                        holder.setAsyncSupported(true);
+                        ctx.addServlet(holder, "/api/v1/mcp");
+                    });
+
                     config.bundledPlugins.enableCors(cors -> {
                         cors.addRule(CorsPluginConfig.CorsRule::anyHost);
                     });
