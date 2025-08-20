@@ -124,10 +124,21 @@ public class GrebiApi {
         );
 
         Javalin.create(config -> {
+              config.jetty.modifyServer(server -> {
+                        var gzip = new org.eclipse.jetty.server.handler.gzip.GzipHandler();
+                        gzip.addExcludedMimeTypes("text/event-stream");
+                        server.insertHandler(gzip);
+                    });
                     config.jetty.modifyServletContextHandler(ctx -> {
                         var holder = new ServletHolder(mcpServer.getTransportProvider());
                         holder.setAsyncSupported(true);
                         ctx.addServlet(holder, "/api/v1/mcp");
+                    });
+                    config.jetty.modifyServletContextHandler(ctx -> {
+                        var holder = new ServletHolder(mcpServer.getLegacyTransportProvider());
+                        holder.setAsyncSupported(true);
+                        ctx.addServlet(holder, "/api/v1/mcp/message");
+                        ctx.addServlet(holder, "/api/v1/mcp/sse");
                     });
 
                     config.bundledPlugins.enableCors(cors -> {

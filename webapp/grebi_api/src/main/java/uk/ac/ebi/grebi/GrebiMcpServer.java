@@ -1,7 +1,6 @@
 package uk.ac.ebi.grebi;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,12 +9,9 @@ import com.google.gson.Gson;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceSpecification;
 import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
 import io.modelcontextprotocol.server.transport.HttpServletStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
-import io.modelcontextprotocol.spec.McpSchema.Resource;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 import reactor.core.publisher.Mono;
 import uk.ac.ebi.grebi.repo.GrebiMetadataRepo;
@@ -26,7 +22,8 @@ import uk.ac.ebi.grebi.repo.GrebiSolrRepo;
 public class GrebiMcpServer {
 
     HttpServletStreamableServerTransportProvider transportProvider;
-    McpAsyncServer mcpServer;
+    HttpServletSseServerTransportProvider legacyTransportProvider;
+    McpAsyncServer mcpServer, legacyMcpServer;
 
     public GrebiMcpServer(
         final GrebiNeoRepo neo,
@@ -47,18 +44,13 @@ public class GrebiMcpServer {
         .objectMapper(new ObjectMapper())
         .build();
 
-        mcpServer = McpServer.async(transportProvider)
-            .serverInfo("grebi", "1.0.0")
-            .capabilities(ServerCapabilities.builder()
-                .resources(false, true)
-                .tools(true)
-                .prompts(true)
-                .logging() 
-                .completions()
-                .build())
-            .build();
+        legacyTransportProvider = HttpServletSseServerTransportProvider.builder()
+        .messageEndpoint("/api/v1/mcp/message")
+        .sseEndpoint("/api/v1/mcp/sse")
+        .objectMapper(new ObjectMapper())
+        .build();
 
-        mcpServer.addResource(new McpServerFeatures.AsyncResourceSpecification(
+        var resourceSpec = new McpServerFeatures.AsyncResourceSpecification(
         McpSchema.Resource.builder()
             .uri("grebi://stats")
             .name("Knowledge Graph Statistics")
@@ -73,11 +65,41 @@ public class GrebiMcpServer {
                 );
                 return Mono.just(new McpSchema.ReadResourceResult(contents));
             }
-        ));
+        );
+
+        mcpServer = McpServer.async(transportProvider)
+            .serverInfo("grebi", "1.0.0")
+            .instructions("This is an instance of GrEBI, a server for large, read-only, ontology-mediated, integrated knowledge graphs which can be accessed using the Model Context Protocol (MCP)")
+            .capabilities(ServerCapabilities.builder()
+                .resources(true, true)
+                .tools(true)
+                .prompts(true)
+                .logging() 
+                .completions()
+                .build())
+            .resources(resourceSpec)
+            .build();
+
+        legacyMcpServer = McpServer.async(legacyTransportProvider)
+            .serverInfo("grebi", "1.0.0")
+            .instructions("This is an instance of GrEBI, a server for large, read-only, ontology-mediated, integrated knowledge graphs which can be accessed using the Model Context Protocol (MCP)")
+            .capabilities(ServerCapabilities.builder()
+                .resources(true, true)
+                .tools(true)
+                .prompts(true)
+                .logging() 
+                .completions()
+                .build())
+            .resources(resourceSpec)
+            .build();
     }
 
     public HttpServletStreamableServerTransportProvider getTransportProvider() {
         return transportProvider;
+    }
+
+    public HttpServletSseServerTransportProvider getLegacyTransportProvider() {
+        return legacyTransportProvider;
     }
 
     
