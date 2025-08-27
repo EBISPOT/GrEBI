@@ -358,22 +358,16 @@ public class GrebiNeoRepo {
         }
     }
 
+
 public CompletableFuture<Void> runQueryFromTemplateStreamed(
         String subgraph,
         QueryTemplate template,
         Map<String, List<String>> params,
         Sort sort,
-        HttpServletResponse res
+        PrintWriter writer
 ) throws IOException {
 
     List<QueryTemplate.ResultColumn> columns = template.result_columns;
-
-    res.setContentType("text/csv");
-    res.setCharacterEncoding("UTF-8");
-    res.setHeader("Content-Disposition", "attachment; filename=\"" + template.id + ".csv\"");
-    res.setStatus(HttpServletResponse.SC_OK);
-
-    PrintWriter writer = res.getWriter();
 
     var csvColumns = new ArrayList<String>();
 
@@ -449,6 +443,24 @@ public CompletableFuture<Void> runQueryFromTemplateStreamed(
           );
 
         return future;
+}
+
+public CompletableFuture<Void> runQueryFromTemplateStreamed(
+        String subgraph,
+        QueryTemplate template,
+        Map<String, List<String>> params,
+        Sort sort,
+        HttpServletResponse res
+) throws IOException {
+
+    res.setContentType("text/csv");
+    res.setCharacterEncoding("UTF-8");
+    res.setHeader("Content-Disposition", "attachment; filename=\"" + template.id + ".csv\"");
+    res.setStatus(HttpServletResponse.SC_OK);
+
+    PrintWriter writer = res.getWriter();
+
+    return runQueryFromTemplateStreamed(subgraph, template, params, sort, writer);
 }
 
 
