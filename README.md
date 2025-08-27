@@ -2,13 +2,13 @@
 
 HPC pipeline using ontologies and LLM embeddings to aggregate knowledge graphs from [EMBL-EBI resources](https://www.ebi.ac.uk/services/data-resources-and-tools), the [MONARCH Initiative KG](https://monarch-initiative.github.io/monarch-ingest/Sources/), [ROBOKOP](https://robokop.renci.org/), [Ubergraph](https://github.com/INCATools/ubergraph), and other sources.
 
-The aim is to make it easier for humans and machines to perform integrative queries which span multiple biomedical resources, in contrast existing REST APIs which are typically constrainted to one resource.
+The aim is to make it easier for humans and machines to perform integrative queries which span multiple biomedical resources, in contrast to existing REST APIs which are typically constrainted to one resource.
 
 A development server with the output of this pipeline can be accessed at https://wwwdev.ebi.ac.uk/kg
 
 MCP endpoints:
-  * Streaming HTTP: https://wwwdev.ebi.ac.uk/kg/api/v1/mcp/sse
-  * Legacy: https://wwwdev.ebi.ac.uk/kg/api/v1/mcp
+  * Legacy: https://wwwdev.ebi.ac.uk/kg/api/v1/mcp/sse
+  * Streaming HTTP: https://wwwdev.ebi.ac.uk/kg/api/v1/mcp
 
 The GrEBI pipeline is being applied to a number of projects including the [International Mouse Phenotyping Consortium (IMPC)](https://www.mousephenotype.org/) knowledge graph and the [EMBL Human Ecosystems Transversal Theme (HETT)](https://www.embl.org/about/info/human-ecosystems/) ExposomeKG.
 
