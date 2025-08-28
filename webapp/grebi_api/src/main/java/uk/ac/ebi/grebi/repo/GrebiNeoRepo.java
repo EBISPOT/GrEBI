@@ -413,9 +413,17 @@ public CompletableFuture<Void> runQueryFromTemplateStreamed(
                         var sourceIds = (List<String>) value.get("id");
                         var nodeId = pickFavouriteSourceId(sourceIds);
 
-                        System.err.println("Source IDs for " + columnId + ": " + sourceIds);
+                        // System.err.println("Source IDs for " + columnId + ": " + sourceIds);
 
-                        String nodeLabel = ((List) value.get("grebi:name")).get(0).toString();
+                        String nodeLabel;
+
+                        var names = (List<String>) value.get("grebi:name");
+                        if(names == null || names.isEmpty()) {
+                            nodeLabel = nodeId;
+                        } else {
+                            nodeLabel = names.get(0).toString();
+                        }
+
 
                         writer.write("\"" + nodeId.replace("\"", "\"\"") + "\",");
                         writer.write("\"" + nodeLabel.replace("\"", "\"\"") + "\"");

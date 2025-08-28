@@ -14,7 +14,8 @@ cypher_match_fragment: |-
       gene,
       snp,
       trait,
-      [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id
+      [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
+      assoc.`gwas:or_or_beta`[0] AS or_or_beta
   MATCH
       (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
 cypher_return_fragment: |-
@@ -22,9 +23,11 @@ cypher_return_fragment: |-
       gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
       snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
       trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
-      study { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study
+      study.`grebi:name`[0] AS study_name,
+      study.`gwas:pubmedid`[0] AS pubmed_id,
+      or_or_beta
 cypher_count_fragment: |-
-  WITH DISTINCT gene, snp, trait, study
+  WITH DISTINCT gene, snp, trait, study, or_or_beta
   RETURN count(*) AS count
 params:
   - param_id: pathway_id
@@ -39,8 +42,12 @@ result_columns:
     column_type: GraphNodeId
   - column_id: trait
     column_type: GraphNodeId
-  - column_id: study
-    column_type: GraphNodeId
+  - column_id: study_name
+    column_type: string
+  - column_id: pubmed_id
+    column_type: string
+  - column_id: or_or_beta
+    column_type: float
 examples:
   - title: Glycolysis
     params:

@@ -37,3 +37,10 @@ topics:
     type: Resource
     description: Reactome is a free, open-source, curated and peer-reviewed pathway database. Our goal is to provide intuitive bioinformatics tools for the visualization, interpretation and analysis of pathway knowledge to support basic research, genome analysis, modeling, systems biology and education. 
     url: https://reactome.org/
+  - id: cl
+    name: Cell Ontology
+    type: Ontology
+    description: The Cell Ontology (CL) is an ontology designed to classify and describe cell types across different organisms. 
+    url: https://obofoundry.org/ontology/cl.html
+
+
