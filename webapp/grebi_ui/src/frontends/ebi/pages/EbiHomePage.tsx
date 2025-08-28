@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import React, { Fragment } from "react";
-import { MenuItem, Select } from "@mui/material";
+import { List, ListItem, MenuItem, Select } from "@mui/material";
 import { get } from "../../../app/api";
 import EbiHeader from "../EbiHeader";
 import SearchBox from "../../../components/SearchBox";
 import SubgraphPicker from "../../../components/SubgraphPicker";
 import urlJoin from "url-join";
+import SourceCodeSection from "../../../components/query/SourceCodeSection";
+import { Power } from "@mui/icons-material";
 
 export default function EbiHomePage() {
 
@@ -112,16 +114,42 @@ function navigateToSubgraph(sg: string) {
             </div>
           </div>
           </div>
-          <div>
-                <p className="mb-3">
+
+          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4">
+                <p>
                   This website enables you to search and explore data from multiple EBI resources, linked together using LLM-mediated knowledge graphs and ontologies via the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other datasources.
                 </p>
-                <p className="mb-3">
+                <p>
                   The EMBL-EBI KG is an early prototype. If you are interested in querying the KG and/or have a potential application please <Link className="link-default" to="mailto:jmcl@ebi.ac.uk">get in touch</Link>.
                 </p>
                 <p>
                   For source code and more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI (Graphs@EBI) GitHub repository</Link>.
                 </p>
+            </div>
+          <div className="grid gap-4">
+
+<p className="flex items-center text-lg font-bold mb-3">
+  <Power className="mr-2 h-5 w-5" />
+  MCP Endpoints
+</p>
+
+
+  <ul className="space-y-3 pl-2">
+    <li className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl shadow-sm">
+      <span className="font-medium text-gray-700 w-28">Legacy</span>
+      <code className="text-sm text-blue-600 break-all">
+        https://wwwdev.ebi.ac.uk/kg/api/v1/mcp/sse
+      </code>
+    </li>
+    <li className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl shadow-sm">
+      <span className="font-medium text-gray-700 w-28">Streamable HTTP</span>
+      <code className="text-sm text-blue-600 break-all">
+        https://wwwdev.ebi.ac.uk/kg/api/v1/mcp
+      </code>
+    </li>
+  </ul>
+          </div>
           </div>
 <div className="flex justify-left items-center mt-8 gap-4">
   <a target="_blank" href="https://www.ebi.ac.uk/">

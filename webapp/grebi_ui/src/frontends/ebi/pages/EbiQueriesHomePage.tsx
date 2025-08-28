@@ -30,8 +30,7 @@ export default function EbiTablesHomePage() {
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
             <Typography variant="h4">Graph Queries</Typography>
             <p>
-            The EBI KG can be queried using a selection of graph query templates, for which you can fill in your own parameters. Results are returned in a tabular format and can be downloaded as CSV.
-            </p>
+            The EBI KG can be queried using a selection of graph query templates, for which you can fill in your own parameters. Results are returned in a tabular format and can be downloaded as CSV. These query templates are also available as tools on the MCP server.</p>
             <QueryTable subgraph={subgraph} />
         </div>
         </main>
