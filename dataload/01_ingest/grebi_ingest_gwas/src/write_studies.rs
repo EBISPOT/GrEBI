@@ -34,7 +34,8 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
             "GENOTYPING TECHNOLOGY",
             "COHORT",
             "FULL SUMMARY STATISTICS",
-            "SUMMARY STATS LOCATION"
+            "SUMMARY STATS LOCATION",
+            "GXE"
         ]);
     }
 
@@ -62,6 +63,7 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
             let cohort = record.get(16).unwrap();
             let full_summary_statistics = record.get(17).unwrap();
             let summary_stats_location = record.get(18).unwrap();
+            let gxe = record.get(19).unwrap();
 
             nodes_writer.write_all(remove_empty_fields(&json!({
                 "id": study_accession,
@@ -90,7 +92,8 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
                 "gwas:genotyping_technology": [genotyping_technology],
                 "gwas:cohort": [cohort],
                 "gwas:full_summary_statistics": [full_summary_statistics],
-                "gwas:summary_stats_location": [summary_stats_location]
+                "gwas:summary_stats_location": [summary_stats_location],
+                "gwas:gxe" : [gxe]
 
             })).unwrap().to_string().as_bytes()).unwrap();
 
