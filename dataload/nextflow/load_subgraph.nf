@@ -15,8 +15,7 @@ params.neo_mem = "140g"
 params.neo_query_mem = "140g"
 params.neo_tmp_path = "/dev/shm"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
-params.dataload_home_inside_container = "/opt/grebi_dataload"
-
+params.dataload_home_inside_container = "$GREBI_HOME/GrEBI/dataload"
 workflow {
 
     config = (new JsonSlurper().parse(new File(params.dataload_home, 'configs/subgraph_configs/' + params.subgraph + '.json')))
@@ -85,8 +84,8 @@ workflow {
 
 process ingest {
     cache "lenient"
-    memory { 4.GB + 128.GB * (task.attempt-1) }
-    time { 1.hour + 8.hour * (task.attempt-1) }
+    memory { 4.GB + 8.GB * (task.attempt-1) }
+    time { 2.hour + 8.hour * (task.attempt-1) }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 5
     
@@ -639,7 +638,7 @@ process create_solr_autocomplete_core {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    mkdir -p solr/data solr/logs
+        mkdir -p solr/data solr/logs
     python3 ${params.dataload_home_inside_container}/08_create_other_dbs/solr/make_solr_autocomplete_config.py \
         --subgraph-name ${params.subgraph} \
         --in-template-config-dir ${params.dataload_home_inside_container}/08_create_other_dbs/solr/solr_config_template \

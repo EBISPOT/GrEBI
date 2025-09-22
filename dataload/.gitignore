@@ -1,1 +1,8 @@
-00_fetch_data
+# 00_fetch_data/**/*.sssom.*
+
+00_fetch_data/**/*.parquet
+00_fetch_data/**/*.json
+_SUCCESS
+
+# Apocrita log files
+*.o[0-9]*

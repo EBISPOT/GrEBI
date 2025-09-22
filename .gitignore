@@ -24,4 +24,4 @@ __pycache__
 .idea
 .env
 .env.*
-
+*.o[0-9]*

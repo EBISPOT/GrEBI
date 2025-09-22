@@ -1,3 +1,4 @@
+# Source of files: https://ftp.ebi.ac.uk/pub/databases/impc/all-data-releases/latest/impc-kg/
 name: IMPC
 enabled: true
 ingests:
