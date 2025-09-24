@@ -4,7 +4,7 @@ subgraphs:
   - ebi_monarch_xspecies
 topics:
   - gwas_catalog
-  - cl
+  - chebi
 cypher_match_fragment: |-
   MATCH (disease)-[:sourceId]->(:Id {id: $disease_id })
   MATCH (drug)-[r:(
