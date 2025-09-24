@@ -1,0 +1,71 @@
+title: Search GWAS Catalog by drugs indicated for a disease
+description: Given a disease, find GWAS studies for its medications
+subgraphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+  - cl
+cypher_match_fragment: |-
+  MATCH (disease)-[:sourceId]->(:Id {id: $disease_id })
+  MATCH (drug)-[r:(
+        `biolink:treats` |
+        `biolink:applied_to_treat` |
+        `biolink:treats_or_applied_or_studied_to_treat` |
+        `primekg:indication`
+      )]->(disease)
+  MATCH (trait)-[:`ro:has_primary_input`]->(drug)
+  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
+  MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  WITH
+      trait,
+      drug,
+      snp,
+      gene,
+      [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
+      assoc.`gwas:or_or_beta`[0] AS or_or_beta
+  MATCH
+      (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
+      drug { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS drug,
+      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS snp,
+      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS gene,
+      study.`grebi:name`[0] AS study_name,
+      study.`gwas:pubmedid`[0] AS pubmed_id,
+      or_or_beta
+cypher_count_fragment: |-
+  WITH DISTINCT trait, drug, snp, gene, study, or_or_beta
+  RETURN count(*) AS count
+params:
+  - param_id: disease_id
+    param_name: Disease
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'mondo:0000001'
+result_columns:
+  - column_id: trait
+    column_type: GraphNodeId
+  - column_id: drug
+    column_type: GraphNodeId
+  - column_id: snp
+    column_type: GraphNodeId
+  - column_id: gene
+    column_type: GraphNodeId
+  - column_id: study_name
+    column_type: string
+  - column_id: pubmed_id
+    column_type: string
+  - column_id: or_or_beta
+    column_type: float  
+examples:
+  - title: stroke
+    params:
+      disease_id: efo:0000712
+  - title: asthma
+    params:
+      disease_id: mondo:0004979
+  - title: lung cancer
+    params:
+      disease_id: mondo:0008903
+
