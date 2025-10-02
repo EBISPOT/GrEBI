@@ -12,10 +12,10 @@ ENV PATH="$PATH:/opt/amazon-corretto-21.0.6.7.1-linux-x64/bin"
 
 
 RUN mkdir /opt/neo4j && \
-    curl https://dist.neo4j.org/neo4j-community-2025.03.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j
+    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2025.03.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j
 
 RUN mkdir /opt/solr && \
-    curl https://archive.apache.org/dist/solr/solr/9.8.1/solr-9.8.1.tgz | tar -xz --strip-components=1 -C /opt/solr
+    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/solr-9.8.1.tgz | tar -xz --strip-components=1 -C /opt/solr
 
 RUN echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
         echo "dbms.usage_report.enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
