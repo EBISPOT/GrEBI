@@ -5,6 +5,7 @@ resolver="2"
 members = [
 	"01_ingest/grebi_rdf2jsonl",
 	"01_ingest/grebi_tsv2jsonl",
+	"01_ingest/grebi_parquet2jsonl",
 	"01_ingest/grebi_nodes2edges",
 	"01_ingest/grebi_ingest_sssom",
 	"01_ingest/grebi_ingest_ols",

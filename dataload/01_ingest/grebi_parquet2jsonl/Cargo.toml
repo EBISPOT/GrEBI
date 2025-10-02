@@ -1,0 +1,11 @@
+[package]
+name = "grebi_parquet2jsonl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+arrow = "54"
+arrow-json = "54"
+parquet = { version = "54", features = ["arrow"] }
+bytes = "1"
+
