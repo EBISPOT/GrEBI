@@ -1029,6 +1029,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_unwind"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "grebi_shared",
+ "hex",
+ "jemallocator",
+ "serde_json",
+ "sha1",
+ "struson 0.3.0",
+]
+
+[[package]]
 name = "half"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

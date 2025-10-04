@@ -15,6 +15,7 @@ members = [
 	"01_ingest/grebi_ingest_kgx_edges",
 	"01_ingest/grebi_ingest_sqlite",
 	"01_ingest/grebi_normalise_prefixes",
+	"01_ingest/grebi_unwind",
 	"02_assign_ids/grebi_extract_identifiers",
 	"02_assign_ids/grebi_identifiers2groups",
 	"02_assign_ids/grebi_assign_ids",

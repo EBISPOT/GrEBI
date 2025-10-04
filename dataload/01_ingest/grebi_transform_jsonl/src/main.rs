@@ -1,5 +1,5 @@
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{BufWriter, self, BufReader, Write,BufRead};
 use clap::Parser;
 use serde_json::{self, de, Map};
@@ -10,6 +10,12 @@ use sha1::{Sha1, Digest};
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+
+    #[arg(long, action)]
+    json_select_keys:Option<String>,
+
+    #[arg(long, action)]
+    json_remove_keys:Option<String>,
 
     #[arg(long)]
     json_rename_field:Option<Vec<String>>,
@@ -73,6 +79,18 @@ fn main() {
         }
     }
 
+    let select_keys:HashSet<String> = if args.json_select_keys.is_some() {
+        args.json_select_keys.unwrap().split(',').map(|s| s.to_string()).collect()
+    } else {
+        HashSet::new()
+    };
+
+    let remove_keys:HashSet<String> = if args.json_remove_keys.is_some() {
+        args.json_remove_keys.unwrap().split(',').map(|s| s.to_string()).collect()
+    } else {
+        HashSet::new()
+    };
+
     loop {
 
         let mut line:Vec<u8> = Vec::new();
@@ -92,6 +110,14 @@ fn main() {
         for (k,v) in json.iter() {
 
             if v.is_null() {
+                continue;
+            }
+
+            if select_keys.len() > 0 && !select_keys.contains(k) {
+                continue;
+            }
+
+            if remove_keys.contains(k) {
                 continue;
             }
 

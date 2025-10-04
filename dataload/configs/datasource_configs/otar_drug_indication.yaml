@@ -1,0 +1,22 @@
+name": OpenTargets
+enabled: true
+ingests:
+  - globs: ["dataload/00_fetch_data/otar/drug_indication/*.parquet"]
+    command: '
+      grebi_parquet2jsonl |
+      grebi_transform_jsonl --json-select-keys id,indications |
+      grebi_unwind --unwind-field indications |
+      grebi_transform_jsonl
+        --json-de-nest-field indications.disease
+        --json-rename-field indications:biolink:treats
+        --json-inject-type biolink:Drug
+          '
+  - globs: ["dataload/00_fetch_data/otar/drug_indication/*.parquet"]
+    command: '
+      grebi_parquet2jsonl |
+      grebi_transform_jsonl
+        --json-select-keys id,approvedIndications
+        --json-inject-key-prefix otar:
+        --json-inject-type biolink:Drug
+          '
+
