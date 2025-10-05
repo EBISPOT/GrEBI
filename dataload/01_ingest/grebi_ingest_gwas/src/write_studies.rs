@@ -34,7 +34,8 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
             "GENOTYPING TECHNOLOGY",
             "COHORT",
             "FULL SUMMARY STATISTICS",
-            "SUMMARY STATS LOCATION"
+            "SUMMARY STATS LOCATION",
+            "GXE"
         ]);
     }
 
