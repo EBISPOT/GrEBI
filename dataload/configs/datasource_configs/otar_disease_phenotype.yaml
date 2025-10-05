@@ -1,0 +1,11 @@
+name: OpenTargets
+enabled: true
+ingests:
+  - globs: ["dataload/00_fetch_data/otar/disease_phenotype/*.parquet"]
+    command: '
+      grebi_parquet2jsonl |
+      grebi_nodes2edges --from-field disease --to-field phenotype --edge-type biolink:has_phenotype |
+      grebi_transform_jsonl
+        --json-inject-type biolink:Disease
+        --json-inject-key-prefix otar:
+          '

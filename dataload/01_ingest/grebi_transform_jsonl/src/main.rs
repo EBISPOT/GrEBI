@@ -18,7 +18,7 @@ struct Args {
     json_remove_keys:Option<String>,
 
     #[arg(long)]
-    json_rename_field:Option<Vec<String>>,
+    json_rename:Option<Vec<String>>,
 
     #[arg(long, default_value_t = String::from(""))]
     json_inject_type:String,
@@ -49,13 +49,14 @@ fn main() {
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
-    let mut renames:HashMap<String,String> = HashMap::new();
+    let mut renames:HashMap<Vec<String>,String> = HashMap::new();
 
-    if args.json_rename_field.is_some() {
-        for arg in args.json_rename_field.unwrap() {
+    if args.json_rename.is_some() {
+        for arg in args.json_rename.unwrap() {
             let delim = arg.find(':').unwrap();
-            let (column,rename)=(arg[0..delim].to_string(), arg[delim+1..].to_string());
-            renames.insert(column.clone(), rename.clone());
+            let (p,rename)=(arg[0..delim].to_string(), arg[delim+1..].to_string());
+            let path:Vec<String> = p.split('.').map(|s| s.to_string()).collect();
+            renames.insert(path.clone(), rename.clone());
         }
     }
 
@@ -122,15 +123,10 @@ fn main() {
             }
 
             let new_k = {
-                let alias = renames.get(k);
-                if alias.is_some() {
-                    alias.unwrap().clone()
+                if !k.eq("id") && args.json_inject_key_prefix.len() > 0 && k.find(":").is_none() {
+                    args.json_inject_key_prefix.clone() + k
                 } else {
-                    if !k.eq("id") && args.json_inject_key_prefix.len() > 0 && k.find(":").is_none() {
-                        args.json_inject_key_prefix.clone() + k
-                    } else {
-                        k.clone()
-                    }
+                    k.clone()
                 }
             };
 
@@ -149,6 +145,33 @@ fn main() {
             hasher.update(&buf);
             let hash = hasher.finalize();
             out_json.insert("grebi:hashId".to_string(),Value::String( hex::encode(hash)));
+        }
+
+        if renames.len() > 0 {
+            let mut to_insert: Vec<(String, serde_json::Value)> = Vec::new();
+
+            for (path, new_name) in renames.iter() {
+                let mut current_obj = &mut out_json;
+                let plen = path.len();
+
+                for (i, field) in path.iter().enumerate() {
+                    if i == plen - 1 {
+                        if let Some(v) = current_obj.remove(field) {
+                            to_insert.push((new_name.clone(), v));
+                        }
+                    } else {
+                        let next_obj = current_obj.get_mut(field);
+                        if next_obj.is_none() || !next_obj.as_ref().unwrap().is_object() {
+                            break;
+                        }
+                        current_obj = next_obj.unwrap().as_object_mut().unwrap();
+                    }
+                }
+            }
+
+            for (new_name, v) in to_insert {
+                out_json.insert(new_name, v);
+            }
         }
 
         output_nodes.write_all(Value::Object(out_json).to_string().as_bytes()).unwrap();

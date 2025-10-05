@@ -62,14 +62,26 @@ fn main() {
             out_props_json.insert(k.clone(), v.clone());
         }
 
-        for from_val in from.as_array().unwrap() {
-            for to_val in to.as_array().unwrap() {
+        let from_as_arr: Vec<&serde_json::Value> = if from.is_array() {
+            from.as_array().unwrap().iter().collect()
+        } else {
+            vec![from]
+        };
+
+        let to_as_arr: Vec<&serde_json::Value> = if to.is_array() {
+            to.as_array().unwrap().iter().collect()
+        } else {
+            vec![to]
+        };
+
+        for from_val in &from_as_arr {
+            for to_val in &to_as_arr {
                 let mut out_value = serde_json::Map::new();
-                out_value.insert("grebi:value".to_string(), to_val.clone());
+                out_value.insert("grebi:value".to_string(), (*to_val).clone());
                 out_value.insert("grebi:properties".to_string(), Value::Object(out_props_json.clone()));
 
                 let mut out_json = serde_json::Map::new();
-                out_json.insert("id".to_string(), from_val.clone());
+                out_json.insert("id".to_string(), (*from_val).clone());
                 out_json.insert(args.edge_type.to_string(), Value::Object(out_value));
 
                 output_nodes.write_all(Value::Object(out_json).to_string().as_bytes()).unwrap();

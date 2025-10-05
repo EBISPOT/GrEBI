@@ -15,6 +15,8 @@ config = {
         "obo:chebi/inchi",
         "obo:chebi/inchikey",
         "obo:chebi/smiles",
+        "otar:canonicalSmiles",
+        "otar:inchiKey",
         "impc:pmId",
         "impc:humanGeneAccId",
         "monarch:iri",
@@ -34,9 +36,9 @@ config = {
         "biolink:ChemicalEntity"
     ],
     "additional_equivalence_groups": [
-        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName", "dcterms:title", "ncit:Preferred_Name", "robokop:name"],
-        ["grebi:description", "iao:definition", "monarch:description", "ols:definition", "robokop:description"],
-        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym", "dcterms:alternative" ],
+        ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName", "dcterms:title", "ncit:Preferred_Name", "robokop:name", "otar:name"],
+        ["grebi:description", "iao:definition", "monarch:description", "ols:definition", "robokop:description", "otar:description"],
+        ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym", "dcterms:alternative", "otar:synonyms" ],
         ["mondo:0000001", "ogms:0000031"],
         ["biolink:broad_match", "skos:broader", "skos:broadMatch", "ols:directAncestor"],
         ["biolink:subclass_of", "ols:directParent", "rdfs:subClassOf", "rdfs:subPropertyOf"],

@@ -190,6 +190,8 @@
 "EFO_": "efo:",
 "GO_": "go:",
 "BAO_": "bao:",
+"HP_": "hp:",
+"MONDO_": "mondo:",
 "REACT:": "reactome:",
 "mesh:": "http://id.nlm.nih.gov/mesh/2024/",
 "medgen:": "http://purl.obolibrary.org/obo/MEDGENCUI_"

@@ -1,4 +1,4 @@
-name": OpenTargets
+name: OpenTargets
 enabled: true
 ingests:
   - globs: ["dataload/00_fetch_data/otar/evidence/*.parquet"]
