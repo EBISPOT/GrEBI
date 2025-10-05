@@ -8,7 +8,7 @@ ingests:
           --json-inject-type otar:Evidence
           --json-inject-key-prefix otar:
           --json-inject-value-prefix literature:pmid:
-          --json-inject-value-prefix targetId:ensembl: |
+          --json-inject-value-prefix targetId:ensembl:
           --json-de-nest-field diseaseModelAssociatedHumanPhenotypes.id
           --json-de-nest-field diseaseModelAssociatedModelPhenotypes.id
           '
