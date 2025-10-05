@@ -13,7 +13,6 @@ params.query_yamls_path = "$GREBI_QUERY_YAMLS_PATH"
 params.solr_mem = "140g"
 params.neo_mem = "140g"
 params.neo_query_mem = "140g"
-params.neo_tmp_path = "/dev/shm"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
 params.dataload_home_inside_container = "/opt/grebi_dataload"
 
@@ -558,7 +557,6 @@ process csvs_to_sqlite {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    cp -r ${neo_db}/* ${params.neo_tmp_path}
     PYTHONUNBUFFERED=true python3 ${params.dataload_home_inside_container}/07_run_queries/csvs_to_sqlite.py --out-sqlite-path materialised_queries.sqlite3
     pigz --best materialised_queries.sqlite3
     """
