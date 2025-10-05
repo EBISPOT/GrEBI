@@ -411,7 +411,7 @@ process create_neo_ids_csv {
 process create_neo {
     cache "lenient"
     memory "4 GB" 
-    time "8h"
+    time "48h"
     cpus "8"
 
     input:
