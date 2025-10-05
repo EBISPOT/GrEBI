@@ -80,8 +80,8 @@ ingests:
           --json-inject-value-prefix CasRN:cas:
           --json-inject-value-prefix ChemicalID:mesh:
       | grebi_transform_jsonl 
-          --json-rename-field ChemicalID:id
-          --json-rename-field CasRN:grebi:equivalentTo'
+          --json-rename ChemicalID:id
+          --json-rename CasRN:grebi:equivalentTo'
   - globs: ["dataload/00_fetch_data/ctd/CTD_curated_genes_diseases.tsv.gz"]
     command: '
       grebi_tsv2jsonl

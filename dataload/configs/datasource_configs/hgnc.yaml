@@ -4,7 +4,7 @@ ingests:
   - globs: ["dataload/00_fetch_data/hgnc/hgnc.json"]
     command: '
       grebi_transform_jsonl
-          --json-rename-field hgnc_id:id
+          --json-rename hgnc_id:id
           --json-inject-type hgnc:Gene
           --json-inject-key-prefix hgnc:
           --json-inject-value-prefix uniprot_ids:uniprot:

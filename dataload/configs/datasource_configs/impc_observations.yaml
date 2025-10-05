@@ -4,25 +4,25 @@ ingests:
   - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/categorical_observation_json/*.json.gz"]
     command: '
       grebi_transform_jsonl
-          --json-rename-field observationId:id
+          --json-rename observationId:id
           --json-inject-type impc:CategoricalObservation
           --json-inject-key-prefix impc:'
   - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/time_series_observation_json/*.json.gz"]
     command: '
         grebi_transform_jsonl
-            --json-rename-field observationId:id
+            --json-rename observationId:id
             --json-inject-type impc:TimeSeriesObservation
             --json-inject-key-prefix impc:'
   - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/unidimensional_observation_json/*.json.gz"]
     command: '
         grebi_transform_jsonl
-            --json-rename-field observationId:id
+            --json-rename observationId:id
             --json-inject-type impc:UnidimensionalObservation
             --json-inject-key-prefix impc:'
   - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/statistical_result_json/*.json.gz"]
     command: '
         grebi_transform_jsonl
-            --json-rename-field statisticalResultId:id
+            --json-rename statisticalResultId:id
             --json-inject-type impc:StatisticalResult
             --json-inject-key-prefix impc:
             --json-de-nest-field potentialPhenotypes.id
@@ -30,6 +30,6 @@ ingests:
   - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/specimen_experiment_json/*.json.gz"]
     command: '
         grebi_transform_jsonl
-            --json-rename-field experimentId:id
+            --json-rename experimentId:id
             --json-inject-type impc:SpecimenExperiment
             --json-inject-key-prefix impc:'

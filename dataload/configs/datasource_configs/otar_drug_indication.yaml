@@ -10,7 +10,7 @@ ingests:
         --json-inject-type biolink:Drug
         --json-inject-value-prefix id:chembl:
         --json-de-nest-field indications.disease
-        --json-rename-field indications:biolink:treats
+        --json-rename indications:biolink:treats
           '
   - globs: ["dataload/00_fetch_data/otar/drug_indication/*.parquet"]
     command: '
