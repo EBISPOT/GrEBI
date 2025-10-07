@@ -1,0 +1,2 @@
+{"subject":"gene:1","object":"disease:1","predicate":"associated_with"}
+{"subject":"gene:2","object":["disease:2","disease:3"],"predicate":"associated_with"}

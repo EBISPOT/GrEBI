@@ -1,0 +1,2 @@
+subject_id	predicate_id	object_id	relation_label
+hp:0001234	semapv:crossSpeciesExactMatch	mp:0001234	exact match

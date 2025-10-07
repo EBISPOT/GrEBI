@@ -1,0 +1,2 @@
+{"id":"test:1","sameAs":["test:1a","test:1b"],"name":"Test 1"}
+{"id":"test:2","sameAs":"test:2a","name":"Test 2"}

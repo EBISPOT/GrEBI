@@ -1,0 +1,2 @@
+{"grebi:nodeId":"test:Disease","rdfs:subClassOf":[{"grebi:value":"test:Phenotype"}]}
+{"grebi:nodeId":"test:Syndrome","rdfs:subClassOf":[{"grebi:value":"test:Disease"}]}

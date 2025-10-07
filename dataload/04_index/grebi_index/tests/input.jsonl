@@ -1,0 +1,2 @@
+{"grebi:nodeId":"test:1","grebi:datasources":["ds1"],"grebi:sourceIds":[{"grebi:datasource":"ds1","grebi:value":"test:1"}],"grebi:type":["TestType"],"name":[{"grebi:value":"Test Name 1"}]}
+{"grebi:nodeId":"test:2","grebi:datasources":["ds2"],"grebi:sourceIds":[{"grebi:datasource":"ds2","grebi:value":"test:2"}],"grebi:type":["TestType"],"name":[{"grebi:value":"Test Name 2"}]}
