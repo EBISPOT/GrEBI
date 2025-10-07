@@ -1,0 +1,12 @@
+name: ols_top_k
+enabled: true
+ingests:
+  - globs: ["dataload/00_fetch_data/ols_top_k/ols_top_k.tsv.gz"]
+    command: '
+      grebi_tsv2jsonl
+      | grebi_transform_jsonl
+          --json-inject-key-prefix ols_top_k:
+      | grebi_nodes2edges
+          --from-field ols_top_k:iri_1
+          --to-field ols_top_k:iri_2
+          --edge-type ols_top_k:matches'
