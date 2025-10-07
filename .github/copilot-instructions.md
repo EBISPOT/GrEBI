@@ -22,7 +22,7 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 ## Technology Stack
 
 ### Rust (dataload pipeline)
-- **Version**: 1.74+
+- **Version**: 1.79+
 - **Build**: `cargo build --release`
 - **Style**: Follow standard Rust conventions (rustfmt)
 - **Dependencies**: Managed via Cargo.toml
@@ -83,19 +83,19 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 
 ### Pipeline Architecture
 1. **00_fetch_data/**: Download raw data from external sources
-2. **01_ingest/**: Transform data into JSONL format
-3. **02_assign_ids/**: Extract and assign canonical identifiers
-4. **03_merge/**: Merge equivalent nodes using clique merging
+2. **01_ingest/**: Transform data into JSONL format and extract identifiers
+3. **02_assign_ids/**: Build equivalence groups and assign canonical IDs to nodes
+4. **03_merge/**: Merge nodes from different datasources based on equivalence groups (clique merging)
 5. **04_index/**: Build metadata and search indexes
-6. **05_link/**: Create relationships from property values
-7. **06_create_neo_db/**: Generate Neo4j CSV files
-8. **07_run_queries/**: Execute materialised queries
-9. **08_create_other_dbs/**: Export to Solr, SQLite, etc.
+6. **05_link/**: Create edges from property values that reference other entities
+7. **06_create_neo_db/**: Generate Neo4j CSV files and create Neo4j database
+8. **07_run_queries/**: Execute materialised queries on the Neo4j database
+9. **08_create_other_dbs/**: Export to Solr, SQLite, and other formats
 
 ### Data Format
 - Internal representation: JSONL (newline-delimited JSON)
 - Identifiers: Canonical CURIE format via Bioregistry
-- Graph nodes: Properties stored as JSON objects
+- Graph nodes: Each node represents a clique of equivalent entities and is linked to multiple source IDs
 - Graph edges: Represented as relationships between CURIEs
 
 ### Integration Strategy
@@ -185,5 +185,4 @@ npm run build
 - Neo4j version must be 2025.03.0-community for compatibility
 - CURIE format is standardized via Bioregistry
 - Cross-species phenotype matching uses special mapping predicates
-- API responses should include links to JSON representations
-- UI should display both human-readable and machine-readable formats
+- Nodes in GrEBI represent cliques of equivalent entities from multiple sources
