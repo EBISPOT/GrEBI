@@ -1,0 +1,2 @@
+{"grebi:nodeId":"test:1","grebi:datasources":["ds1"],"grebi:type":["Gene"],"name":[{"grebi:value":"Test Gene"}]}
+{"grebi:nodeId":"test:2","grebi:datasources":["ds1"],"grebi:type":["Disease"],"name":[{"grebi:value":"Test Disease"}]}

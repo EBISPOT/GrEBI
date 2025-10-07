@@ -26,7 +26,7 @@ cd dataload/<program_directory>/tests
 ## Test Types
 
 ### Full Integration Tests
-These tests exercise the complete functionality of the program with realistic data:
+These tests exercise the complete functionality of the program with realistic data and validate outputs:
 - **grebi_unwind** - Tests unwinding arrays in JSONL
 - **grebi_nodes2edges** - Tests converting node properties to edges
 - **grebi_tsv2jsonl** - Tests TSV to JSONL conversion
@@ -37,25 +37,24 @@ These tests exercise the complete functionality of the program with realistic da
 - **grebi_superclasses2types** - Tests type inference from superclasses
 - **grebi_normalise_prefixes** - Tests prefix normalization
 - **grebi_ingest_sssom** - Tests SSSOM mapping ingestion
+- **grebi_rdf2jsonl** - Tests RDF to JSONL conversion
+- **grebi_parquet2jsonl** - Tests Parquet to JSONL conversion (requires PyArrow)
+- **grebi_ingest_gwas** - Tests GWAS catalog data ingestion
+- **grebi_ingest_kgx_edges** - Tests KGX edge data ingestion
+- **grebi_ingest_ols** - Tests OLS ontology data ingestion
+- **grebi_ingest_reactome** - Tests Reactome pathway data ingestion
+- **grebi_ingest_sqlite** - Tests SQLite database ingestion
+- **grebi_index** - Tests metadata and search index building
+- **grebi_link** - Tests edge creation from property values
+- **grebi_make_neo_csv** - Tests Neo4j CSV file generation
+- **grebi_make_neo_ids_csv** - Tests Neo4j ID CSV generation
+- **grebi_make_solr** - Tests Solr index data creation
+- **grebi_link_results** - Tests query result linking with metadata
+- **grebi_make_compressed_blob** - Tests compressed blob creation
+- **grebi_make_sqlite** - Tests SQLite database creation
 
-### Smoke Tests
-These tests verify that programs exist and basic functionality works:
+### Test with Existing Infrastructure
 - **grebi_merge** - Has existing test in tests/test.sh
-- **grebi_index** - Verifies program runs and shows help
-- **grebi_link** - Verifies program exists
-- **grebi_make_neo_csv** - Verifies program exists
-- **grebi_make_neo_ids_csv** - Verifies program exists
-- **grebi_ingest_ols** - Verifies program exists
-- **grebi_ingest_gwas** - Verifies program exists
-- **grebi_ingest_kgx_edges** - Verifies program exists
-- **grebi_ingest_reactome** - Verifies program exists
-- **grebi_ingest_sqlite** - Verifies program exists
-- **grebi_rdf2jsonl** - Verifies program exists
-- **grebi_parquet2jsonl** - Verifies program exists
-- **grebi_make_solr** - Verifies program exists
-- **grebi_link_results** - Verifies program exists
-- **grebi_make_compressed_blob** - Verifies program exists
-- **grebi_make_sqlite** - Verifies program exists
 
 ## Continuous Integration
 

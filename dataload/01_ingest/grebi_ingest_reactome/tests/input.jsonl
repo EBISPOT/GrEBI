@@ -1,0 +1,2 @@
+{"id":"1","type":"node","labels":["Pathway"],"properties":{"stId":"R-HSA-12345","displayName":"Test Pathway","url":"https://reactome.org/content/detail/R-HSA-12345"}}
+{"id":"2","type":"node","labels":["Reaction"],"properties":{"stId":"R-HSA-67890","displayName":"Test Reaction"}}

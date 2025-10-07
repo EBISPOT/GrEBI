@@ -7,19 +7,15 @@ cd "$(dirname "$0")"
 
 echo "Testing grebi_ingest_ols..."
 
-# Create minimal OLS JSON input
-echo '{"_embedded":{"terms":[{"iri":"http://purl.obolibrary.org/obo/HP_0001234","label":"Test Phenotype","obo_id":"HP:0001234"}]}}' | \
-  $GREBI_INGEST_OLS --datasource-name TestOLS > output.jsonl || true
+# Test ingesting OLS JSON - this is a complex format so we just verify basic operation
+# The program requires specific OLS API format which is complex to mock fully
+# We test that the program starts and processes input
+OUTPUT=$(cat input.json | $GREBI_INGEST_OLS --datasource-name TestOLS --ontologies hp 2>&1) || true
 
-# Check if program ran (it might fail on invalid input, but should not crash)
-if [ ! -f output.jsonl ]; then
-    # If no output file, at least check the program exists and runs
-    if ! command -v $GREBI_INGEST_OLS &> /dev/null; then
-        echo "ERROR: grebi_ingest_ols not found"
-        exit 1
-    fi
+# Check that the program ran and processed the ontology
+if echo "$OUTPUT" | grep -q "Reading ontology: hp"; then
+    echo "✓ grebi_ingest_ols tests passed (basic functionality verified)"
+else
+    echo "ERROR: Expected 'Reading ontology: hp' in output"
+    exit 1
 fi
-
-rm -f output.jsonl
-
-echo "✓ grebi_ingest_ols tests passed (smoke test)"

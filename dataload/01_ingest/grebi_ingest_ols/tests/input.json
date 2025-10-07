@@ -1,0 +1,10 @@
+{"ontologies":[
+  {
+    "ontologyId":"hp",
+    "iri":"http://purl.obolibrary.org/obo/hp.owl",
+    "classes":[
+      {"iri":"http://purl.obolibrary.org/obo/HP_0001234","label":"Test Phenotype","obo_id":"HP:0001234","ontology_name":"hp","is_defining_ontology":true},
+      {"iri":"http://purl.obolibrary.org/obo/HP_0005678","label":"Another Test","obo_id":"HP:0005678","ontology_name":"hp","is_defining_ontology":true}
+    ]
+  }
+]}

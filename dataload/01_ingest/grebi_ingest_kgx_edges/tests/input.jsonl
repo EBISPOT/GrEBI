@@ -1,0 +1,2 @@
+{"id":"test_edge_1","subject":"gene:1","predicate":"biolink:related_to","object":"disease:1","knowledge_source":"TestSource"}
+{"id":"test_edge_2","subject":"gene:2","predicate":"biolink:associated_with","object":"disease:2","knowledge_source":"TestSource"}

@@ -7,18 +7,30 @@ cd "$(dirname "$0")"
 
 echo "Testing grebi_ingest_gwas..."
 
-# Create minimal GWAS studies TSV
-echo -e "STUDY ACCESSION\tDISEASE/TRAIT\nGCSTxxxxxx\tTest Disease" > gwas-catalog-studies-test.tsv
-
 # Test ingesting GWAS studies
-OUTPUT=$(cat gwas-catalog-studies-test.tsv | $GREBI_INGEST_GWAS --datasource-name TestGWAS --filename gwas-catalog-studies-test.tsv 2>/dev/null || echo "")
+OUTPUT=$(cat gwas-catalog-studies-test.tsv | $GREBI_INGEST_GWAS --datasource-name TestGWAS --filename gwas-catalog-studies-test.tsv)
 
-# Basic smoke test - just check the program runs
-if ! command -v $GREBI_INGEST_GWAS &> /dev/null; then
-    echo "ERROR: grebi_ingest_gwas not found"
+# Should produce at least 2 lines (one per study)
+LINE_COUNT=$(echo "$OUTPUT" | wc -l)
+if [ "$LINE_COUNT" -lt 2 ]; then
+    echo "ERROR: Expected at least 2 lines, got $LINE_COUNT"
     exit 1
 fi
 
-rm -f gwas-catalog-studies-test.tsv
+# Check that outputs are valid JSON
+echo "$OUTPUT" | while IFS= read -r line; do
+    if [ -n "$line" ]; then
+        if ! echo "$line" | jq empty 2>/dev/null; then
+            echo "ERROR: Invalid JSON: $line"
+            exit 1
+        fi
+    fi
+done
 
-echo "✓ grebi_ingest_gwas tests passed (smoke test)"
+# Check for expected content
+if ! echo "$OUTPUT" | grep -q 'GCST000001'; then
+    echo "ERROR: Expected GCST000001 in output"
+    exit 1
+fi
+
+echo "✓ grebi_ingest_gwas tests passed"
