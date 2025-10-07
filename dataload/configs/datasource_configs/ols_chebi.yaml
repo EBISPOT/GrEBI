@@ -1,9 +1,10 @@
-name: OLS
+name: OLS.chebi
 enabled: true
 ingests:
   - globs: ["/data/ontologies/ontologies.json"]
-    command: 'grebi_ingest_ols
+    command: '
+      grebi_ingest_ols
         --datasource-name $GREBI_INGEST_DATASOURCE_NAME
-        --ontologies efo,ro,hp
+        --ontologies chebi
         --skip-obsolete
-        '
+      '
