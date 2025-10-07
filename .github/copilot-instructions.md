@@ -22,7 +22,7 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 ## Technology Stack
 
 ### Rust (dataload pipeline)
-- **Version**: 1.79+
+- **Version**: 1.90.0
 - **Build**: `cargo build --release`
 - **Style**: Follow standard Rust conventions (rustfmt)
 - **Dependencies**: Managed via Cargo.toml
@@ -40,7 +40,7 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 
 ### TypeScript/React (UI)
 - **Framework**: React with Material-UI components
-- **Build**: npm/yarn
+- **Build**: npm/yarn and esbuild
 - **Style**: Use functional components with hooks
 - **State Management**: React hooks (useState, useMemo, etc.)
 - **Syntax Highlighting**: Uses PrismJS for code display
@@ -85,7 +85,7 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 1. **00_fetch_data/**: Download raw data from external sources
 2. **01_ingest/**: Transform data into JSONL format and extract identifiers
 3. **02_assign_ids/**: Build equivalence groups and assign canonical IDs to nodes
-4. **03_merge/**: Merge nodes from different datasources based on equivalence groups (clique merging)
+4. **03_merge/**: Merge properties about the same clique from multiple files into one JSON object per clique
 5. **04_index/**: Build metadata and search indexes
 6. **05_link/**: Create edges from property values that reference other entities
 7. **06_create_neo_db/**: Generate Neo4j CSV files and create Neo4j database
@@ -96,10 +96,10 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 - Internal representation: JSONL (newline-delimited JSON)
 - Identifiers: Canonical CURIE format via Bioregistry
 - Graph nodes: Each node represents a clique of equivalent entities and is linked to multiple source IDs
-- Graph edges: Represented as relationships between CURIEs
+- Graph edges: Represented as relationships between cliques
 
 ### Integration Strategy
-- Canonicalize all identifiers to CURIE format
+- Canonicalize all identifiers to CURIE format using the Bioregistry
 - Property values that are identifiers become edges
 - Merge equivalent nodes via clique analysis
 - Use qualified safe labels for property names
@@ -110,7 +110,7 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 - Neo4j version: 2025.03.0-community
 - Solr version: 9.8.1
 - Python version: 3.11
-- Rust build container: `rust_for_codon:1.79`
+- Rust version: 1.90.0
 
 ## Query Templates
 
@@ -162,7 +162,7 @@ npm run build
 ## Biomedical Domain Knowledge
 
 - **Ontologies**: OLS, PHENIO, Uberon, Gene Ontology
-- **Identifiers**: CURIE format (e.g., `HGNC:123`, `HP:0001234`)
+- **Identifiers**: CURIE format normalised using the Bioregistry with lowercase prefixes (e.g., `hgnc:123`, `hp:0001234`)
 - **Mappings**: SSSOM format, skos:exactMatch, semapv:crossSpeciesExactMatch
 - **Knowledge Graphs**: Uses Biolink Model concepts
 - **Phenotypes**: Human Phenotype Ontology (HP), Mammalian Phenotype Ontology (MP)
@@ -183,6 +183,7 @@ npm run build
 ## Important Notes
 
 - Neo4j version must be 2025.03.0-community for compatibility
+- Solr version must be 9.8.1 for compatibility
 - CURIE format is standardized via Bioregistry
 - Cross-species phenotype matching uses special mapping predicates
 - Nodes in GrEBI represent cliques of equivalent entities from multiple sources
