@@ -1,9 +1,10 @@
-name: OLS
+name: OLS.bspo
 enabled: true
 ingests:
   - globs: ["dataload/00_fetch_data/ols/ontologies_linked.json.gz"]
     command: '
       grebi_ingest_ols
         --datasource-name $GREBI_INGEST_DATASOURCE_NAME
-        --ontologies efo,mp,hp,ro,iao,uberon,pato,oba,bspo,iao,obi,bfo,cob,oio,iao,biolink,mondo,doid,dc,dcterms,ncit,edam,upheno
-        --skip-obsolete'
+        --ontologies bspo
+        --skip-obsolete
+      '
