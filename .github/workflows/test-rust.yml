@@ -1,0 +1,64 @@
+name: Test Rust Programs
+
+on:
+  push:
+    branches: [ "dev", "stable" ]
+    paths:
+      - 'dataload/**'
+  pull_request:
+    branches: [ "dev", "stable" ]
+    paths:
+      - 'dataload/**'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-rust-programs:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:1.90.0-bullseye
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          apt-get update -y
+          apt-get install -y cmake clang jq
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v3
+        with:
+          path: dataload/target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build all Rust programs
+        run: |
+          cd dataload
+          cargo build --release
+
+      - name: Run all tests
+        run: |
+          cd dataload
+          ./run_all_tests.sh
+
+      - name: Test Summary
+        if: always()
+        run: |
+          if [ -f dataload/test_results.txt ]; then
+            cat dataload/test_results.txt
+          fi
