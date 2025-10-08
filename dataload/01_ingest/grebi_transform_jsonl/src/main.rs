@@ -55,8 +55,10 @@ fn main() {
         for arg in args.json_rename.unwrap() {
             let delim = arg.find(':').unwrap();
             let (p,rename)=(arg[0..delim].to_string(), arg[delim+1..].to_string());
-            let path:Vec<String> = p.split('.').map(|s| s.to_string()).collect();
+            let mut path:Vec<String> = p.split('.').map(|s| s.to_string()).collect();
+            path[0] = if path[0].eq("id") { "id".to_string() } else { args.json_inject_key_prefix.clone() + &path[0] };
             renames.insert(path.clone(), rename.clone());
+
         }
     }
 
