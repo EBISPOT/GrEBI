@@ -12,6 +12,12 @@ topics:
   - id: metabolomics
     name: Metabolomics
     type: Domain
+  - id: phenomics
+    name: Phenomics
+    type: Domain
+  - id: genetics
+    name: Genetics
+    type: Domain
   - id: impc
     name: IMPC
     type: Resource

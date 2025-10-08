@@ -1,0 +1,49 @@
+title: Search for phenotypes associated with a disease
+description: Given a disease, search for phenotypes associated with it and its subclasses
+subgraphs:
+  - ebi_monarch_xspecies
+topics:
+  - phenomics
+cypher_match_fragment: |-
+  MATCH (disease)-[:sourceId]->(:Id {id: $disease_id})
+  MATCH (disease)<-[:`biolink:broad_match`*0..1]-(specific_disease)
+  MATCH (specific_disease)-[r:(
+    `biolink:has_phenotype`|
+    `ro:disease_has_feature`|
+    `ncit:Disease_Has_Finding`|
+    `obo:mondo#disease_has_major_feature`|
+    `primekg:disease_phenotype_positive`
+  )*0..1]->(phenotype)
+  WHERE "OLS.hp" IN phenotype.`grebi:datasources`
+  AND ALL(rel IN r WHERE NOT "CTD" IN coalesce(rel.`grebi:datasources`, []))
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      specific_disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(specific_disease) } AS disease,
+      phenotype { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(phenotype) } AS phenotype,
+      REDUCE(all_ds = [], rel IN r | all_ds + coalesce(rel.`grebi:datasources`, [])) AS from_datasources
+cypher_count_fragment: |-
+  WITH DISTINCT specific_disease, phenotype
+  RETURN count(*) AS count
+params:
+  - param_id: disease_id
+    param_name: Disease
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'mondo:0000001'
+result_columns:
+  - column_id: disease
+    column_type: GraphNodeId
+  - column_id: phenotype
+    column_type: GraphNodeId
+  - column_id: from_datasources
+    column_type: DatasourceList
+examples:
+  - title: Marfan syndrome
+    params:
+      disease_id: mondo:0007947
+  - title: cystic fibrosis
+    params:
+      disease_id: mondo:0009061
+  - title: Parkinson disease
+    params:
+      disease_id: mondo:0005180

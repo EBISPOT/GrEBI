@@ -1,0 +1,72 @@
+title: Search for gene disease associations
+description: Given a disease, search for genes associated with it and its subclasses
+subgraphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+cypher_match_fragment: |-
+  MATCH (disease)-[:sourceId]->(:Id {id: $disease_id})
+  WHERE 'OLS.mondo' IN disease.`grebi:datasources`
+
+  // find subclasses
+  MATCH (disease)<-[:`biolink:broad_match`*0..1]-(specific_disease)
+  WITH DISTINCT specific_disease
+
+  // branch 1: gene <- specific_disease
+  OPTIONAL MATCH (specific_disease)<-[r1:(
+    `biolink:gene_to_disease_association`|
+    `ncit:Gene_Associated_With_Disease`
+  )]-(g1)
+  WITH specific_disease, collect(DISTINCT {gene: g1, r: r1}) AS rows
+
+  // branch 2: specific_disease -> gene
+  OPTIONAL MATCH (specific_disease)-[r2:`ncit:Disease_Mapped_To_Gene`]->(g2)
+  WITH specific_disease, rows, collect(DISTINCT {gene: g2, r: r2}) AS add2
+  WITH specific_disease, rows + add2 AS rows
+
+  // branch 3: GWAS associations with variants mapped to the gene
+  OPTIONAL MATCH (snp:`gwas:SNP`)-[r3:`gwas:associated_with`]->(specific_disease)
+  OPTIONAL MATCH (g3)<-[:(
+    `gwas:mapped_gene`|
+    `gwas:snp_gene_ids`|
+    `gwas:upstream_gene_id`|
+    `gwas:downstream_gene_id`
+  )]-(snp)
+  WITH specific_disease, rows, collect(DISTINCT {gene: g3, r: r3}) AS add3
+  WITH specific_disease, rows + add3 AS rows
+
+  // turn collected rows back into rows
+  UNWIND [row IN rows WHERE row.gene IS NOT NULL AND row.r IS NOT NULL] AS row
+  WITH specific_disease, row.gene AS gene, row.r AS r
+  WHERE NONE(x IN r.`grebi:datasources` WHERE x = 'CTD')
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      specific_disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(specific_disease) } AS disease,
+      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
+      r.`grebi:datasources` AS from_datasources
+cypher_count_fragment: |-
+  WITH DISTINCT specific_disease, gene, r.`grebi:datasources` AS from_datasources
+  RETURN count(*) AS count
+params:
+  - param_id: disease_id
+    param_name: Disease
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'mondo:0000001'
+result_columns:
+  - column_id: disease
+    column_type: GraphNodeId
+  - column_id: gene
+    column_type: GraphNodeId
+  - column_id: from_datasources
+    column_type: DatasourceList
+examples:
+  - title: Crohn disease
+    params: 
+      disease_id: mondo:0005011
+  - title: bronchiectasis
+    params:
+      disease_id: mondo:0004822 
+  - title: thrombotic microangiopathy
+    params:
+      disease_id: mondo:0019737

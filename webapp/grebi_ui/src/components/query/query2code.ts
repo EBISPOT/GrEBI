@@ -6,8 +6,6 @@ export default function query2code(queryTemplate:QueryTemplate, params:Record<st
 
     let exampleParams = queryTemplate.examples[0].params;
 
-    console.log("Example params:", exampleParams);
-
     let python = [
         "import requests",
         "import json",
