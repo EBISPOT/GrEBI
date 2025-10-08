@@ -42,7 +42,8 @@ config = {
         ["mondo:0000001", "ogms:0000031"],
         ["biolink:broad_match", "skos:broader", "skos:broadMatch", "ols:directAncestor"],
         ["biolink:subclass_of", "ols:directParent", "rdfs:subClassOf", "rdfs:subPropertyOf"],
-        ["rdfs:isDefinedBy", "ols:ontologyIri", "ols:ontologyId"]
+        ["rdfs:isDefinedBy", "ols:ontologyIri", "ols:ontologyId"],
+        ["biolink:gene_to_disease_association", "ncit:Gene_Associated_With_Disease"]
     ],
     "exclude_props": [
         "ols:hierarchicalProperty",
