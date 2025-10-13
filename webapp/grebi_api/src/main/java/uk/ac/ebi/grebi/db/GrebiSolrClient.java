@@ -136,6 +136,8 @@ public class GrebiSolrClient {
             qr = mySolrClient.query(query);
             logger.info("solr query had {} result(s).", qr.getResults().getNumFound());
 
+            // logger.info("solr query result: {}", qr.getResults().toString());
+
         } catch (SolrServerException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {

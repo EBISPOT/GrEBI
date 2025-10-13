@@ -51,10 +51,11 @@ public class GrebiSolrRepo {
         return solrDocs.map(doc -> {
             Map<String, Object> map = new LinkedTreeMap<>();
             for (String fieldName : doc.getFieldNames()) {
-                if(fieldName.startsWith("str_")) {
+                if(!fieldName.startsWith("str_")) {
                     continue;
                 }
                 Object value = doc.getFieldValue(fieldName);
+                fieldName = fieldName.replace("str_", "");
                 fieldName = fieldName.replace("__", ":");
                 if (value instanceof Collection) {
                     map.put(fieldName, new ArrayList<>((Collection<?>) value));
@@ -62,6 +63,22 @@ public class GrebiSolrRepo {
                     map.put(fieldName, value);
                 }
             }
+            for (String fieldName : doc.getFieldNames()) {
+                if(fieldName.startsWith("str_")) {
+                    continue;
+                }
+                Object value = doc.getFieldValue(fieldName);
+                fieldName = fieldName.replace("__", ":");
+                if(map.containsKey(fieldName)) {
+                    continue; // already set from str_ version
+                }
+                if (value instanceof Collection) {
+                    map.put(fieldName, new ArrayList<>((Collection<?>) value));
+                } else {
+                    map.put(fieldName, value);
+                }
+            }
+
             return map;
         });
     }

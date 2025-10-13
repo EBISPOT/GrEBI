@@ -345,8 +345,10 @@ public class GrebiApi {
                         )
                     );
 
+                    System.out.println("solr response: " + res.toString());
+
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(res));
+                    ctx.json(res);
                 })
                 .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");

@@ -67,7 +67,7 @@ public class GrebiSolrQuery {
         query.set("q.op", "AND");
 
         if(this.returnFields.size() > 0) {
-            query.setFields(this.returnFields.stream().map(f -> f.replace(":", "__")).toArray(String[]::new));
+            query.setFields(this.returnFields.stream().map(f -> "str_" + f.replace(":", "__")).toArray(String[]::new));
         }
 
         if(searchText != null) {
