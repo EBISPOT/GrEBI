@@ -94,7 +94,7 @@ public class GrebiSolrRepo {
 
     private GrebiFacetedResultsPage<Map<String, Object>> resolveNodeIds(String subgraph, GrebiFacetedResultsPage<SolrDocument> solrDocs) {
 
-        List<String> ids = solrDocs.map(doc -> doc.getFieldValue("grebi__nodeId").toString()).toList();
+        List<String> ids = solrDocs.map(doc -> (String) doc.getFieldValues("str_grebi__nodeId").stream().iterator().next()).toList();
 
         List<Map<String, Object>> vals = resolver.resolveToList(subgraph, ids);
         assert (vals.size() == solrDocs.getSize());
@@ -103,12 +103,12 @@ public class GrebiSolrRepo {
     }
 
     private Map<String, Object> resolveNodeId(String subgraph, SolrDocument solrDoc) {
-        return resolver.resolveToList(subgraph, List.of(solrDoc.getFieldValue("grebi__nodeId").toString())).iterator().next();
+        return resolver.resolveToList(subgraph, List.of((String) solrDoc.getFieldValues("str_grebi__nodeId").stream().iterator().next())).iterator().next();
     }
 
     private GrebiFacetedResultsPage<Map<String, Object>> resolveEdgeIds(String subgraph, GrebiFacetedResultsPage<SolrDocument> solrDocs) {
 
-        List<String> ids = solrDocs.map(doc -> doc.getFieldValue("grebi__edgeId").toString()).toList();
+        List<String> ids = solrDocs.map(doc -> (String) doc.getFieldValues("str_grebi__edgeId").stream().iterator().next()).toList();
 
         List<Map<String, Object>> vals = resolver.resolveToList(subgraph, ids);
         assert (vals.size() == solrDocs.getSize());
@@ -118,7 +118,7 @@ public class GrebiSolrRepo {
 
     private Map<String, Object> resolveEdgeId(String subgraph, SolrDocument solrDoc) {
 
-        return resolver.resolveToList(subgraph, List.of(solrDoc.getFieldValue("grebi__edgeId").toString())).iterator().next();
+        return resolver.resolveToList(subgraph, List.of(solrDoc.getFieldValue("str_grebi__edgeId").toString())).iterator().next();
     }
 
     public GrebiFacetedResultsPage<Map<String, Object>> searchEdgesPaginated(String subgraph, GrebiSolrQuery query, Pageable pageable) {

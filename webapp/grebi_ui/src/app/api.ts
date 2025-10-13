@@ -59,7 +59,13 @@ export class Page<T> {
       this.numElements,
       this.totalPages,
       this.totalElements,
-      this.elements.map(fn),
+      this.elements.map((el) => {
+        let res = fn(el);
+        if(!res) {
+          throw new Error("Page.map function returned null or undefined")
+        }
+        return res;
+      }),
       this.facetFieldsToCounts
     );
   }

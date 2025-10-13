@@ -73,7 +73,7 @@ public class ResolverClient {
             HttpEntity entity = response.getEntity();
 
             if (entity != null) {
-                System.out.println("Resolved " + ids.size() + " ids in " + timer.stop().toString());
+                System.out.println("Resolved " + ids.size() + " ids in " + timer.stop().toString() + ": " + ids.stream().collect(Collectors.joining(", ")));
 
                 String json = EntityUtils.toString(entity);
 
@@ -94,6 +94,15 @@ public class ResolverClient {
 
         var resolved = resolveToMap(subgraph, ids);
 
-        return ids.stream().map(id -> resolved.get(id)).collect(Collectors.toList());
+        var ret = ids.stream().map(id -> resolved.get(id)).collect(Collectors.toList());
+
+        // check for nulls
+        for(int i = 0; i < ret.size(); i++) {
+            if(ret.get(i) == null) {
+                System.err.println("Warning: could not resolve id " + ids.toArray(new String[0])[i] + " in subgraph " + subgraph);
+            }
+        }
+
+        return ret;
     }
 }

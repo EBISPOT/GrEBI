@@ -538,12 +538,12 @@ public class GrebiApi {
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
                     var res = solr.searchNodesPaginated(ctx.pathParam("subgraph"), q, resolve, page);
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(res));
+                    ctx.json(res);
                 })
                 .get("/api/v1/subgraphs/{subgraph}/suggest", ctx -> {
                     var res = solr.autocomplete(ctx.pathParam("subgraph"), ctx.queryParam("q"));
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(res));
+                    ctx.json(res);
                 })
                 .exception(Exception.class, (e, ctx) -> {
                     ctx.status(500);

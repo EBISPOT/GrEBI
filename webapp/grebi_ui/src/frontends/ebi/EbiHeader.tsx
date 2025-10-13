@@ -30,8 +30,9 @@ export default function EbiHeader({
   let navigate = useNavigate();
 
 function setSubgraph(subgraph: string) {
-  let currentUrl = loc.pathname;
-  let newUrl = currentUrl.replace(/subgraphs\/[^/]+/, `subgraphs/${subgraph}`);
+  const { pathname, search, hash } = loc; 
+  const newPath = pathname.replace(/subgraphs\/[^/]+/, `subgraphs/${subgraph}`);
+  const newUrl = `${newPath}${search}${hash}`;
   navigate(newUrl);
 }
 

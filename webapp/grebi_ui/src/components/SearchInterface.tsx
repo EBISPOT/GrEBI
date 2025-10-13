@@ -103,10 +103,12 @@ export default function SeachInterface(opts:{ subgraph:string }
         ['q', search],
         ['facet', 'grebi:datasources'],
         ['facet', 'grebi:type']
-      ])))).map(r => new GraphNode(r))
+      ]))))
+      
+      let mapped = res.map(r => new GraphNode(r))
 
-      setResults(res.elements)
-      setFacets(res.facetFieldsToCounts)
+      setResults(mapped.elements)
+      setFacets(mapped.facetFieldsToCounts)
 
       setLoadingResults(false)
     }
@@ -119,6 +121,7 @@ export default function SeachInterface(opts:{ subgraph:string }
     datasourceFacetselected,
     typeFacetSelected,
     searchParams,
+    subgraph
   ]);
   useEffect(() => {
     if (prevSearch !== search) setPage(0);
