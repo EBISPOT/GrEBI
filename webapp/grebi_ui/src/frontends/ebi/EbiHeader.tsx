@@ -1,19 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import urlJoin from "url-join";
 import { Helmet } from 'react-helmet';
-import React, { Fragment, useLayoutEffect } from "react";
-import HomeIcon from '@mui/icons-material/Home';
-import MediationIcon from '@mui/icons-material/Mediation';
-import { List, Stack } from "@mui/material";
-import JoinRightIcon from '@mui/icons-material/JoinRight';
-import HelpIcon from '@mui/icons-material/Help';
-import InfoIcon from '@mui/icons-material/Info';
+import { Stack } from "@mui/material";
 import DownloadIcon from '@mui/icons-material/Download';
 import TravelExplore from '@mui/icons-material/TravelExplore';
-import { FeaturedPlayList, Hub, LibraryBooks, ManageSearch, Polyline, Science, Search, Share, SnippetFolder, TableChart, ViewList } from "@mui/icons-material";
+import { ManageSearch, TableChart } from "@mui/icons-material";
 import SubgraphPicker from "../../components/SubgraphPicker";
 import Breadcrumbs, { BreadcrumbsEntry } from "../../components/Breadcrumbs";
-
 
 export default function EbiHeader({
   section,

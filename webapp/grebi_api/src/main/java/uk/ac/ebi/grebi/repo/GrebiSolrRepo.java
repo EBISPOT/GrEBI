@@ -108,7 +108,7 @@ public class GrebiSolrRepo {
 
     private GrebiFacetedResultsPage<Map<String, Object>> resolveEdgeIds(String subgraph, GrebiFacetedResultsPage<SolrDocument> solrDocs) {
 
-        List<String> ids = solrDocs.map(doc -> (String) doc.getFieldValues("str_grebi__edgeId").stream().iterator().next()).toList();
+        List<String> ids = solrDocs.map(doc -> (String) doc.getFieldValues("grebi__edgeId").stream().iterator().next()).toList();
 
         List<Map<String, Object>> vals = resolver.resolveToList(subgraph, ids);
         assert (vals.size() == solrDocs.getSize());
@@ -118,7 +118,7 @@ public class GrebiSolrRepo {
 
     private Map<String, Object> resolveEdgeId(String subgraph, SolrDocument solrDoc) {
 
-        return resolver.resolveToList(subgraph, List.of(solrDoc.getFieldValue("str_grebi__edgeId").toString())).iterator().next();
+        return resolver.resolveToList(subgraph, List.of(solrDoc.getFieldValue("grebi__edgeId").toString())).iterator().next();
     }
 
     public GrebiFacetedResultsPage<Map<String, Object>> searchEdgesPaginated(String subgraph, GrebiSolrQuery query, Pageable pageable) {
