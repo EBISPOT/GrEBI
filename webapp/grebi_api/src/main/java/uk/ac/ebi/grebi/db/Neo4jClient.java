@@ -59,6 +59,10 @@ public class Neo4jClient {
         Session session = getSession();
 
         Result result = session.run(query);
+
+        System.out.println("Running Cypher query: " + query);
+
+
         List<Map<String,Object>> list = result.stream().map(r -> r.asMap()).collect(Collectors.toList());
 
         session.close();
@@ -68,6 +72,8 @@ public class Neo4jClient {
     public List<JsonElement> query(String query, String resVar) {
 
         Session session = getSession();
+
+        System.out.println("Running Cypher query: " + query);
 
         Result result = session.run(query);
 

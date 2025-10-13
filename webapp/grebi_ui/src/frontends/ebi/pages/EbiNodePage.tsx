@@ -22,6 +22,7 @@ import { get, getPaginated } from "../../../app/api";
 import encodeNodeId from "../../../encodeNodeId";
 import EdgesList from "../../../components/node_edge_list/EdgesList";
 import NodeLinks from "../../../components/NodeLinks";
+import NodeSimilarList from "../../../components/NodeSimilarList";
 
 
 export default function EbiNodePage() {
@@ -107,6 +108,9 @@ export default function EbiNodePage() {
         </TabPanel>
         <TabPanel value={tab} index={"graph"}>
          <GraphView subgraph={subgraph} node={node} />
+        </TabPanel>
+        <TabPanel value={tab} index={"similar"}>
+         <NodeSimilarList subgraph={subgraph} node={node} />
         </TabPanel>
         </Grid>
         </Grid>

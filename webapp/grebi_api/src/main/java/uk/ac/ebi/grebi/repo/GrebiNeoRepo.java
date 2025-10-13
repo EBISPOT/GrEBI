@@ -2,6 +2,7 @@ package uk.ac.ebi.grebi.repo;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 import io.javalin.http.Context;
 import io.netty.util.concurrent.CompleteFuture;
@@ -19,9 +20,12 @@ import org.neo4j.driver.EagerResult;
 import org.neo4j.driver.QueryConfig;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.reactive.ReactiveResult;
+import org.neo4j.driver.types.Node;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 
 import uk.ac.ebi.grebi.GrebiApi;
 import uk.ac.ebi.grebi.db.Neo4jClient;
@@ -125,6 +129,48 @@ public class GrebiNeoRepo {
             return new EdgeAndNode(resolved.get(edgeId), resolved.get(otherId));
         }).collect(Collectors.toList());
     }
+
+    public static class SimilarResult {
+        public Object node;
+        public double score;
+    }
+
+    public List<SimilarResult> getSimilar(String subgraph, String nodeId, int n) {
+
+		String query = "MATCH (c:GraphNode {`grebi:nodeId`: $id}) "
+		+ "CALL db.index.vector.queryNodes('embeddings', $n, c.`grebi:embeddingVector`) "
+		+ "YIELD node AS similar, score "
+		+ "RETURN similar { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(similar) } as node, score "
+		+ "ORDER BY score DESC ";
+
+		ArrayList<SimilarResult> res = new ArrayList<>();
+
+        var neo4jClient = getClient(subgraph);
+		Session session = neo4jClient.getSession();
+
+		Result result = session.run(query, Map.of(
+            "id", subgraph + ":" + nodeId,
+            "n", n
+        ));
+
+		for(Record r : result.list()) {
+
+			var rmap = r.asMap();
+
+            SimilarResult resRow = new SimilarResult();
+
+			double score = (Double) rmap.get("score");
+
+			resRow.node = rmap.get("node");
+			resRow.score = score;
+
+			res.add(resRow);
+		}
+
+		return res;
+    }
+
+
 
     private String removeSubgraphPrefix(String id, String subgraph) {
         if(!id.startsWith(subgraph + ":")) {
@@ -359,158 +405,158 @@ public class GrebiNeoRepo {
     }
 
 
-public CompletableFuture<Void> runQueryFromTemplateStreamed(
-        String subgraph,
-        QueryTemplate template,
-        Map<String, List<String>> params,
-        Sort sort,
-        PrintWriter writer
-) throws IOException {
+    public CompletableFuture<Void> runQueryFromTemplateStreamed(
+            String subgraph,
+            QueryTemplate template,
+            Map<String, List<String>> params,
+            Sort sort,
+            PrintWriter writer
+    ) throws IOException {
 
-    List<QueryTemplate.ResultColumn> columns = template.result_columns;
+        List<QueryTemplate.ResultColumn> columns = template.result_columns;
 
-    var csvColumns = new ArrayList<String>();
+        var csvColumns = new ArrayList<String>();
 
-    for (QueryTemplate.ResultColumn column : columns) {
-        String columnId = column.column_id;
-        if (column.column_type.equals("GraphNodeId")) {
-            csvColumns.add(columnId + "_id");
-            csvColumns.add(columnId + "_label");
-        } else {
-            csvColumns.add(columnId);
-        }
-    }
-
-    writer.write(String.join(",", csvColumns));
-    writer.write("\n");
-
-    var preparedQuery = prepareQuery(subgraph, template, params, sort);
-    var session = getClient(subgraph).getReactiveSession();
-
-    Flux<ReactiveResult> results = JdkFlowAdapter
-        .flowPublisherToFlux(session.run(preparedQuery.query, preparedQuery.params));
-
-        CompletableFuture<Void> future = new CompletableFuture<>();
-
-     results
-        .flatMap(result -> JdkFlowAdapter.flowPublisherToFlux(result.records()))
-        .doOnNext(record -> {
-
-                boolean first = true;
-
-                for (QueryTemplate.ResultColumn column : columns) {
-
-                    if(first) {
-                        first = false;
-                    } else {
-                        writer.write(",");
-                    }
-
-                    String columnId = column.column_id;
-                    if (column.column_type.equals("GraphNodeId")) {
-                        var value = record.get(columnId).asMap();
-
-                        var sourceIds = (List<String>) value.get("id");
-                        var nodeId = pickFavouriteSourceId(sourceIds);
-
-                        // System.err.println("Source IDs for " + columnId + ": " + sourceIds);
-
-                        String nodeLabel;
-
-                        var names = (List<String>) value.get("grebi:name");
-                        if(names == null || names.isEmpty()) {
-                            nodeLabel = nodeId;
-                        } else {
-                            nodeLabel = names.get(0).toString();
-                        }
-
-
-                        writer.write("\"" + nodeId.replace("\"", "\"\"") + "\",");
-                        writer.write("\"" + nodeLabel.replace("\"", "\"\"") + "\"");
-
-                    } else {
-                        String raw = Objects.toString(record.get(columnId).asObject(), "");
-                        writer.write("\"" + raw.replace("\"", "\"\"") + "\"");
-                    }
-                }
-
-                writer.write("\n");
-        })
-        .doOnError(error -> {
-                writer.write("ERROR: " + error.getMessage() + "\n");
-        })
-          .doFinally(sig -> {
-            writer.flush();      // best‐effort
-            future.complete(null);
-          })
-          .subscribe(
-            rec -> {
-                // written in doOnNext
-            },
-            future::completeExceptionally
-          );
-
-        return future;
-}
-
-public CompletableFuture<Void> runQueryFromTemplateStreamed(
-        String subgraph,
-        QueryTemplate template,
-        Map<String, List<String>> params,
-        Sort sort,
-        HttpServletResponse res
-) throws IOException {
-
-    res.setContentType("text/csv");
-    res.setCharacterEncoding("UTF-8");
-    res.setHeader("Content-Disposition", "attachment; filename=\"" + template.id + ".csv\"");
-    res.setStatus(HttpServletResponse.SC_OK);
-
-    PrintWriter writer = res.getWriter();
-
-    return runQueryFromTemplateStreamed(subgraph, template, params, sort, writer);
-}
-
-
-
-// TODO: move to config
-//
-private static List<String> FAVOURITE_PREFIXES = List.of(
-    "grebi:",
-    "biolink:",
-    "ro:",
-    "hp:",
-    "mp:",
-    "mondo:",
-    "oba:",
-    "efo:",
-    "doid:",
-    "hgnc:",
-    "mgi:",
-    "uniprot:",
-    "pmid:",
-    "chebi:",
-    "MTBLS",
-    "MTBLC"
-);
-
-private String pickFavouriteSourceId(List<String> ids) {
-
-    if(ids == null || ids.isEmpty()) {
-        return null;
-    }
-
-    for(String prefix : FAVOURITE_PREFIXES) {
-        for(String id : ids) {
-                if(id.startsWith(prefix)) {
-                    return id;
-                }
+        for (QueryTemplate.ResultColumn column : columns) {
+            String columnId = column.column_id;
+            if (column.column_type.equals("GraphNodeId")) {
+                csvColumns.add(columnId + "_id");
+                csvColumns.add(columnId + "_label");
+            } else {
+                csvColumns.add(columnId);
             }
         }
-    
 
-    return ids.get(0);
-}
+        writer.write(String.join(",", csvColumns));
+        writer.write("\n");
+
+        var preparedQuery = prepareQuery(subgraph, template, params, sort);
+        var session = getClient(subgraph).getReactiveSession();
+
+        Flux<ReactiveResult> results = JdkFlowAdapter
+            .flowPublisherToFlux(session.run(preparedQuery.query, preparedQuery.params));
+
+            CompletableFuture<Void> future = new CompletableFuture<>();
+
+        results
+            .flatMap(result -> JdkFlowAdapter.flowPublisherToFlux(result.records()))
+            .doOnNext(record -> {
+
+                    boolean first = true;
+
+                    for (QueryTemplate.ResultColumn column : columns) {
+
+                        if(first) {
+                            first = false;
+                        } else {
+                            writer.write(",");
+                        }
+
+                        String columnId = column.column_id;
+                        if (column.column_type.equals("GraphNodeId")) {
+                            var value = record.get(columnId).asMap();
+
+                            var sourceIds = (List<String>) value.get("id");
+                            var nodeId = pickFavouriteSourceId(sourceIds);
+
+                            // System.err.println("Source IDs for " + columnId + ": " + sourceIds);
+
+                            String nodeLabel;
+
+                            var names = (List<String>) value.get("grebi:name");
+                            if(names == null || names.isEmpty()) {
+                                nodeLabel = nodeId;
+                            } else {
+                                nodeLabel = names.get(0).toString();
+                            }
+
+
+                            writer.write("\"" + nodeId.replace("\"", "\"\"") + "\",");
+                            writer.write("\"" + nodeLabel.replace("\"", "\"\"") + "\"");
+
+                        } else {
+                            String raw = Objects.toString(record.get(columnId).asObject(), "");
+                            writer.write("\"" + raw.replace("\"", "\"\"") + "\"");
+                        }
+                    }
+
+                    writer.write("\n");
+            })
+            .doOnError(error -> {
+                    writer.write("ERROR: " + error.getMessage() + "\n");
+            })
+            .doFinally(sig -> {
+                writer.flush();      // best‐effort
+                future.complete(null);
+            })
+            .subscribe(
+                rec -> {
+                    // written in doOnNext
+                },
+                future::completeExceptionally
+            );
+
+            return future;
+    }
+
+    public CompletableFuture<Void> runQueryFromTemplateStreamed(
+            String subgraph,
+            QueryTemplate template,
+            Map<String, List<String>> params,
+            Sort sort,
+            HttpServletResponse res
+    ) throws IOException {
+
+        res.setContentType("text/csv");
+        res.setCharacterEncoding("UTF-8");
+        res.setHeader("Content-Disposition", "attachment; filename=\"" + template.id + ".csv\"");
+        res.setStatus(HttpServletResponse.SC_OK);
+
+        PrintWriter writer = res.getWriter();
+
+        return runQueryFromTemplateStreamed(subgraph, template, params, sort, writer);
+    }
+
+
+
+    // TODO: move to config
+    //
+    private static List<String> FAVOURITE_PREFIXES = List.of(
+        "grebi:",
+        "biolink:",
+        "ro:",
+        "hp:",
+        "mp:",
+        "mondo:",
+        "oba:",
+        "efo:",
+        "doid:",
+        "hgnc:",
+        "mgi:",
+        "uniprot:",
+        "pmid:",
+        "chebi:",
+        "MTBLS",
+        "MTBLC"
+    );
+
+    private String pickFavouriteSourceId(List<String> ids) {
+
+        if(ids == null || ids.isEmpty()) {
+            return null;
+        }
+
+        for(String prefix : FAVOURITE_PREFIXES) {
+            for(String id : ids) {
+                    if(id.startsWith(prefix)) {
+                        return id;
+                    }
+                }
+            }
+        
+
+        return ids.get(0);
+    }
 
 
 
