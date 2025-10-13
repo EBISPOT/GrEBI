@@ -61,13 +61,22 @@ export default class GraphNodeRef {
 
         let types:string[] = PropVal.arrFrom(this.props['grebi:type']).map(t => t.value)
 
+        let bestIndex = -1
+        let bestType:any = undefined
+
         for(let ourType of types) {
-            for(let knownType of hardcodedNodeTypes) {
+            for(let i = 0; i < hardcodedNodeTypes.length; i++) {
+                let knownType = hardcodedNodeTypes[i]
                 if(knownType.types.indexOf(ourType) !== -1) {
-                    return knownType
+                    if(bestIndex === -1 || i < bestIndex) {
+                        bestIndex = i
+                        bestType = knownType
+                    }
                 }
             }
         }
+
+        return bestType
     }
 
 }
