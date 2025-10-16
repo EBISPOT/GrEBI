@@ -43,7 +43,8 @@ config = {
         ["biolink:broad_match", "skos:broader", "skos:broadMatch", "ols:directAncestor"],
         ["biolink:subclass_of", "ols:directParent", "rdfs:subClassOf", "rdfs:subPropertyOf"],
         ["rdfs:isDefinedBy", "ols:ontologyIri", "ols:ontologyId"],
-        ["biolink:gene_to_disease_association", "ncit:Gene_Associated_With_Disease"]
+        ["biolink:gene_to_disease_association", "ncit:Gene_Associated_With_Disease"],
+        ["biolink:disease_has_location", "efo:has_disease_location"]
     ],
     "exclude_props": [
         "ols:hierarchicalProperty",

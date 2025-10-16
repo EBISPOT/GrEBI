@@ -15,9 +15,6 @@ use serde_json::Map;
 struct Args {
 
     #[arg(long)]
-    datasource_name: String,
-
-    #[arg(long)]
     ontologies:String,
 
     #[arg(long)]
@@ -39,8 +36,6 @@ fn main() {
     let stdin = io::stdin().lock();
     let reader = BufReader::new(stdin);
 
-    let datasource_name = args.datasource_name.as_str();
-
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
 
@@ -59,14 +54,14 @@ fn main() {
     }
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
-        read_ontology(&mut json, &mut output_nodes, &datasource_name, &ontology_whitelist, args.defining_only, args.skip_obsolete);
+        read_ontology(&mut json, &mut output_nodes, &ontology_whitelist, args.defining_only, args.skip_obsolete);
     }
     json.end_array().unwrap();
     json.end_object().unwrap();
 
 }
 
-fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource_name: &str, ontology_whitelist:&HashSet<String>, defining_only:bool, skip_obsolete:bool) {
+fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, ontology_whitelist:&HashSet<String>, defining_only:bool, skip_obsolete:bool) {
 
     json.begin_object().unwrap();
 
@@ -99,12 +94,9 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
     eprintln!("Reading ontology: {}", ontology_id);
 
     let ontology_iri = metadata.get("iri");
-    let datasource = datasource_name.to_string() + "." + ontology_id.as_str();
 
     output_nodes.write_all(r#"{"id":""#.as_bytes()).unwrap();
     output_nodes.write_all(ontology_id.as_bytes()).unwrap();
-    output_nodes.write_all(r#"","grebi:datasource":""#.as_bytes()).unwrap();
-    output_nodes.write_all(datasource.as_bytes()).unwrap();
     output_nodes.write_all(r#"","grebi:type":["ols:Ontology"]"#.as_bytes()).unwrap();
 
     for k in metadata.keys() {

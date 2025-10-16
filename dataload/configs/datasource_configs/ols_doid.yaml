@@ -4,7 +4,6 @@ ingests:
   - globs: ["dataload/00_fetch_data/ols/ontologies_linked.json.gz"]
     command: '
       grebi_ingest_ols
-        --datasource-name $GREBI_INGEST_DATASOURCE_NAME
         --ontologies doid
         --skip-obsolete
       '
