@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 use crate::check_headers::check_headers;
 use crate::remove_empty_fields::remove_empty_fields;
 
-pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>, datasource_name: &str) {
+pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>) {
     {
         let headers = csv_reader.headers().unwrap();
 

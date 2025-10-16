@@ -15,9 +15,6 @@ use crate::write_studies::write_studies;
 struct Args {
 
     #[arg(long)]
-    datasource_name: String,
-
-    #[arg(long)]
     filename: String,
 }
 
@@ -40,10 +37,10 @@ fn main() {
 
     if args.filename.contains("gwas-catalog-associations") {
         eprintln!("GWAS ingest: writing associations");
-        write_associations(&mut csv_reader, &mut output_nodes, &args.datasource_name);
+        write_associations(&mut csv_reader, &mut output_nodes);
     } else if args.filename.contains("gwas-catalog-studies") {
         eprintln!("GWAS ingest: writing studies");
-        write_studies(&mut csv_reader, &mut output_nodes, &args.datasource_name);
+        write_studies(&mut csv_reader, &mut output_nodes);
     } else {
         panic!("GWAS ingest: Unknown filename: {}", args.filename);
     }
