@@ -122,11 +122,11 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
     loop {
         if key.eq("classes") {
-            read_entities(json, output_nodes, &datasource, "ols:Class", defining_only, skip_obsolete);
+            read_entities(json, output_nodes, "ols:Class", defining_only, skip_obsolete);
         } else if key.eq("properties") {
-            read_entities(json, output_nodes, &datasource, "ols:Property", defining_only, skip_obsolete);
+            read_entities(json, output_nodes, "ols:Property", defining_only, skip_obsolete);
         } else if key.eq("individuals") {
-            read_entities(json, output_nodes, &datasource, "ols:Individual", defining_only, skip_obsolete);
+            read_entities(json, output_nodes, "ols:Individual", defining_only, skip_obsolete);
         } else {
             eprintln!("Skipping unknown key in ontology: {}", key);
             json.skip_value().unwrap();
@@ -142,7 +142,7 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
 }
 
-fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, datasource:&String, grebitype:&str, defining_only:bool, skip_obsolete:bool) {
+fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, grebitype:&str, defining_only:bool, skip_obsolete:bool) {
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
         let mut val:Value = read_value(json);
@@ -225,8 +225,6 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             output_nodes.write_all(Value::String(iri).to_string().as_bytes()).unwrap();
         }
 
-        output_nodes.write_all(r#","grebi:datasource":""#.as_bytes()).unwrap();
-        output_nodes.write_all(datasource.as_bytes()).unwrap();
         output_nodes.write_all(r#"","grebi:type":[""#.as_bytes()).unwrap();
         output_nodes.write_all(grebitype.as_bytes()).unwrap();
         output_nodes.write_all(r#"""#.as_bytes()).unwrap();
