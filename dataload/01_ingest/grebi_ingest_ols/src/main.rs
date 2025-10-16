@@ -225,7 +225,7 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
             output_nodes.write_all(Value::String(iri).to_string().as_bytes()).unwrap();
         }
 
-        output_nodes.write_all(r#"","grebi:type":[""#.as_bytes()).unwrap();
+        output_nodes.write_all(r#","grebi:type":[""#.as_bytes()).unwrap();
         output_nodes.write_all(grebitype.as_bytes()).unwrap();
         output_nodes.write_all(r#"""#.as_bytes()).unwrap();
         output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
