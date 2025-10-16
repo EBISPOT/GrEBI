@@ -85,6 +85,14 @@
       "rdfs:isDefinedBy",
       "ols:ontologyIri",
       "ols:ontologyId"
+    ],
+    [
+      "biolink:gene_to_disease_association",
+      "ncit:Gene_Associated_With_Disease"
+    ],
+    [
+      "biolink:disease_has_location",
+      "efo:has_disease_location"
     ]
   ],
   "exclude_props": [
