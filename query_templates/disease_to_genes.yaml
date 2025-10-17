@@ -15,8 +15,9 @@ cypher_match_fragment: |-
   // branch 1: gene <- specific_disease
   OPTIONAL MATCH (specific_disease)<-[r1:(
     `biolink:gene_to_disease_association`|
-    `ncit:Gene_Associated_With_Disease`
-  )]-(g1)
+    `ncit:Gene_Associated_With_Disease`|
+    `biolink:has_phenotype`
+    )]-(g1:`biolink:GeneOrGeneProduct`)
   WITH specific_disease, collect(DISTINCT {gene: g1, r: r1}) AS rows
 
   // branch 2: specific_disease -> gene
