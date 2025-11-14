@@ -29,7 +29,7 @@ public class PrefixClient {
     public List<String> reprefix(List<String> strs) {
         try {
             HttpClient httpClient = HttpClientBuilder.create().build();
-            HttpPost request = new HttpPost(getPrefixHost() + "reprefix");
+            HttpPost request = new HttpPost(getPrefixHost() + "/reprefix");
             
             Map<String, List<String>> requestBody = Map.of("iris_or_curies", strs);
             String json = new Gson().toJson(requestBody);
