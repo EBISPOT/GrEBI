@@ -136,16 +136,31 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>) {
             k.eq("grebi:subgraph") ||
             k.eq("grebi:sourceIds") ||
             k.eq("grebi:displayType") ||
-            k.starts_with("embedding:") ||
             ( k.eq("grebi:type") && !v.is_array() /* edge types are singular */ )
             {
             out_json.insert(escape_key(k), v.clone());
             continue;
         }
 
+        if k.starts_with("embedding:") {
+            // Convert JSON array to vector of floats for Solr
+            if v.is_array() {
+                let arr = v.as_array().unwrap();
+                let mut float_vec: Vec<f64> = Vec::new();
+                for el in arr {
+                    if let Some(num) = el.as_f64() {
+                        float_vec.push(num);
+                    }
+                }
+                out_json.insert(escape_key(k), Value::Array(float_vec.iter().map(|&f| Value::Number(serde_json::Number::from_f64(f).unwrap())).collect()));
+            } else {
+                out_json.insert(escape_key(k), v.clone());
+            }
+            continue;
+        }
+
         if !v.is_array() {
             panic!("expected array for property value: {} in {}", k, String::from_utf8_lossy(line));
-            continue;
         }
 
         let arr = v.as_array().unwrap();

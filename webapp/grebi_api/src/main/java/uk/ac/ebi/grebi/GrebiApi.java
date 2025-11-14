@@ -470,8 +470,16 @@ public class GrebiApi {
                 .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/similar", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     var n = Integer.parseInt( Objects.requireNonNullElse(ctx.queryParam("n"), "10") );
+                    var backend = Objects.requireNonNullElse(ctx.queryParam("backend"), "neo4j");
+                    var modelId = Objects.requireNonNullElse(ctx.queryParam("modelId"), "text-embedding-3-small");
 
-                    var res = neo.getSimilar(ctx.pathParam("subgraph"), nodeId, n);
+                    List<?> res;
+                    if ("solr".equalsIgnoreCase(backend)) {
+                        res = solr.getSimilar(ctx.pathParam("subgraph"), nodeId, n, modelId);
+                    } else {
+                        // Default to Neo4j (which uses hardcoded text-embedding-3-small)
+                        res = neo.getSimilar(ctx.pathParam("subgraph"), nodeId, n);
+                    }
 
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));

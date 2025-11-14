@@ -186,6 +186,78 @@ public class GrebiSolrRepo {
         });
     }
 
+    public static class SimilarResult {
+        public Map<String, Object> node;
+        public double score;
+    }
+
+    public List<SimilarResult> getSimilar(String subgraph, String nodeId, int n, String modelId) {
+        // First, get the embedding vector for the source node
+        SolrQuery getNodeQuery = new SolrQuery();
+        getNodeQuery.setQuery("grebi__nodeId:" + nodeId);
+        getNodeQuery.setFields("embedding__" + modelId);
+        getNodeQuery.setRows(1);
+        
+        QueryResponse getNodeResponse = solrClient.runSolrQuery("grebi_nodes_" + subgraph, getNodeQuery, Pageable.ofSize(1));
+        
+        if (getNodeResponse.getResults().isEmpty()) {
+            throw new RuntimeException("Node not found: " + nodeId);
+        }
+        
+        SolrDocument sourceNode = getNodeResponse.getResults().get(0);
+        Object embeddingObj = sourceNode.getFieldValue("embedding__" + modelId);
+        
+        if (embeddingObj == null) {
+            throw new RuntimeException("No embedding found for node: " + nodeId + " with model: " + modelId);
+        }
+        
+        // Convert embedding to the format needed for vector search
+        List<Float> embeddingVector;
+        if (embeddingObj instanceof List) {
+            embeddingVector = new ArrayList<>();
+            for (Object val : (List<?>) embeddingObj) {
+                if (val instanceof Number) {
+                    embeddingVector.add(((Number) val).floatValue());
+                }
+            }
+        } else {
+            throw new RuntimeException("Embedding is not in the expected format");
+        }
+        
+        // Now perform KNN search
+        SolrQuery knnQuery = new SolrQuery();
+        knnQuery.setQuery("{!knn f=embedding__" + modelId + " topK=" + n + "}" + embeddingVectorToString(embeddingVector));
+        knnQuery.setFields("grebi__nodeId", "str_grebi__name", "score");
+        knnQuery.setRows(n);
+        
+        QueryResponse knnResponse = solrClient.runSolrQuery("grebi_nodes_" + subgraph, knnQuery, Pageable.ofSize(n));
+        
+        List<SimilarResult> results = new ArrayList<>();
+        
+        for (SolrDocument doc : knnResponse.getResults()) {
+            SimilarResult result = new SimilarResult();
+            result.score = (Double) doc.getFieldValue("score");
+            
+            // Resolve the full node information
+            String similarNodeId = (String) doc.getFieldValue("grebi__nodeId");
+            result.node = resolver.resolveToList(subgraph, List.of(similarNodeId)).get(0);
+            
+            results.add(result);
+        }
+        
+        return results;
+    }
+    
+    private String embeddingVectorToString(List<Float> vector) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < vector.size(); i++) {
+            if (i > 0) sb.append(",");
+            sb.append(vector.get(i));
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
 
 
 }

@@ -31,13 +31,13 @@ def main():
 
     summary = json.load(open(args.in_graph_metadata_json))
 
-    entity_props_not_embeddings = summary['entity_props'].keys().filter(lambda p: not p.startswith('embedding:'))
-    entity_props_embeddings = summary['entity_props'].keys().filter(lambda p: p.startswith('embedding:'))
+    entity_props_not_embeddings = list(filter(lambda p: not p.startswith('embedding:'), summary['entity_props'].keys()))
+    entity_props_embeddings = list(filter(lambda p: p.startswith('embedding:'), summary['entity_props'].keys()))
     embedding_models2dims = summary.get('embedding_models2dims', {})
 
-    node_props = map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_not_embeddings)
-    node_props_embeddings = map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_embeddings)
-    edge_props = map(lambda f: f.replace(':', '__').replace('&', '_'), summary['edge_props'].keys())
+    node_props = list(map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_not_embeddings))
+    node_props_embeddings = list(map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_embeddings))
+    edge_props = list(map(lambda f: f.replace(':', '__').replace('&', '_'), summary['edge_props'].keys()))
 
     Path(f'{nodes_core_path}/core.properties').write_text(f"name=grebi_nodes_{args.subgraph_name}\n")
     Path(f'{edges_core_path}/core.properties').write_text(f"name=grebi_edges_{args.subgraph_name}\n")
@@ -56,8 +56,8 @@ def main():
             map(
                 lambda f: (lambda model_id: '\n'.join([
                     f'<fieldType name="knn_vector_{model_id}" class="solr.DenseVectorField" vectorDimension="{embedding_models2dims.get(model_id, "")}" similarityFunction="cosine"/>',
-                    f'<field name="embeddings_{model_id}" type="knn_vector_{model_id}" indexed="true" stored="true"/>'
-                ]))(f.split(':')[1]),
+                    f'<field name="embedding__{model_id}" type="knn_vector_{model_id}" indexed="true" stored="true"/>'
+                ]))(f.split('__')[1]),
                 node_props_embeddings
             )
         )
