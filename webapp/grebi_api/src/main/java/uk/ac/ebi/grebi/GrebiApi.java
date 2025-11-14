@@ -29,6 +29,7 @@ import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
 import uk.ac.ebi.grebi.db.GrebiSolrQuery;
 import uk.ac.ebi.grebi.db.ResolverClient;
 import uk.ac.ebi.grebi.db.MetadataClient;
+import uk.ac.ebi.grebi.db.PrefixClient;
 import uk.ac.ebi.grebi.repo.GrebiSolrRepo;
 import uk.ac.ebi.grebi.repo.GrebiMetadataRepo;
 
@@ -488,6 +489,14 @@ public class GrebiApi {
                 .get("/api/v1/collections", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result("{}");
+                })
+                .get("/api/v1/normalise_curies", ctx -> {
+                    var iris_or_curies = ctx.queryParams("iris_or_curies");
+                    ctx.contentType("application/json");
+
+                    var prefixClient = new PrefixClient();
+                    var res = prefixClient.reprefix(iris_or_curies);
+                    ctx.result(gson.toJson(Map.of("curies", res)));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/search", ctx -> {
                     var q = new GrebiSolrQuery();

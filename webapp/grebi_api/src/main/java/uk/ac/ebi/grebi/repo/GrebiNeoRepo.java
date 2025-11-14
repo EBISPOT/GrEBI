@@ -29,6 +29,7 @@ import org.neo4j.driver.Session;
 
 import uk.ac.ebi.grebi.GrebiApi;
 import uk.ac.ebi.grebi.db.Neo4jClient;
+import uk.ac.ebi.grebi.db.PrefixClient;
 import uk.ac.ebi.grebi.db.ResolverClient;
 import uk.ac.ebi.grebi.repo.QueryTemplate;
 
@@ -58,6 +59,7 @@ public class GrebiNeoRepo {
 
     ResolverClient resolver = new ResolverClient();
     Gson gson = new Gson();
+    PrefixClient prefixClient = new PrefixClient();
 
     public GrebiNeoRepo() throws IOException {
 
@@ -227,6 +229,7 @@ public class GrebiNeoRepo {
                     throw new IllegalArgumentException("SourceId param " + p.param_id + " cannot have multiple values");
                 }
                 var nodeId = values.get(0);
+                nodeId = prefixClient.reprefix(List.of(nodeId)).get(0);
                 paramMap.put(p.param_id, nodeId);
             } else if(p.param_type.equals("string")) {
 

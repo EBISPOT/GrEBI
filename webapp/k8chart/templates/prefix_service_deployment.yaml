@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-prefix-service
+  labels:
+    app: {{ .Release.Name }}-prefix-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-prefix-service
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-prefix-service
+    spec:
+      volumes:
+        - name: {{ .Release.Name }}-import
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-import-pvc
+      containers:
+        - name: prefix-service
+          image: ghcr.io/ebispot/grebi_prefix_service:{{.Values.imageTag}}
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: "/data_import"
+              name: {{ .Release.Name }}-import
+              readOnly: true
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 0.5
+            limits:
+              memory: 1Gi
+              cpu: 0.5
+          env:
+            - name: GREBI_PREFIX_MAP_PATH
+              value: /data_import/prefix_map_normalise.json
+            - name: JAVA_TOOL_OPTIONS
+              value: -Xmx2048m
+          ports:
+            - containerPort: 8082

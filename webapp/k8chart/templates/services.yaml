@@ -108,3 +108,18 @@ spec:
         protocol: TCP
   selector:
     app: {{ .Release.Name }}-metadata-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-prefix-service
+  labels:
+    app: {{ .Release.Name }}-prefix-service
+spec:
+  ports:
+      - port: 8082
+        targetPort: 8082
+        name: http
+        protocol: TCP
+  selector:
+    app: {{ .Release.Name }}-prefix-service

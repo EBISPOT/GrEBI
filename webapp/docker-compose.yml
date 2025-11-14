@@ -16,16 +16,19 @@ services:
         - grebi-solr
         - grebi-resolver-service
         - grebi-metadata-service
+        - grebi-prefix-service
       links:
         - grebi-neo4j
         - grebi-solr
         - grebi-resolver-service
         - grebi-metadata-service
+        - grebi-prefix-service
       environment:
         - GREBI_NEO4J_HOST=bolt://grebi-neo4j:7687/
         - GREBI_SOLR_HOST=http://grebi-solr:8983/
         - GREBI_RESOLVER_HOST=http://grebi-resolver-service:8080/
         - GREBI_METADATA_HOST=http://grebi-metadata-service:8081/
+        - GREBI_PREFIX_HOST=http://grebi-prefix-service:8082/
     grebi-neo4j:
       image: neo4j:2025.03.0-community
       ports:
@@ -58,6 +61,14 @@ services:
         - ${GREBI_METADATA_JSON_SEARCH_PATH:?Need path to search for metadata json files}:/metadata
       environment:
         - GREBI_METADATA_JSON_SEARCH_PATH=/metadata
+    grebi-prefix-service:
+      image: ghcr.io/ebispot/grebi_prefix_service:dev
+      ports:
+        - 8082:8082
+      volumes:
+        - ${GREBI_PREFIX_MAP_PATH:?Need path for prefix map}:/prefix_map_normalise.json
+      environment:
+        - GREBI_PREFIX_MAP_PATH=/prefix_map_normalise.json
 volumes:
     grebi-neo4j-data:
 

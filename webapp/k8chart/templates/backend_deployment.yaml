@@ -44,6 +44,8 @@ spec:
               value: http://{{ .Release.Name }}-resolver:8080
             - name: GREBI_METADATA_HOST
               value: http://{{ .Release.Name }}-metadata-service:8081
+            - name: GREBI_PREFIX_HOST
+              value: http://{{ .Release.Name }}-prefix-service:8082
             - name: GREBI_CONTEXT_PATH
               value: /kg
             - name: JDK_JAVA_OPTIONS
