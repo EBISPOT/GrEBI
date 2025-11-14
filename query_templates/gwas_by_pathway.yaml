@@ -48,7 +48,7 @@ result_columns:
     column_type: string
   - column_id: or_or_beta
     column_type: float
-    required: false
+    optional: true
 examples:
   - title: Glycolysis
     params:
