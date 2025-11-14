@@ -49,6 +49,7 @@ result_columns:
     column_type: string
   - column_id: or_or_beta
     column_type: float
+    optional: true
 examples:
   - title: lung
     params:

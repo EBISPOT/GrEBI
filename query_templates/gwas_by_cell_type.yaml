@@ -51,7 +51,8 @@ result_columns:
   - column_id: pubmed_id
     column_type: string
   - column_id: or_or_beta
-    column_type: float  
+    column_type: float
+    optional: true
 examples:
   - title: leukocyte
     params:

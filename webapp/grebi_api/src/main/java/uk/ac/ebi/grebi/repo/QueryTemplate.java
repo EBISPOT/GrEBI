@@ -28,6 +28,7 @@ public class QueryTemplate {
     public static class ResultColumn {
         public String column_id;
         public String column_type;
+        public Boolean optional;
     }
     public static class Example {
         public String title;

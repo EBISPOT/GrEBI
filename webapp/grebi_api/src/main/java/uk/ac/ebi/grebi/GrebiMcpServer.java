@@ -167,8 +167,20 @@ public class GrebiMcpServer {
             Map<String,Object> rowSchema = new LinkedHashMap<>();
             rowSchema.put("type", "object");
             for(var col : qt.result_columns) {
+                // TODO: add description for result cols
                 var colDef = new LinkedHashMap<String, Object>();
-                colDef.put("type", "object"); // TODO: add description for result cols
+                if(col.column_type.equalsIgnoreCase("GraphNodeId")) {
+                    colDef.put("type", "object"); 
+                // } else if(col.column_type.equalsIgnoreCase("float")) {
+                //     colDef.put("type", "number");
+                // } else if(col.column_type.equalsIgnoreCase("int")) {
+                //     colDef.put("type", "number");
+                } else {
+                    colDef.put("type", "string");
+                }
+                if(col.optional != null && col.optional) {
+                    colDef.put("type", List.of(colDef.get("type"), "null"));
+                }
                 rowSchema.put(col.column_id, colDef);
             }
 
