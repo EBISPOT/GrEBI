@@ -140,7 +140,7 @@ public class GrebiNeoRepo {
     public List<SimilarResult> getSimilar(String subgraph, String nodeId, int n) {
 
 		String query = "MATCH (c:GraphNode {`grebi:nodeId`: $id}) "
-		+ "CALL db.index.vector.queryNodes('embeddings', $n, c.`grebi:embeddingVector`) "
+		+ "CALL db.index.vector.queryNodes('embeddings', $n, c.`embedding:text-embedding-3-small`) "
 		+ "YIELD node AS similar, score "
 		+ "RETURN similar { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(similar) } as node, score "
 		+ "ORDER BY score DESC ";

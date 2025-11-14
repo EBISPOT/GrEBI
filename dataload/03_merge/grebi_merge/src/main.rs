@@ -1,7 +1,7 @@
 use flate2::read::GzDecoder;
 use serde_json::value;
 use std::cmp::Ordering;
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::io::{BufRead, BufReader };
@@ -200,7 +200,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
 
     let mut source_ids: Vec<&[u8]> = Vec::new();
     let mut datasources: Vec<&[u8]> = Vec::new();
-    let mut embedding_vectors:Vec<&[u8]> = Vec::new();
+    let mut model_id_to_embedding_vectors:BTreeMap<&[u8], Vec<&[u8]>> = BTreeMap::new();
 
     for json in &jsons {
         if json.has_type {
@@ -211,8 +211,8 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         }
         datasources.push(json.datasource);
 
-        if json.embedding_vector.is_some() {
-            embedding_vectors.push(json.embedding_vector.unwrap());
+        for (model_id, embedding_vector) in &json.model_id_to_embedding_vector {
+            model_id_to_embedding_vectors.entry(model_id).or_insert(Vec::new()).push(*embedding_vector);
         }
     }
 
@@ -458,11 +458,13 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
         index = index + 1;
     }
 
-    if embedding_vectors.len() > 0 {
+    for (model_id, embedding_vectors) in &model_id_to_embedding_vectors {
 
-        let avg_embedding = average_embeddings(&embedding_vectors);
+        let avg_embedding = average_embeddings(embedding_vectors);
 
-        stdout.write_all(r#","grebi:embeddingVector":"#.as_bytes()).unwrap();
+        stdout.write_all(r#","embedding:"#.as_bytes()).unwrap();
+        stdout.write_all(model_id).unwrap();
+        stdout.write_all(r#"":"#.as_bytes()).unwrap();
         stdout.write_all(&avg_embedding).unwrap();
     }
 

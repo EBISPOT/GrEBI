@@ -1,5 +1,7 @@
 
 
+use std::collections::BTreeMap;
+
 use crate::json_lexer::{lex, JsonToken, JsonTokenType};
 use crate::json_parser::JsonParser;
 
@@ -27,7 +29,7 @@ pub struct SlicedEntity<'a> {
     pub props:Vec<SlicedProperty<'a>>,
     pub _refs:Option<&'a [u8]>,
     pub display_type:Option<&'a [u8]>,
-    pub embedding_vector:Option<&'a [u8]>
+    pub model_id_to_embedding_vector:BTreeMap<&'a [u8], &'a [u8]>
 }
 
 impl<'a> SlicedEntity<'a> {
@@ -41,7 +43,7 @@ impl<'a> SlicedEntity<'a> {
         let mut entity_source_ids:Vec<&[u8]> = Vec::new();
         let mut display_type:Option<&[u8]> = None;
         let mut _refs:Option<&[u8]> = None;
-        let mut embedding_vector:Option<&[u8]> = None;
+        let mut model_id_to_embedding_vector:BTreeMap<&'a [u8], &'a [u8]> = BTreeMap::new();
         
         // {
         parser.begin_object();
@@ -83,9 +85,11 @@ impl<'a> SlicedEntity<'a> {
                 continue;
             }
 
-            if prop_key == b"grebi:embeddingVector" {
+            if prop_key.starts_with("embedding:".as_bytes()) {
                 let prop_value = parser.value();
-                embedding_vector = Some(prop_value);
+                let embedding_vector = Some(prop_value);
+                let model_id = &prop_key["embedding:".len()..];
+                model_id_to_embedding_vector.insert(model_id, embedding_vector.unwrap());
                 continue;
             }
 
@@ -141,7 +145,7 @@ impl<'a> SlicedEntity<'a> {
         }
         parser.end_object();
 
-        return SlicedEntity { id, datasources: entity_datasources, source_ids: entity_source_ids, subgraph, props, display_type, embedding_vector, _refs };
+        return SlicedEntity { id, datasources: entity_datasources, source_ids: entity_source_ids, subgraph, props, display_type, model_id_to_embedding_vector, _refs };
 
     }
 

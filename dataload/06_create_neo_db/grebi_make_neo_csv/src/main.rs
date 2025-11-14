@@ -95,11 +95,22 @@ fn main() -> std::io::Result<()> {
 
     nodes_writer.write_all("grebi:nodeId:ID,:LABEL,grebi:datasources:string[],grebi:subgraph:string,grebi:displayType:string".as_bytes()).unwrap();
     for prop in &all_entity_props {
+        if prop.starts_with("embedding:") {
+            continue;
+        }
         nodes_writer.write_all(b",").unwrap();
         nodes_writer.write_all(prop.as_bytes()).unwrap();
         nodes_writer.write_all(b":string[]").unwrap();
     }
-    nodes_writer.write_all(",grebi:embeddingVector:float[]\n".as_bytes()).unwrap();
+    for prop in &all_entity_props {
+        if !prop.starts_with("embedding:") {
+            continue;
+        }
+        nodes_writer.write_all(b",").unwrap();
+        nodes_writer.write_all(prop.as_bytes()).unwrap();
+        nodes_writer.write_all(b":float[]").unwrap();
+    }
+    nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
     edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string,grebi:fromSourceIds:string[]".as_bytes()).unwrap();
@@ -222,6 +233,10 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
     nodes_writer.write_all(b"\"").unwrap();
 
     for header_prop in all_node_props {
+        if header_prop.starts_with("embedding:") {
+            // these are written at the end
+            continue;
+        }
         nodes_writer.write_all(b",").unwrap();
         let mut wrote_any = false;
         for row_prop in entity.props.iter() {
@@ -271,9 +286,15 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
     // Embedding vectors:
     // Instead of parsing the JSON and rewriting it we do an ugly hack to convert the JSON to CSV.
     // This is so that we don't make anything weird happen to the floats when parsing and re-serializing them.
-    nodes_writer.write_all(b",").unwrap();
-    if entity.embedding_vector.is_some() {
-        for byte in entity.embedding_vector.unwrap().iter() {
+    //
+    for header_prop in all_node_props {
+        if !header_prop.starts_with("embedding:") {
+            continue;
+        }
+        nodes_writer.write_all(b",").unwrap();
+        let model_id = &header_prop["embedding:".len()..];
+        let embedding_vector = entity.model_id_to_embedding_vector.get(model_id.as_bytes());
+        for byte in embedding_vector.unwrap().iter() {
             match byte {
                 b'[' => nodes_writer.write_all(b"\"").unwrap(),
                 b']' => nodes_writer.write_all(b"\"").unwrap(),

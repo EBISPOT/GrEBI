@@ -1,5 +1,7 @@
 
 
+use std::collections::BTreeMap;
+
 use grebi_shared::json_lexer::{JsonTokenType};
 use grebi_shared::json_parser::JsonParser;
 
@@ -16,7 +18,7 @@ pub struct ParsedEntity<'a> {
     pub props:Vec<ParsedProperty<'a>>,
     pub datasource:&'a [u8],
     pub has_type:bool,
-    pub embedding_vector:Option<&'a [u8]>
+    pub model_id_to_embedding_vector:BTreeMap<&'a [u8], &'a [u8]>
 }
 
 impl<'a> ParsedEntity<'a> {
@@ -29,7 +31,7 @@ impl<'a> ParsedEntity<'a> {
         let mut has_type = false;
         let mut ds:&[u8] = datasource;
         let mut source_ids:Vec<&[u8]> = Vec::new();
-        let mut embedding_vector:Option<&[u8]> = None;
+        let mut model_id_to_embedding_vector:BTreeMap<&'a [u8], &'a [u8]> = BTreeMap::new();
 
         // {
         parser.begin_object();
@@ -56,9 +58,11 @@ impl<'a> ParsedEntity<'a> {
                     let prop_value = parser.string();
                     ds = prop_value;
                     continue;
-                } else if prop_key == "grebi:embeddingVector".as_bytes() {
+                } else if prop_key.starts_with("embedding:".as_bytes()) {
                     let prop_value = parser.value();
-                    embedding_vector = Some(prop_value);
+                    let embedding_vector = Some(prop_value);
+                    let model_id = &prop_key["embedding:".len()..];
+                    model_id_to_embedding_vector.insert(model_id, embedding_vector.unwrap());
                     continue;
                 }
 
@@ -83,7 +87,7 @@ impl<'a> ParsedEntity<'a> {
         parser.end_object();
 
 
-        return ParsedEntity { id, source_ids, props, datasource: ds, has_type, embedding_vector };
+        return ParsedEntity { id, source_ids, props, datasource: ds, has_type, model_id_to_embedding_vector };
 
     }
 

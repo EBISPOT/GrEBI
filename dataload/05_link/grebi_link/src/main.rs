@@ -113,6 +113,8 @@ fn main() -> std::io::Result<()> {
     id_to_group.clear();
     id_to_group.shrink_to(0);
 
+    let mut embedding_model2dim:BTreeMap<Vec<u8>, usize> = BTreeMap::new();
+
     let mut displaytype_to_count:HashMap<Vec<u8>, i64> = HashMap::new();
 
     let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
@@ -162,6 +164,27 @@ fn main() -> std::io::Result<()> {
         if n_nodes % 1000000 == 0 {
             eprintln!("... written {} nodes", n_nodes);
         }
+
+
+        sliced.model_id_to_embedding_vector.iter().for_each(|(model_id, embedding_vector)| {
+
+            if embedding_model2dim.contains_key(*model_id) {
+                return;
+            }
+
+            let buf = embedding_vector.to_vec();
+            let mut json = JsonParser::parse(&buf);
+
+            json.begin_array();
+            let mut dim:usize = 0;
+            while json.peek().kind != JsonTokenType::EndArray {
+                json.number();
+                dim = dim + 1;
+            }
+            json.end_array();
+            embedding_model2dim.insert((*model_id).to_vec(), dim);
+        });
+
 
         let mut rarest_type:Option<Vec<u8>> = None;
         let mut rarest_type_count:i64 = std::i64::MAX;
@@ -272,7 +295,10 @@ fn main() -> std::io::Result<()> {
                 "count": v
             }))
         }).collect::<HashMap<String,serde_json::Value>>(),
-        "edges": edge_summary
+        "edges": edge_summary,
+        "embedding_models2dims": embedding_model2dim.iter().map(|(k,v)| {
+            return (String::from_utf8(k.to_vec()).unwrap(), v.to_string());
+        }).collect::<HashMap<String,String>>()
     })).unwrap().as_bytes()).unwrap();
 
     graph_metadata_writer.flush().unwrap();
@@ -282,7 +308,7 @@ fn main() -> std::io::Result<()> {
 
 fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable, all_edge_props: &mut BTreeSet<Vec<u8>>) {
 
-    if prop.key.starts_with(b"grebi:") || exclude.contains(prop.key) {
+    if prop.key.starts_with(b"grebi:") || prop.key.starts_with(b"embedding:") || exclude.contains(prop.key) {
         return;
     }
 

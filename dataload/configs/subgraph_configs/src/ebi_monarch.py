@@ -73,7 +73,9 @@ config['datasource_configs'] = [
     "./configs/datasource_configs/robokop_viralproteome.yaml",
     "./configs/datasource_configs/mesh.yaml",
     "./configs/datasource_configs/primekg.yaml",
-    "./configs/datasource_configs/ols_top_k.yaml"
+    "./configs/datasource_configs/ols_top_k.yaml",
+    "./configs/datasource_configs/embeddings__llama-embed-nemotron-8b.yaml",
+    "./configs/datasource_configs/embeddings__text-embedding-3-small.yaml"
 ]
 
 if __name__ == '__main__':

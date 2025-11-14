@@ -30,19 +30,42 @@ def main():
     os.system('cp ' + shlex.quote(os.path.join(args.in_template_config_dir, "zoo.cfg")) + ' ' + shlex.quote(args.out_config_dir))
 
     summary = json.load(open(args.in_graph_metadata_json))
-    node_props = map(lambda f: f.replace(':', '__').replace('&', '_'), summary['entity_props'].keys())
+
+    entity_props_not_embeddings = summary['entity_props'].keys().filter(lambda p: not p.startswith('embedding:'))
+    entity_props_embeddings = summary['entity_props'].keys().filter(lambda p: p.startswith('embedding:'))
+    embedding_models2dims = summary.get('embedding_models2dims', {})
+
+    node_props = map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_not_embeddings)
+    node_props_embeddings = map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_embeddings)
     edge_props = map(lambda f: f.replace(':', '__').replace('&', '_'), summary['edge_props'].keys())
 
     Path(f'{nodes_core_path}/core.properties').write_text(f"name=grebi_nodes_{args.subgraph_name}\n")
     Path(f'{edges_core_path}/core.properties').write_text(f"name=grebi_edges_{args.subgraph_name}\n")
 
     nodes_schema = Path(f'{nodes_core_path}/conf/schema.xml')
-    nodes_schema.write_text(nodes_schema.read_text().replace('[[GREBI_FIELDS]]', '\n'.join(list(map(
-        lambda f: '\n'.join([
-            f'<field name="{f}" type="string" indexed="true" stored="false" required="false" multiValued="true" />',
-            f'<copyField source="{f}" dest="str_{f}"/>',
-            f'<copyField source="{f}" dest="lowercase_{f}"/>'
-        ]), node_props)))))
+    nodes_schema.write_text(nodes_schema.read_text().replace('[[GREBI_FIELDS]]', '\n'.join(
+        list(
+            map(lambda f: '\n'.join([
+                f'<field name="{f}" type="string" indexed="true" stored="false" required="false" multiValued="true" />',
+                f'<copyField source="{f}" dest="str_{f}"/>',
+                f'<copyField source="{f}" dest="lowercase_{f}"/>'
+            ]), node_props)
+        )
+        +
+        list(
+            map(
+                lambda f: (lambda model_id: '\n'.join([
+                    f'<fieldType name="knn_vector_{model_id}" class="solr.DenseVectorField" vectorDimension="{embedding_models2dims.get(model_id, "")}" similarityFunction="cosine"/>',
+                    f'<field name="embeddings_{model_id}" type="knn_vector_{model_id}" indexed="true" stored="true"/>'
+                ]))(f.split(':')[1]),
+                node_props_embeddings
+            )
+        )
+    )))
+
+#    sb.append("    <fieldType name=\"knn_vector_" + modelName + "\" class=\"solr.DenseVectorField\" vectorDimension=\"" + embeddingVectorSize + "\" similarityFunction=\"cosine\"/>\n");
+#             sb.append("    <field name=\"embeddings_" + modelName + "\" type=\"knn_vector_" + modelName + "\" indexed=\"true\" stored=\"true\"/>\n");
+#         }
 
     edges_schema = Path(f'{edges_core_path}/conf/schema.xml')
     edges_schema.write_text(edges_schema.read_text().replace('[[GREBI_FIELDS]]', '\n'.join(list(map(

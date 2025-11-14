@@ -1,0 +1,11 @@
+name: llama-embed-nemotron-8b
+enabled: true
+ingests:
+  - globs: ["dataload/00_fetch_data/ols_embeddings/llama-embed-nemotron-8b.parquet"]
+    command: '
+      grebi_parquet2jsonl |
+      grebi_transform_jsonl
+        --json-select-keys iri,embedding
+        --json-rename iri:id
+        --json-rename embedding:embedding:llama-embed-nemotron-8b
+          '

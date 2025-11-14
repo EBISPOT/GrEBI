@@ -124,11 +124,6 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>) {
             continue;
         }
 
-        if k.eq("grebi:embeddingVector") {
-            // TODO: not used in solr yet
-            continue;
-        }
-
         // some special properties aren't structured like normal properties, so
         // just copy the value
         //
@@ -141,6 +136,7 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>) {
             k.eq("grebi:subgraph") ||
             k.eq("grebi:sourceIds") ||
             k.eq("grebi:displayType") ||
+            k.starts_with("embedding:") ||
             ( k.eq("grebi:type") && !v.is_array() /* edge types are singular */ )
             {
             out_json.insert(escape_key(k), v.clone());
