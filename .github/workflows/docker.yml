@@ -55,8 +55,7 @@ jobs:
 
       - name: Build and push GrEBI prefix service Docker image
         run: |
-          cd webapp/grebi_prefix_service
-          docker build -t ghcr.io/ebispot/grebi_prefix_service:${{ github.sha }} .
+          docker build -t ghcr.io/ebispot/grebi_prefix_service:${{ github.sha }} -f webapp/grebi_prefix_service/Dockerfile .
           docker tag ghcr.io/ebispot/grebi_prefix_service:${{github.sha}} ghcr.io/ebispot/grebi_prefix_service:${{ github.ref_name }}
           docker push --all-tags ghcr.io/ebispot/grebi_prefix_service
 
