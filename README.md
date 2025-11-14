@@ -6,9 +6,7 @@ The aim is to make it easier for humans and machines to perform integrative quer
 
 A development server with the output of this pipeline can be accessed at https://wwwdev.ebi.ac.uk/kg
 
-MCP endpoints:
-  * Legacy: https://wwwdev.ebi.ac.uk/kg/api/v1/mcp/sse
-  * Streaming HTTP: https://wwwdev.ebi.ac.uk/kg/api/v1/mcp
+MCP endpoint: https://wwwdev.ebi.ac.uk/kg/api/v1/mcp (Streamable HTTP)
 
 The GrEBI pipeline is being applied to a number of projects including the [International Mouse Phenotyping Consortium (IMPC)](https://www.mousephenotype.org/) knowledge graph and the [EMBL Human Ecosystems Transversal Theme (HETT)](https://www.embl.org/about/info/human-ecosystems/) ExposomeKG.
 

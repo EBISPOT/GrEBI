@@ -135,12 +135,6 @@ public class GrebiApi {
                         holder.setAsyncSupported(true);
                         ctx.addServlet(holder, "/api/v1/mcp");
                     });
-                    config.jetty.modifyServletContextHandler(ctx -> {
-                        var holder = new ServletHolder(mcpServer.getLegacyTransportProvider());
-                        holder.setAsyncSupported(true);
-                        ctx.addServlet(holder, "/api/v1/mcp/message");
-                        ctx.addServlet(holder, "/api/v1/mcp/sse");
-                    });
 
                     config.bundledPlugins.enableCors(cors -> {
                         cors.addRule(CorsPluginConfig.CorsRule::anyHost);

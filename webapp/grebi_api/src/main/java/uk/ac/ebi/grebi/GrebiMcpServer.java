@@ -33,7 +33,7 @@ public class GrebiMcpServer {
 
     HttpServletStreamableServerTransportProvider transportProvider;
     HttpServletSseServerTransportProvider legacyTransportProvider;
-    McpAsyncServer mcpServer, legacyMcpServer;
+    McpAsyncServer mcpServer;
 
     public static final String INSTRUCTIONS = """
     This is an instance of GrEBI, a server for large, read-only, ontology-mediated, integrated knowledge graphs
@@ -59,12 +59,6 @@ public class GrebiMcpServer {
         HttpServletStreamableServerTransportProvider.builder()
         .mcpEndpoint("/api/v1/mcp")
         .disallowDelete(true)
-        .objectMapper(new ObjectMapper())
-        .build();
-
-        legacyTransportProvider = HttpServletSseServerTransportProvider.builder()
-        .messageEndpoint("/api/v1/mcp/message")
-        .sseEndpoint("/api/v1/mcp/sse")
         .objectMapper(new ObjectMapper())
         .build();
 
@@ -278,29 +272,12 @@ public class GrebiMcpServer {
             .tools(tools)
             .resources(resources)
             .build();
-
-        legacyMcpServer = McpServer.async(legacyTransportProvider)
-            .serverInfo("grebi", "1.0.0")
-            .instructions(INSTRUCTIONS)
-            .capabilities(ServerCapabilities.builder()
-                .resources(true, true)
-                .tools(true)
-                .prompts(true)
-                .logging() 
-                .completions()
-                .build())
-            .tools(tools)
-            .resources(resources)
-            .build();
     }
 
     public HttpServletStreamableServerTransportProvider getTransportProvider() {
         return transportProvider;
     }
-
-    public HttpServletSseServerTransportProvider getLegacyTransportProvider() {
-        return legacyTransportProvider;
-    }
+    
 
     
 }

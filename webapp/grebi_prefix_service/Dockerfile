@@ -12,8 +12,8 @@ RUN cargo build --release && \
     mv target/release/grebi_prefix_service /usr/local/bin/grebi_prefix_service
 
 ENV ROCKET_ADDRESS=0.0.0.0
-ENV ROCKET_PORT=8080
+ENV ROCKET_PORT=8082
 
-EXPOSE 8080
+EXPOSE 8082
 
 CMD ["grebi_prefix_service"]
