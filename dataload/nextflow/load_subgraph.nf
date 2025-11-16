@@ -95,7 +95,7 @@ process ingest {
     val(identifier_props)
 
     output:
-    tuple val(file_listing.datasource.name), path("nodes_${task.index}.jsonl.gz"), emit: nodes
+    tuple val(file_listing.datasource.name), path("nodes_${task.index}.jsonl.*"), emit: nodes
     path("identifiers_${task.index}.tsv"), emit: identifiers
 
     script:
@@ -112,7 +112,7 @@ process ingest {
         | tee >(grebi_extract_identifiers \
                 --identifier-properties ${identifier_props.iterator().join(",")} \
                     > identifiers_${task.index}.tsv) \
-        | pigz --fast > nodes_${task.index}.jsonl.gz
+        | split -a 6 -d -C ${bytes_per_merged_file} - nodes_${task.index}.jsonl.
     """
 }
 
