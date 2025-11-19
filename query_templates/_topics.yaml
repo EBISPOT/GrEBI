@@ -48,5 +48,9 @@ topics:
     type: Ontology
     description: The Cell Ontology (CL) is an ontology designed to classify and describe cell types across different organisms. 
     url: https://obofoundry.org/ontology/cl.html
+  - id: qc
+    name: Quality Control
+    type: Domain
+    description: QC queries using the KG to identify potential data issues or inconsistencies in ontologies or content.
 
 

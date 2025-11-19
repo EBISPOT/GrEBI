@@ -1,0 +1,26 @@
+title: Search GWAS reported different from mapped
+description: Search for GWAS with reported traits different from mapped trait label or synonyms
+subgraphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+  - qc
+cypher_match_fragment: |-
+  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
+  UNWIND assoc.`gwas:disease_trait` AS reported_trait
+  WITH trait, reported_trait
+  WHERE NOT reported_trait IN trait.`grebi:name` AND NOT reported_trait IN trait.`grebi:synonym`
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      reported_trait,
+      trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait
+cypher_count_fragment: |-
+  WITH DISTINCT reported_trait, trait
+  RETURN count(*) AS count
+params: []
+result_columns:
+  - column_id: reported_trait
+    column_type: string
+  - column_id: trait
+    column_type: GraphNodeId
+examples: []
