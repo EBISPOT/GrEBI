@@ -15,9 +15,11 @@ import * as Muicon from "@mui/icons-material";
 import { Link } from "react-router-dom";
 
 export default function QueryTable({
-    subgraph
+    subgraph,
+    selectedTopics
 }:{
-    subgraph?:string|undefined
+    subgraph?:string|undefined,
+    selectedTopics?: Set<string>
 }) {
 
 
@@ -38,13 +40,27 @@ export default function QueryTable({
         return getColumns(subgraph, topics)
     }, [subgraph, topics]);
 
-    if(!queries || !topics) {
+    // Filter queries by selected topics
+    const filteredQueries = useMemo(() => {
+        if (!queries) return null;
+        if (!selectedTopics || selectedTopics.size === 0) return queries;
+        
+        return queries.filter(query => {
+            // If query has no topics, don't show it when filtering is active
+            if (!query.topics || query.topics.length === 0) return false;
+            
+            // Show query if any of its topics are selected
+            return query.topics.some(topicId => selectedTopics.has(topicId));
+        });
+    }, [queries, selectedTopics]);
+
+    if(!filteredQueries || !topics) {
         return <CircularProgress />
     }
 
 
     return <LocalDataTable
-                    data={queries} 
+                    data={filteredQueries} 
                     addColumnsFromData={false}
                     defaultSelector={(row,key)=>row[key]}
                     columns={cols}
