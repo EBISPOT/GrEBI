@@ -10,7 +10,7 @@ import { Download } from "@mui/icons-material";
 interface ResultsTableProps {
   subgraph: string;
   queryId: string;
-  params: Record<string, any>;
+  params: Record<string, any>|undefined;
   resultColumns: { column_id: string; column_type: string }[];
 }
 
@@ -55,7 +55,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
   }
 
   useEffect(() => {
-    if (Object.keys(params).length > 0) {
+    if (params !== undefined) {
       fetchData();
     }
   }, [params, page, rowsPerPage, sortColumn, sortDir, filterKey]);

@@ -4,7 +4,7 @@ export default function query2code(queryTemplate:QueryTemplate, params:Record<st
 
     let apiUrl = process.env.REACT_APP_APIURL;
 
-    let exampleParams = queryTemplate.examples[0].params;
+    let exampleParams = queryTemplate.examples.length > 0 ? queryTemplate.examples[0].params : {};
 
     let python = [
         "import requests",

@@ -101,12 +101,13 @@ return (
     <Box
       component="form"
     >
+
+        {queryTemplate.examples && queryTemplate.examples.length > 0 &&
+        <Fragment>
         <Typography variant="h5" gutterBottom>
         Examples
         </Typography>
-
         <Box sx={{ mb: 3 }}>
-            {queryTemplate.examples && queryTemplate.examples.length > 0 ? (
                 <Stack direction="column" spacing={0}>
                     {queryTemplate.examples.map((example, index) => {
                         let exampleParams = new URLSearchParams(example.params).toString();
@@ -120,13 +121,11 @@ return (
                         );
                     })}
                 </Stack>
-            ) : (
-                <Typography variant="body2" color="textSecondary">
-                No examples available for this query.
-                </Typography>
-            )}
         </Box>
+        </Fragment>}
 
+        {params && params.length > 0 &&
+        <Fragment>
         <Typography variant="h5" gutterBottom>
         Parameters
         </Typography>
@@ -194,9 +193,11 @@ return (
           ))}
         </TableBody>
       </Table>
+        </Fragment>
+}
     </Box>
 
-    {paramValuesSubmitted && <ResultsTable subgraph={subgraph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} />}
+    {paramValuesSubmitted !== undefined && <ResultsTable subgraph={subgraph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} />}
   </Fragment>
 );
 }
