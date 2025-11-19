@@ -164,8 +164,7 @@ public class GrebiMcpServer {
                 null,
                 null);
 
-            Map<String,Object> rowSchema = new LinkedHashMap<>();
-            rowSchema.put("type", "object");
+            Map<String,Object> rowSchemaProps = new LinkedHashMap<>();
             for(var col : qt.result_columns) {
                 // TODO: add description for result cols
                 var colDef = new LinkedHashMap<String, Object>();
@@ -181,8 +180,9 @@ public class GrebiMcpServer {
                 if(col.optional != null && col.optional) {
                     colDef.put("type", List.of(colDef.get("type"), "null"));
                 }
-                rowSchema.put(col.column_id, colDef);
+                rowSchemaProps.put(col.column_id, colDef);
             }
+
 
             Map<String,Object> outputSchema = new LinkedHashMap<>();
             outputSchema.put("type", "object");
@@ -193,7 +193,7 @@ public class GrebiMcpServer {
                         "type", "array",
                         "items", Map.of(
                             "type", "object",
-                            "properties", rowSchema
+                            "properties", rowSchemaProps
                         )
                     ),
                     "totalNumRows", Map.of("type", "integer"),
