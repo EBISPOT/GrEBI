@@ -7,6 +7,7 @@ topics:
   - qc
 cypher_match_fragment: |-
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
+  MATCH (trait)-[:`biolink:broad_match`*0..]->(parent_term)-[:sourceId]->(:Id { id: $parent_id })
   UNWIND assoc.`gwas:disease_trait` AS reported_trait
   WITH trait, reported_trait
   WHERE NOT reported_trait IN trait.`grebi:name` AND NOT reported_trait IN trait.`grebi:synonym`
@@ -17,10 +18,22 @@ cypher_return_fragment: |-
 cypher_count_fragment: |-
   WITH DISTINCT reported_trait, trait
   RETURN count(*) AS count
-params: []
+params:
+  - param_id: parent_id
+    param_name: Parent Term
+    param_type: SourceId
 result_columns:
   - column_id: reported_trait
     column_type: string
   - column_id: trait
     column_type: GraphNodeId
-examples: []
+examples:
+  - title: experimental factor (all)
+    params:
+      parent_id: efo:0000001
+  - title: response to xenobiotic stimulus
+    params:
+      parent_id: go:0009410
+  - title: blood metabolite level
+    params:
+      parent_id: oba:2050078
