@@ -151,8 +151,14 @@ public class GrebiMcpServer {
             paramProps.put("sortDir", Map.of(
                 "enum", List.of("asc", "desc")
             ));
-            paramProps.put("pageNum",  Map.of("type", "integer"));
-            paramProps.put("pageSize", Map.of("type", "integer"));
+            paramProps.put("pageNum",  Map.of(
+                "type", "integer",
+                "description", "Page number (0-based)"
+            ));
+            paramProps.put("pageSize", Map.of(
+                "type", "integer",
+                "description", "Number of results per page"
+            ));
 
             var requiredParams = paramProps.keySet().stream().toList();
 
