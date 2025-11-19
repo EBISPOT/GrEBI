@@ -7,7 +7,7 @@ topics:
   - qc
 cypher_match_fragment: |-
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
-  MATCH (trait)-[:`biolink:broad_match`*0..]->(parent_term)-[:sourceId]->(:Id { id: $parent_id })
+  MATCH (trait)-[:`biolink:broad_match`]->(parent_term)-[:sourceId]->(:Id { id: $parent_id })
   UNWIND assoc.`gwas:disease_trait` AS reported_trait
   WITH trait, reported_trait
   WHERE NOT reported_trait IN trait.`grebi:name` AND NOT reported_trait IN trait.`grebi:synonym`
