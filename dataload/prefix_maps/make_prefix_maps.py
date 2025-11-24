@@ -18,6 +18,8 @@ normalise = {}
 for prefix, uri_prefix in c.prefix_map.items():
     expand[prefix + ':'] = uri_prefix
     normalise[prefix + ':'] = c.reverse_prefix_map.get(c.prefix_map.get(prefix)) + ":"
+    expand[prefix + '_'] = uri_prefix
+    normalise[prefix + '_'] = c.reverse_prefix_map.get(c.prefix_map.get(prefix)) + ":"
 
 for uri_prefix, prefix in c.reverse_prefix_map.items():
     compact[uri_prefix] = prefix + ':'
