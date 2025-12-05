@@ -19,12 +19,7 @@ export default function SourceCodeSection({ title, source, lang }) {
 
 
   const handleCopy = () => {
-    const tempEl = document.createElement('textarea');
-    tempEl.value = highlightedSource.replace(/<[^>]+>/g, ''); // strip HTML
-    document.body.appendChild(tempEl);
-    tempEl.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempEl);
+    navigator.clipboard.writeText(source);
   };
 
   return (
