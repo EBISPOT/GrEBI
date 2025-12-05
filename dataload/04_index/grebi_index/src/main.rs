@@ -109,8 +109,22 @@ fn main() {
         metadata_writer.write_all(r#"]"#.as_bytes()).unwrap();
 
 
+        sliced.model_id_to_embedding_vector.iter().for_each(|(model_id, embedding_vector)| {
 
-        let mut wrote_name = false;
+            let prop_key = {
+                let mut k = b"embedding:".to_vec();
+                k.extend_from_slice(model_id);
+                k
+            };
+
+            let mut w_count = entity_props_to_count.get_mut(&prop_key);
+            if w_count.is_none() {
+                entity_props_to_count.insert(prop_key.clone(), 0);
+            }
+            w_count = entity_props_to_count.get_mut(&prop_key);
+            let count:&mut i64 = w_count.unwrap();
+            *count += 1;
+        });
 
         sliced.props.iter().for_each(|prop| {
 
