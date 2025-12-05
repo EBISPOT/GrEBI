@@ -6,6 +6,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import prismjs from "prismjs";
 import "prismjs/components/prism-cypher";
 import "prismjs/components/prism-python";
+import { copyToClipboard } from '../../app/util';
 
 export default function SourceCodeSection({ title, source, lang }) {
 
@@ -19,12 +20,7 @@ export default function SourceCodeSection({ title, source, lang }) {
 
 
   const handleCopy = () => {
-    const tempEl = document.createElement('textarea');
-    tempEl.value = highlightedSource.replace(/<[^>]+>/g, ''); // strip HTML
-    document.body.appendChild(tempEl);
-    tempEl.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempEl);
+    copyToClipboard(source);
   };
 
   return (
