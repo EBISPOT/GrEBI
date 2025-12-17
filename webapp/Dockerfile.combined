@@ -1,0 +1,128 @@
+
+FROM rust:1.90.0-bullseye
+
+RUN apt-get update -y && apt-get install -y \
+    curl \
+    gpg \
+    cmake \
+    clang \
+    pigz \
+    python3-pip \
+    supervisor \
+    procps \
+    rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install \
+    requests \
+    pyyaml \
+    pandas \
+    tabulate
+
+# Install Java 17 (Amazon Corretto)
+RUN curl https://corretto.aws/downloads/resources/17.0.13.11.1/amazon-corretto-17.0.13.11.1-linux-x64.tar.gz | tar -C /opt -xzf - && \
+    echo 'export JAVA_HOME=/opt/amazon-corretto-17.0.13.11.1-linux-x64' >> ~/.bashrc && \
+    echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
+ENV JAVA_HOME="/opt/amazon-corretto-17.0.13.11.1-linux-x64/"
+ENV PATH="$PATH:/opt/amazon-corretto-17.0.13.11.1-linux-x64/bin"
+
+# Install Maven
+RUN mkdir -p /opt/maven && \
+    curl https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz | tar -xz --strip-components=1 -C /opt/maven
+ENV PATH="$PATH:/opt/maven/bin"
+
+# Install Node.js 18
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Caddy for serving the UI
+RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && \
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list && \
+    apt-get update && apt-get install -y caddy && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Neo4j 2025.03.0
+RUN mkdir /opt/neo4j && \
+    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2025.03.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j
+
+# Configure Neo4j
+RUN echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
+    echo "dbms.usage_report.enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
+    echo "db.recovery.fail_on_missing_files=false" >> /opt/neo4j/conf/neo4j.conf && \
+    sed -i '/^server\.directories\.logs=/d' /opt/neo4j/conf/neo4j.conf
+
+ENV PATH="$PATH:/opt/neo4j/bin"
+
+# Install Solr 9.8.1
+RUN mkdir /opt/solr && \
+    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/solr-9.8.1.tgz | tar -xz --strip-components=1 -C /opt/solr
+
+ENV PATH="$PATH:/opt/solr/bin"
+
+# Create working directories
+RUN mkdir -p /opt/grebi/data/neo4j \
+             /opt/grebi/data/solr \
+             /opt/grebi/data/sqlite \
+             /opt/grebi/data/metadata \
+             /opt/grebi/data/prefix_maps
+
+# Copy and build grebi_shared (required by prefix service)
+COPY dataload/grebi_shared /opt/grebi_shared
+COPY dataload/prefix_maps /opt/grebi_prefix_maps
+
+# Build and install grebi_prefix_service
+COPY webapp/grebi_prefix_service /opt/grebi_prefix_service_src
+WORKDIR /opt/grebi_prefix_service_src
+RUN cargo build --release && \
+    cp target/release/grebi_prefix_service /usr/local/bin/
+
+# Build grebi_api
+COPY webapp/grebi_api /opt/grebi_api
+WORKDIR /opt/grebi_api
+RUN mvn clean package assembly:single -DskipTests && \
+    cp target/grebi-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_api.jar
+
+# Build grebi_metadata_service
+COPY webapp/grebi_metadata_service /opt/grebi_metadata_service
+WORKDIR /opt/grebi_metadata_service
+RUN mvn clean package assembly:single -DskipTests && \
+    cp target/grebi_metadata_service-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_metadata_service.jar
+
+# Build grebi_resolver_service
+COPY webapp/grebi_resolver_service /opt/grebi_resolver_service
+WORKDIR /opt/grebi_resolver_service
+RUN mvn clean package assembly:single -DskipTests && \
+    cp target/grebi_resolver_service-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_resolver_service.jar
+
+# Build grebi_ui
+COPY webapp/grebi_ui /opt/grebi_ui
+WORKDIR /opt/grebi_ui
+RUN npm install
+
+# Copy query templates for integration tests
+COPY query_templates /opt/query_templates
+
+# Create supervisor configuration
+RUN mkdir -p /var/log/supervisor
+
+COPY webapp/combined_supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY webapp/integration_tests.py /opt/integration_tests.py
+COPY webapp/combined_entrypoint.sh /opt/entrypoint.sh
+
+RUN chmod +x /opt/entrypoint.sh
+
+WORKDIR /opt
+
+# Expose all service ports
+# 7474 - Neo4j browser
+# 7687 - Neo4j bolt
+# 8983 - Solr
+# 8080 - Resolver service
+# 8081 - Metadata service
+# 8082 - Prefix service
+# 8090 - API
+EXPOSE 7474 7687 8983 8080 8081 8082 8090
+
+ENTRYPOINT ["/opt/entrypoint.sh"]
+CMD ["run"]

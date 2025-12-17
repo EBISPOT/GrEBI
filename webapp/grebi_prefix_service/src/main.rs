@@ -17,8 +17,20 @@ struct ReprefixResponse {
     curies: Vec<String>,
 }
 
+#[derive(Serialize)]
+struct HealthResponse {
+    status: String,
+}
+
 struct AppState {
     prefix_map: PrefixMap,
+}
+
+#[get("/health")]
+fn health() -> Json<HealthResponse> {
+    Json(HealthResponse {
+        status: "ok".to_string(),
+    })
 }
 
 #[post("/reprefix", data = "<request>")]
@@ -48,5 +60,5 @@ fn rocket() -> _ {
 
     rocket::build()
         .manage(AppState { prefix_map })
-        .mount("/", routes![reprefix])
+        .mount("/", routes![health, reprefix])
 }

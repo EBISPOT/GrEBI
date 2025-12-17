@@ -66,3 +66,9 @@ jobs:
           docker tag ghcr.io/ebispot/grebi_ui:${{github.sha}} ghcr.io/ebispot/grebi_ui:${{ github.ref_name }}
           docker push --all-tags ghcr.io/ebispot/grebi_ui
 
+      - name: Build and push GrEBI combined Docker image
+        run: |
+          docker build -t ghcr.io/ebispot/grebi_combined:${{ github.sha }} -f webapp/Dockerfile.combined .
+          docker tag ghcr.io/ebispot/grebi_combined:${{github.sha}} ghcr.io/ebispot/grebi_combined:${{ github.ref_name }}
+          docker push --all-tags ghcr.io/ebispot/grebi_combined
+

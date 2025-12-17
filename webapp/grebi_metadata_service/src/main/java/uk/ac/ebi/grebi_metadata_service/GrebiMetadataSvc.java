@@ -32,6 +32,11 @@ public class GrebiMetadataSvc {
             config.http.gzipOnlyCompression();
         }).start("0.0.0.0", 8081);
 
+        app.get("/health", ctx -> {
+            ctx.contentType("application/json");
+            ctx.result("{\"status\":\"ok\"}");
+        });
+
         app.get("/", ctx -> {
             ctx.contentType("application/json");
             ctx.result(gson.toJson(jsons));

@@ -59,6 +59,11 @@ public class GrebiResolverSvc {
         Javalin app = Javalin.create(config -> {
         }).start("0.0.0.0", 8080);
 
+        app.get("/health", ctx -> {
+            ctx.contentType("application/json");
+            ctx.result("{\"status\":\"ok\"}");
+        });
+
         app.get("/subgraphs", ctx -> {
             ctx.contentType("application/json");
             ctx.result(gson.toJson(sqliteDBs.keySet()));

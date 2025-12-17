@@ -144,6 +144,10 @@ public class GrebiApi {
                         config.router.contextPath = "";
                     }
                 })
+                .get("/api/health", ctx -> {
+                    ctx.contentType("application/json");
+                    ctx.result("{\"status\":\"ok\"}");
+                })
                 .get("/api/v1/stats", ctx -> {
                     ctx.contentType("application/json");
                     if(stats != null) {
