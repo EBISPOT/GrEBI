@@ -4,46 +4,6 @@ set -e
 echo "GrEBI Combined Stack Entrypoint"
 echo "================================"
 
-# Check for data directories and warn if empty
-if [ ! -d "/opt/grebi/data/neo4j/databases" ]; then
-    echo "WARNING: Neo4j data directory is empty. You need to mount Neo4j data at /opt/grebi/data/neo4j"
-    echo "         The container will start but Neo4j may not have any data."
-fi
-
-if [ ! -d "/opt/grebi/data/solr/grebi" ]; then
-    echo "WARNING: Solr data directory is empty. You need to mount Solr data at /opt/grebi/data/solr"
-    echo "         The container will start but Solr may not have any data."
-fi
-
-# Configure Neo4j to use mounted data directory
-export NEO4J_HOME=/opt/neo4j
-mkdir -p /opt/grebi/data/neo4j/databases
-mkdir -p /opt/grebi/data/neo4j/transactions
-mkdir -p /opt/grebi/data/neo4j/logs
-
-# Link Neo4j data directory
-if [ ! -L /opt/neo4j/data ]; then
-    rm -rf /opt/neo4j/data
-    ln -s /opt/grebi/data/neo4j /opt/neo4j/data
-fi
-
-# Configure Solr to use mounted data directory
-export SOLR_HOME=/opt/grebi/data/solr
-mkdir -p /opt/grebi/data/solr
-
-# Create metadata and sqlite directories if they don't exist
-mkdir -p /opt/grebi/data/metadata
-mkdir -p /opt/grebi/data/sqlite
-
-echo ""
-echo "Data directories:"
-echo "  Neo4j:    /opt/grebi/data/neo4j"
-echo "  Solr:     /opt/grebi/data/solr"
-echo "  SQLite:   /opt/grebi/data/sqlite"
-echo "  Metadata: /opt/grebi/data/metadata"
-echo ""
-
-# Determine mode
 MODE="${1:-run}"
 
 case "$MODE" in
@@ -52,19 +12,51 @@ case "$MODE" in
         echo ""
         
         # Start all services in background
-        echo "Starting services..."
-        /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf &
+        # Redirect supervisord output to file so it doesn't keep the tee pipe open
+        echo "Starting services with supervisord..."
+        /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf > supervisord_output.log 2>&1 &
         SUPERVISOR_PID=$!
         
-        # Wait for services to be ready
-        echo "Waiting for services to start..."
-        python3 /opt/integration_tests.py --wait --api-url http://localhost:8090
+        # Give supervisord a moment to start and check if it's running
+        sleep 2
+        if ! kill -0 $SUPERVISOR_PID 2>/dev/null; then
+            echo "ERROR: supervisord failed to start"
+            echo "Check supervisord.log for details"
+            cat supervisord.log 2>/dev/null || echo "No supervisord.log found"
+            exit 1
+        fi
         
-        # Run the tests
+        echo "Supervisord started (PID: $SUPERVISOR_PID)"
+        echo ""
+        
+        # Wait for services to be ready and run the tests
+        # The integration_tests.py script handles the waiting with timeouts
+        python3 /opt/integration_tests.py --api-url http://localhost:8090
+        
+        # Get the test exit code
         TEST_EXIT_CODE=$?
         
-        # Stop supervisor
+        # Stop supervisor and all child processes
+        echo ""
+        echo "Stopping services..."
+        
+        # First, use supervisorctl to stop all managed services cleanly
+        supervisorctl stop all 2>/dev/null || true
+        
+        # Kill supervisord itself
         kill $SUPERVISOR_PID 2>/dev/null || true
+        
+        # Don't wait - just kill everything aggressively
+        sleep 1
+        
+        # Kill all remaining processes by name
+        killall -9 java neo4j solr caddy python3 2>/dev/null || true
+        
+        # Kill any remaining child processes
+        pkill -9 -P $$ 2>/dev/null || true
+        pkill -9 -P $SUPERVISOR_PID 2>/dev/null || true
+        
+        echo "Tests completed with exit code: $TEST_EXIT_CODE"
         
         # Exit with test result
         exit $TEST_EXIT_CODE
@@ -79,14 +71,14 @@ case "$MODE" in
         echo "  Solr Admin:         http://localhost:8983"
         echo "  GrEBI API:          http://localhost:8090"
         echo "  GrEBI UI:           http://localhost:8080"
-        echo "  Resolver Service:   http://localhost:8080  (same port as UI)"
         echo "  Metadata Service:   http://localhost:8081"
         echo "  Prefix Service:     http://localhost:8082"
+        echo "  Resolver Service:   http://localhost:8084"
         echo ""
         echo "To run integration tests manually, execute:"
         echo "  python3 /opt/integration_tests.py --wait"
         echo ""
-        echo "Logs are available in /var/log/supervisor/"
+        echo "Logs are available in the current directory"
         echo ""
         
         # Start supervisor in foreground

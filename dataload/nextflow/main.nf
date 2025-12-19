@@ -1,0 +1,257 @@
+
+nextflow.enable.dsl=2
+
+import groovy.json.JsonSlurper
+import groovy.yaml.YamlSlurper
+
+include { ingest } from './processes/01_ingest/ingest'
+include { build_equiv_groups } from './processes/01_ingest/build_equiv_groups'
+include { assign_ids } from './processes/02_assign_ids/assign_ids'
+include { merge_ingests } from './processes/03_merge/merge_ingests'
+include { index } from './processes/04_index/index'
+include { link } from './processes/05_link/link'
+include { merge_graph_metadata_jsons } from './processes/05_link/merge_graph_metadata_jsons'
+include { create_compressed_blobs } from './processes/06_create_neo_db/create_compressed_blobs'
+include { create_sqlite } from './processes/08_create_other_dbs/sqlite/create_sqlite'
+include { prepare_neo } from './processes/06_create_neo_db/neo/prepare_neo'
+include { create_neo_ids_csv } from './processes/06_create_neo_db/neo/create_neo_ids_csv'
+include { create_neo } from './processes/06_create_neo_db/neo/create_neo'
+include { package_neo } from './processes/06_create_neo_db/neo/package_neo'
+include { prepare_solr } from './processes/08_create_other_dbs/solr/prepare_solr'
+include { create_solr_nodes_core } from './processes/08_create_other_dbs/solr/create_solr_nodes_core'
+include { create_solr_edges_core } from './processes/08_create_other_dbs/solr/create_solr_edges_core'
+include { create_solr_autocomplete_core } from './processes/08_create_other_dbs/solr/create_solr_autocomplete_core'
+include { create_solr_results_cores } from './processes/08_create_other_dbs/solr/create_solr_results_cores'
+include { package_solr } from './processes/08_create_other_dbs/solr/package_solr'
+include { run_materialised_queries } from './processes/07_run_queries/run_materialised_queries'
+include { results_to_csv } from './processes/07_run_queries/results_to_csv'
+include { link_results } from './processes/07_run_queries/link_results'
+include { add_query_metadatas_to_graph_metadata } from './processes/07_run_queries/add_query_metadatas_to_graph_metadata'
+include { csvs_to_sqlite } from './processes/07_run_queries/csvs_to_sqlite'
+include { run_integration_tests } from './processes/09_integration_tests/run_integration_tests'
+
+params.out = "$GREBI_OUT_DIR"
+params.subgraph = "$GREBI_SUBGRAPH"
+params.query_yamls_path = "$GREBI_QUERY_YAMLS_PATH"
+params.solr_mem = "140g"
+params.neo_mem = "140g"
+params.neo_query_mem = "140g"
+params.dataload_home = "$GREBI_DATALOAD_HOME"
+
+workflow {
+
+    // Load subgraph configuration
+    config = (new JsonSlurper().parse(new File(params.dataload_home, 'configs/subgraph_configs/' + params.subgraph + '.json')))
+
+    // Load datasource configurations
+    datasources = config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.dataload_home, ds)) }
+
+    // Create channel of all datasource files
+    datasource_files = Channel.from(datasources.collect {
+        ds -> ds.ingests.collect {
+            ingest -> ingest.globs.collect {
+                glob -> files(glob).collect {
+                    file -> [
+                        datasource: ds,
+                        ingest: ingest,
+                        filename: file.toString()
+                    ]
+                }
+            }
+        }
+     }) | flatten
+
+    // === STEP 1: INGEST ===
+    ingest(
+        datasource_files, 
+        datasource_files | map { listing -> listing.filename }, 
+        Channel.value(config.identifier_props), 
+        Channel.value(config.bytes_per_merged_file)
+    )
+
+    // Build equivalence groups from identifiers
+    groups_txt = build_equiv_groups(
+        ingest.out.identifiers.collect(), 
+        Channel.value(config.additional_equivalence_groups)
+    )
+
+    // === STEP 2: ASSIGN IDS ===
+    nodes_for_assign = ingest.out.nodes.flatMap { datasource_name, files ->
+        def fs = (files instanceof List ? files : [files])
+        fs.collect { f -> tuple(datasource_name, f) }
+    }
+
+    assigned = assign_ids(
+        nodes_for_assign, 
+        groups_txt, 
+        Channel.value(config.identifier_props), 
+        Channel.value(config.type_superclasses)
+    ).collect(flat: false)
+
+    // === STEP 3: MERGE ===
+    merged = merge_ingests(
+        assigned,
+        Channel.value(config.exclude_props),
+        Channel.value(config.prioritise_datasources),
+        Channel.value(config.bytes_per_merged_file),
+        Channel.value(params.subgraph)
+    )
+
+    // === STEP 4: INDEX ===
+    indexed = index(merged.collect(), Channel.value(params.subgraph))
+
+    // === STEP 5: LINK ===
+    link(
+        merged.flatten(), 
+        indexed.entity_metadata_jsonl, 
+        indexed.graph_metadata_json, 
+        Channel.value(config.exclude_edges + config.identifier_props), 
+        Channel.value(config.exclude_self_referential_edges + config.identifier_props), 
+        groups_txt
+    )
+    
+    merge_graph_metadata_jsons(
+        indexed.graph_metadata_json.collect() + link.out.linked_summary.collect(),
+        Channel.value(params.subgraph)
+    )
+
+    // === STEP 6: CREATE DATABASES ===
+    
+    // SQLite
+    compressed_blobs = create_compressed_blobs(link.out.nodes.mix(link.out.edges), Channel.value(params.subgraph))
+    sqlite = create_sqlite(compressed_blobs.collect(), Channel.value(params.subgraph), Channel.value(params.out))
+
+    // Neo4j
+    neo_input_dir = prepare_neo(
+        indexed.graph_metadata_json, 
+        link.out.nodes, 
+        link.out.edges,
+        Channel.value(params.subgraph)
+    )
+
+    ids_csv = create_neo_ids_csv(indexed.ids_txt, Channel.value(params.subgraph))
+    
+    neo_db = create_neo(
+        prepare_neo.out.nodes.collect() +
+        prepare_neo.out.edges.collect() +
+        prepare_neo.out.id_edges.collect() +
+        ids_csv.collect(),
+        Channel.value(params.subgraph),
+        Channel.value(params.neo_mem)
+    )
+
+    // === STEP 7: RUN QUERIES ===
+    run_materialised_queries(
+        neo_db, 
+        params.query_yamls_path,
+        Channel.value(params.subgraph),
+        Channel.value(params.neo_query_mem),
+        Channel.value(params.out)
+    )
+
+    csv_results = results_to_csv(
+        run_materialised_queries.out.results.flatten(),
+        Channel.value(params.out)
+    )
+    linked_results = link_results(
+        run_materialised_queries.out.results.flatten(), 
+        indexed.entity_metadata_jsonl, 
+        groups_txt
+    )
+
+    add_query_metadatas_to_graph_metadata(
+        run_materialised_queries.out.metadata.flatten().collect(), 
+        merge_graph_metadata_jsons.out,
+        Channel.value(params.subgraph),
+        Channel.value(params.out)
+    )
+
+    // === STEP 8: CREATE SOLR CORES ===
+    solr_inputs = prepare_solr(link.out.nodes, link.out.edges, Channel.value(params.subgraph))
+    
+    solr_nodes_core = create_solr_nodes_core(
+        prepare_solr.out.nodes.collect(), 
+        indexed.names_txt, 
+        merge_graph_metadata_jsons.out,
+        Channel.value(params.subgraph),
+        Channel.value(params.solr_mem)
+    )
+    
+    solr_edges_core = create_solr_edges_core(
+        prepare_solr.out.edges.collect(), 
+        indexed.names_txt, 
+        merge_graph_metadata_jsons.out,
+        Channel.value(params.subgraph),
+        Channel.value(params.solr_mem)
+    )
+    
+    solr_autocomplete_core = create_solr_autocomplete_core(
+        indexed.names_txt,
+        Channel.value(params.subgraph),
+        Channel.value(params.solr_mem)
+    )
+    
+    solr_results_cores = create_solr_results_cores(
+        linked_results,
+        Channel.value(params.subgraph),
+        Channel.value(params.solr_mem)
+    )
+
+    all_solr_cores = solr_nodes_core
+        .concat(solr_edges_core)
+        .concat(solr_autocomplete_core)
+        .concat(solr_results_cores)
+        .collect()
+
+    // === PACKAGE OUTPUTS ===
+    solr_tgz = package_solr(all_solr_cores, Channel.value(params.subgraph), Channel.value(params.out))
+    neo_tgz = package_neo(neo_db, Channel.value(params.subgraph), Channel.value(params.out))
+
+    // === RUN INTEGRATION TESTS ===
+    run_integration_tests(
+        neo_tgz,
+        solr_tgz,
+        sqlite,
+        add_query_metadatas_to_graph_metadata.out,
+        Channel.fromPath("${params.dataload_home}/../query_templates"),
+        Channel.value(params.subgraph),
+        Channel.value(params.out)
+    )
+}
+
+// Utility functions
+def parseJson(json) {
+    return new JsonSlurper().parseText(json)
+}
+
+def getStdinCommand(ingest, filename) {
+    if (ingest.stdin == false) {
+        return ""
+    }
+    def f = new File(filename.toString()).getName()
+    if (f.endsWith(".gz")) {
+        return "zcat ${f} |"
+    } else if (f.endsWith(".xz")) {
+        return "xzcat ${f} |"
+    } else {
+        return "cat ${f} |"
+    }
+}
+
+def buildAddEquivGroupArgs(equivGroups) {
+    def res = ""
+    equivGroups.each { arg -> res += "--add-group ${arg.iterator().join(",")} " }
+    return res
+}
+
+def buildMergeArgs(assigned) {
+    def res = ""
+    assigned.each { a ->
+        res += "${a[0]}:${a[1]} "
+    }
+    return res
+}
+
+def basename(filename) {
+    return new File(filename).name
+}

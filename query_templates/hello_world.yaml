@@ -1,0 +1,29 @@
+title: Genes related to a disease
+description: Return genes related to a disease; this is a hello world example for integration tests
+subgraphs:
+  - hello_world
+topics:
+  - qc
+cypher_match_fragment: |-
+  MATCH (disease:`biolink:Disease`)-[:sourceId]->(:Id { id: $disease_id })
+  MATCH (gene:`biolink:Gene`)-[assoc:`biolink:related_to`]->(disease)
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
+      disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease
+cypher_count_fragment: |-
+  WITH DISTINCT gene, disease
+  RETURN count(*) AS count
+params:
+  - param_id: disease_id
+    param_name: Disease ID
+    param_type: SourceId
+result_columns:
+  - column_id: gene
+    column_type: GraphNodeId
+  - column_id: disease
+    column_type: GraphNodeId
+examples:
+  - title: TBX4
+    params:
+      disease_id: "mondo:0017148"

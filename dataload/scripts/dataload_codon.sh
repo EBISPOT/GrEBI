@@ -20,6 +20,6 @@ module load nextflow/24.10.3
 
 srun --time 1:0:0 --mem 4g mkdir -p $GREBI_OUT_DIR $NXF_HOME $NXF_WORK $NXF_TEMP $NXF_CACHE_DIR $NXF_SINGULARITY_CACHEDIR
 
-srun --time 6-0:0:0 --mem 32g nextflow $GREBI_DATALOAD_HOME/nextflow/load_subgraph.nf -c $GREBI_NEXTFLOW_CONFIG -resume
+srun --time 6-0:0:0 --mem 32g nextflow $GREBI_DATALOAD_HOME/nextflow/main.nf -c $GREBI_NEXTFLOW_CONFIG -resume
 
 

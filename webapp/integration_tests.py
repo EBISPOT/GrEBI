@@ -32,11 +32,6 @@ def main():
         default='http://localhost:8090',
         help='GrEBI API base URL (default: http://localhost:8090)'
     )
-    parser.add_argument(
-        '--templates-dir',
-        default='/opt/query_templates',
-        help='Path to query templates directory (default: /opt/query_templates)'
-    )
     
     args = parser.parse_args()
     
@@ -46,8 +41,7 @@ def main():
     
     print()
     
-    templates_dir = Path(args.templates_dir)
-    passed, total = run_integration_tests(args.api_url, templates_dir)
+    passed, total = run_integration_tests(args.api_url)
     
     if total == 0:
         print_colored("No tests were run!", Colors.RED)
@@ -90,7 +84,7 @@ def wait_for_all_services(base_url: str = "http://localhost") -> bool:
         (f"{base_url}:7474", "Neo4j Browser"),
         (f"{base_url}:8983/solr", "Solr"),
         (f"{base_url}:8082/health", "Prefix Service"),
-        (f"{base_url}:8080/health", "Resolver Service"),
+        (f"{base_url}:8084/health", "Resolver Service"),
         (f"{base_url}:8081/health", "Metadata Service"),
         (f"{base_url}:8090/api/health", "GrEBI API"),
     ]
@@ -156,9 +150,10 @@ def execute_query(
 
 
 def run_integration_tests(
-    api_url: str = "http://localhost:8090",
-    templates_dir: Path = Path("/opt/query_templates")
+    api_url: str = "http://localhost:8090"
 ) -> tuple[int, int]:
+    templates_dir = Path("/opt/query_templates")
+    
     print_colored("\n" + "="*80, Colors.BOLD)
     print_colored("GrEBI Integration Tests", Colors.BOLD)
     print_colored("="*80 + "\n", Colors.BOLD)

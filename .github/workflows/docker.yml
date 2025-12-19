@@ -14,61 +14,62 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: dataload
+            image: ghcr.io/ebispot/grebi_dataload
+            context: dataload
+            file: dataload/Dockerfile
+          - name: api
+            image: ghcr.io/ebispot/grebi_api
+            context: webapp/grebi_api
+            file: webapp/grebi_api/Dockerfile
+          - name: resolver
+            image: ghcr.io/ebispot/grebi_resolver_service
+            context: webapp/grebi_resolver_service
+            file: webapp/grebi_resolver_service/Dockerfile
+          - name: metadata
+            image: ghcr.io/ebispot/grebi_metadata_service
+            context: webapp/grebi_metadata_service
+            file: webapp/grebi_metadata_service/Dockerfile
+          - name: prefix
+            image: ghcr.io/ebispot/grebi_prefix_service
+            context: .
+            file: webapp/grebi_prefix_service/Dockerfile
+          - name: ui
+            image: ghcr.io/ebispot/grebi_ui
+            context: webapp/grebi_ui
+            file: webapp/grebi_ui/Dockerfile
+          - name: combined
+            image: ghcr.io/ebispot/grebi_combined
+            context: .
+            file: webapp/Dockerfile.combined
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Log in to the Container registry
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push GrEBI dataload Docker image
-        run: |
-          cd dataload
-          docker build -t ghcr.io/ebispot/grebi_dataload:${{ github.sha }} .
-          docker tag ghcr.io/ebispot/grebi_dataload:${{github.sha}} ghcr.io/ebispot/grebi_dataload:${{ github.ref_name }}
-          docker push --all-tags ghcr.io/ebispot/grebi_dataload
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build and push GrEBI API Docker image
-        run: |
-          cd webapp/grebi_api
-          docker build -t ghcr.io/ebispot/grebi_api:${{ github.sha }} .
-          docker tag ghcr.io/ebispot/grebi_api:${{github.sha}} ghcr.io/ebispot/grebi_api:${{ github.ref_name }}
-          docker push --all-tags ghcr.io/ebispot/grebi_api
-
-      - name: Build and push GrEBI resolver service Docker image
-        run: |
-          cd webapp/grebi_resolver_service
-          docker build -t ghcr.io/ebispot/grebi_resolver_service:${{ github.sha }} .
-          docker tag ghcr.io/ebispot/grebi_resolver_service:${{github.sha}} ghcr.io/ebispot/grebi_resolver_service:${{ github.ref_name }}
-          docker push --all-tags ghcr.io/ebispot/grebi_resolver_service
-
-      - name: Build and push GrEBI metadata service Docker image
-        run: |
-          cd webapp/grebi_metadata_service
-          docker build -t ghcr.io/ebispot/grebi_metadata_service:${{ github.sha }} .
-          docker tag ghcr.io/ebispot/grebi_metadata_service:${{github.sha}} ghcr.io/ebispot/grebi_metadata_service:${{ github.ref_name }}
-          docker push --all-tags ghcr.io/ebispot/grebi_metadata_service
-
-      - name: Build and push GrEBI prefix service Docker image
-        run: |
-          docker build -t ghcr.io/ebispot/grebi_prefix_service:${{ github.sha }} -f webapp/grebi_prefix_service/Dockerfile .
-          docker tag ghcr.io/ebispot/grebi_prefix_service:${{github.sha}} ghcr.io/ebispot/grebi_prefix_service:${{ github.ref_name }}
-          docker push --all-tags ghcr.io/ebispot/grebi_prefix_service
-
-      - name: Build and push GrEBI UI Docker image
-        run: |
-          cd webapp/grebi_ui
-          docker build -t ghcr.io/ebispot/grebi_ui:${{ github.sha }} .
-          docker tag ghcr.io/ebispot/grebi_ui:${{github.sha}} ghcr.io/ebispot/grebi_ui:${{ github.ref_name }}
-          docker push --all-tags ghcr.io/ebispot/grebi_ui
-
-      - name: Build and push GrEBI combined Docker image
-        run: |
-          docker build -t ghcr.io/ebispot/grebi_combined:${{ github.sha }} -f webapp/Dockerfile.combined .
-          docker tag ghcr.io/ebispot/grebi_combined:${{github.sha}} ghcr.io/ebispot/grebi_combined:${{ github.ref_name }}
-          docker push --all-tags ghcr.io/ebispot/grebi_combined
+      - name: Build and push ${{ matrix.name }} image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ matrix.image }}:${{ github.sha }}
+            ${{ matrix.image }}:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 

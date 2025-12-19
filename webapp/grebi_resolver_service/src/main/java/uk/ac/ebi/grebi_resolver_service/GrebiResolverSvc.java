@@ -56,8 +56,9 @@ public class GrebiResolverSvc {
             System.out.println("Loaded SQLite DB for subgraph " + subgraph + " from " + dbfile.getAbsolutePath());
         }
 
+        int port = Integer.parseInt(System.getenv().getOrDefault("GREBI_RESOLVER_PORT", "8084"));
         Javalin app = Javalin.create(config -> {
-        }).start("0.0.0.0", 8080);
+        }).start("0.0.0.0", port);
 
         app.get("/health", ctx -> {
             ctx.contentType("application/json");

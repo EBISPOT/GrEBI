@@ -26,7 +26,7 @@ services:
       environment:
         - GREBI_NEO4J_HOST=bolt://grebi-neo4j:7687/
         - GREBI_SOLR_HOST=http://grebi-solr:8983/
-        - GREBI_RESOLVER_HOST=http://grebi-resolver-service:8080/
+        - GREBI_RESOLVER_HOST=http://grebi-resolver-service:8084/
         - GREBI_METADATA_HOST=http://grebi-metadata-service:8081/
         - GREBI_PREFIX_HOST=http://grebi-prefix-service:8082/
     grebi-neo4j:
@@ -48,11 +48,12 @@ services:
     grebi-resolver-service:
       image: ghcr.io/ebispot/grebi_resolver_service:dev
       ports:
-        - 8080:8080
+        - 8084:8084
       volumes:
         - ${GREBI_SQLITE_SEARCH_PATH:?Need path to search for sqlite databases}:/sqlite
       environment:
         - GREBI_SQLITE_SEARCH_PATH=/sqlite
+        - GREBI_RESOLVER_PORT=8084
     grebi-metadata-service:
       image: ghcr.io/ebispot/grebi_metadata_service:dev
       ports:

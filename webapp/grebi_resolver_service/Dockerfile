@@ -7,7 +7,8 @@ RUN mkdir -p /opt
 COPY . /opt/
 RUN cd /opt/ && ls && mvn clean package assembly:single -DskipTests
 
-EXPOSE 8080
+EXPOSE 8084
+ENV GREBI_RESOLVER_PORT=8084
 ENTRYPOINT ["java", "-jar", "/opt/target/grebi_resolver_service-1.0-SNAPSHOT-jar-with-dependencies.jar"]
 
 

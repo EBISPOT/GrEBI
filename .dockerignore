@@ -1,10 +1,15 @@
 tmp
 .git
-00_fetch_data
-*.gz
-*.tsv
-*.csv
-*.xml
+00_fetch_data/
+00_fetch_data/**
+**.gz
+**.tsv
+**.csv
+.venv
+webapp/grebi_ui/node_modules
+dataload/target/
+
+
 
 
 

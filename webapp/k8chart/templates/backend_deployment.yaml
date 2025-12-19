@@ -41,7 +41,7 @@ spec:
             - name: GREBI_NEO4J_HOSTS
               value: bolt://{{ .Release.Name }}-{{.Values.subgraph1 | replace "_" "-" }}-neo4j:7687;bolt://{{ .Release.Name }}-{{.Values.subgraph2 | replace "_" "-"}}-neo4j:7687
             - name: GREBI_RESOLVER_HOST
-              value: http://{{ .Release.Name }}-resolver:8080
+              value: http://{{ .Release.Name }}-resolver:8084
             - name: GREBI_METADATA_HOST
               value: http://{{ .Release.Name }}-metadata-service:8081
             - name: GREBI_PREFIX_HOST

@@ -52,6 +52,8 @@ spec:
           env:
             - name: GREBI_SQLITE_SEARCH_PATH
               value: /data/sqlite
+            - name: GREBI_RESOLVER_PORT
+              value: "8084"
           ports:
-            - containerPort: 8080
+            - containerPort: 8084
 
