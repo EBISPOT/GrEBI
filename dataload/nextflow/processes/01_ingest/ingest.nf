@@ -36,7 +36,10 @@ process ingest {
     export GREBI_INGEST_DATASOURCE_NAME=${file_listing.datasource.name}
     export GREBI_INGEST_FILENAME=${filename}
     export GREBI_DATALOAD_HOME=/opt/grebi_dataload
+    echo "Current working dir: \$(pwd)"
     echo "Files in ingest working dir: \$(ls)"
+    ls -hl
+    ls -Lhl
     ${getStdinCommand(file_listing.ingest, filename)} \
         ${file_listing.ingest.command} \
         | grebi_normalise_prefixes /opt/grebi_dataload/prefix_maps/prefix_map_normalise.json \
