@@ -5,6 +5,11 @@ if [ -z "$GREBI_SUBGRAPH" ]; then
   exit 1
 fi
 
+if [ -z "$GREBI_NF_CONFIG" ]; then
+  echo "GREBI_NF_CONFIG not set, using default local 64g config"
+  GREBI_NF_CONFIG="dataload/nextflow/local_64g_nextflow.config"
+fi
+
 SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 
 # This folder is mounted to have the same path in the Docker containers as it does on the host.
@@ -40,5 +45,5 @@ docker run \
   -e NXF_CACHE_DIR=$TMP_DIR/NXF_CACHE_DIR \
   ghcr.io/ebispot/grebi_nextflow:latest \
   bash -c "cd $GREBI_HOME && nextflow dataload/nextflow/main.nf \
-    -c dataload/nextflow/local_64g_nextflow.config -resume"
+    -c $GREBI_NF_CONFIG -resume"
 

@@ -97,5 +97,7 @@ jobs:
         run: |
           # Use the commit SHA tag to ensure we test the exact image that was just built
           sed -i "s|:dev|:${{ github.sha }}|g" \
-            dataload/nextflow/local_64g_nextflow.config
+            dataload/nextflow/local_4g_nextflow.config
+          export GREBI_NF_CONFIG=dataload/nextflow/local_4g_nextflow.config
+          export GREBI_SUBGRAPH=hello_world
           GREBI_SUBGRAPH=hello_world ./dataload/scripts/dataload_local.sh
