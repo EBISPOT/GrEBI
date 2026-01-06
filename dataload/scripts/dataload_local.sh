@@ -6,6 +6,12 @@ if [ -z "$GREBI_SUBGRAPH" ]; then
 fi
 
 SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
+
+# This folder is mounted to have the same path in the Docker containers as it does on the host.
+# This includes: 
+#   - The nextflow container that runs nextflow (which we start below)
+#   - The containers nextflow starts to run processes, configured in the nextflow config files
+#
 GREBI_HOME=$(dirname $(dirname $SCRIPT_PATH))
 
 TMP_DIR=$GREBI_HOME/tmp/$GREBI_SUBGRAPH

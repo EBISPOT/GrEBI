@@ -90,6 +90,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Pull the freshly built image
+        run: docker pull ghcr.io/ebispot/grebi_dataload:${{ github.sha }}
+      
       - name: Test dataload
-        run: GREBI_SUBGRAPH=hello_world ./dataload/scripts/dataload_local.sh
-
+        run: |
+          # Use the commit SHA tag to ensure we test the exact image that was just built
+          sed -i "s|:dev|:${{ github.sha }}|g" \
+            dataload/nextflow/local_64g_nextflow.config
+          GREBI_SUBGRAPH=hello_world ./dataload/scripts/dataload_local.sh
