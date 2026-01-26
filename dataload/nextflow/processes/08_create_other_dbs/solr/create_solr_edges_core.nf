@@ -2,7 +2,7 @@ process create_solr_edges_core {
     cache "lenient"
     memory "4 GB" 
     time "23h"
-    cpus "8"
+    cpus "4"
 
     input:
     path(solr_inputs)

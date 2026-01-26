@@ -2,7 +2,7 @@ process package_solr {
     cache "lenient"
     memory "4 GB" 
     time "8h"
-    cpus "8"
+    cpus "4"
 
     input: 
     path(cores)

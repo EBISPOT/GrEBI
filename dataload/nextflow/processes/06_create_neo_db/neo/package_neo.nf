@@ -2,7 +2,7 @@ process package_neo {
     cache "lenient"
     memory "4 GB" 
     time "8h"
-    cpus "8"
+    cpus "4"
 
     input: 
     path(neo4j_dir)

@@ -2,7 +2,7 @@ process run_materialised_queries {
     cache "lenient"
     memory "8 GB" 
     time "48h"
-    cpus "8"
+    cpus "4"
     stageInMode "copy"
 
     input:

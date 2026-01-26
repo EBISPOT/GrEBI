@@ -2,7 +2,7 @@ process create_neo {
     cache "lenient"
     memory "4 GB" 
     time "48h"
-    cpus "8"
+    cpus "4"
 
     input:
     path(neo_inputs)

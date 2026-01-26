@@ -2,7 +2,7 @@ process add_query_metadatas_to_graph_metadata {
     cache "lenient"
     memory "8 GB" 
     time "8h"
-    cpus "8"
+    cpus "4"
 
     input:
     path(metadata_jsons)

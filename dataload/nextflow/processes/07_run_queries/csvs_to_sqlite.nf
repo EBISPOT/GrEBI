@@ -2,7 +2,7 @@ process csvs_to_sqlite {
     cache "lenient"
     memory "64 GB" 
     time "12h"
-    cpus "8"
+    cpus "4"
 
     input:
     path(csvs)

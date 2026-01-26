@@ -2,7 +2,7 @@ process link_results {
     cache "lenient"
     memory "8 GB" 
     time "8h"
-    cpus "8"
+    cpus "4"
 
     input:
     path(results_jsonl)

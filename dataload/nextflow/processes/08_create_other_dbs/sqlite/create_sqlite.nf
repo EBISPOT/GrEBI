@@ -2,7 +2,7 @@ process create_sqlite {
     cache "lenient"
     memory "4 GB" 
     time "48h"
-    cpus "8"
+    cpus "4"
     errorStrategy 'retry'
     maxRetries 10
 
