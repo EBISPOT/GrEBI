@@ -142,7 +142,7 @@ npm run build
 ## Common Tasks
 
 ### Adding a New Datasource
-1. Create YAML config in `dataload/configs/datasource_configs/`
+1. Create YAML config in `configs/datasource_configs/`
 2. Add fetching logic in `dataload/00_fetch_data/`
 3. Add ingestion logic in `dataload/01_ingest/` if needed
 4. Update subgraph config to include the new datasource

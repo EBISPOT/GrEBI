@@ -37,14 +37,15 @@ params.solr_mem = "140g"
 params.neo_mem = "140g"
 params.neo_query_mem = "140g"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
+params.grebi_home = "$GREBI_HOME"
 
 workflow {
 
     // Load subgraph configuration
-    config = (new JsonSlurper().parse(new File(params.dataload_home, 'configs/subgraph_configs/' + params.subgraph + '.json')))
+    config = (new JsonSlurper().parse(new File(params.grebi_home, 'configs/subgraph_configs/' + params.subgraph + '.json')))
 
     // Load datasource configurations
-    datasources = config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.dataload_home, ds)) }
+    datasources = config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.grebi_home, ds)) }
 
     // Create channel of all datasource files
     datasource_files = Channel.from(datasources.collect {
@@ -213,7 +214,7 @@ workflow {
         solr_tgz,
         sqlite,
         add_query_metadatas_to_graph_metadata.out,
-        Channel.fromPath("${params.dataload_home}/../query_templates"),
+        Channel.fromPath("${params.grebi_home}/query_templates"),
         Channel.value(params.subgraph),
         Channel.value(params.out)
     )
