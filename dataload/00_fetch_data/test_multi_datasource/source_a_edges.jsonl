@@ -1,0 +1,3 @@
+{"id": "edge-mda-1", "subject": "ex:protein1", "object": "ex:disease1", "predicate": "biolink:related_to"}
+{"id": "edge-mda-2", "subject": "ex:protein1", "object": "ex:pathway1", "predicate": "biolink:participates_in"}
+{"id": "edge-mda-hw", "subject": "HGNC:11603", "object": "MONDO:0005015", "predicate": "biolink:related_to"}

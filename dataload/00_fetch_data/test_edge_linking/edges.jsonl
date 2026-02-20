@@ -1,0 +1,5 @@
+{"id": "edge-el-1", "subject": "ex:gene1", "object": "ex:disease1", "predicate": "biolink:gene_associated_with_condition"}
+{"id": "edge-el-2", "subject": "ex:disease1", "object": "ex:phenotype1", "predicate": "biolink:has_phenotype"}
+{"id": "edge-el-3", "subject": "ex:gene1", "object": "ex:phenotype1", "predicate": "biolink:related_to"}
+{"id": "edge-el-4", "subject": "ex:gene2", "object": "ex:disease1", "predicate": "biolink:gene_associated_with_condition"}
+{"id": "edge-el-hw", "subject": "HGNC:11603", "object": "MONDO:0005015", "predicate": "biolink:related_to"}
