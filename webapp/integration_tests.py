@@ -6,6 +6,7 @@ Tests the GrEBI stack by executing all query template examples
 and verifying that results are returned.
 """
 
+import os
 import sys
 import time
 import requests
@@ -152,7 +153,7 @@ def execute_query(
 def run_integration_tests(
     api_url: str = "http://localhost:8090"
 ) -> tuple[int, int]:
-    templates_dir = Path("/opt/query_templates")
+    templates_dir = Path(os.environ.get("GREBI_QUERY_TEMPLATES_PATH", "/opt/query_templates"))
     
     print_colored("\n" + "="*80, Colors.BOLD)
     print_colored("GrEBI Integration Tests", Colors.BOLD)

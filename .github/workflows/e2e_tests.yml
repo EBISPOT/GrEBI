@@ -1,0 +1,31 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ "dev", "stable" ]
+  pull_request:
+    branches: [ "dev", "stable" ]
+
+jobs:
+  e2e-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          docker system prune -af
+
+      - name: Build dataload image
+        run: docker build -t ghcr.io/ebispot/grebi_dataload:dev -f dataload/Dockerfile dataload
+
+      - name: Build nextflow image
+        run: docker build -t ghcr.io/ebispot/grebi_nextflow:latest -f docker_envs/Dockerfile.nextflow docker_envs
+
+      - name: Build combined image
+        run: docker build -t ghcr.io/ebispot/grebi_combined:dev -f webapp/Dockerfile.combined .
+
+      - name: Run all E2E tests
+        run: bash tests/run_all_e2e.sh

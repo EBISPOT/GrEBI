@@ -38,6 +38,7 @@ params.neo_mem = "140g"
 params.neo_query_mem = "140g"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
 params.grebi_home = "$GREBI_HOME"
+params.export_snapshots = false
 
 workflow {
 
@@ -216,7 +217,9 @@ workflow {
         add_query_metadatas_to_graph_metadata.out,
         Channel.fromPath("${params.grebi_home}/query_templates"),
         Channel.value(params.subgraph),
-        Channel.value(params.out)
+        Channel.value(params.out),
+        Channel.value(params.export_snapshots),
+        Channel.value(params.grebi_home)
     )
 }
 

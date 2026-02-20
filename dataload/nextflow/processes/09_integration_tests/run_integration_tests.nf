@@ -14,11 +14,17 @@ process run_integration_tests {
     path(query_templates)
     val(subgraph)
     val(out_dir)
+    val(export_snapshots)
+    val(grebi_home)
 
     publishDir "${out_dir}", overwrite: true
 
     output:
     path("integration_test_results.txt"), optional: true
+    path("${subgraph}_snapshot_neo4j_nodes.jsonl"), optional: true
+    path("${subgraph}_snapshot_neo4j_edges.jsonl"), optional: true
+    path("${subgraph}_snapshot_solr_nodes.jsonl"), optional: true
+    path("${subgraph}_snapshot_solr_edges.jsonl"), optional: true
     stdout
 
     script:
@@ -43,12 +49,85 @@ process run_integration_tests {
     export GREBI_QUERY_TEMPLATES_PATH=\$PWD/${query_templates}
     export PUBLIC_URL=/
     
+    # Start all services via supervisord
+    echo "Starting services with supervisord..."
+    /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf > supervisord_output.log 2>&1 &
+    SUPERVISOR_PID=\$!
+    sleep 2
+    if ! kill -0 \$SUPERVISOR_PID 2>/dev/null; then
+        echo "ERROR: supervisord failed to start"
+        cat supervisord.log 2>/dev/null || true
+        exit 1
+    fi
+
+    # Run integration tests (waits for services internally)
     echo "Running integration tests..."
-    /opt/entrypoint.sh test 2>&1 | tee integration_test_results.txt
-    
-    # Capture the exit code from PIPESTATUS (bash) to ensure we fail if tests fail
+    set +e
+    python3 /opt/integration_tests.py --api-url http://localhost:8090 2>&1 | tee integration_test_results.txt
     TEST_EXIT_CODE=\${PIPESTATUS[0]}
+    set -e
     echo "Integration tests exited with code: \$TEST_EXIT_CODE"
-    exit \$TEST_EXIT_CODE
+
+    # Export and compare snapshots if requested
+    SNAPSHOT_EXIT_CODE=0
+    API_EXIT_CODE=0
+
+    if [ "${export_snapshots}" = "true" ]; then
+        echo ""
+        echo "=== Exporting DB snapshots ==="
+
+        # Neo4j and Solr are already running via supervisord
+        python3 ${grebi_home}/dataload/10_export_snapshots/export_neo4j.py ${subgraph}
+        python3 ${grebi_home}/dataload/10_export_snapshots/export_solr.py ${subgraph}
+
+        # Compare DB snapshots against expected output (if it exists)
+        EXPECTED_DIR="${grebi_home}/tests/expected_output/${subgraph}"
+        if ls "\$EXPECTED_DIR"/${subgraph}_snapshot_*.jsonl 1>/dev/null 2>&1; then
+            echo ""
+            echo "=== Comparing DB snapshots ==="
+            set +e
+            python3 ${grebi_home}/tests/compare_snapshots.py \\
+                --subgraph ${subgraph} \\
+                --actual-dir \$PWD \\
+                --expected-dir "\$EXPECTED_DIR"
+            SNAPSHOT_EXIT_CODE=\$?
+            set -e
+        else
+            echo "No expected DB snapshots found at \$EXPECTED_DIR — skipping comparison"
+            echo "To populate expected output, copy snapshot files from the pipeline output to: \$EXPECTED_DIR/"
+        fi
+
+        # Compare API snapshots (if expected snapshot exists)
+        if [ -f "\$EXPECTED_DIR/${subgraph}_api_snapshot.json" ]; then
+            echo ""
+            echo "=== Comparing API snapshots ==="
+            set +e
+            python3 ${grebi_home}/tests/test_api_snapshots.py \\
+                --subgraph ${subgraph} \\
+                --api-url http://localhost:8090 \\
+                --expected-dir "\$EXPECTED_DIR"
+            API_EXIT_CODE=\$?
+            set -e
+        else
+            echo "No expected API snapshot found — skipping API comparison"
+        fi
+    fi
+
+    # Stop all services
+    echo ""
+    echo "Stopping services..."
+    supervisorctl stop all 2>/dev/null || true
+    kill \$SUPERVISOR_PID 2>/dev/null || true
+    sleep 1
+    killall -9 java neo4j solr caddy python3 2>/dev/null || true
+    pkill -9 -P \$\$ 2>/dev/null || true
+    pkill -9 -P \$SUPERVISOR_PID 2>/dev/null || true
+
+    # Exit with combined result
+    if [ \$TEST_EXIT_CODE -ne 0 ] || [ \$SNAPSHOT_EXIT_CODE -ne 0 ] || [ \$API_EXIT_CODE -ne 0 ]; then
+        echo "FAILED: integration_tests=\$TEST_EXIT_CODE, db_snapshots=\$SNAPSHOT_EXIT_CODE, api_snapshots=\$API_EXIT_CODE"
+        exit 1
+    fi
+    echo "All tests passed"
     """
 }

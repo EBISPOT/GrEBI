@@ -26,11 +26,21 @@ mkdir -p $TMP_DIR/NXF_WORK $TMP_DIR/NXF_HOME $TMP_DIR/NXF_TEMP $TMP_DIR/NXF_CACH
 
 mkdir -p $TMP_DIR
 
-DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)
+# Ensure nested Docker containers (spawned by Nextflow) run with the same
+# UID/GID as the host user to avoid permission issues when writing to the
+# bind-mounted work directory on GitHub Actions.
+# On macOS (e.g. Rancher Desktop) this is not needed as containers already
+# run with proper permissions to access the Docker socket.
+HOST_UID=$(id -u)
+HOST_GID=$(id -g)
+
+USER_OPT=""
+if [ "$(uname)" != "Darwin" ]; then
+  USER_OPT="--user $HOST_UID:$HOST_GID --group-add $(stat -c %g /var/run/docker.sock)"
+fi
 
 docker run \
-  --user "$(id -u)":"$(id -g)" \
-  --group-add $DOCKER_GID \
+  $USER_OPT \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v $GREBI_HOME:$GREBI_HOME \
   -e GREBI_HOME=$GREBI_HOME \
@@ -45,5 +55,5 @@ docker run \
   -e NXF_CACHE_DIR=$TMP_DIR/NXF_CACHE_DIR \
   ghcr.io/ebispot/grebi_nextflow:latest \
   bash -c "cd $GREBI_HOME && nextflow dataload/nextflow/main.nf \
-    -c $GREBI_NF_CONFIG -resume"
+    -c $GREBI_NF_CONFIG -resume $GREBI_NF_EXTRA_ARGS"
 

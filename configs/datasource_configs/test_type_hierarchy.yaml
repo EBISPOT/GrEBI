@@ -1,0 +1,12 @@
+name: TestTypeHierarchy
+enabled: true
+ingests:
+  - globs: ["dataload/00_fetch_data/test_type_hierarchy/edges.jsonl"]
+    command: '
+      grebi_ingest_kgx_edges
+          --kgx-inject-key-prefix test_th:'
+  - globs: ["dataload/00_fetch_data/test_type_hierarchy/nodes.jsonl"]
+    command: '
+      grebi_transform_jsonl
+          --json-rename category:grebi:type
+          --json-inject-key-prefix test_th:'

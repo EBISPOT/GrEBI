@@ -2,6 +2,10 @@ title: Genes related to a disease
 description: Return genes related to a disease; this is a hello world example for integration tests
 subgraphs:
   - hello_world
+  - test_clique_merge
+  - test_edge_linking
+  - test_multi_datasource
+  - test_type_hierarchy
 topics:
   - qc
 cypher_match_fragment: |-
@@ -24,6 +28,6 @@ result_columns:
   - column_id: disease
     column_type: GraphNodeId
 examples:
-  - title: TBX4
+  - title: Type 2 diabetes mellitus
     params:
-      disease_id: "mondo:0017148"
+      disease_id: "mondo:0005015"
