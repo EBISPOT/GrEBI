@@ -1,0 +1,12 @@
+name: TestMultiDatasourceA
+enabled: true
+ingests:
+  - globs: ["dataload/00_fetch_data/test_multi_datasource/source_a_edges.jsonl"]
+    command: '
+      grebi_ingest_kgx_edges
+          --kgx-inject-key-prefix test_mda:'
+  - globs: ["dataload/00_fetch_data/test_multi_datasource/source_a_nodes.jsonl"]
+    command: '
+      grebi_transform_jsonl
+          --json-rename category:grebi:type
+          --json-inject-key-prefix test_mda:'

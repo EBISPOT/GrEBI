@@ -29,6 +29,7 @@ include { link_results } from './processes/07_run_queries/link_results'
 include { add_query_metadatas_to_graph_metadata } from './processes/07_run_queries/add_query_metadatas_to_graph_metadata'
 include { csvs_to_sqlite } from './processes/07_run_queries/csvs_to_sqlite'
 include { run_integration_tests } from './processes/09_integration_tests/run_integration_tests'
+include { export_db_snapshots } from './processes/10_export_snapshots/export_db_snapshots'
 
 params.out = "$GREBI_OUT_DIR"
 params.subgraph = "$GREBI_SUBGRAPH"
@@ -38,6 +39,7 @@ params.neo_mem = "140g"
 params.neo_query_mem = "140g"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
 params.grebi_home = "$GREBI_HOME"
+params.export_snapshots = false
 
 workflow {
 
@@ -218,6 +220,17 @@ workflow {
         Channel.value(params.subgraph),
         Channel.value(params.out)
     )
+
+    // === EXPORT DB SNAPSHOTS (for E2E testing) ===
+    if (params.export_snapshots) {
+        export_db_snapshots(
+            neo_tgz,
+            solr_tgz,
+            Channel.value(params.subgraph),
+            Channel.value(params.out),
+            Channel.value(params.grebi_home)
+        )
+    }
 }
 
 // Utility functions

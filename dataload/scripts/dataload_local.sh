@@ -45,5 +45,5 @@ docker run \
   -e NXF_CACHE_DIR=$TMP_DIR/NXF_CACHE_DIR \
   ghcr.io/ebispot/grebi_nextflow:latest \
   bash -c "cd $GREBI_HOME && nextflow dataload/nextflow/main.nf \
-    -c $GREBI_NF_CONFIG -resume"
+    -c $GREBI_NF_CONFIG -resume $GREBI_NF_EXTRA_ARGS"
 
