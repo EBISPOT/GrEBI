@@ -77,8 +77,8 @@ process run_integration_tests {
         echo "=== Exporting DB snapshots ==="
 
         # Neo4j and Solr are already running via supervisord
-        python3 ${grebi_home}/dataload/10_export_snapshots/export_neo4j.py ${subgraph}
-        python3 ${grebi_home}/dataload/10_export_snapshots/export_solr.py ${subgraph}
+        python3 ${grebi_home}/tests/export_neo4j.py ${subgraph}
+        python3 ${grebi_home}/tests/export_solr.py ${subgraph}
 
         # Compare DB snapshots against expected output (if it exists)
         EXPECTED_DIR="${grebi_home}/tests/expected_output/${subgraph}"
