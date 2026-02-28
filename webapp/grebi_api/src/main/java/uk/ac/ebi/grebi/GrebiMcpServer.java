@@ -90,7 +90,7 @@ public class GrebiMcpServer {
                             new McpSchema.TextResourceContents(
                                 request.uri(),
                                 "application/json",
-                                gson.toJson(queryTemplates.queryTopics))
+                                gson.toJson(queryTemplates.getQueryTopics()))
                         );
                         return Mono.just(new McpSchema.ReadResourceResult(contents));
                     }
@@ -120,7 +120,7 @@ public class GrebiMcpServer {
                             new McpSchema.TextResourceContents(
                                 request.uri(),
                                 "application/json",
-                                gson.toJson(queryTemplates.queryTemplates))
+                                gson.toJson(queryTemplates.getQueryTemplates()))
                         );
                         return Mono.just(new McpSchema.ReadResourceResult(contents));
                     }
@@ -130,7 +130,7 @@ public class GrebiMcpServer {
 
         List<McpServerFeatures.AsyncToolSpecification> tools = new ArrayList<>();
 
-        queryTemplates.queryTemplates.forEach(qt -> {
+        queryTemplates.getQueryTemplates().forEach(qt -> {
 
             var paramProps = new LinkedHashMap<String, Object>();
 

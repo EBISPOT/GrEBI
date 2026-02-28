@@ -158,7 +158,7 @@ public class GrebiApi {
                 })
                 .get("/api/v1/topics", ctx -> {
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(queryTemplates.queryTopics));
+                    ctx.result(gson.toJson(queryTemplates.getQueryTopics()));
                 })
                 .get("/api/v1/subgraphs", ctx -> {
                     ctx.contentType("application/json");
@@ -231,14 +231,14 @@ public class GrebiApi {
                     var subgraph = ctx.pathParam("subgraph");
                     ctx.contentType("application/json");
                     ctx.header("cache-control", "no-cache");
-                    ctx.result(gson.toJson(queryTemplates.queryTemplates.stream()
+                    ctx.result(gson.toJson(queryTemplates.getQueryTemplates().stream()
                             .filter(qt -> qt.subgraphs == null || qt.subgraphs.contains(subgraph))
                             .collect(Collectors.toList())));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/query_templates/{templateId}", ctx -> {
                     var subgraph = ctx.pathParam("subgraph");
                     var templateId = ctx.pathParam("templateId");
-                    var template = queryTemplates.queryTemplates.stream()
+                    var template = queryTemplates.getQueryTemplates().stream()
                             .filter(qt -> qt.id.equals(templateId) && (qt.subgraphs == null || qt.subgraphs.contains(subgraph)))
                             .findFirst()
                             .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found for subgraph " + subgraph));
@@ -249,7 +249,7 @@ public class GrebiApi {
                 .get("/api/v1/subgraphs/{subgraph}/query/{templateId}.csv", ctx -> {
                     var subgraph = ctx.pathParam("subgraph");
                     var templateId = ctx.pathParam("templateId");
-                    var template = queryTemplates.queryTemplates.stream()
+                    var template = queryTemplates.getQueryTemplates().stream()
                             .filter(qt -> qt.id.equals(templateId))
                             .findFirst()
                             .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found"));
@@ -280,7 +280,7 @@ public class GrebiApi {
                 .get("/api/v1/subgraphs/{subgraph}/query/{templateId}", ctx -> {
                     var subgraph = ctx.pathParam("subgraph");
                     var templateId = ctx.pathParam("templateId");
-                    var template = queryTemplates.queryTemplates.stream()
+                    var template = queryTemplates.getQueryTemplates().stream()
                             .filter(qt -> qt.id.equals(templateId))
                             .findFirst()
                             .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found"));
