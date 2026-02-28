@@ -44,9 +44,10 @@ cypher_return_fragment: |-
   RETURN DISTINCT
       specific_disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(specific_disease) } AS disease,
       gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
-      r.`grebi:datasources` AS from_datasources
+      r.`grebi:datasources` AS from_datasources,
+      properties(r) AS edge_props
 cypher_count_fragment: |-
-  WITH DISTINCT specific_disease, gene, r.`grebi:datasources` AS from_datasources
+  WITH DISTINCT specific_disease, gene, r.`grebi:datasources` AS from_datasources, properties(r) AS edge_props
   RETURN count(*) AS count
 params:
   - param_id: disease_id
@@ -61,6 +62,8 @@ result_columns:
     column_type: GraphNodeId
   - column_id: from_datasources
     column_type: DatasourceList
+  - column_id: edge_props
+    column_type: EdgeProps
 examples:
   - title: Crohn disease
     params: 

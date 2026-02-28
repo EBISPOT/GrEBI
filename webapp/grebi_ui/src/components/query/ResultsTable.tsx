@@ -5,7 +5,8 @@ import { getPaginated } from "../../app/api";
 import GraphNodeRef from "../../model/GraphNodeRef";
 import DataTable, { Column } from "../datatable/DataTable";
 import LoadingOverlay from "../LoadingOverlay";
-import { Download } from "@mui/icons-material";
+import { Download, Info } from "@mui/icons-material";
+import EdgeMetadataDialog from "./EdgeMetadataDialog";
 
 interface ResultsTableProps {
   subgraph: string;
@@ -23,6 +24,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [filterKey, setFilterKey] = useState<string>('');
+  const [edgeMetadata, setEdgeMetadata] = useState<Record<string, any> | null>(null);
 
   async function fetchData() {
     setLoading(true);
@@ -62,8 +64,8 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
 
   const columns: Column[] = resultColumns.map(col => ({
     id: col.column_id,
-    name: col.column_id,
-    sortable: true,
+    name: col.column_type === 'EdgeProps' ? '' : col.column_id,
+    sortable: col.column_type !== 'EdgeProps',
     selector: (row: any) => {
       const val = row[col.column_id];
       if (col.column_type === 'GraphNodeId') {
@@ -74,6 +76,21 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
           >
             {node.getName()}
           </Link>
+        );
+      } else if (col.column_type === 'EdgeProps') {
+        return (
+          <div className="flex justify-center">
+            <button
+              className="text-link-default hover:text-link-dark"
+              title="View edge properties"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEdgeMetadata(val);
+              }}
+            >
+              <Info fontSize="medium" />
+            </button>
+          </div>
         );
       } else {
         return String(val);
@@ -86,6 +103,12 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
   }
 
   return (
+<>
+  <EdgeMetadataDialog
+    open={edgeMetadata !== null}
+    onClose={() => setEdgeMetadata(null)}
+    data={edgeMetadata}
+  />
 <div className="relative mt-4 w-full">
 
   <a href={process.env.REACT_APP_APIURL + `api/v1/subgraphs/${subgraph}/query/${queryId}.csv?` + new URLSearchParams(params).toString()}>
@@ -122,6 +145,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
     addColumnsFromData={false}
   />
 </div>
+</>
 
   );
 }
