@@ -1,11 +1,11 @@
 ame: text-embedding-3-small
 enabled: true
 ingests:
-  - globs: ["dataload/00_fetch_data/ols_embeddings/text-embedding-3-small.parquet"]
+  - globs: ["dataload/00_fetch_data/ols_embeddings/text-embedding-3-small_pca512_avg.parquet"]
     command: '
       grebi_parquet2jsonl |
       grebi_transform_jsonl
         --json-select-keys iri,embedding
         --json-rename iri:id
-        --json-rename embedding:embedding:text-embedding-3-small
+        --json-rename embedding:embedding:text-embedding-3-small_pca512
           '

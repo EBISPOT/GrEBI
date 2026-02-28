@@ -1,8 +1,6 @@
 #!/bin/bash
 
-rm -f text-embedding-3-small.parquet llama-embed-nemotron-8b.parquet
+rm -f *.parquet
 
-wget https://ftp.ebi.ac.uk/pub/databases/spot/ols_embeddings/text-embedding-3-small.parquet 
-wget https://ftp.ebi.ac.uk/pub/databases/spot/ols_embeddings/llama-embed-nemotron-8b_pca512.parquet
-
-
+wget https://ftp.ebi.ac.uk/pub/databases/spot/ols_embeddings/latest/llama-embed-nemotron-8b_pca512_avg.parquet
+wget https://ftp.ebi.ac.uk/pub/databases/spot/ols_embeddings/latest/text-embedding-3-small_pca512_avg.parquet
