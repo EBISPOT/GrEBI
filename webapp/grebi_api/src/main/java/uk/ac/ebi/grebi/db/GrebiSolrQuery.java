@@ -67,7 +67,15 @@ public class GrebiSolrQuery {
         query.set("q.op", "AND");
 
         if(this.returnFields.size() > 0) {
-            query.setFields(this.returnFields.stream().map(f -> "str_" + f.replace(":", "__")).toArray(String[]::new));
+            // Request both str_ prefixed and raw field names so fields stored
+            // without str_ prefix (e.g. grebi__fromNodeId) are also returned.
+            var fields = this.returnFields.stream()
+                .flatMap(f -> {
+                    var solrName = f.replace(":", "__");
+                    return java.util.stream.Stream.of("str_" + solrName, solrName);
+                })
+                .toArray(String[]::new);
+            query.setFields(fields);
         }
 
         if(searchText != null) {

@@ -18,10 +18,23 @@ server.use(/^\/api.*/, async (req, res) => {
   console.log('forwarding api request to: ' + backendUrl)
   console.time('forwarding api request to: ' + backendUrl)
   try {
+    // Collect the raw request body for non-GET methods
+    let body = undefined
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      const chunks = []
+      for await (const chunk of req) {
+        chunks.push(chunk)
+      }
+      body = Buffer.concat(chunks)
+      if (body.length === 0) body = undefined
+    }
     let apiResponse = await fetch(backendUrl, {
       redirect: 'follow',
       method: req.method,
-      body: req.body
+      body: body,
+      headers: {
+        ...(req.headers['content-type'] ? { 'content-type': req.headers['content-type'] } : {})
+      }
     })
     res.header('content-type', apiResponse.headers.get('content-type'))
     res.status(apiResponse.status)

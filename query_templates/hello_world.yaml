@@ -15,9 +15,9 @@ cypher_return_fragment: |-
   RETURN DISTINCT
       gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
       disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
-      properties(assoc) AS edge_props
+      assoc.edge_id AS edge_id
 cypher_count_fragment: |-
-  WITH DISTINCT gene, disease, properties(assoc) AS edge_props
+  WITH DISTINCT gene, disease, assoc.edge_id AS edge_id
   RETURN count(*) AS count
 params:
   - param_id: disease_id
@@ -28,8 +28,8 @@ result_columns:
     column_type: GraphNodeId
   - column_id: disease
     column_type: GraphNodeId
-  - column_id: edge_props
-    column_type: EdgeProps
+  - column_id: edge_id
+    column_type: EdgeId
 examples:
   - title: chronic obstructive pulmonary disease
     params:

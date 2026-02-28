@@ -172,7 +172,102 @@ public class GrebiNeoRepo {
 		return res;
     }
 
+    public static class DirectionAndEdgeType {
+        public String direction;
+        public String edgeType;
+    }
 
+    /**
+     * For each (direction, edgeType) pair where there is exactly one edge,
+     * resolve the connected node. Uses a dynamically-constructed UNION ALL
+     * Cypher query with literal relationship types for optimal planner performance.
+     */
+    public Map<String, Map<String, Object>> resolveSingleEdges(String subgraph, String nodeId, List<DirectionAndEdgeType> items) {
+        if (items == null || items.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        var neo4jClient = getClient(subgraph);
+        String prefixedNodeId = subgraph + ":" + nodeId;
+
+        // Build a UNION ALL query with one branch per item, using the Cypher DSL
+        // for safe relationship type escaping. Each branch matches exactly one
+        // relationship of the specified type and direction, returning the other node's ID.
+
+        org.neo4j.cypherdsl.core.Node n = org.neo4j.cypherdsl.core.Cypher.node("GraphNode")
+                .withProperties("grebi:nodeId", org.neo4j.cypherdsl.core.Cypher.parameter("nodeId"));
+        org.neo4j.cypherdsl.core.Node other = org.neo4j.cypherdsl.core.Cypher.node("GraphNode").named("other");
+
+        List<org.neo4j.cypherdsl.core.Statement> branches = new ArrayList<>();
+
+        for (var item : items) {
+            org.neo4j.cypherdsl.core.Statement branch;
+            if ("incoming".equals(item.direction)) {
+                branch = org.neo4j.cypherdsl.core.Cypher
+                        .match(other.relationshipTo(n, item.edgeType))
+                        .returning(
+                                other.property("grebi:nodeId").as("otherId"),
+                                other.property("grebi:name").as("otherName"),
+                                org.neo4j.cypherdsl.core.Cypher.literalOf(item.direction).as("dir"),
+                                org.neo4j.cypherdsl.core.Cypher.literalOf(item.edgeType).as("et")
+                        )
+                        .limit(1)
+                        .build();
+            } else {
+                branch = org.neo4j.cypherdsl.core.Cypher
+                        .match(n.relationshipTo(other, item.edgeType))
+                        .returning(
+                                other.property("grebi:nodeId").as("otherId"),
+                                other.property("grebi:name").as("otherName"),
+                                org.neo4j.cypherdsl.core.Cypher.literalOf(item.direction).as("dir"),
+                                org.neo4j.cypherdsl.core.Cypher.literalOf(item.edgeType).as("et")
+                        )
+                        .limit(1)
+                        .build();
+            }
+            branches.add(branch);
+        }
+
+        // Combine with UNION ALL
+        org.neo4j.cypherdsl.core.Statement combined = org.neo4j.cypherdsl.core.Cypher.unionAll(
+                branches.toArray(new org.neo4j.cypherdsl.core.Statement[0])
+        );
+
+        String cypher = combined.getCypher();
+
+        Session session = neo4jClient.getSession();
+        try {
+            Result result = session.run(cypher, Map.of("nodeId", prefixedNodeId));
+            List<Record> records = result.list();
+
+            if (records.isEmpty()) {
+                return Collections.emptyMap();
+            }
+
+            // Build result map keyed by "direction::edgeType" with minimal node data
+            Map<String, Map<String, Object>> resultMap = new LinkedHashMap<>();
+            for (Record r : records) {
+                String dir = r.get("dir").asString();
+                String et = r.get("et").asString();
+                String rawId = r.get("otherId").asString();
+                String cleanId = removeSubgraphPrefix(rawId, subgraph);
+
+                // Build a minimal node object with just the fields GraphNodeRef needs
+                Map<String, Object> nodeData = new LinkedHashMap<>();
+                nodeData.put("grebi:nodeId", cleanId);
+
+                var otherName = r.get("otherName");
+                if (otherName != null && !otherName.isNull()) {
+                    nodeData.put("grebi:name", otherName.asObject());
+                }
+
+                resultMap.put(dir + "::" + et, nodeData);
+            }
+            return resultMap;
+        } finally {
+            session.close();
+        }
+    }
 
     private String removeSubgraphPrefix(String id, String subgraph) {
         if(!id.startsWith(subgraph + ":")) {
@@ -421,7 +516,7 @@ public class GrebiNeoRepo {
         var csvColumns = new ArrayList<String>();
 
         for (QueryTemplate.ResultColumn column : columns) {
-            if (column.column_type.equals("EdgeProps")) {
+            if (column.column_type.equals("EdgeId")) {
                 continue;
             }
             String columnId = column.column_id;

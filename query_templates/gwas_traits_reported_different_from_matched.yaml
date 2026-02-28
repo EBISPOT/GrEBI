@@ -9,7 +9,7 @@ cypher_match_fragment: |-
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
   MATCH (trait)-[:`biolink:broad_match`*0..1]->(parent_term)-[:sourceId]->(:Id { id: $parent_id })
   UNWIND assoc.`gwas:disease_trait` AS reported_trait
-  With trait, reported_trait, [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id, properties(assoc) AS edge_props
+  With trait, reported_trait, [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id, assoc.edge_id AS edge_id
   WHERE NOT reported_trait IN trait.`grebi:name` AND NOT reported_trait IN trait.`grebi:synonym`
   MATCH (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
 cypher_return_fragment: |-
@@ -18,9 +18,9 @@ cypher_return_fragment: |-
       trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
       study.`grebi:name`[0] AS study_name,
       study.`gwas:pubmedid`[0] AS pubmed_id,
-      edge_props
+      edge_id
 cypher_count_fragment: |-
-  WITH DISTINCT reported_trait, trait, edge_props
+  WITH DISTINCT reported_trait, trait, edge_id
   RETURN count(*) AS count
 params:
   - param_id: parent_id
@@ -35,8 +35,8 @@ result_columns:
     column_type: string
   - column_id: pubmed_id
     column_type: string
-  - column_id: edge_props
-    column_type: EdgeProps
+  - column_id: edge_id
+    column_type: EdgeId
 examples:
   - title: experimental factor (all)
     params:

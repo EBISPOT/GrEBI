@@ -18,7 +18,7 @@ cypher_match_fragment: |-
     gene,
     [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
       assoc.`gwas:or_or_beta`[0] AS or_or_beta,
-      properties(assoc) AS edge_props
+      assoc.edge_id AS edge_id
   MATCH (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
 cypher_return_fragment: |-
   RETURN DISTINCT
@@ -52,8 +52,8 @@ result_columns:
   - column_id: or_or_beta
     column_type: float
     optional: true
-  - column_id: edge_props
-    column_type: EdgeProps
+  - column_id: edge_id
+    column_type: EdgeId
 examples:
   - title: lung
     params:

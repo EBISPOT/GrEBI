@@ -64,8 +64,8 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
 
   const columns: Column[] = resultColumns.map(col => ({
     id: col.column_id,
-    name: col.column_type === 'EdgeProps' ? '' : col.column_id,
-    sortable: col.column_type !== 'EdgeProps',
+    name: col.column_type === 'EdgeId' ? '' : col.column_id,
+    sortable: col.column_type !== 'EdgeId',
     selector: (row: any) => {
       const val = row[col.column_id];
       if (col.column_type === 'GraphNodeId') {
@@ -77,7 +77,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
             {node.getName()}
           </Link>
         );
-      } else if (col.column_type === 'EdgeProps') {
+      } else if (col.column_type === 'EdgeId') {
         return (
           <div className="flex justify-center">
             <button
@@ -85,8 +85,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
               title="View edge properties"
               onClick={(e) => {
                 e.stopPropagation();
-                const rawEdgeId = val?.edge_id;
-                setEdgeMetadata({edgeId: rawEdgeId || null});
+                setEdgeMetadata({edgeId: val || null});
               }}
             >
               <Info fontSize="medium" />

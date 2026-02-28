@@ -17,7 +17,7 @@ cypher_match_fragment: |-
       gene,
       [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
       assoc.`gwas:or_or_beta`[0] AS or_or_beta,
-      properties(assoc) AS edge_props
+      assoc.edge_id AS edge_id
   MATCH
       (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
 cypher_return_fragment: |-
@@ -29,9 +29,9 @@ cypher_return_fragment: |-
       study.`grebi:name`[0] AS study_name,
       study.`gwas:pubmedid`[0] AS pubmed_id,
       or_or_beta,
-      edge_props
+      edge_id
 cypher_count_fragment: |-
-  WITH DISTINCT cl_term, trait, snp, gene, study, or_or_beta, edge_props
+  WITH DISTINCT cl_term, trait, snp, gene, study, or_or_beta, edge_id
   RETURN count(*) AS count
 params:
   - param_id: cell_type_id
@@ -55,8 +55,8 @@ result_columns:
   - column_id: or_or_beta
     column_type: float
     optional: true
-  - column_id: edge_props
-    column_type: EdgeProps
+  - column_id: edge_id
+    column_type: EdgeId
 examples:
   - title: leukocyte
     params:

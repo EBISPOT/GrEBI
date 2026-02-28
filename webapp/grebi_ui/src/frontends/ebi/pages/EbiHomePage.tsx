@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import React, { Fragment } from "react";
 import { List, ListItem, MenuItem, Select } from "@mui/material";
-import { get } from "../../../app/api";
+import { get, getPaginated } from "../../../app/api";
 import EbiHeader from "../EbiHeader";
 import SearchBox from "../../../components/SearchBox";
 import SubgraphPicker from "../../../components/SubgraphPicker";
 import urlJoin from "url-join";
 import SourceCodeSection from "../../../components/query/SourceCodeSection";
 import { Power } from "@mui/icons-material";
+import GraphView from "../../../components/node_graph_view/GraphView";
+import GraphNode from "../../../model/GraphNode";
 
 export default function EbiHomePage() {
 
@@ -21,6 +23,7 @@ export default function EbiHomePage() {
   let [stats, setStats] = useState<any|null>(null);
   let [subgraphs, setSubgraphs] = useState<string[]|null>(null);
   let [subgraph, setSubgraph] = useState<string|null>(params.subgraph || null);
+  let [bronchiectasisNode, setBronchiectasisNode] = useState<GraphNode|null>(null);
 
 function navigateToSubgraph(sg: string) {
   let currentUrl = loc.pathname;
@@ -34,6 +37,16 @@ function navigateToSubgraph(sg: string) {
 
   useEffect(() => {
     get<Stats>("api/v1/stats").then(r => setStats(r));
+  }, [subgraph]);
+  useEffect(() => {
+    if (!subgraph) return;
+    getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes`, { "grebi:sourceIds": "mondo:0004822", size: "1" })
+      .then(r => {
+        if (r.elements.length > 0) {
+          setBronchiectasisNode(new GraphNode(r.elements[0]));
+        }
+      })
+      .catch(() => {});
   }, [subgraph]);
   useEffect(() => {
     get<string[]>("api/v1/subgraphs").then(r => {
@@ -58,7 +71,7 @@ function navigateToSubgraph(sg: string) {
           <div className="lg:col-span-3">
             <div className="bg-gradient-to-r from-neutral-light to-white rounded-lg my-8 p-8">
               <div className="text-3xl mb-4 text-neutral-black font-bold">
-                Welcome to the EMBL-EBI Knowledge Graph
+                Welcome to the EMBL-EBI Ontology Graph
               </div>
               {subgraphs && subgraph ?
                 <Fragment>
@@ -118,15 +131,36 @@ function navigateToSubgraph(sg: string) {
           <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-4">
                 <p>
-                  This website enables you to search and explore data from multiple EBI resources, linked together using LLM-mediated knowledge graphs and ontologies via the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other datasources.
-                </p>
-                <p>
-                  The EMBL-EBI KG is an early prototype. If you are interested in querying the KG and/or have a potential application please <Link className="link-default" to="mailto:jmcl@ebi.ac.uk">get in touch</Link>.
-                </p>
-                <p>
+                  This website enables LLM agents to search and explore data from multiple EBI resources, linked together using knowledge graphs and ontologies via the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other datasources.
+                  <br/>
+                  <br/>
                   For source code and more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI (Graphs@EBI) GitHub repository</Link>.
                 </p>
+<div className="flex justify-left items-center gap-4">
+  <a target="_blank" href="https://www.ebi.ac.uk/">
+    <img 
+      style={{width:'100px'}}
+      src={urlJoin(process.env.PUBLIC_URL!, "/ebi.png")}
+      alt="EMBL-EBI" 
+    />
+  </a>
+  <a target="_blank" href="https://monarchinitiative.org/">
+    <img 
+      style={{width:'100px'}}
+      src={urlJoin(process.env.PUBLIC_URL!, "/monarch.png")}
+      alt="MONARCH Initiative" 
+    />
+  </a>
+  <a target="_blank" href="https://mousephenotype.org/">
+    <img 
+      style={{width:'100px'}}
+      src={urlJoin(process.env.PUBLIC_URL!, "/impc.svg")}
+      alt="International Mouse Phenotyping Consortium (IMPC)" 
+    />
+  </a>
+</div>
             </div>
+                  
           <div className="grid gap-4">
 
 <p className="flex items-center text-lg font-bold mb-3">
@@ -151,29 +185,16 @@ function navigateToSubgraph(sg: string) {
   </ul>
           </div>
           </div>
-<div className="flex justify-left items-center mt-8 gap-4">
-  <a target="_blank" href="https://www.ebi.ac.uk/">
-    <img 
-      style={{width:'100px'}}
-      src={urlJoin(process.env.PUBLIC_URL!, "/ebi.png")}
-      alt="EMBL-EBI" 
-    />
-  </a>
-  <a target="_blank" href="https://monarchinitiative.org/">
-    <img 
-      style={{width:'100px'}}
-      src={urlJoin(process.env.PUBLIC_URL!, "/monarch.png")}
-      alt="MONARCH Initiative" 
-    />
-  </a>
-  <a target="_blank" href="https://mousephenotype.org/">
-    <img 
-      style={{width:'100px'}}
-      src={urlJoin(process.env.PUBLIC_URL!, "/impc.svg")}
-      alt="International Mouse Phenotyping Consortium (IMPC)" 
-    />
-  </a>
-</div>
+{subgraph && bronchiectasisNode && (
+          <div className="mt-8">
+            <div className="text-xl font-bold mb-2 text-neutral-black">
+              Example: Bronchiectasis
+            </div>
+            <div style={{ height: "600px", border: "1px solid #e0e0e0", borderRadius: "8px", overflow: "hidden", position: "relative" }}>
+              <GraphView subgraph={subgraph} node={bronchiectasisNode} />
+            </div>
+          </div>
+        )}
 
       </main>
     </div>

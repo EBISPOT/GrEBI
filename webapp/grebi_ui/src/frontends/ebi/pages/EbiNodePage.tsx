@@ -33,7 +33,7 @@ export default function EbiNodePage() {
   const lang = searchParams.get("lang") || "en";
 
   let [node, setNode] = useState<GraphNode|null>(null);
-  const tab = searchParams.get("tab") || "properties";
+  const tab = searchParams.get("tab") || "graph";
 
   useEffect(() => {
     async function getNode() {
@@ -86,10 +86,10 @@ export default function EbiNodePage() {
             <Grid item xs={2}>
           <Tabs centered orientation="horizontal" value={tab} aria-label="basic tabs example" className="border-green justify-center" sx={{ borderBottom: 1, borderColor: 'divider' }} onChange={(e, tab) => setSearchParams({tab})}>
             {/* <Tab label="Links" icon={<Share/>} value="links" /> */}
+            <Tab label="Graph" icon={<Share/>} value="graph" />
             <Tab label="Property View" icon={<FormatListBulleted/>} value="properties" />
             <Tab label="Edges In" icon={<CallReceived/>} value="edges_in" />
             <Tab label="Edges Out" icon={<CallMade/>} value="edges_out" />
-            <Tab label="Graph" icon={<Share/>} value="graph" />
             <Tab label="Similar" icon={<AutoAwesome/>} value="similar" />
           </Tabs>
           </Grid>
@@ -97,6 +97,9 @@ export default function EbiNodePage() {
         {/* <TabPanel value={tab} index={"links"}>
           <NodeLinks node={node} subgraph={subgraph} />
         </TabPanel> */}
+        <TabPanel value={tab} index={"graph"}>
+         <GraphView subgraph={subgraph} node={node} />
+        </TabPanel>
         <TabPanel value={tab} index={"properties"}>
           <PropTable lang={lang} subgraph={subgraph} node={node} />
         </TabPanel>
@@ -105,9 +108,6 @@ export default function EbiNodePage() {
         </TabPanel>
         <TabPanel value={tab} index={"edges_out"}>
           <EdgesList direction="outgoing" subgraph={subgraph} node={node} />
-        </TabPanel>
-        <TabPanel value={tab} index={"graph"}>
-         <GraphView subgraph={subgraph} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"similar"}>
          <NodeSimilarList subgraph={subgraph} node={node} />
