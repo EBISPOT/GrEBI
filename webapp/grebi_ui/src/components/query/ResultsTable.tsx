@@ -24,7 +24,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
   const [sortColumn, setSortColumn] = useState<string>('');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [filterKey, setFilterKey] = useState<string>('');
-  const [edgeMetadata, setEdgeMetadata] = useState<Record<string, any> | null>(null);
+  const [edgeMetadata, setEdgeMetadata] = useState<{edgeId: string | null} | null>(null);
 
   async function fetchData() {
     setLoading(true);
@@ -85,7 +85,8 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
               title="View edge properties"
               onClick={(e) => {
                 e.stopPropagation();
-                setEdgeMetadata(val);
+                const rawEdgeId = val?.edge_id;
+                setEdgeMetadata({edgeId: rawEdgeId || null});
               }}
             >
               <Info fontSize="medium" />
@@ -107,7 +108,8 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
   <EdgeMetadataDialog
     open={edgeMetadata !== null}
     onClose={() => setEdgeMetadata(null)}
-    data={edgeMetadata}
+    subgraph={subgraph}
+    edgeId={edgeMetadata?.edgeId || null}
   />
 <div className="relative mt-4 w-full">
 

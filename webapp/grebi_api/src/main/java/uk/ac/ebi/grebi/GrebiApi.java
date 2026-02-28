@@ -488,6 +488,34 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
+                .get("/api/v1/subgraphs/{subgraph}/edges/{edgeId}", ctx -> {
+                    var rawEdgeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("edgeId")));
+                    var subgraph = ctx.pathParam("subgraph");
+                    // Edge IDs from Neo4j are subgraph-prefixed, but the resolver stores them without
+                    var edgeId = rawEdgeId.startsWith(subgraph + ":") ? rawEdgeId.substring(subgraph.length() + 1) : rawEdgeId;
+                    var resolver = new ResolverClient();
+                    var resolved = resolver.resolveToMap(subgraph, List.of(edgeId));
+                    var edge = resolved.get(edgeId);
+                    if (edge == null) {
+                        ctx.status(404).result("{\"error\":\"Edge not found\"}");
+                        return;
+                    }
+                    Map<String, Object> refs = (Map<String, Object>) edge.get("_refs");
+                    if (refs != null) {
+                        Map<String, Object> retEdge = new LinkedHashMap<>(edge);
+                        var fromNodeId = (String) edge.get("grebi:fromNodeId");
+                        var toNodeId = (String) edge.get("grebi:toNodeId");
+                        if (fromNodeId != null && refs.containsKey(fromNodeId)) {
+                            retEdge.put("from", refs.get(fromNodeId));
+                        }
+                        if (toNodeId != null && refs.containsKey(toNodeId)) {
+                            retEdge.put("to", refs.get(toNodeId));
+                        }
+                        edge = retEdge;
+                    }
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(edge));
+                })
 //                .get("/api/v1/edge_types", ctx -> {
 //                    ctx.contentType("application/json");
 //                    ctx.result(gson.toJson(type));
