@@ -1,4 +1,4 @@
 {"id": "edge-cm-1", "subject": "ex:entity_a", "object": "ex:entity_b", "predicate": "biolink:related_to"}
 {"id": "edge-cm-2", "subject": "ex:entity_b", "object": "ex:entity_c", "predicate": "biolink:gene_associated_with_condition"}
 {"id": "edge-cm-3", "subject": "ex:entity_a_alt", "object": "ex:entity_c", "predicate": "biolink:related_to"}
-{"id": "edge-cm-hw", "subject": "HGNC:11603", "object": "MONDO:0005015", "predicate": "biolink:related_to"}
+{"id": "edge-cm-hw", "subject": "HGNC:11603", "object": "MONDO:0005002", "predicate": "biolink:related_to"}

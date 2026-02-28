@@ -165,6 +165,59 @@ In all of the currently configured outputs, `skos:exactMatch` mappings are used 
 | [Human Reference Atlas KG](https://humanatlas.io/)
 
 
+## Making the tests pass
+
+GrEBI has a suite of automated E2E tests that run the full pipeline on small synthetic datasets and compare the resulting Neo4j/Solr database contents against committed expected output in `tests/expected_output/`. If code changes alter the pipeline output such that it no longer matches the expected snapshots, the CI will fail and you will need to update the expected output.
+
+There are four test subgraphs, each exercising a different aspect of the pipeline:
+
+| Test subgraph | Purpose |
+| --- | --- |
+| `test_clique_merge` | Verifies equivalent entities are merged into a single clique |
+| `test_edge_linking` | Verifies property values referencing other entities become graph edges |
+| `test_multi_datasource` | Verifies merging data from two separate datasources |
+| `test_type_hierarchy` | Verifies type superclass propagation through `rdfs:subClassOf` |
+
+### Prerequisites
+
+You need Docker with the `docker compose` plugin and enough disk space to build three images. Build them locally before running the tests:
+
+    docker build -t ghcr.io/ebispot/grebi_dataload:dev -f dataload/Dockerfile dataload
+    docker build -t ghcr.io/ebispot/grebi_nextflow:latest -f docker_envs/Dockerfile.nextflow docker_envs
+    docker build -t ghcr.io/ebispot/grebi_combined:dev -f webapp/Dockerfile.combined .
+
+### Running all tests
+
+Run the full E2E test suite across all four test subgraphs:
+
+    bash tests/run_all_e2e.sh
+
+This will run each test subgraph through the full Nextflow pipeline (ingest → assign IDs → merge → index → link → create Neo4j → run queries → create Solr → integration tests), export DB snapshots, and compare them against `tests/expected_output/`.
+
+### Running a single test
+
+To run only one test subgraph:
+
+    bash tests/run_e2e.sh test_clique_merge
+
+### Updating expected output
+
+When your changes intentionally alter the pipeline output, you need to update the expected snapshots. Run the pipeline for the affected test subgraph, inspect the changes, and commit them:
+
+    export GREBI_SUBGRAPH=test_clique_merge
+    export GREBI_NF_EXTRA_ARGS="--export_snapshots true"
+    bash dataload/scripts/dataload_local.sh
+
+Copy the new snapshots to expected output:
+
+    cp out/test_clique_merge/test_clique_merge_snapshot_*.jsonl \
+       tests/expected_output/test_clique_merge/
+
+Now inspect the changes with `git diff` and make sure they are intentional. When you are happy, stage and commit the updated expected output:
+
+    git add -A tests/expected_output/
+    git commit -m "Update expected test output"
+
 ## Implementation
 
 The pipeline is implemented as [Rust](https://www.rust-lang.org/) programs with simple CLIs, orchestrated with [Nextflow](https://www.nextflow.io/). Input KGs are represented in a variety of formats including [KGX](https://github.com/biolink/kgx), [RDF](https://www.w3.org/RDF/), and [JSONL](https://jsonlines.org/) files. After loading, a simple "bruteforce" integration strategy is applied:

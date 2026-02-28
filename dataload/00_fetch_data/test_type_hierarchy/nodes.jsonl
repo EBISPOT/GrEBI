@@ -2,5 +2,5 @@
 {"id": "ex:disease_parent", "name": "Parent Disease Category", "category": ["biolink:Disease"]}
 {"id": "ex:disease_child", "name": "Specific Child Disease", "category": ["biolink:Disease"]}
 {"id": "ex:gene_th1", "name": "Gene TH1", "category": ["biolink:Gene"]}
-{"id": "MONDO:0005015", "name": "type 2 diabetes mellitus", "category": ["biolink:Disease"]}
+{"id": "MONDO:0005002", "name": "chronic obstructive pulmonary disease", "category": ["biolink:Disease"]}
 {"id": "HGNC:11603", "name": "TBX4", "category": ["biolink:Gene"]}

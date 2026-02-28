@@ -28,6 +28,6 @@ result_columns:
   - column_id: disease
     column_type: GraphNodeId
 examples:
-  - title: Chronic obstructive pulmonary disease
+  - title: chronic obstructive pulmonary disease
     params:
       disease_id: "mondo:0005002"
