@@ -421,6 +421,9 @@ public class GrebiNeoRepo {
         var csvColumns = new ArrayList<String>();
 
         for (QueryTemplate.ResultColumn column : columns) {
+            if (column.column_type.equals("EdgeProps")) {
+                continue;
+            }
             String columnId = column.column_id;
             if (column.column_type.equals("GraphNodeId")) {
                 csvColumns.add(columnId + "_id");
@@ -448,6 +451,10 @@ public class GrebiNeoRepo {
                     boolean first = true;
 
                     for (QueryTemplate.ResultColumn column : columns) {
+
+                        if (column.column_type.equals("EdgeProps")) {
+                            continue;
+                        }
 
                         if(first) {
                             first = false;

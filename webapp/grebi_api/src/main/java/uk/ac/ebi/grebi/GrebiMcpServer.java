@@ -146,7 +146,7 @@ public class GrebiMcpServer {
             }
 
             paramProps.put("sortBy", Map.of(
-                "enum", qt.result_columns.stream().map(c -> c.column_id).toList()
+                "enum", qt.result_columns.stream().filter(c -> !c.column_type.equalsIgnoreCase("EdgeProps")).map(c -> c.column_id).toList()
             ));
             paramProps.put("sortDir", Map.of(
                 "enum", List.of("asc", "desc")
@@ -172,6 +172,9 @@ public class GrebiMcpServer {
 
             Map<String,Object> rowSchemaProps = new LinkedHashMap<>();
             for(var col : qt.result_columns) {
+                if(col.column_type.equalsIgnoreCase("EdgeProps")) {
+                    continue;
+                }
                 // TODO: add description for result cols
                 var colDef = new LinkedHashMap<String, Object>();
                 if(col.column_type.equalsIgnoreCase("GraphNodeId")) {
@@ -252,8 +255,19 @@ public class GrebiMcpServer {
 
                     Page<Map<String,Object>> res = neo.runQueryFromTemplatePaginated(subgraph, qt, params, false, page);
 
+                    var edgePropColumnIds = qt.result_columns.stream()
+                        .filter(c -> c.column_type.equalsIgnoreCase("EdgeProps"))
+                        .map(c -> c.column_id)
+                        .collect(java.util.stream.Collectors.toSet());
+
+                    var filteredRows = res.getContent().stream().map(row -> {
+                        var filtered = new LinkedHashMap<String, Object>(row);
+                        edgePropColumnIds.forEach(filtered::remove);
+                        return filtered;
+                    }).toList();
+
                     var result = Map.of(
-                        "rows", res.getContent(),
+                        "rows", filteredRows,
                         "totalNumRows", res.getTotalElements(),
                         "totalNumPages", res.getTotalPages(),
                         "pageNum", res.getNumber(),
