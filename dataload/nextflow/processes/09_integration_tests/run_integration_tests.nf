@@ -9,6 +9,7 @@ process run_integration_tests {
     input:
     path(neo_tgz)
     path(solr_tgz)
+    path(postgres_tgz)
     path(sqlite)
     path(metadata_json)
     path(query_templates)
@@ -24,7 +25,7 @@ process run_integration_tests {
     path("${subgraph}_snapshot_neo4j_nodes.jsonl"), optional: true
     path("${subgraph}_snapshot_neo4j_edges.jsonl"), optional: true
     path("${subgraph}_snapshot_solr_nodes.jsonl"), optional: true
-    path("${subgraph}_snapshot_solr_edges.jsonl"), optional: true
+    path("${subgraph}_snapshot_postgres_edges.jsonl"), optional: true
     stdout
 
     script:
@@ -39,6 +40,10 @@ process run_integration_tests {
     echo "Extracting Solr..."
     mkdir -p /opt/grebi/data/solr
     cat ${solr_tgz} | pigz -d | tar -xf - 
+
+    echo "Extracting PostgreSQL..."
+    cat ${postgres_tgz} | pigz -d | tar -xf -
+    export GREBI_POSTGRES_DATA=\$PWD/postgres_data_${subgraph}
 
     export NEO4J_server_directories_data=\$PWD/${subgraph}_neo4j/data
     export NEO4J_server_directories_logs=\$PWD
@@ -79,6 +84,7 @@ process run_integration_tests {
         # Neo4j and Solr are already running via supervisord
         python3 ${grebi_home}/tests/export_neo4j.py ${subgraph}
         python3 ${grebi_home}/tests/export_solr.py ${subgraph}
+        python3 ${grebi_home}/tests/export_postgres.py ${subgraph}
 
         # Compare DB snapshots against expected output (if it exists)
         EXPECTED_DIR="${grebi_home}/tests/expected_output/${subgraph}"
@@ -119,7 +125,7 @@ process run_integration_tests {
     supervisorctl stop all 2>/dev/null || true
     kill \$SUPERVISOR_PID 2>/dev/null || true
     sleep 1
-    killall -9 java neo4j solr caddy python3 2>/dev/null || true
+    killall -9 java neo4j solr caddy python3 postgres 2>/dev/null || true
     pkill -9 -P \$\$ 2>/dev/null || true
     pkill -9 -P \$SUPERVISOR_PID 2>/dev/null || true
 

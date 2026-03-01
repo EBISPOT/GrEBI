@@ -38,6 +38,14 @@ spec:
           env:
             - name: GREBI_SOLR_HOST
               value: http://{{ .Release.Name }}-solr:8983
+            - name: GREBI_POSTGRES_HOST
+              value: {{ .Release.Name }}-postgres
+            - name: GREBI_POSTGRES_PORT
+              value: "5432"
+            - name: GREBI_POSTGRES_USER
+              value: grebi
+            - name: GREBI_POSTGRES_DB
+              value: grebi
             - name: GREBI_NEO4J_HOSTS
               value: bolt://{{ .Release.Name }}-{{.Values.subgraph1 | replace "_" "-" }}-neo4j:7687;bolt://{{ .Release.Name }}-{{.Values.subgraph2 | replace "_" "-"}}-neo4j:7687
             - name: GREBI_RESOLVER_HOST

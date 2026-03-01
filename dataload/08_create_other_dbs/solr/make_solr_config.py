@@ -39,6 +39,13 @@ def main():
     node_props_embeddings = list(map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_embeddings))
     edge_props = list(map(lambda f: f.replace(':', '__').replace('&', '_'), summary['edge_props'].keys()))
 
+    # The API hardcodes these fields in its edismax qf (search) queries, so they
+    # must always exist in the Solr schema even if no documents contain them.
+    api_required_node_fields = ['id', 'grebi__name', 'grebi__synonym', 'grebi__description', 'grebi__type']
+    for f in api_required_node_fields:
+        if f not in node_props:
+            node_props.append(f)
+
     Path(f'{nodes_core_path}/core.properties').write_text(f"name=grebi_nodes_{args.subgraph_name}\n")
     Path(f'{edges_core_path}/core.properties').write_text(f"name=grebi_edges_{args.subgraph_name}\n")
 

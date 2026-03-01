@@ -47,6 +47,3 @@ if __name__ == "__main__":
 
     n = export_core(f"grebi_nodes_{subgraph}", "grebi__nodeId", f"{subgraph}_snapshot_solr_nodes.jsonl")
     print(f"Exported {n} Solr nodes")
-
-    n = export_core(f"grebi_edges_{subgraph}", "grebi__edgeId", f"{subgraph}_snapshot_solr_edges.jsonl")
-    print(f"Exported {n} Solr edges")

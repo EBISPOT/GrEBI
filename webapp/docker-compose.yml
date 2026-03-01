@@ -14,18 +14,24 @@ services:
       depends_on:
         - grebi-neo4j
         - grebi-solr
+        - grebi-postgres
         - grebi-resolver-service
         - grebi-metadata-service
         - grebi-prefix-service
       links:
         - grebi-neo4j
         - grebi-solr
+        - grebi-postgres
         - grebi-resolver-service
         - grebi-metadata-service
         - grebi-prefix-service
       environment:
         - GREBI_NEO4J_HOST=bolt://grebi-neo4j:7687/
         - GREBI_SOLR_HOST=http://grebi-solr:8983/
+        - GREBI_POSTGRES_HOST=grebi-postgres
+        - GREBI_POSTGRES_PORT=5432
+        - GREBI_POSTGRES_USER=grebi
+        - GREBI_POSTGRES_DB=grebi
         - GREBI_RESOLVER_HOST=http://grebi-resolver-service:8084/
         - GREBI_METADATA_HOST=http://grebi-metadata-service:8081/
         - GREBI_PREFIX_HOST=http://grebi-prefix-service:8082/
@@ -45,6 +51,16 @@ services:
         - 8983:8983
       volumes:
         - ${GREBI_SOLR_PATH:?Need path to Solr data}:/var/solr/data
+    grebi-postgres:
+      image: postgres:18
+      ports:
+        - 5432:5432
+      volumes:
+        - ${GREBI_POSTGRES_DATA_PATH:?Need path to PostgreSQL data directory}:/var/lib/postgresql/data
+      environment:
+        - POSTGRES_USER=grebi
+        - POSTGRES_DB=grebi
+        - POSTGRES_HOST_AUTH_METHOD=trust
     grebi-resolver-service:
       image: ghcr.io/ebispot/grebi_resolver_service:dev
       ports:

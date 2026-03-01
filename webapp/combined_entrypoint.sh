@@ -50,7 +50,7 @@ case "$MODE" in
         sleep 1
         
         # Kill all remaining processes by name
-        killall -9 java neo4j solr caddy python3 2>/dev/null || true
+        killall -9 java neo4j solr caddy python3 postgres 2>/dev/null || true
         
         # Kill any remaining child processes
         pkill -9 -P $$ 2>/dev/null || true
@@ -69,6 +69,7 @@ case "$MODE" in
         echo "  Neo4j Browser:      http://localhost:7474"
         echo "  Neo4j Bolt:         bolt://localhost:7687"
         echo "  Solr Admin:         http://localhost:8983"
+        echo "  PostgreSQL:         localhost:5432"
         echo "  GrEBI API:          http://localhost:8090"
         echo "  GrEBI UI:           http://localhost:8080"
         echo "  Metadata Service:   http://localhost:8081"

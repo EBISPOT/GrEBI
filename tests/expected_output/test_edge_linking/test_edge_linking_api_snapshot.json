@@ -1,0 +1,2065 @@
+{
+  "health": {
+    "status": "ok"
+  },
+  "node_details": {
+    "ex:disease1": {
+      "incoming_edges": {
+        "content": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "3dfae3564d5689fd70d925a92f1a590b8ec0b4af",
+            "grebi:fromNodeId": "ex:gene1",
+            "grebi:fromSourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "ex:disease1",
+            "grebi:type": "biolink:gene_associated_with_condition",
+            "test_el:id": [
+              "edge-el-1"
+            ]
+          },
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "6ab24298bb18d903f1084c17f5fe7827c5a918b4",
+            "grebi:fromNodeId": "ex:gene2",
+            "grebi:fromSourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "ex:disease1",
+            "grebi:type": "biolink:gene_associated_with_condition",
+            "test_el:id": [
+              "edge-el-4"
+            ]
+          }
+        ],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 2
+      },
+      "node": {
+        "_refs": {
+          "ex:disease1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:disease1",
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          },
+          "ex:phenotype1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:phenotype1",
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:type": [
+              "biolink:PhenotypicFeature"
+            ]
+          }
+        },
+        "biolink:has_phenotype": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-2"
+                ]
+              },
+              "grebi:value": "ex:phenotype1"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Disease",
+        "grebi:nodeId": "ex:disease1",
+        "grebi:sourceIds": [
+          "ex:disease1"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": "biolink:Disease"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": "ex:disease1"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": "Test Disease One"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "d184d68088cd17643e0b130192a869884c3e3556",
+            "grebi:fromNodeId": "ex:disease1",
+            "grebi:fromSourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "ex:phenotype1",
+            "grebi:type": "biolink:has_phenotype",
+            "test_el:id": [
+              "edge-el-2"
+            ]
+          }
+        ],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "ex:gene1": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "ex:disease1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:disease1",
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          },
+          "ex:gene1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:gene1",
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:type": [
+              "biolink:Gene"
+            ]
+          },
+          "ex:phenotype1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:phenotype1",
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:type": [
+              "biolink:PhenotypicFeature"
+            ]
+          }
+        },
+        "biolink:gene_associated_with_condition": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-1"
+                ]
+              },
+              "grebi:value": "ex:disease1"
+            }
+          }
+        ],
+        "biolink:related_to": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-3"
+                ]
+              },
+              "grebi:value": "ex:phenotype1"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Gene",
+        "grebi:nodeId": "ex:gene1",
+        "grebi:sourceIds": [
+          "ex:gene1"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": "biolink:Gene"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": "ex:gene1"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": "Test Gene Alpha"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "18f3b15fe8418de8576f4e0077b035ab95bcb847",
+            "grebi:fromNodeId": "ex:gene1",
+            "grebi:fromSourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "ex:phenotype1",
+            "grebi:type": "biolink:related_to",
+            "test_el:id": [
+              "edge-el-3"
+            ]
+          },
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "3dfae3564d5689fd70d925a92f1a590b8ec0b4af",
+            "grebi:fromNodeId": "ex:gene1",
+            "grebi:fromSourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "ex:disease1",
+            "grebi:type": "biolink:gene_associated_with_condition",
+            "test_el:id": [
+              "edge-el-1"
+            ]
+          }
+        ],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 2
+      }
+    },
+    "ex:gene2": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "ex:disease1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:disease1",
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          },
+          "ex:gene2": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:gene2",
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:type": [
+              "biolink:Gene"
+            ]
+          }
+        },
+        "biolink:gene_associated_with_condition": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-4"
+                ]
+              },
+              "grebi:value": "ex:disease1"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Gene",
+        "grebi:nodeId": "ex:gene2",
+        "grebi:sourceIds": [
+          "ex:gene2"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": "biolink:Gene"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": "ex:gene2"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": "Test Gene Beta"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "6ab24298bb18d903f1084c17f5fe7827c5a918b4",
+            "grebi:fromNodeId": "ex:gene2",
+            "grebi:fromSourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "ex:disease1",
+            "grebi:type": "biolink:gene_associated_with_condition",
+            "test_el:id": [
+              "edge-el-4"
+            ]
+          }
+        ],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "ex:phenotype1": {
+      "incoming_edges": {
+        "content": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "18f3b15fe8418de8576f4e0077b035ab95bcb847",
+            "grebi:fromNodeId": "ex:gene1",
+            "grebi:fromSourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "ex:phenotype1",
+            "grebi:type": "biolink:related_to",
+            "test_el:id": [
+              "edge-el-3"
+            ]
+          },
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "d184d68088cd17643e0b130192a869884c3e3556",
+            "grebi:fromNodeId": "ex:disease1",
+            "grebi:fromSourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "ex:phenotype1",
+            "grebi:type": "biolink:has_phenotype",
+            "test_el:id": [
+              "edge-el-2"
+            ]
+          }
+        ],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 2
+      },
+      "node": {
+        "_refs": {
+          "ex:phenotype1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:phenotype1",
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:type": [
+              "biolink:PhenotypicFeature"
+            ]
+          }
+        },
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:PhenotypicFeature",
+        "grebi:nodeId": "ex:phenotype1",
+        "grebi:sourceIds": [
+          "ex:phenotype1"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:value": "biolink:PhenotypicFeature"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:value": "ex:phenotype1"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:value": "Test Phenotype One"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      }
+    },
+    "hgnc:11603": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "hgnc:11603": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "hgnc:11603",
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:type": [
+              "biolink:Gene"
+            ]
+          },
+          "mondo:0005002": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "mondo:0005002",
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          }
+        },
+        "biolink:related_to": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-hw"
+                ]
+              },
+              "grebi:value": "mondo:0005002"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Gene",
+        "grebi:nodeId": "hgnc:11603",
+        "grebi:sourceIds": [
+          "hgnc:11603"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": "biolink:Gene"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": "hgnc:11603"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": "TBX4"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "feac512cc4d067ac0fc199bd3104a8a53ebe5c68",
+            "grebi:fromNodeId": "hgnc:11603",
+            "grebi:fromSourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "mondo:0005002",
+            "grebi:type": "biolink:related_to",
+            "test_el:id": [
+              "edge-el-hw"
+            ]
+          }
+        ],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "mondo:0005002": {
+      "incoming_edges": {
+        "content": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:edgeId": "feac512cc4d067ac0fc199bd3104a8a53ebe5c68",
+            "grebi:fromNodeId": "hgnc:11603",
+            "grebi:fromSourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:subgraph": "test_edge_linking",
+            "grebi:toNodeId": "mondo:0005002",
+            "grebi:type": "biolink:related_to",
+            "test_el:id": [
+              "edge-el-hw"
+            ]
+          }
+        ],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      },
+      "node": {
+        "_refs": {
+          "mondo:0005002": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "mondo:0005002",
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          }
+        },
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Disease",
+        "grebi:nodeId": "mondo:0005002",
+        "grebi:sourceIds": [
+          "mondo:0005002"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:value": "biolink:Disease"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:value": "mondo:0005002"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:value": "chronic obstructive pulmonary disease"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [],
+        "facetFieldToCounts": {},
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      }
+    }
+  },
+  "nodes": {
+    "content": [
+      {
+        "_refs": {
+          "ex:disease1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:disease1",
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          },
+          "ex:phenotype1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:phenotype1",
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:type": [
+              "biolink:PhenotypicFeature"
+            ]
+          }
+        },
+        "biolink:has_phenotype": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-2"
+                ]
+              },
+              "grebi:value": "ex:phenotype1"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Disease",
+        "grebi:nodeId": "ex:disease1",
+        "grebi:sourceIds": [
+          "ex:disease1"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": "biolink:Disease"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": "ex:disease1"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": "Test Disease One"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "ex:disease1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:disease1",
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          },
+          "ex:gene1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:gene1",
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:type": [
+              "biolink:Gene"
+            ]
+          },
+          "ex:phenotype1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:phenotype1",
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:type": [
+              "biolink:PhenotypicFeature"
+            ]
+          }
+        },
+        "biolink:gene_associated_with_condition": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-1"
+                ]
+              },
+              "grebi:value": "ex:disease1"
+            }
+          }
+        ],
+        "biolink:related_to": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-3"
+                ]
+              },
+              "grebi:value": "ex:phenotype1"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Gene",
+        "grebi:nodeId": "ex:gene1",
+        "grebi:sourceIds": [
+          "ex:gene1"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": "biolink:Gene"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": "ex:gene1"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": "Test Gene Alpha"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "ex:disease1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:disease1",
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          },
+          "ex:gene2": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:gene2",
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:type": [
+              "biolink:Gene"
+            ]
+          }
+        },
+        "biolink:gene_associated_with_condition": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-4"
+                ]
+              },
+              "grebi:value": "ex:disease1"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Gene",
+        "grebi:nodeId": "ex:gene2",
+        "grebi:sourceIds": [
+          "ex:gene2"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": "biolink:Gene"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": "ex:gene2"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": "Test Gene Beta"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "ex:phenotype1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:phenotype1",
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:type": [
+              "biolink:PhenotypicFeature"
+            ]
+          }
+        },
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:PhenotypicFeature",
+        "grebi:nodeId": "ex:phenotype1",
+        "grebi:sourceIds": [
+          "ex:phenotype1"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:value": "biolink:PhenotypicFeature"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:value": "ex:phenotype1"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:value": "Test Phenotype One"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "hgnc:11603": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "hgnc:11603",
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:type": [
+              "biolink:Gene"
+            ]
+          },
+          "mondo:0005002": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "mondo:0005002",
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          }
+        },
+        "biolink:related_to": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-hw"
+                ]
+              },
+              "grebi:value": "mondo:0005002"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Gene",
+        "grebi:nodeId": "hgnc:11603",
+        "grebi:sourceIds": [
+          "hgnc:11603"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": "biolink:Gene"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": "hgnc:11603"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": "TBX4"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "mondo:0005002": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "mondo:0005002",
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          }
+        },
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Disease",
+        "grebi:nodeId": "mondo:0005002",
+        "grebi:sourceIds": [
+          "mondo:0005002"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:value": "biolink:Disease"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:value": "mondo:0005002"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:value": "chronic obstructive pulmonary disease"
+          }
+        ]
+      }
+    ],
+    "empty": false,
+    "facetFieldToCounts": {},
+    "first": true,
+    "last": true,
+    "number": 0,
+    "numberOfElements": 6,
+    "pageable": {
+      "offset": 0,
+      "pageNumber": 0,
+      "pageSize": 100,
+      "paged": true,
+      "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+      },
+      "unpaged": false
+    },
+    "size": 100,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "totalElements": 6,
+    "totalPages": 1
+  },
+  "search": {
+    "content": [
+      {
+        "_refs": {
+          "ex:disease1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:disease1",
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          },
+          "ex:phenotype1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:phenotype1",
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:type": [
+              "biolink:PhenotypicFeature"
+            ]
+          }
+        },
+        "biolink:has_phenotype": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-2"
+                ]
+              },
+              "grebi:value": "ex:phenotype1"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Disease",
+        "grebi:nodeId": "ex:disease1",
+        "grebi:sourceIds": [
+          "ex:disease1"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": "biolink:Disease"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": "ex:disease1"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:value": "Test Disease One"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "ex:disease1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:disease1",
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          },
+          "ex:gene1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:gene1",
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:type": [
+              "biolink:Gene"
+            ]
+          },
+          "ex:phenotype1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:phenotype1",
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:type": [
+              "biolink:PhenotypicFeature"
+            ]
+          }
+        },
+        "biolink:gene_associated_with_condition": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-1"
+                ]
+              },
+              "grebi:value": "ex:disease1"
+            }
+          }
+        ],
+        "biolink:related_to": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-3"
+                ]
+              },
+              "grebi:value": "ex:phenotype1"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Gene",
+        "grebi:nodeId": "ex:gene1",
+        "grebi:sourceIds": [
+          "ex:gene1"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": "biolink:Gene"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": "ex:gene1"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene1"
+            ],
+            "grebi:value": "Test Gene Alpha"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "ex:disease1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:disease1",
+            "grebi:sourceIds": [
+              "ex:disease1"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          },
+          "ex:gene2": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:gene2",
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:type": [
+              "biolink:Gene"
+            ]
+          }
+        },
+        "biolink:gene_associated_with_condition": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-4"
+                ]
+              },
+              "grebi:value": "ex:disease1"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Gene",
+        "grebi:nodeId": "ex:gene2",
+        "grebi:sourceIds": [
+          "ex:gene2"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": "biolink:Gene"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": "ex:gene2"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:gene2"
+            ],
+            "grebi:value": "Test Gene Beta"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "ex:phenotype1": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "ex:phenotype1",
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:type": [
+              "biolink:PhenotypicFeature"
+            ]
+          }
+        },
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:PhenotypicFeature",
+        "grebi:nodeId": "ex:phenotype1",
+        "grebi:sourceIds": [
+          "ex:phenotype1"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:value": "biolink:PhenotypicFeature"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:value": "ex:phenotype1"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "ex:phenotype1"
+            ],
+            "grebi:value": "Test Phenotype One"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "hgnc:11603": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "hgnc:11603",
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:type": [
+              "biolink:Gene"
+            ]
+          },
+          "mondo:0005002": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "mondo:0005002",
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          }
+        },
+        "biolink:related_to": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "test_el:id": [
+                  "edge-el-hw"
+                ]
+              },
+              "grebi:value": "mondo:0005002"
+            }
+          }
+        ],
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Gene",
+        "grebi:nodeId": "hgnc:11603",
+        "grebi:sourceIds": [
+          "hgnc:11603"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": "biolink:Gene"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": "hgnc:11603"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "hgnc:11603"
+            ],
+            "grebi:value": "TBX4"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "mondo:0005002": {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:nodeId": "mondo:0005002",
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:type": [
+              "biolink:Disease"
+            ]
+          }
+        },
+        "grebi:datasources": [
+          "TestEdgeLinking"
+        ],
+        "grebi:displayType": "biolink:Disease",
+        "grebi:nodeId": "mondo:0005002",
+        "grebi:sourceIds": [
+          "mondo:0005002"
+        ],
+        "grebi:subgraph": "test_edge_linking",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:value": "biolink:Disease"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:value": "mondo:0005002"
+          }
+        ],
+        "test_el:name": [
+          {
+            "grebi:datasources": [
+              "TestEdgeLinking"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005002"
+            ],
+            "grebi:value": "chronic obstructive pulmonary disease"
+          }
+        ]
+      }
+    ],
+    "empty": false,
+    "facetFieldToCounts": {},
+    "first": true,
+    "last": true,
+    "number": 0,
+    "numberOfElements": 6,
+    "pageable": {
+      "offset": 0,
+      "pageNumber": 0,
+      "pageSize": 100,
+      "paged": true,
+      "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+      },
+      "unpaged": false
+    },
+    "size": 100,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "totalElements": 6,
+    "totalPages": 1
+  },
+  "subgraph_metadata": {
+    "displaytypes": {
+      "biolink:Disease": {
+        "count": 2
+      },
+      "biolink:Gene": {
+        "count": 3
+      },
+      "biolink:PhenotypicFeature": {
+        "count": 1
+      }
+    },
+    "edge_prop_defs": {},
+    "edge_props": {
+      "test_el:id": {
+        "count": 5
+      }
+    },
+    "edges": {
+      "biolink:Disease": {
+        "biolink:has_phenotype": {
+          "biolink:PhenotypicFeature": {
+            "TestEdgeLinking": 1
+          }
+        }
+      },
+      "biolink:Gene": {
+        "biolink:gene_associated_with_condition": {
+          "biolink:Disease": {
+            "TestEdgeLinking": 2
+          }
+        },
+        "biolink:related_to": {
+          "biolink:Disease": {
+            "TestEdgeLinking": 1
+          },
+          "biolink:PhenotypicFeature": {
+            "TestEdgeLinking": 1
+          }
+        }
+      }
+    },
+    "embedding_models2dims": {},
+    "entity_prop_defs": {},
+    "entity_props": {
+      "biolink:gene_associated_with_condition": {
+        "count": 2
+      },
+      "biolink:has_phenotype": {
+        "count": 1
+      },
+      "biolink:related_to": {
+        "count": 2
+      },
+      "grebi:type": {
+        "count": 6
+      },
+      "id": {
+        "count": 6
+      },
+      "test_el:name": {
+        "count": 6
+      }
+    },
+    "materialised_queries": [
+      {
+        "cypher_query": "RETURN \"Hello, World!\" AS message",
+        "description": "Tester query to see if the pipeline is working",
+        "end_time": "2026-03-01 16:04:06",
+        "id": "hello_world",
+        "num_results": 1,
+        "start_time": "2026-03-01 16:04:05",
+        "subgraph": "test_edge_linking",
+        "time": 0.648494,
+        "title": "Hello world",
+        "uses_datasources": [
+          "IMPC",
+          "GWAS"
+        ]
+      }
+    ],
+    "subgraph_name": "test_edge_linking",
+    "types": {
+      "biolink:Disease": {
+        "count": 2
+      },
+      "biolink:Gene": {
+        "count": 3
+      },
+      "biolink:PhenotypicFeature": {
+        "count": 1
+      }
+    }
+  },
+  "subgraphs": [
+    "test_edge_linking"
+  ]
+}

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-postgres
+  labels:
+    app: {{ .Release.Name }}-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-postgres
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-postgres
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                    - hh-rke-wp-webadmin-58-worker-{{.Values.postgres_worker_n}}.caas.ebi.ac.uk
+      volumes:
+        - name: {{ .Release.Name }}-import
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-import-pvc
+        - name: {{ .Release.Name }}-postgres
+          persistentVolumeClaim:
+            claimName: worker-{{.Values.postgres_worker_n}}-local-pvc
+      containers:
+        - name: postgres
+          image: postgres:18
+          volumeMounts:
+            - mountPath: "/data_import"
+              name: {{ .Release.Name }}-import
+              readOnly: true
+            - mountPath: "/data"
+              name: {{ .Release.Name }}-postgres
+          command: ["/bin/bash", "-c"]
+          args: ["echo Synchronizing data... && rm -rf /data/pgdata && cp -r /data_import/postgres/* /data/ && chown -R postgres:postgres /data/pgdata_* && PGDATA=$(ls -d /data/postgres_data_* | head -1) && exec su -c \"postgres -D $PGDATA -p 5432\" postgres"]
+          resources:
+            requests:
+              memory: 8Gi
+              cpu: 2
+            limits:
+              memory: 8Gi
+              cpu: 2
+          env:
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: trust
+          ports:
+            - containerPort: 5432

@@ -109,7 +109,7 @@ def main():
         f"{subgraph}_snapshot_neo4j_nodes.jsonl",
         f"{subgraph}_snapshot_neo4j_edges.jsonl",
         f"{subgraph}_snapshot_solr_nodes.jsonl",
-        f"{subgraph}_snapshot_solr_edges.jsonl",
+        f"{subgraph}_snapshot_postgres_edges.jsonl",
     ]
 
     print_colored(f"\nComparing snapshots for subgraph: {subgraph}", Colors.BOLD)

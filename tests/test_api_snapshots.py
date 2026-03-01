@@ -159,8 +159,24 @@ def collect_api_snapshot(base_url: str, subgraph: str) -> Dict[str, Any]:
     return snapshot
 
 
+# Paths whose values change between runs and should be ignored in comparison.
+# Use fnmatch-style patterns matched against the dotted JSON path.
+IGNORE_PATTERNS = [
+    "*.start_time",
+    "*.end_time",
+    "*.time",
+]
+
+def _path_ignored(path: str) -> bool:
+    import fnmatch
+    return any(fnmatch.fnmatch(path, pat) for pat in IGNORE_PATTERNS)
+
+
 def compare_snapshots(actual: Dict, expected: Dict, path: str = "") -> List[str]:
     """Recursively compare two JSON structures, returning list of differences."""
+    if _path_ignored(path):
+        return []
+
     diffs = []
 
     actual_norm = normalise_for_comparison(actual)

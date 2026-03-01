@@ -43,6 +43,20 @@ ENV PATH="$PATH:/opt/neo4j/bin:/opt/solr/bin"
 RUN apt-get install -y cmake clang pigz python3-pip && \
         pip3 install pandas tabulate openpyxl pyyaml py2neo requests
 
+# Install PostgreSQL 18 from the official PGDG repository (Bullseye only ships PG 13)
+RUN apt-get install -y gnupg lsb-release && \
+    echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    apt-get update -y && \
+    apt-get install -y postgresql-18 postgresql-client-18
+
+# Add PostgreSQL 18 server binaries to PATH
+ENV PATH="$PATH:/usr/lib/postgresql/18/bin"
+
+# Allow arbitrary UIDs to register themselves in /etc/passwd at runtime
+# (needed by initdb when Nextflow runs containers with --user UID:GID)
+RUN chmod a+w /etc/passwd /etc/group
+
 COPY . /opt/grebi_dataload
 
 RUN cd /opt/grebi_dataload && cargo build --release

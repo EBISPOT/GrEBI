@@ -19,10 +19,12 @@ include { create_neo } from './processes/06_create_neo_db/neo/create_neo'
 include { package_neo } from './processes/06_create_neo_db/neo/package_neo'
 include { prepare_solr } from './processes/08_create_other_dbs/solr/prepare_solr'
 include { create_solr_nodes_core } from './processes/08_create_other_dbs/solr/create_solr_nodes_core'
-include { create_solr_edges_core } from './processes/08_create_other_dbs/solr/create_solr_edges_core'
 include { create_solr_autocomplete_core } from './processes/08_create_other_dbs/solr/create_solr_autocomplete_core'
 include { create_solr_results_cores } from './processes/08_create_other_dbs/solr/create_solr_results_cores'
 include { package_solr } from './processes/08_create_other_dbs/solr/package_solr'
+include { prepare_postgres } from './processes/08_create_other_dbs/postgres/prepare_postgres'
+include { create_postgres } from './processes/08_create_other_dbs/postgres/create_postgres'
+include { package_postgres } from './processes/08_create_other_dbs/postgres/package_postgres'
 include { run_materialised_queries } from './processes/07_run_queries/run_materialised_queries'
 include { results_to_csv } from './processes/07_run_queries/results_to_csv'
 include { link_results } from './processes/07_run_queries/link_results'
@@ -179,14 +181,6 @@ workflow {
         Channel.value(params.solr_mem)
     )
     
-    solr_edges_core = create_solr_edges_core(
-        prepare_solr.out.edges.collect(), 
-        indexed.names_txt, 
-        merge_graph_metadata_jsons.out,
-        Channel.value(params.subgraph),
-        Channel.value(params.solr_mem)
-    )
-    
     solr_autocomplete_core = create_solr_autocomplete_core(
         indexed.names_txt,
         Channel.value(params.subgraph),
@@ -200,19 +194,29 @@ workflow {
     )
 
     all_solr_cores = solr_nodes_core
-        .concat(solr_edges_core)
         .concat(solr_autocomplete_core)
         .concat(solr_results_cores)
         .collect()
 
+    // === STEP 8b: CREATE POSTGRESQL ===
+    postgres_inputs = prepare_postgres(link.out.edges, indexed.graph_metadata_json, Channel.value(params.subgraph))
+
+    postgres_db = create_postgres(
+        prepare_postgres.out.edges_tsv.collect(),
+        prepare_postgres.out.schema_sql.collect(),
+        Channel.value(params.subgraph)
+    )
+
     // === PACKAGE OUTPUTS ===
     solr_tgz = package_solr(all_solr_cores, Channel.value(params.subgraph), Channel.value(params.out))
     neo_tgz = package_neo(neo_db, Channel.value(params.subgraph), Channel.value(params.out))
+    postgres_tgz = package_postgres(postgres_db, Channel.value(params.subgraph), Channel.value(params.out))
 
     // === RUN INTEGRATION TESTS ===
     run_integration_tests(
         neo_tgz,
         solr_tgz,
+        postgres_tgz,
         sqlite,
         add_query_metadatas_to_graph_metadata.out,
         Channel.fromPath("${params.grebi_home}/query_templates"),
