@@ -25,6 +25,8 @@ process create_postgres {
     export PGDATA=\$PWD/postgres_data_${subgraph}
     export PGPORT=5433
     export PGUSER=grebi
+    export PGSOCK=/tmp/pg_sock_\$\$
+    mkdir -p \$PGSOCK
 
     # Initialise a fresh PostgreSQL data directory
     initdb --username=\$PGUSER --auth=trust --no-locale --encoding=UTF8 -D \$PGDATA
@@ -32,7 +34,7 @@ process create_postgres {
     # Tune for bulk import
     cat >> \$PGDATA/postgresql.conf <<EOF
 listen_addresses = ''
-unix_socket_directories = '\$PWD'
+unix_socket_directories = '\$PGSOCK'
 shared_buffers = ${params.pg_shared_buffers}
 work_mem = ${params.pg_work_mem}
 maintenance_work_mem = ${params.pg_maintenance_work_mem}
@@ -46,7 +48,7 @@ checkpoint_completion_target = 0.9
 EOF
 
     # Start PostgreSQL locally (unix socket only)
-    pg_ctl -D \$PGDATA -l \$PWD/pg_startup.log start -o "-p \$PGPORT -k \$PWD" || {
+    pg_ctl -D \$PGDATA -l \$PWD/pg_startup.log start -o "-p \$PGPORT -k \$PGSOCK" || {
         echo "=== PostgreSQL startup log ===" >&2
         cat \$PWD/pg_startup.log >&2
         exit 1
@@ -54,21 +56,21 @@ EOF
 
     # Wait for postgres to start
     for i in \$(seq 1 30); do
-        if pg_isready -h \$PWD -p \$PGPORT -U \$PGUSER; then
+        if pg_isready -h \$PGSOCK -p \$PGPORT -U \$PGUSER; then
             break
         fi
         sleep 1
     done
 
-    createdb -h \$PWD -p \$PGPORT -U \$PGUSER grebi
+    createdb -h \$PGSOCK -p \$PGPORT -U \$PGUSER grebi
 
     # Apply schema (use the first schema file - all should be identical for same subgraph)
     SCHEMA_FILE=\$(ls postgres_schema_${subgraph}_*.sql | head -1)
-    psql -h \$PWD -p \$PGPORT -U \$PGUSER -d grebi -f "\$SCHEMA_FILE"
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$SCHEMA_FILE"
 
     # Import all TSV files
     # First drop indexes for faster import
-    psql -h \$PWD -p \$PGPORT -U \$PGUSER -d grebi -c "
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "
         DROP INDEX IF EXISTS idx_edges_${subgraph}_fromNodeId;
         DROP INDEX IF EXISTS idx_edges_${subgraph}_toNodeId;
         DROP INDEX IF EXISTS idx_edges_${subgraph}_type;
@@ -76,19 +78,19 @@ EOF
 
     for TSV_FILE in postgres_edges_${subgraph}_*.tsv; do
         echo "Importing \$TSV_FILE ..."
-        psql -h \$PWD -p \$PGPORT -U \$PGUSER -d grebi -c "\\COPY \\"edges_${subgraph}\\" FROM '\$TSV_FILE' WITH (FORMAT text)"
+        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "\\COPY \\"edges_${subgraph}\\" FROM '\$TSV_FILE' WITH (FORMAT text)"
     done
 
     # Recreate indexes
     echo "Creating indexes..."
-    psql -h \$PWD -p \$PGPORT -U \$PGUSER -d grebi -c "
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "
         CREATE INDEX idx_edges_${subgraph}_fromNodeId ON \\"edges_${subgraph}\\" (\\"grebi:fromNodeId\\");
         CREATE INDEX idx_edges_${subgraph}_toNodeId ON \\"edges_${subgraph}\\" (\\"grebi:toNodeId\\");
         CREATE INDEX idx_edges_${subgraph}_type ON \\"edges_${subgraph}\\" (\\"grebi:type\\");
     "
 
     # Analyse for query planner
-    psql -h \$PWD -p \$PGPORT -U \$PGUSER -d grebi -c "ANALYZE \\"edges_${subgraph}\\";"
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ANALYZE \\"edges_${subgraph}\\";"
 
     # Stop PostgreSQL cleanly
     pg_ctl -D \$PGDATA stop -m fast
