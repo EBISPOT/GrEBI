@@ -33,10 +33,10 @@ process create_postgres {
     cat >> \$PGDATA/postgresql.conf <<EOF
 listen_addresses = ''
 unix_socket_directories = '\$PWD'
-shared_buffers = 2GB
-work_mem = 256MB
-maintenance_work_mem = 1GB
-max_wal_size = 4GB
+shared_buffers = ${params.pg_shared_buffers}
+work_mem = ${params.pg_work_mem}
+maintenance_work_mem = ${params.pg_maintenance_work_mem}
+max_wal_size = ${params.pg_max_wal_size}
 wal_level = minimal
 max_wal_senders = 0
 fsync = off
@@ -46,7 +46,11 @@ checkpoint_completion_target = 0.9
 EOF
 
     # Start PostgreSQL locally (unix socket only)
-    pg_ctl -D \$PGDATA -l \$PWD/pg_startup.log start -o "-p \$PGPORT -k \$PWD"
+    pg_ctl -D \$PGDATA -l \$PWD/pg_startup.log start -o "-p \$PGPORT -k \$PWD" || {
+        echo "=== PostgreSQL startup log ===" >&2
+        cat \$PWD/pg_startup.log >&2
+        exit 1
+    }
 
     # Wait for postgres to start
     for i in \$(seq 1 30); do
