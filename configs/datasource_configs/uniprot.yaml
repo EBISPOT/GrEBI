@@ -1,8 +1,13 @@
 name: UniProt
 enabled: true
+download:
+  - dest: uniprot/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/up/rdf/*.rdf.xz
 ingests:
-  - globs: ["/nfs/production/parkinso/spot/jmcl/up/rdf/uniprotkb_unreviewed_eukaryota_opisthokonta_metazoa_33208_0.rdf.xz"]
+  - globs: ["uniprot/*.rdf.xz"]
     command: '
+        xzcat $GREBI_INGEST_FILENAME |
         grebi_rdf2jsonl
             --rdf-type rdf_triples_xml
             --nest "http://purl.uniprot.org/core/attribution"

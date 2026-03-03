@@ -1,4 +1,0 @@
-{"id": "edge-th-1", "subject": "ex:disease_parent", "object": "mondo:0000001", "predicate": "biolink:subclass_of"}
-{"id": "edge-th-2", "subject": "ex:disease_child", "object": "ex:disease_parent", "predicate": "biolink:subclass_of"}
-{"id": "edge-th-3", "subject": "ex:gene_th1", "object": "ex:disease_child", "predicate": "biolink:related_to"}
-{"id": "edge-th-hw", "subject": "HGNC:11603", "object": "MONDO:0005002", "predicate": "biolink:related_to"}

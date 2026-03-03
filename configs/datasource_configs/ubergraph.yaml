@@ -1,8 +1,13 @@
 name: UberGraph
 enabled: true
+download:
+  - dest: ubergraph/ubergraph.nq.gz
+    sources:
+      - https://ubergraph.apps.renci.org/downloads/current/ubergraph.nq.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/ubergraph/ubergraph.nq.gz"]
+  - globs: ["ubergraph/ubergraph.nq.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_rdf2jsonl
         --rdf-type rdf_quads_nq
         --rdf-graph "http://reasoner.renci.org/redundant"'

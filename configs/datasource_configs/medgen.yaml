@@ -1,6 +1,13 @@
 name: MedGen
 enabled: true
+download:
+  - dest: medgen/medgen.obo
+    sources:
+      - https://github.com/monarch-initiative/medgen/releases/download/2024-10-06/medgen.obo
 ingests:
-  - globs: ["dataload/00_fetch_data/medgen/medgen.json.gz"]
-    command: grebi_ingest_ols --datasource-name $GREBI_INGEST_DATASOURCE_NAME --ontologies medgen
+  - globs: ["medgen/medgen.obo"]
+    command: '
+      robot convert --input $GREBI_INGEST_FILENAME --format owl --output /tmp/medgen_$$.owl &&
+      cat /tmp/medgen_$$.owl |
+      grebi_ingest_ols --datasource-name $GREBI_INGEST_DATASOURCE_NAME --ontologies medgen'
 

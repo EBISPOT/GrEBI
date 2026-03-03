@@ -1,7 +1,7 @@
 tmp
 .git
-00_fetch_data/
-00_fetch_data/**
+downloads/
+downloads/**
 **.gz
 **.tsv
 **.csv

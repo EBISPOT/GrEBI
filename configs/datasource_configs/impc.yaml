@@ -1,91 +1,147 @@
 name: IMPC
 enabled: true
+download:
+  - dest: impc/mouse_gene_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/mouse_gene_json/*.json.gz
+  - dest: impc/embryo_specimen_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/embryo_specimen_json/*.json.gz
+  - dest: impc/gene_phenotype_association_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/gene_phenotype_association_json/*.json.gz
+  - dest: impc/image_record_observation_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/image_record_observation_json/*.json.gz
+  - dest: impc/line_experiment_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/line_experiment_json/*.json.gz
+  - dest: impc/mouse_specimen_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/mouse_specimen_json/*.json.gz
+  - dest: impc/ontological_observation_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/ontological_observation_json/*.json.gz
+  - dest: impc/parameter_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/parameter_json/*.json.gz
+  - dest: impc/pipeline_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/pipeline_json/*.json.gz
+  - dest: impc/procedure_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/procedure_json/*.json.gz
+  - dest: impc/text_observation_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/text_observation_json/*.json.gz
+  - dest: impc/human_gene_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/human_gene_json/*.json.gz
+  - dest: impc/publications_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/publications_json/*.json.gz
+  - dest: impc/mouse_allele_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/mouse_allele_json/*.json.gz
 ingests:
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/mouse_gene_json/*.json.gz"]
+  - globs: ["impc/mouse_gene_json/*.json.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_transform_jsonl
           --json-rename mgiGeneAccessionId:id
           --json-inject-type impc:MouseGene
           --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/embryo_specimen_json/*.json.gz"]
+  - globs: ["impc/embryo_specimen_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename specimenId:id
-            --json-inject-type impc:EmbryoSpecimen
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/gene_phenotype_association_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename specimenId:id
+          --json-inject-type impc:EmbryoSpecimen
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/gene_phenotype_association_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename genePhenotypeAssociationId:id
-            --json-inject-type impc:GenePhenotypeAssociation
-            --json-inject-key-prefix impc:
-            --json-de-nest-field phenotype.id'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/image_record_observation_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename genePhenotypeAssociationId:id
+          --json-inject-type impc:GenePhenotypeAssociation
+          --json-inject-key-prefix impc:
+          --json-de-nest-field phenotype.id'
+  - globs: ["impc/image_record_observation_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename observationId:id
-            --json-inject-type impc:ImageRecordObservation
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/line_experiment_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename observationId:id
+          --json-inject-type impc:ImageRecordObservation
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/line_experiment_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename experimentId:id
-            --json-inject-type impc:LineExperiment
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/mouse_specimen_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename experimentId:id
+          --json-inject-type impc:LineExperiment
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/mouse_specimen_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename specimenId:id
-            --json-inject-type impc:MouseSpecimen
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/ontological_observation_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename specimenId:id
+          --json-inject-type impc:MouseSpecimen
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/ontological_observation_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename observationId:id
-            --json-inject-type impc:OntologicalObservation
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/parameter_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename observationId:id
+          --json-inject-type impc:OntologicalObservation
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/parameter_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename parameterId:id
-            --json-inject-type impc:Parameter
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/pipeline_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename parameterId:id
+          --json-inject-type impc:Parameter
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/pipeline_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename pipelineId:id
-            --json-inject-type impc:Pipeline
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/procedure_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename pipelineId:id
+          --json-inject-type impc:Pipeline
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/procedure_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename procedureId:id
-            --json-inject-type impc:Procedure
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/text_observation_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename procedureId:id
+          --json-inject-type impc:Procedure
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/text_observation_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename observationId:id
-            --json-inject-type impc:TextObservation
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/human_gene_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename observationId:id
+          --json-inject-type impc:TextObservation
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/human_gene_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename humanGeneId:id
-            --json-inject-type impc:HumanGene
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/publications_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename humanGeneId:id
+          --json-inject-type impc:HumanGene
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/publications_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename publication_id:id
-            --json-inject-type impc:Publication
-            --json-inject-key-prefix impc:
-            --json-inject-value-prefix pmId:pmid:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/mouse_allele_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename publication_id:id
+          --json-inject-type impc:Publication
+          --json-inject-key-prefix impc:
+          --json-inject-value-prefix pmId:pmid:'
+  - globs: ["impc/mouse_allele_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename mouseAlleleId:id
-            --json-inject-type impc:Allele
-            --json-inject-key-prefix impc:
-            --json-inject-value-prefix ensemblAccId:ENSEMBL:'
-
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename mouseAlleleId:id
+          --json-inject-type impc:Allele
+          --json-inject-key-prefix impc:
+          --json-inject-value-prefix ensemblAccId:ENSEMBL:'

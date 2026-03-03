@@ -1,6 +1,0 @@
-{"id": "ex:entity_a", "name": "Entity A Primary", "category": ["biolink:NamedThing"]}
-{"id": "ex:entity_a_alt", "name": "Entity A Alternate", "category": ["biolink:NamedThing"], "owl:equivalentClass": ["ex:entity_a"]}
-{"id": "ex:entity_b", "name": "Entity B", "category": ["biolink:Gene"]}
-{"id": "ex:entity_c", "name": "Entity C", "category": ["biolink:Disease"]}
-{"id": "MONDO:0005002", "name": "chronic obstructive pulmonary disease", "category": ["biolink:Disease"]}
-{"id": "HGNC:11603", "name": "TBX4", "category": ["biolink:Gene"]}

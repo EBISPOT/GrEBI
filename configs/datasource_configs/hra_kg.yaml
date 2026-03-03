@@ -1,5 +1,11 @@
 name: HRA
 enabled: true
+download:
+  - dest: hra_kg/graph.nt
+    sources:
+      - https://cdn.humanatlas.io/digital-objects/collection/hra/v2.2/graph.nt
 ingests:
-  - globs: ["dataload/00_fetch_data/hra_kg/graph.nt.gz"]
-    command: grebi_rdf2jsonl --rdf-type rdf_triples_turtle --rdf-types-are-grebi-types
+  - globs: ["hra_kg/graph.nt"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_rdf2jsonl --rdf-type rdf_triples_turtle --rdf-types-are-grebi-types'

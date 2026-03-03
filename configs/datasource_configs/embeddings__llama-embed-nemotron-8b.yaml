@@ -1,8 +1,13 @@
 name: llama-embed-nemotron-8b
 enabled: true
+download:
+  - dest: ols_embeddings/llama-embed-nemotron-8b_pca512_avg.parquet
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols_embeddings/latest/llama-embed-nemotron-8b_pca512_avg.parquet
 ingests:
-  - globs: ["dataload/00_fetch_data/ols_embeddings/llama-embed-nemotron-8b_pca512_avg.parquet"]
+  - globs: ["ols_embeddings/llama-embed-nemotron-8b_pca512_avg.parquet"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_parquet2jsonl |
       grebi_transform_jsonl
         --json-select-keys iri,embedding

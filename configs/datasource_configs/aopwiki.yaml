@@ -1,8 +1,16 @@
 name: AOPWiki
 enabled: true
+download:
+  - dest: aopwiki/AOPWikiRDF.ttl
+    sources:
+      - https://raw.githubusercontent.com/marvinm2/AOPWikiRDF/master/data/AOPWikiRDF.ttl
+  - dest: aopwiki/AOPWikiRDF-Genes.ttl
+    sources:
+      - https://raw.githubusercontent.com/marvinm2/AOPWikiRDF/master/data/AOPWikiRDF-Genes.ttl
 ingests:
-  - globs: ["dataload/00_fetch_data/aopwiki/*.ttl.gz"]
+  - globs: ["aopwiki/*.ttl"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_rdf2jsonl
           --rdf-type rdf_triples_turtle
           --rdf-types-are-grebi-types'

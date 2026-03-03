@@ -1,12 +1,21 @@
 name: TestCliqueMerge
 enabled: true
+download:
+  - dest: test_clique_merge/edges.jsonl
+    sources:
+      - tests/data/test_clique_merge/edges.jsonl
+  - dest: test_clique_merge/nodes.jsonl
+    sources:
+      - tests/data/test_clique_merge/nodes.jsonl
 ingests:
-  - globs: ["dataload/00_fetch_data/test_clique_merge/edges.jsonl"]
+  - globs: ["test_clique_merge/edges.jsonl"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_ingest_kgx_edges
           --kgx-inject-key-prefix test_cm:'
-  - globs: ["dataload/00_fetch_data/test_clique_merge/nodes.jsonl"]
+  - globs: ["test_clique_merge/nodes.jsonl"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_transform_jsonl
           --json-rename category:grebi:type
           --json-inject-key-prefix test_cm:'

@@ -1,5 +1,11 @@
 name: Metabolights
 enabled: true
+download:
+  - dest: metabolights/eb-eye_metabolights_complete.xml
+    sources:
+      - https://www.ebi.ac.uk/ebisearch/ws/rest/metabolights-compounds?query=*&format=XML&size=0
 ingests:
-  - globs: ["dataload/00_fetch_data/metabolights/eb-eye_metabolights_complete.xml"]
-    command: $GREBI_DATALOAD_HOME/01_ingest/metabolights.py
+  - globs: ["metabolights/eb-eye_metabolights_complete.xml"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      $GREBI_DATALOAD_HOME/01_ingest/metabolights.py'

@@ -1,5 +1,11 @@
 name: Reactome
 enabled: true
+download:
+  - dest: reactome/reactome.json
+    sources:
+      - dataload/reactome/export/reactome.json
 ingests:
-    - globs: ["dataload/00_fetch_data/reactome/export/reactome.json"]
-      command: grebi_ingest_reactome
+    - globs: ["reactome/reactome.json"]
+      command: '
+        cat $GREBI_INGEST_FILENAME |
+        grebi_ingest_reactome'

@@ -1,8 +1,13 @@
 name: OpenTargets
 enabled: true
+download:
+  - dest: otar/evidence/
+    sources:
+      - /nfs/ftp/public/databases/opentargets/platform/25.09/output/evidence/*/*.parquet
 ingests:
-  - globs: ["dataload/00_fetch_data/otar/evidence/*/*.parquet"]
+  - globs: ["otar/evidence/*/*.parquet"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_parquet2jsonl |
       grebi_transform_jsonl
           --json-inject-type otar:Evidence

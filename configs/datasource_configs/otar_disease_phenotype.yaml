@@ -1,8 +1,13 @@
 name: OpenTargets
 enabled: true
+download:
+  - dest: otar/disease_phenotype/
+    sources:
+      - /nfs/ftp/public/databases/opentargets/platform/25.09/output/disease_phenotype/*.parquet
 ingests:
-  - globs: ["dataload/00_fetch_data/otar/disease_phenotype/*.parquet"]
+  - globs: ["otar/disease_phenotype/*.parquet"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_parquet2jsonl |
       grebi_nodes2edges --from-field disease --to-field phenotype --edge-type biolink:has_phenotype |
       grebi_transform_jsonl

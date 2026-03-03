@@ -1,5 +1,11 @@
 name: EFO.mappings
 enabled: true
+download:
+  - dest: mondo_efo/mondo_efo_mappings.tsv
+    sources:
+      - https://raw.githubusercontent.com/EBISPOT/efo/master/src/ontology/components/mondo_efo_mappings.tsv
 ingests:
-  - globs: ["dataload/00_fetch_data/mondo_efo/mondo_efo_mappings.tsv"]
-    command: $GREBI_DATALOAD_HOME/01_ingest/mondo_efo_mappings.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME
+  - globs: ["mondo_efo/mondo_efo_mappings.tsv"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      $GREBI_DATALOAD_HOME/01_ingest/mondo_efo_mappings.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME'

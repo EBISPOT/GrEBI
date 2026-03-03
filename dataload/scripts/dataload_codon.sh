@@ -9,6 +9,7 @@ export GREBI_HOME=/nfs/production/parkinso/spot/grebi
 export GREBI_DATALOAD_HOME=$GREBI_HOME/dataload
 export GREBI_QUERY_YAMLS_PATH=$GREBI_HOME/materialised_queries
 export GREBI_OUT_DIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/out
+export GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/downloads}
 export GREBI_IS_EBI=true
 export GREBI_NEXTFLOW_CONFIG=$GREBI_DATALOAD_HOME/nextflow/codon_nextflow.config
 export NXF_WORK=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAPH/NXF_WORK

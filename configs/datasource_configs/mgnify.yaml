@@ -1,5 +1,12 @@
 name: MGnify
 enabled: true
+download:
+  - dest: mgnify/mgnify_nodes.jsonl.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/mgnify_nodes.jsonl.gz
+  - dest: mgnify/mgnify_edges.jsonl.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/mgnify_edges.jsonl.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/mgnify/*.jsonl.gz"]
-    command: cat
+  - globs: ["mgnify/*.jsonl.gz"]
+    command: zcat $GREBI_INGEST_FILENAME

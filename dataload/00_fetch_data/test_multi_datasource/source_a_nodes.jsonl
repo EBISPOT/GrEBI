@@ -1,5 +1,0 @@
-{"id": "ex:protein1", "name": "Protein Alpha", "category": ["biolink:Protein"], "description": "A test protein from source A"}
-{"id": "ex:disease1", "name": "Disease One", "category": ["biolink:Disease"]}
-{"id": "ex:pathway1", "name": "Pathway One", "category": ["biolink:Pathway"]}
-{"id": "MONDO:0005002", "name": "chronic obstructive pulmonary disease", "category": ["biolink:Disease"]}
-{"id": "HGNC:11603", "name": "TBX4", "category": ["biolink:Gene"]}
