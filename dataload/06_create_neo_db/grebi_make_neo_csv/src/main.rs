@@ -294,16 +294,18 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
         nodes_writer.write_all(b",").unwrap();
         let model_id = &header_prop["embedding:".len()..];
         let embedding_vector = entity.model_id_to_embedding_vector.get(model_id.as_bytes());
-        for byte in embedding_vector.unwrap().iter() {
-            match byte {
-                b'[' => nodes_writer.write_all(b"\"").unwrap(),
-                b']' => nodes_writer.write_all(b"\"").unwrap(),
-                b',' => nodes_writer.write_all(&[(31 as u8)]).unwrap(),
-                b' ' => nodes_writer.write_all(b"").unwrap(),
-                b'\n' => nodes_writer.write_all(b"").unwrap(),
-                b'\r' => nodes_writer.write_all(b"").unwrap(),
-                b'\t' => nodes_writer.write_all(b"").unwrap(),
-                b => nodes_writer.write_all(&[*b]).unwrap()
+        if let Some(embedding_vector) = embedding_vector {
+            for byte in embedding_vector.iter() {
+                match byte {
+                    b'[' => nodes_writer.write_all(b"\"").unwrap(),
+                    b']' => nodes_writer.write_all(b"\"").unwrap(),
+                    b',' => nodes_writer.write_all(&[(31 as u8)]).unwrap(),
+                    b' ' => nodes_writer.write_all(b"").unwrap(),
+                    b'\n' => nodes_writer.write_all(b"").unwrap(),
+                    b'\r' => nodes_writer.write_all(b"").unwrap(),
+                    b'\t' => nodes_writer.write_all(b"").unwrap(),
+                    b => nodes_writer.write_all(&[*b]).unwrap()
+                }
             }
         }
     }
