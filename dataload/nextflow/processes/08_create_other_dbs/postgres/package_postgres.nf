@@ -18,7 +18,7 @@ process package_postgres {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    tar -cf - ${postgres_data} | pigz > ${subgraph}_postgres.tgz
+    tar -chf - ${postgres_data} | pigz > ${subgraph}_postgres.tgz
     echo "Packaged PostgreSQL data: ${subgraph}_postgres.tgz"
     """
 }
