@@ -17,6 +17,12 @@ process run_integration_tests {
     val(out_dir)
     val(export_snapshots)
     val(grebi_home)
+    val(neo_mem)
+    val(solr_mem)
+    val(pg_shared_buffers)
+    val(pg_work_mem)
+    val(pg_maintenance_work_mem)
+    val(pg_max_wal_size)
 
     publishDir "${out_dir}", overwrite: true
 
@@ -53,6 +59,14 @@ process run_integration_tests {
     export GREBI_SQLITE_SEARCH_PATH=\$PWD
     export GREBI_QUERY_TEMPLATES_PATH=\$PWD/${query_templates}
     export PUBLIC_URL=/
+
+    # Configure database memory from Nextflow params
+    export GREBI_NEO_HEAP=${neo_mem}
+    export GREBI_SOLR_HEAP=${solr_mem}
+    export GREBI_PG_SHARED_BUFFERS=${pg_shared_buffers}
+    export GREBI_PG_WORK_MEM=${pg_work_mem}
+    export GREBI_PG_MAINTENANCE_WORK_MEM=${pg_maintenance_work_mem}
+    export GREBI_PG_MAX_WAL_SIZE=${pg_max_wal_size}
     
     # Start all services via supervisord
     echo "Starting services with supervisord..."

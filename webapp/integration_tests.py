@@ -80,6 +80,46 @@ def wait_for_service(url: str, service_name: str, timeout: int = 300, interval: 
     return False
 
 
+def dump_service_logs():
+    """Dump service log files for debugging when services fail to start."""
+    log_files = [
+        ("api.log", "GrEBI API stdout"),
+        ("api_err.log", "GrEBI API stderr"),
+        ("neo4j.log", "Neo4j stdout"),
+        ("neo4j_err.log", "Neo4j stderr"),
+        ("solr.log", "Solr stdout"),
+        ("solr_err.log", "Solr stderr"),
+        ("postgres.log", "PostgreSQL stdout"),
+        ("postgres_err.log", "PostgreSQL stderr"),
+        ("metadata_service.log", "Metadata Service stdout"),
+        ("metadata_service_err.log", "Metadata Service stderr"),
+        ("resolver_service.log", "Resolver Service stdout"),
+        ("resolver_service_err.log", "Resolver Service stderr"),
+        ("prefix_service.log", "Prefix Service stdout"),
+        ("prefix_service_err.log", "Prefix Service stderr"),
+        ("supervisord.log", "Supervisord"),
+        ("supervisord_output.log", "Supervisord output"),
+    ]
+    print_colored("\n" + "="*80, Colors.YELLOW)
+    print_colored("Service Diagnostic Logs", Colors.YELLOW)
+    print_colored("="*80, Colors.YELLOW)
+    for filename, label in log_files:
+        try:
+            with open(filename, 'r') as f:
+                content = f.read().strip()
+            if content:
+                # Show last 50 lines for each log
+                lines = content.split('\n')
+                tail = '\n'.join(lines[-50:])
+                print_colored(f"\n--- {label} ({filename}) [last {min(50, len(lines))} of {len(lines)} lines] ---", Colors.YELLOW)
+                print(tail)
+        except FileNotFoundError:
+            pass
+        except Exception as e:
+            print(f"  Could not read {filename}: {e}")
+    print_colored("\n" + "="*80, Colors.YELLOW)
+
+
 def wait_for_all_services(base_url: str = "http://localhost") -> bool:
     services = [
         (f"{base_url}:7474", "Neo4j Browser"),
@@ -94,6 +134,9 @@ def wait_for_all_services(base_url: str = "http://localhost") -> bool:
     for url, name in services:
         if not wait_for_service(url, name):
             all_ready = False
+    
+    if not all_ready:
+        dump_service_logs()
     
     return all_ready
 

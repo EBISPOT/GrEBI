@@ -42,6 +42,12 @@ params.pg_shared_buffers = "2GB"
 params.pg_work_mem = "256MB"
 params.pg_maintenance_work_mem = "1GB"
 params.pg_max_wal_size = "4GB"
+params.integration_neo_heap = "512m"
+params.integration_solr_heap = "512m"
+params.integration_pg_shared_buffers = "128MB"
+params.integration_pg_work_mem = "64MB"
+params.integration_pg_maintenance_work_mem = "256MB"
+params.integration_pg_max_wal_size = "1GB"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
 params.grebi_home = "$GREBI_HOME"
 params.export_snapshots = false
@@ -227,7 +233,13 @@ workflow {
         Channel.value(params.subgraph),
         Channel.value(params.out),
         Channel.value(params.export_snapshots),
-        Channel.value(params.grebi_home)
+        Channel.value(params.grebi_home),
+        Channel.value(params.integration_neo_heap),
+        Channel.value(params.integration_solr_heap),
+        Channel.value(params.integration_pg_shared_buffers),
+        Channel.value(params.integration_pg_work_mem),
+        Channel.value(params.integration_pg_maintenance_work_mem),
+        Channel.value(params.integration_pg_max_wal_size)
     )
 }
 
