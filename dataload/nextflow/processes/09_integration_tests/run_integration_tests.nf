@@ -45,6 +45,15 @@ process run_integration_tests {
     
     echo "Extracting Solr..."
     mkdir -p /opt/grebi/data/solr
+    # Ensure current user is resolvable (PostgreSQL requires this)
+    if ! getent passwd \$(id -u) > /dev/null 2>&1; then
+        echo "grebi:x:\$(id -u):\$(id -g):PostgreSQL:/tmp:/bin/bash" >> /etc/passwd 2>/dev/null || true
+    fi
+
+    # Ensure PostgreSQL socket directory exists and is writable
+    mkdir -p /var/run/postgresql 2>/dev/null || true
+    chmod 777 /var/run/postgresql 2>/dev/null || true
+
     cat ${solr_tgz} | pigz -d | tar -xf - 
 
     echo "Extracting PostgreSQL..."

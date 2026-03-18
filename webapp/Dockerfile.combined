@@ -112,6 +112,10 @@ RUN mvn clean package assembly:single -DskipTests && \
 # Build grebi_ui
 COPY webapp/grebi_ui /opt/grebi_ui
 WORKDIR /opt/grebi_ui
+
+# Create .env.ebi if missing (gitignored so not included in COPY)
+RUN test -f .env.ebi || printf 'PUBLIC_URL=/\nGREBI_FRONTEND=ebi\n' > .env.ebi
+
 RUN npm install && \
     mkdir -p dist && \
     chmod -R 777 dist
