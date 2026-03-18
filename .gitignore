@@ -1,6 +1,7 @@
 target
 fakeoutput
 tmp
+downloads
 foo.jsonl
 *.tsv
 *.jsonl

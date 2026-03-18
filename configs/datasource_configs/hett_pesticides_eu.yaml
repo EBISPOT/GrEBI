@@ -1,5 +1,11 @@
 name: HETT_Pesticides.EU
 enabled: true
+download:
+  - dest: hett_pesticides/ActiveSubstanceExport.xlsx
+    sources:
+      - hett_pesticides/ActiveSubstanceExport.xlsx
 ingests:
-  - globs: ["dataload/00_fetch_data/hett_pesticides/ActiveSubstanceExport*"]
-    command: $GREBI_DATALOAD_HOME/01_ingest/hett_pesticides_eu.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME
+  - globs: ["hett_pesticides/ActiveSubstanceExport*"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      $GREBI_DATALOAD_HOME/01_ingest/hett_pesticides_eu.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME'

@@ -1,9 +1,13 @@
 name: OLS.go
 enabled: true
+download:
+  - dest: ols/go.json.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/go.json.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/ols/ontologies_linked.json.gz"]
+  - globs: ["ols/go.json.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_ingest_ols
         --ontologies go
-        --skip-obsolete
-      '
+        --skip-obsolete'

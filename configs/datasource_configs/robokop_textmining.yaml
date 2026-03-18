@@ -1,12 +1,21 @@
 name: Robokop.TextMining
 enabled: true
+download:
+  - dest: robokop/textmining_edges.jsonl.gz
+    sources:
+      - https://stars.renci.org/var/plater/bl-4.2.1/TMKP_Automat/2ae17047aa1b5f3c/edges.jsonl.gz
+  - dest: robokop/textmining_nodes.jsonl.gz
+    sources:
+      - https://stars.renci.org/var/plater/bl-4.2.1/TMKP_Automat/2ae17047aa1b5f3c/nodes.jsonl.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/robokop/textmining_edges.jsonl.gz"]
+  - globs: ["robokop/textmining_edges.jsonl.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_ingest_kgx_edges
           --kgx-inject-key-prefix robokop:'
-  - globs: ["dataload/00_fetch_data/robokop/textmining_nodes.jsonl.gz"]
+  - globs: ["robokop/textmining_nodes.jsonl.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_transform_jsonl
           --json-rename category:grebi:type
           --json-inject-key-prefix robokop:'

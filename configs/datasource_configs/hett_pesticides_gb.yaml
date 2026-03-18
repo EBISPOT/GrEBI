@@ -1,5 +1,11 @@
 name: HETT_Pesticides.GB
 enabled: true
+download:
+  - dest: hett_pesticides/active-substance-register.xlsx
+    sources:
+      - https://www.hse.gov.uk/pesticides/assets/docs/active-substance-register.xlsx
 ingests:
-  - globs: ["dataload/00_fetch_data/hett_pesticides/active-substance-register.xlsx"]
-    command: $GREBI_DATALOAD_HOME/01_ingest/hett_pesticides_gb.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME
+  - globs: ["hett_pesticides/active-substance-register.xlsx"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      $GREBI_DATALOAD_HOME/01_ingest/hett_pesticides_gb.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME'

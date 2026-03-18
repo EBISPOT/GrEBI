@@ -1,35 +1,56 @@
 name: IMPC
 enabled: true
+download:
+  - dest: impc/categorical_observation_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/categorical_observation_json/*.json.gz
+  - dest: impc/time_series_observation_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/time_series_observation_json/*.json.gz
+  - dest: impc/unidimensional_observation_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/unidimensional_observation_json/*.json.gz
+  - dest: impc/statistical_result_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/statistical_result_json/*.json.gz
+  - dest: impc/specimen_experiment_json/
+    sources:
+      - /nfs/production/parkinso/spot/jmcl/impc-kg/specimen_experiment_json/*.json.gz
 ingests:
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/categorical_observation_json/*.json.gz"]
+  - globs: ["impc/categorical_observation_json/*.json.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_transform_jsonl
           --json-rename observationId:id
           --json-inject-type impc:CategoricalObservation
           --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/time_series_observation_json/*.json.gz"]
+  - globs: ["impc/time_series_observation_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename observationId:id
-            --json-inject-type impc:TimeSeriesObservation
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/unidimensional_observation_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename observationId:id
+          --json-inject-type impc:TimeSeriesObservation
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/unidimensional_observation_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename observationId:id
-            --json-inject-type impc:UnidimensionalObservation
-            --json-inject-key-prefix impc:'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/statistical_result_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename observationId:id
+          --json-inject-type impc:UnidimensionalObservation
+          --json-inject-key-prefix impc:'
+  - globs: ["impc/statistical_result_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename statisticalResultId:id
-            --json-inject-type impc:StatisticalResult
-            --json-inject-key-prefix impc:
-            --json-de-nest-field potentialPhenotypes.id
-            --json-de-nest-field statisticalMethod.name'
-  - globs: ["/nfs/production/parkinso/spot/jmcl/impc-kg/specimen_experiment_json/*.json.gz"]
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename statisticalResultId:id
+          --json-inject-type impc:StatisticalResult
+          --json-inject-key-prefix impc:
+          --json-de-nest-field potentialPhenotypes.id
+          --json-de-nest-field statisticalMethod.name'
+  - globs: ["impc/specimen_experiment_json/*.json.gz"]
     command: '
-        grebi_transform_jsonl
-            --json-rename experimentId:id
-            --json-inject-type impc:SpecimenExperiment
-            --json-inject-key-prefix impc:'
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename experimentId:id
+          --json-inject-type impc:SpecimenExperiment
+          --json-inject-key-prefix impc:'

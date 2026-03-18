@@ -1,2 +1,0 @@
-{"id": "ex:protein1", "name": "Protein Alpha Extended", "category": ["biolink:Protein"], "description": "A test protein from source B"}
-{"id": "ex:chemical1", "name": "Chemical One", "category": ["biolink:ChemicalEntity"]}

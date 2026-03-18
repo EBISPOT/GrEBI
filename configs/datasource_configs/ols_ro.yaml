@@ -1,9 +1,13 @@
 name: OLS.ro
 enabled: true
+download:
+  - dest: ols/ro.json.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/ro.json.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/ols/ontologies_linked.json.gz"]
+  - globs: ["ols/ro.json.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_ingest_ols
         --ontologies ro
-        --skip-obsolete
-      '
+        --skip-obsolete'

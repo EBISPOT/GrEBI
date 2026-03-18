@@ -32,7 +32,7 @@ def main():
         '--time=1:0:0',
         '--mem=150g',
         '-c 4',
-        './00_fetch_data/uniprot/preload_uniprot.slurm.sh',
+        './uniprot/preload_uniprot.slurm.sh',
         out_path
     ])
 

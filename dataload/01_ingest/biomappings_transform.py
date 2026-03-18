@@ -1,8 +1,11 @@
+#!/usr/bin/env python3
 
+import os
 import pandas as pd
 import json
 
-df = pd.read_csv('mappings.tsv', sep='\t', dtype=str)
+filename = os.environ.get('GREBI_INGEST_FILENAME')
+df = pd.read_csv(filename, sep='\t', dtype=str)
 
 for row in df.to_dict('records'):
     out = {}
@@ -17,14 +20,3 @@ for row in df.to_dict('records'):
         out[row['relation']] = row['target prefix'] + ':' + row['target identifier']
 
     print(json.dumps(out))
-
-
-
-
-
-
-
-
-
-
-

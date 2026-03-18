@@ -1,9 +1,13 @@
 name: OLS.dcterms
 enabled: true
+download:
+  - dest: ols/dcterms.json.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/dcterms.json.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/ols/ontologies_linked.json.gz"]
+  - globs: ["ols/dcterms.json.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_ingest_ols
         --ontologies dcterms
-        --skip-obsolete
-      '
+        --skip-obsolete'

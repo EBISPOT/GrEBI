@@ -1,9 +1,13 @@
 name: OLS.bspo
 enabled: true
+download:
+  - dest: ols/bspo.json.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/bspo.json.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/ols/ontologies_linked.json.gz"]
+  - globs: ["ols/bspo.json.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_ingest_ols
         --ontologies bspo
-        --skip-obsolete
-      '
+        --skip-obsolete'

@@ -1,8 +1,13 @@
 name: HGNC
 enabled: true
+download:
+  - dest: hgnc/hgnc_complete_set.json
+    sources:
+      - https://g-a8b222.dd271.03c0.data.globus.org/pub/databases/genenames/hgnc/json/hgnc_complete_set.json
 ingests:
-  - globs: ["dataload/00_fetch_data/hgnc/hgnc.json"]
+  - globs: ["hgnc/hgnc_complete_set.json"]
     command: '
+      jq -c .response.docs[] $GREBI_INGEST_FILENAME |
       grebi_transform_jsonl
           --json-rename hgnc_id:id
           --json-inject-type hgnc:Gene

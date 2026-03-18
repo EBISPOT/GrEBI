@@ -1,17 +1,3 @@
-def getStdinCommand(ingest, filename) {
-    if (ingest.stdin == false) {
-        return ""
-    }
-    def f = new File(filename.toString()).getName()
-    if (f.endsWith(".gz")) {
-        return "zcat ${f} |"
-    } else if (f.endsWith(".xz")) {
-        return "xzcat ${f} |"
-    } else {
-        return "cat ${f} |"
-    }
-}
-
 process ingest {
     cache "lenient"
     memory { 4.GB + 128.GB * (task.attempt-1) }
@@ -21,7 +7,6 @@ process ingest {
     
     input:
     val(file_listing)
-    path(filename)
     val(identifier_props)
     val(bytes_per_merged_file)
 
@@ -34,14 +19,10 @@ process ingest {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     export GREBI_INGEST_DATASOURCE_NAME=${file_listing.datasource.name}
-    export GREBI_INGEST_FILENAME=${filename}
+    export GREBI_INGEST_FILENAME=${file_listing.filename}
     export GREBI_DATALOAD_HOME=/opt/grebi_dataload
-    echo "Current working dir: \$(pwd)"
-    echo "Files in ingest working dir: \$(ls)"
-    ls -hl
-    ls -Lhl
-    ${getStdinCommand(file_listing.ingest, filename)} \
-        ${file_listing.ingest.command} \
+    echo "Ingesting: \$GREBI_INGEST_FILENAME"
+    ${file_listing.ingest.command} \
         | grebi_normalise_prefixes /opt/grebi_dataload/prefix_maps/prefix_map_normalise.json \
         | tee >(grebi_extract_identifiers \
                 --identifier-properties ${identifier_props.iterator().join(",")} \

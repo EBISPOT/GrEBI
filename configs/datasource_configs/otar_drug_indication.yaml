@@ -1,8 +1,13 @@
 name: OpenTargets
 enabled: true
+download:
+  - dest: otar/drug_indication/
+    sources:
+      - /nfs/ftp/public/databases/opentargets/platform/25.09/output/drug_indication/*.parquet
 ingests:
-  - globs: ["dataload/00_fetch_data/otar/drug_indication/*.parquet"]
+  - globs: ["otar/drug_indication/*.parquet"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_parquet2jsonl |
       grebi_transform_jsonl --json-select-keys id,indications |
       grebi_unwind --unwind-field indications |
@@ -12,8 +17,9 @@ ingests:
         --json-de-nest-field indications.disease
         --json-rename indications:biolink:treats
           '
-  - globs: ["dataload/00_fetch_data/otar/drug_indication/*.parquet"]
+  - globs: ["otar/drug_indication/*.parquet"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_parquet2jsonl |
       grebi_transform_jsonl
         --json-inject-type biolink:Drug

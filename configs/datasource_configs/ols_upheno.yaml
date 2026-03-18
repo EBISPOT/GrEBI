@@ -1,9 +1,13 @@
 name: OLS.upheno
 enabled: true
+download:
+  - dest: ols/upheno.json.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/upheno.json.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/ols/ontologies_linked.json.gz"]
+  - globs: ["ols/upheno.json.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_ingest_ols
         --ontologies upheno
-        --skip-obsolete
-      '
+        --skip-obsolete'

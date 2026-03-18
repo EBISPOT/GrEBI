@@ -100,20 +100,45 @@ docker://ghcr.io/ebispot/grebi_neo4j_with_extras:2025.03.0-community
 
 Now you should be able to connect to Neo4j at the host shown earlier by `hostname`.
 
+## Running the pipeline locally
+
+Requires Docker. The helper scripts run Nextflow inside `ghcr.io/ebispot/grebi_nextflow:latest` and mount the repo and downloads folder.
+
+1) Download input files
+
+```bash
+export GREBI_SUBGRAPH=disease_ontologies
+./dataload/scripts/download_local.sh
+```
+
+2) Run the dataload pipeline
+
+```bash
+export GREBI_SUBGRAPH=disease_ontologies
+./dataload/scripts/dataload_local.sh
+```
+
+Outputs will be under [out/disease_ontologies](out/disease_ontologies). The pipeline will also run materialised queries and package DB exports by default.
+
 ## Mapping sets used
  
 The following mapping tables are loaded:
 
-* https://data.monarchinitiative.org/mappings/latest/gene_mappings.sssom.tsv
-* https://data.monarchinitiative.org/mappings/latest/hp_mesh.sssom.tsv
-* https://data.monarchinitiative.org/mappings/latest/mesh_chebi_biomappings.sssom.tsv
-* https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv
-* https://data.monarchinitiative.org/mappings/latest/umls_hp.sssom.tsv
-* https://data.monarchinitiative.org/mappings/latest/upheno_custom.sssom.tsv
-* https://raw.githubusercontent.com/mapping-commons/mh_mapping_initiative/master/mappings/mp_hp_mgi_all.sssom.tsv
-* https://raw.githubusercontent.com/obophenotype/bio-attribute-ontology/master/src/mappings/oba-efo.sssom.tsv
-* https://raw.githubusercontent.com/obophenotype/bio-attribute-ontology/master/src/mappings/oba-vt.sssom.tsv
-* https://github.com/biopragmatics/biomappings/raw/refs/heads/master/src/biomappings/resources/mappings.tsv
+- https://data.monarchinitiative.org/mappings/latest/gene_mappings.sssom.tsv
+- https://data.monarchinitiative.org/mappings/latest/hp_mesh.sssom.tsv
+- https://data.monarchinitiative.org/mappings/latest/mesh_chebi_biomappings.sssom.tsv
+- https://data.monarchinitiative.org/mappings/latest/mondo.sssom.tsv
+- https://data.monarchinitiative.org/mappings/latest/umls_hp.sssom.tsv
+- https://data.monarchinitiative.org/mappings/latest/upheno-cross-species.sssom.tsv
+- https://data.monarchinitiative.org/mappings/latest/upheno-species-independent.sssom.tsv
+- https://data.monarchinitiative.org/mappings/latest/nbo-go.sssom.tsv
+- https://data.monarchinitiative.org/mappings/latest/uberon.sssom.tsv
+- https://raw.githubusercontent.com/obophenotype/upheno-dev/refs/heads/master/src/mappings/upheno-oba.sssom.tsv
+- https://raw.githubusercontent.com/mapping-commons/disease-mappings/refs/heads/main/mappings/mondo_hp_lexical.sssom.tsv
+- https://raw.githubusercontent.com/mapping-commons/mh_mapping_initiative/master/mappings/mp_hp_mgi_all.sssom.tsv
+- https://raw.githubusercontent.com/obophenotype/bio-attribute-ontology/master/src/mappings/oba-efo.sssom.tsv
+- https://raw.githubusercontent.com/obophenotype/bio-attribute-ontology/master/src/mappings/oba-vt.sssom.tsv
+- https://raw.githubusercontent.com/biopragmatics/biomappings/refs/heads/master/src/biomappings/resources/mappings.tsv
 
 In all of the currently configured outputs, `skos:exactMatch` mappings are used for clique merging. In `ebi_monarch_xspecies`, `semapv:crossSpeciesExactMatch` is used for clique merging (so e.g. corresponding HP and MP terms will share a graph node). As this is not always desirable, a separate graph `ebi_monarch` is also provided where `semapv:crossSpeciesExactMatch` mappings are represented as edges.
 

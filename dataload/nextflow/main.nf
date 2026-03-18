@@ -50,6 +50,7 @@ params.integration_pg_maintenance_work_mem = "256MB"
 params.integration_pg_max_wal_size = "1GB"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
 params.grebi_home = "$GREBI_HOME"
+params.downloads_path = "$GREBI_DOWNLOADS_PATH"
 params.export_snapshots = false
 
 workflow {
@@ -61,10 +62,11 @@ workflow {
     datasources = config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.grebi_home, ds)) }
 
     // Create channel of all datasource files
+    // Globs are resolved relative to GREBI_DOWNLOADS_PATH
     datasource_files = Channel.from(datasources.collect {
         ds -> ds.ingests.collect {
             ingest -> ingest.globs.collect {
-                glob -> files(glob).collect {
+                glob -> files("${params.downloads_path}/${glob}").collect {
                     file -> [
                         datasource: ds,
                         ingest: ingest,
@@ -78,7 +80,6 @@ workflow {
     // === STEP 1: INGEST ===
     ingest(
         datasource_files, 
-        datasource_files | map { listing -> listing.filename }, 
         Channel.value(config.identifier_props), 
         Channel.value(config.bytes_per_merged_file)
     )
@@ -246,20 +247,6 @@ workflow {
 // Utility functions
 def parseJson(json) {
     return new JsonSlurper().parseText(json)
-}
-
-def getStdinCommand(ingest, filename) {
-    if (ingest.stdin == false) {
-        return ""
-    }
-    def f = new File(filename.toString()).getName()
-    if (f.endsWith(".gz")) {
-        return "zcat ${f} |"
-    } else if (f.endsWith(".xz")) {
-        return "xzcat ${f} |"
-    } else {
-        return "cat ${f} |"
-    }
 }
 
 def buildAddEquivGroupArgs(equivGroups) {

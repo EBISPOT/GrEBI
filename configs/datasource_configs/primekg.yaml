@@ -1,6 +1,12 @@
 name: PrimeKG
 enabled: true
+download:
+  - dest: primekg/kg.csv
+    sources:
+      - https://dataverse.harvard.edu/api/access/datafile/6180620
 ingests:
-  - globs: ["dataload/00_fetch_data/primekg/kg.csv"]
-    command: $GREBI_DATALOAD_HOME/01_ingest/primekg.py
+  - globs: ["primekg/kg.csv"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      $GREBI_DATALOAD_HOME/01_ingest/primekg.py'
 

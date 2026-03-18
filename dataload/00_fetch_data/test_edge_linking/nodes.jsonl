@@ -1,6 +1,0 @@
-{"id": "ex:gene1", "name": "Test Gene Alpha", "category": ["biolink:Gene"]}
-{"id": "ex:gene2", "name": "Test Gene Beta", "category": ["biolink:Gene"]}
-{"id": "ex:disease1", "name": "Test Disease One", "category": ["biolink:Disease"]}
-{"id": "ex:phenotype1", "name": "Test Phenotype One", "category": ["biolink:PhenotypicFeature"]}
-{"id": "MONDO:0005002", "name": "chronic obstructive pulmonary disease", "category": ["biolink:Disease"]}
-{"id": "HGNC:11603", "name": "TBX4", "category": ["biolink:Gene"]}

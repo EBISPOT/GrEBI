@@ -1,12 +1,21 @@
 name: HelloWorld
 enabled: true
+download:
+  - dest: hello_world/valid_edges.jsonl
+    sources:
+      - tests/data/hello_world/valid_edges.jsonl
+  - dest: hello_world/valid_nodes.jsonl
+    sources:
+      - tests/data/hello_world/valid_nodes.jsonl
 ingests:
-  - globs: ["dataload/00_fetch_data/hello_world/valid_edges.jsonl"]
+  - globs: ["hello_world/valid_edges.jsonl"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_ingest_kgx_edges
           --kgx-inject-key-prefix helloworld:'
-  - globs: ["dataload/00_fetch_data/hello_world/valid_nodes.jsonl"]
+  - globs: ["hello_world/valid_nodes.jsonl"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_transform_jsonl
           --json-rename category:grebi:type
           --json-inject-key-prefix helloworld:'

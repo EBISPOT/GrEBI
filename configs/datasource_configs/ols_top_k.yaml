@@ -1,8 +1,13 @@
 name: ols_top_k
 enabled: true
+download:
+  - dest: ols_top_k/ols_top_k.tsv.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/kg/ontology_top_k.tsv.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/ols_top_k/ols_top_k.tsv.gz"]
+  - globs: ["ols_top_k/ols_top_k.tsv.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_tsv2jsonl
       | grebi_transform_jsonl
           --json-inject-key-prefix ols_top_k:

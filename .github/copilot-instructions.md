@@ -82,7 +82,7 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 ## Data Processing Patterns
 
 ### Pipeline Architecture
-1. **00_fetch_data/**: Download raw data from external sources
+1. **download.nf**: Nextflow pipeline that downloads raw data from external sources to `$GREBI_DOWNLOADS_PATH`
 2. **01_ingest/**: Transform data into JSONL format and extract identifiers
 3. **02_assign_ids/**: Build equivalence groups and assign canonical IDs to nodes
 4. **03_merge/**: Merge properties about the same clique from multiple files into one JSON object per clique
@@ -142,10 +142,9 @@ npm run build
 ## Common Tasks
 
 ### Adding a New Datasource
-1. Create YAML config in `configs/datasource_configs/`
-2. Add fetching logic in `dataload/00_fetch_data/`
-3. Add ingestion logic in `dataload/01_ingest/` if needed
-4. Update subgraph config to include the new datasource
+1. Create YAML config in `configs/datasource_configs/` with `download:` entries (dest + sources) and `ingests:` entries
+2. Add ingestion logic in `dataload/01_ingest/` if needed
+3. Update subgraph config to include the new datasource
 
 ### Adding a New Query Template
 1. Create YAML file in `query_templates/`

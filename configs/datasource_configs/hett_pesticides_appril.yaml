@@ -1,5 +1,11 @@
 name: HETT_Pesticides.APPRIL
 enabled: true
+download:
+  - dest: hett_pesticides/apprildatadump_public.xlsx
+    sources:
+      - https://www3.epa.gov/pesticides/appril/apprildatadump_public.xlsx
 ingests:
-  - globs: ["dataload/00_fetch_data/hett_pesticides/apprildatadump_public.xlsx"]
-    command: $GREBI_DATALOAD_HOME/01_ingest/hett_pesticides_appril.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME
+  - globs: ["hett_pesticides/apprildatadump_public.xlsx"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      $GREBI_DATALOAD_HOME/01_ingest/hett_pesticides_appril.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME'

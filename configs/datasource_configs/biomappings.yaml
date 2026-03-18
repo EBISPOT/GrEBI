@@ -1,6 +1,11 @@
 name: Biomappings
 enabled: true
+download:
+  - dest: biomappings/mappings.tsv
+    sources:
+      - https://raw.githubusercontent.com/biopragmatics/biomappings/refs/heads/master/src/biomappings/resources/mappings.tsv
 ingests:
-  - globs: ["dataload/00_fetch_data/biomappings/biomappings.jsonl.gz"]
+  - globs: ["biomappings/mappings.tsv"]
     command: '
+      python3 $GREBI_DATALOAD_HOME/01_ingest/biomappings_transform.py |
       grebi_transform_jsonl --json-inject-key-prefix biomappings:'

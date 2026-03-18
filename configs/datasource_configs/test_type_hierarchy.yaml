@@ -1,12 +1,21 @@
 name: TestTypeHierarchy
 enabled: true
+download:
+  - dest: test_type_hierarchy/edges.jsonl
+    sources:
+      - tests/data/test_type_hierarchy/edges.jsonl
+  - dest: test_type_hierarchy/nodes.jsonl
+    sources:
+      - tests/data/test_type_hierarchy/nodes.jsonl
 ingests:
-  - globs: ["dataload/00_fetch_data/test_type_hierarchy/edges.jsonl"]
+  - globs: ["test_type_hierarchy/edges.jsonl"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_ingest_kgx_edges
           --kgx-inject-key-prefix test_th:'
-  - globs: ["dataload/00_fetch_data/test_type_hierarchy/nodes.jsonl"]
+  - globs: ["test_type_hierarchy/nodes.jsonl"]
     command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_transform_jsonl
           --json-rename category:grebi:type
           --json-inject-key-prefix test_th:'

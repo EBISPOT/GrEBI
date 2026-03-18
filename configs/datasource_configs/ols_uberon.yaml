@@ -1,9 +1,13 @@
 name: OLS.uberon
 enabled: true
+download:
+  - dest: ols/uberon.json.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/uberon.json.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/ols/ontologies_linked.json.gz"]
+  - globs: ["ols/uberon.json.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_ingest_ols
         --ontologies uberon
-        --skip-obsolete
-      '
+        --skip-obsolete'

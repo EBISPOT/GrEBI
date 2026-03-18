@@ -1,8 +1,13 @@
 name: ChEMBL
 enabled: true
+download:
+  - dest: chembl/chembl_34.0_molecule.ttl.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBL-RDF/latest/chembl_34.0_molecule.ttl.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/chembl/*.ttl.gz"]
+  - globs: ["chembl/*.ttl.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_rdf2jsonl
           --rdf-type rdf_triples_turtle
           --rdf-types-are-grebi-types

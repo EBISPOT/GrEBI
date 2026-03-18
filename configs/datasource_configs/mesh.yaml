@@ -1,10 +1,22 @@
 name: MeSH
 enabled: true
+download:
+  - dest: mesh/mesh2024.nt.gz
+    sources:
+      - https://nlmpubs.nlm.nih.gov/projects/mesh/rdf/2024/mesh2024.nt.gz
+  - dest: mesh/vocabulary_1.0.0.ttl
+    sources:
+      - https://nlmpubs.nlm.nih.gov/projects/mesh/rdf/2024/vocabulary_1.0.0.ttl
 ingests:
-  - globs:
-    - dataload/00_fetch_data/mesh/mesh2024.nt.gz
-    - dataload/00_fetch_data/mesh/vocabulary_1.0.0.ttl
+  - globs: ["mesh/mesh2024.nt.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_rdf2jsonl
+          --rdf-type rdf_triples_turtle
+          --rdf-types-are-grebi-types'
+  - globs: ["mesh/vocabulary_1.0.0.ttl"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
       grebi_rdf2jsonl
           --rdf-type rdf_triples_turtle
           --rdf-types-are-grebi-types'

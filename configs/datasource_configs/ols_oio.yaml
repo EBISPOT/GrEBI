@@ -1,9 +1,13 @@
 name: OLS.oio
 enabled: true
+download:
+  - dest: ols/oio.json.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/oio.json.gz
 ingests:
-  - globs: ["dataload/00_fetch_data/ols/ontologies_linked.json.gz"]
+  - globs: ["ols/oio.json.gz"]
     command: '
+      zcat $GREBI_INGEST_FILENAME |
       grebi_ingest_ols
         --ontologies oio
-        --skip-obsolete
-      '
+        --skip-obsolete'
