@@ -162,6 +162,6 @@
     "IMPC"
   ],
   "datasource_configs": [
-    "./configs/datasource_configs/test_type_hierarchy.yaml"
+    "./configs/datasource_configs/test/test_type_hierarchy.yaml"
   ]
 }

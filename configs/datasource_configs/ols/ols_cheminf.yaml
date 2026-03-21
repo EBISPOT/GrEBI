@@ -1,0 +1,14 @@
+name: OLS.cheminf
+enabled: true
+download:
+  - dest: ols/cheminf.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/cheminf.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/cheminf.json.gz
+ingests:
+  - globs: ["ols/cheminf.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies cheminf
+        --skip-obsolete'

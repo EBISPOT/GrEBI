@@ -152,7 +152,7 @@
     "TestMultiDatasourceA"
   ],
   "datasource_configs": [
-    "./configs/datasource_configs/test_multi_datasource_a.yaml",
-    "./configs/datasource_configs/test_multi_datasource_b.yaml"
+    "./configs/datasource_configs/test/test_multi_datasource_a.yaml",
+    "./configs/datasource_configs/test/test_multi_datasource_b.yaml"
   ]
 }

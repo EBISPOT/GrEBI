@@ -24,15 +24,26 @@ function get_edges {
 }
 
 
+# Parse memory value to MB and scale read buffer to fit in heap
+NEO_MEM_NUM=$(echo "$NEO_MEM" | sed -E 's/[^0-9]//g')
+case "$NEO_MEM" in
+  *[gG]) NEO_MEM_MB=$(( NEO_MEM_NUM * 1024 )) ;;
+  *)     NEO_MEM_MB=$NEO_MEM_NUM ;;
+esac
+THREADS=$(nproc)
+# read-buffer-size * threads must fit well within heap; use 1/4 of heap divided by threads
+READ_BUF_MB=$(( NEO_MEM_MB / 4 / THREADS ))
+if [ "$READ_BUF_MB" -lt 1 ]; then READ_BUF_MB=1; fi
+
 neo4j-admin database import full \
     $(get_nodes) \
     $(get_edges) \
     --ignore-empty-strings=true \
     --array-delimiter="U+001F" \
-    --threads=32 \
+    --threads=$THREADS \
     --max-off-heap-memory=$NEO_MEM \
     --verbose \
-    --read-buffer-size=256m
+    --read-buffer-size=${READ_BUF_MB}m
 
 sleep 5
 

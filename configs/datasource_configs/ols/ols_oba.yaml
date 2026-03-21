@@ -1,0 +1,14 @@
+name: OLS.oba
+enabled: true
+download:
+  - dest: ols/oba.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/oba.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/oba.json.gz
+ingests:
+  - globs: ["ols/oba.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies oba
+        --skip-obsolete'

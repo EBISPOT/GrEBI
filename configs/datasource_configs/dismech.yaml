@@ -1,0 +1,12 @@
+name: DisMech
+enabled: true
+download:
+  - dest: dismech/
+    sources:
+      - https://github.com/monarch-initiative/dismech/releases/download/v0.1.15/dismech-kgx-edges-v0.1.15.jsonl
+ingests:
+  - globs: ["dismech/*.jsonl"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_ingest_kgx_edges
+          --kgx-inject-key-prefix dismech:'

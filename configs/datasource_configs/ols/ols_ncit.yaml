@@ -1,0 +1,14 @@
+name: OLS.ncit
+enabled: true
+download:
+  - dest: ols/ncit.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/ncit.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/ncit.json.gz
+ingests:
+  - globs: ["ols/ncit.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies ncit
+        --skip-obsolete'

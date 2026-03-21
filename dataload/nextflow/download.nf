@@ -57,6 +57,23 @@ process download_file {
                     script_lines << "    echo \"Failed, trying next source...\""
                 }
                 script_lines << "fi"
+            } else if (dest_is_dir) {
+                // Download single file into directory (derive filename from URL)
+                def filename = source.tokenize('/').last().split('\\?')[0]
+                script_lines << "# Source ${i+1}: URL (single file into dir)"
+                script_lines << "echo \"Trying source: ${source}\""
+                script_lines << "mkdir -p \"${downloads_path}/${dest}\""
+                script_lines << "if curl -fSL -o \"${downloads_path}/${dest}${filename}\" \"${source}\"; then"
+                script_lines << "    echo \"Success: downloaded ${source}\""
+                script_lines << "    exit 0"
+                script_lines << "else"
+                if (is_last) {
+                    script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
+                    script_lines << "    exit 1"
+                } else {
+                    script_lines << "    echo \"Failed, trying next source...\""
+                }
+                script_lines << "fi"
             } else {
                 // Download single file
                 script_lines << "# Source ${i+1}: URL"

@@ -1,0 +1,14 @@
+name: OLS.uberon
+enabled: true
+download:
+  - dest: ols/uberon.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/uberon.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/uberon.json.gz
+ingests:
+  - globs: ["ols/uberon.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies uberon
+        --skip-obsolete'

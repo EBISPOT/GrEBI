@@ -16,7 +16,8 @@ GREBI_HOME=$(dirname $(dirname $SCRIPT_PATH))
 GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-$GREBI_HOME/downloads}
 
 TMP_DIR=$GREBI_HOME/tmp/${GREBI_SUBGRAPH}_download
-mkdir -p $TMP_DIR/NXF_WORK $TMP_DIR/NXF_HOME $TMP_DIR/NXF_TEMP $TMP_DIR/NXF_CACHE_DIR
+REPORTS_DIR=$GREBI_HOME/out/$GREBI_SUBGRAPH/reports_download
+mkdir -p $TMP_DIR/NXF_WORK $TMP_DIR/NXF_HOME $TMP_DIR/NXF_TEMP $TMP_DIR/NXF_CACHE_DIR $REPORTS_DIR
 mkdir -p $GREBI_DOWNLOADS_PATH
 
 HOST_UID=$(id -u)
@@ -35,11 +36,18 @@ docker run \
   -e GREBI_HOME=$GREBI_HOME \
   -e GREBI_DOWNLOADS_PATH=$GREBI_DOWNLOADS_PATH \
   -e GREBI_SUBGRAPH=$GREBI_SUBGRAPH \
-  -e NXF_USRMAP=$(id -u) \
+  -e NXF_USRMAP=${HOST_UID} \
+  -e HOST_UID=${HOST_UID} \
+  -e HOST_GID=${HOST_GID} \
   -e NXF_WORK=$TMP_DIR/NXF_WORK \
   -e NXF_HOME=$TMP_DIR/NXF_HOME \
   -e NXF_TEMP=$TMP_DIR/NXF_TEMP \
   -e NXF_CACHE_DIR=$TMP_DIR/NXF_CACHE_DIR \
   ghcr.io/ebispot/grebi_nextflow:latest \
   bash -c "cd $GREBI_HOME && nextflow dataload/nextflow/download.nf \
-    -c $GREBI_NF_DOWNLOAD_CONFIG -resume $GREBI_NF_EXTRA_ARGS"
+    -c $GREBI_NF_DOWNLOAD_CONFIG -resume \
+    -with-report $REPORTS_DIR/report.html \
+    -with-trace $REPORTS_DIR/trace.txt \
+    -with-timeline $REPORTS_DIR/timeline.html \
+    -with-dag $REPORTS_DIR/dag.html \
+    $GREBI_NF_EXTRA_ARGS"

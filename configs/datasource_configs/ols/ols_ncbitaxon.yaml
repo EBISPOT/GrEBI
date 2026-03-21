@@ -1,0 +1,14 @@
+name: OLS.ncbitaxon
+enabled: true
+download:
+  - dest: ols/ncbitaxon.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/ncbitaxon.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/ncbitaxon.json.gz
+ingests:
+  - globs: ["ols/ncbitaxon.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies ncbitaxon
+        --skip-obsolete'

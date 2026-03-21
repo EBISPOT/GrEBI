@@ -20,8 +20,14 @@ export NXF_SINGULARITY_CACHEDIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_SUBGRAP
 module load nextflow/24.10.3
 
 
-srun --time 1:0:0 --mem 4g mkdir -p $GREBI_OUT_DIR $NXF_HOME $NXF_WORK $NXF_TEMP $NXF_CACHE_DIR $NXF_SINGULARITY_CACHEDIR
+export REPORTS_DIR=$GREBI_OUT_DIR/reports
 
-srun --time 6-0:0:0 --mem 32g nextflow $GREBI_DATALOAD_HOME/nextflow/main.nf -c $GREBI_NEXTFLOW_CONFIG -resume
+srun --time 1:0:0 --mem 4g mkdir -p $GREBI_OUT_DIR $NXF_HOME $NXF_WORK $NXF_TEMP $NXF_CACHE_DIR $NXF_SINGULARITY_CACHEDIR $REPORTS_DIR
+
+srun --time 6-0:0:0 --mem 32g nextflow $GREBI_DATALOAD_HOME/nextflow/main.nf -c $GREBI_NEXTFLOW_CONFIG -resume \
+  -with-report $REPORTS_DIR/report.html \
+  -with-trace $REPORTS_DIR/trace.txt \
+  -with-timeline $REPORTS_DIR/timeline.html \
+  -with-dag $REPORTS_DIR/dag.html
 
 

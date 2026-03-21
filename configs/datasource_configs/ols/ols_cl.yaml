@@ -1,0 +1,14 @@
+name: OLS.cl
+enabled: true
+download:
+  - dest: ols/cl.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/cl.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/cl.json.gz
+ingests:
+  - globs: ["ols/cl.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies cl
+        --skip-obsolete'

@@ -1,0 +1,14 @@
+name: OLS.mondo
+enabled: true
+download:
+  - dest: ols/mondo.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/mondo.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/mondo.json.gz
+ingests:
+  - globs: ["ols/mondo.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies mondo
+        --skip-obsolete'

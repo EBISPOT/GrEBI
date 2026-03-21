@@ -1,0 +1,14 @@
+name: OLS.iao
+enabled: true
+download:
+  - dest: ols/iao.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/iao.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/iao.json.gz
+ingests:
+  - globs: ["ols/iao.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies iao
+        --skip-obsolete'

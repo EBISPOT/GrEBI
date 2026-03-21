@@ -1,0 +1,14 @@
+name: OLS.so
+enabled: true
+download:
+  - dest: ols/so.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/so.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/so.json.gz
+ingests:
+  - globs: ["ols/so.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies so
+        --skip-obsolete'

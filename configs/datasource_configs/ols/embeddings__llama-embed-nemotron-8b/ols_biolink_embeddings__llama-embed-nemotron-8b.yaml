@@ -1,0 +1,18 @@
+name: OLS.biolink
+enabled: true
+download:
+  - dest: ols_embeddings/llama-embed-nemotron-8b_pca512/biolink.parquet.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev2/out/embeddings/llama-embed-nemotron-8b_pca512/biolink.parquet.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev2/embeddings/llama-embed-nemotron-8b_pca512/biolink.parquet.gz
+ingests:
+  - globs: ["ols_embeddings/llama-embed-nemotron-8b_pca512/biolink.parquet.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_parquet2jsonl |
+      grebi_transform_jsonl
+        --json-select-by-value string_type:LABEL
+        --json-select-keys iri,embedding
+        --json-rename iri:id
+        --json-rename embedding:embedding:llama-embed-nemotron-8b_pca512
+          '

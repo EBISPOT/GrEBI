@@ -32,6 +32,9 @@ struct Args {
     #[arg(long)]
     json_de_nest_field:Option<Vec<String>>,
 
+    #[arg(long)]
+    json_select_by_value:Option<Vec<String>>,
+
     #[arg(long, action)]
     json_inject_hashid:bool
 
@@ -94,6 +97,15 @@ fn main() {
         HashSet::new()
     };
 
+    let mut select_by_value:HashMap<String,String> = HashMap::new();
+    if args.json_select_by_value.is_some() {
+        for arg in args.json_select_by_value.unwrap() {
+            let delim = arg.find(':').unwrap();
+            let (key,val)=(arg[0..delim].to_string(), arg[delim+1..].to_string());
+            select_by_value.insert(key, val);
+        }
+    }
+
     loop {
 
         let mut line:Vec<u8> = Vec::new();
@@ -104,6 +116,20 @@ fn main() {
         }
 
         let json:serde_json::Map<String,Value> = serde_json::from_slice(&line).unwrap();
+
+        if !select_by_value.is_empty() {
+            let mut matches = true;
+            for (key, expected_val) in select_by_value.iter() {
+                match json.get(key) {
+                    Some(Value::String(s)) if s == expected_val => {},
+                    _ => { matches = false; break; }
+                }
+            }
+            if !matches {
+                continue;
+            }
+        }
+
         let mut out_json = serde_json::Map::new();
 
         if args.json_inject_type.len() > 0 {

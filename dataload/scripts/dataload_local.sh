@@ -6,8 +6,8 @@ if [ -z "$GREBI_SUBGRAPH" ]; then
 fi
 
 if [ -z "$GREBI_NF_CONFIG" ]; then
-  echo "GREBI_NF_CONFIG not set, using default local 64g config"
-  GREBI_NF_CONFIG="dataload/nextflow/local_64g_nextflow.config"
+  echo "GREBI_NF_CONFIG not set, using default local 4 GB RAM config"
+  GREBI_NF_CONFIG="dataload/nextflow/local_4g_nextflow.config"
 fi
 
 SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
@@ -23,15 +23,17 @@ TMP_DIR=$GREBI_HOME/tmp/$GREBI_SUBGRAPH
 OUT_DIR=$GREBI_HOME/out/$GREBI_SUBGRAPH
 GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-$GREBI_HOME/downloads}
 
-mkdir -p $TMP_DIR/NXF_WORK $TMP_DIR/NXF_HOME $TMP_DIR/NXF_TEMP $TMP_DIR/NXF_CACHE_DIR
+REPORTS_DIR=$OUT_DIR/reports
+mkdir -p $TMP_DIR/NXF_WORK $TMP_DIR/NXF_HOME $TMP_DIR/NXF_TEMP $TMP_DIR/NXF_CACHE_DIR $REPORTS_DIR
 
 mkdir -p $TMP_DIR
 
 # Ensure nested Docker containers (spawned by Nextflow) run with the same
 # UID/GID as the host user to avoid permission issues when writing to the
 # bind-mounted work directory on GitHub Actions.
-# On macOS (e.g. Rancher Desktop) this is not needed as containers already
-# run with proper permissions to access the Docker socket.
+# On macOS the orchestrator runs as root (Docker Desktop handles socket
+# permissions natively); on Linux we run as the host user with the Docker
+# socket group.
 HOST_UID=$(id -u)
 HOST_GID=$(id -g)
 
@@ -51,12 +53,19 @@ docker run \
   -e GREBI_DATALOAD_HOME=$GREBI_HOME/dataload \
   -e GREBI_SUBGRAPH=$GREBI_SUBGRAPH \
   -e GREBI_DOWNLOADS_PATH=$GREBI_DOWNLOADS_PATH \
-  -e NXF_USRMAP=$(id -u) \
+  -e NXF_USRMAP=${HOST_UID} \
+  -e HOST_UID=${HOST_UID} \
+  -e HOST_GID=${HOST_GID} \
   -e NXF_WORK=$TMP_DIR/NXF_WORK \
   -e NXF_HOME=$TMP_DIR/NXF_HOME\
   -e NXF_TEMP=$TMP_DIR/NXF_TEMP \
   -e NXF_CACHE_DIR=$TMP_DIR/NXF_CACHE_DIR \
   ghcr.io/ebispot/grebi_nextflow:latest \
   bash -c "cd $GREBI_HOME && nextflow dataload/nextflow/main.nf \
-    -c $GREBI_NF_CONFIG -resume $GREBI_NF_EXTRA_ARGS"
+    -c $GREBI_NF_CONFIG -resume \
+    -with-report $REPORTS_DIR/report.html \
+    -with-trace $REPORTS_DIR/trace.txt \
+    -with-timeline $REPORTS_DIR/timeline.html \
+    -with-dag $REPORTS_DIR/dag.html \
+    $GREBI_NF_EXTRA_ARGS"
 

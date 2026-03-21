@@ -1,0 +1,14 @@
+name: OLS.doid
+enabled: true
+download:
+  - dest: ols/doid.json.gz
+    sources:
+      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/doid.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/doid.json.gz
+ingests:
+  - globs: ["ols/doid.json.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_ingest_ols
+        --ontologies doid
+        --skip-obsolete'

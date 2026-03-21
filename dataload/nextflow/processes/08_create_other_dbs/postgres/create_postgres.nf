@@ -95,15 +95,19 @@ EOF
     # Stop PostgreSQL cleanly
     pg_ctl -D \$PGDATA stop -m fast
 
-    # Re-enable WAL for production use
-    sed -i 's/^wal_level = minimal/wal_level = replica/' \$PGDATA/postgresql.conf
-    sed -i 's/^fsync = off/fsync = on/' \$PGDATA/postgresql.conf
-    sed -i 's/^synchronous_commit = off/synchronous_commit = on/' \$PGDATA/postgresql.conf
-    sed -i 's/^full_page_writes = off/full_page_writes = on/' \$PGDATA/postgresql.conf
-    # Update socket dir to /var/run/postgresql for deployment
-    sed -i "s|unix_socket_directories = .*|unix_socket_directories = '/var/run/postgresql'|" \$PGDATA/postgresql.conf
-    # Enable TCP connections for deployment
-    sed -i "s/^listen_addresses = ''/listen_addresses = '*'/" \$PGDATA/postgresql.conf
+    # Re-enable WAL and update settings for production use
+    # Use temp file instead of sed -i (which fails on macOS Docker volumes)
+    _TMPCONF=\$(mktemp)
+    sed \\
+      -e 's/^wal_level = minimal/wal_level = replica/' \\
+      -e 's/^fsync = off/fsync = on/' \\
+      -e 's/^synchronous_commit = off/synchronous_commit = on/' \\
+      -e 's/^full_page_writes = off/full_page_writes = on/' \\
+      -e "s|unix_socket_directories = .*|unix_socket_directories = '/var/run/postgresql'|" \\
+      -e "s/^listen_addresses = ''/listen_addresses = '*'/" \\
+      \$PGDATA/postgresql.conf > \$_TMPCONF
+    cat \$_TMPCONF > \$PGDATA/postgresql.conf
+    rm -f \$_TMPCONF
 
     # Add pg_hba.conf entry for network connections
     echo "host all all 0.0.0.0/0 trust" >> \$PGDATA/pg_hba.conf

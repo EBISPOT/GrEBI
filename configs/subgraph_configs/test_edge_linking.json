@@ -162,6 +162,6 @@
     "IMPC"
   ],
   "datasource_configs": [
-    "./configs/datasource_configs/test_edge_linking.yaml"
+    "./configs/datasource_configs/test/test_edge_linking.yaml"
   ]
 }
