@@ -372,6 +372,11 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
+                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/edge_counts", ctx -> {
+                    var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(postgres.getBothEdgeCounts(ctx.pathParam("subgraph"), nodeId)));
+                })
                 .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/incoming_edge_counts", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
