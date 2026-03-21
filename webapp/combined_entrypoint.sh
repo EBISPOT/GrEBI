@@ -135,14 +135,9 @@ case "$MODE" in
         ;;
         
     *)
-        echo "Unknown mode: $MODE"
-        echo ""
-        echo "Usage: $0 [run|test|bash]"
-        echo ""
-        echo "Modes:"
-        echo "  run   - Start all services and run continuously (default)"
-        echo "  test  - Start services, run integration tests, then exit"
-        echo "  bash  - Start interactive bash shell without starting services"
-        exit 1
+        # Unknown mode — treat the arguments as a command to exec.
+        # This allows Nextflow (and other tools) to run arbitrary scripts
+        # inside the container while still benefiting from entrypoint setup.
+        exec "$@"
         ;;
 esac
