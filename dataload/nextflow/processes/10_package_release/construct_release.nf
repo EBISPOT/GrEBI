@@ -41,6 +41,6 @@ process construct_release {
     python3 ${dataload_home}/scripts/generate_run_script.py \
         --subgraph ${subgraph} \
         --image ${docker_image} \
-        -o "\$RELEASE_DIR/run_grebi.sh"
+        -o "\$RELEASE_DIR/grebi.sh"
     """
 }

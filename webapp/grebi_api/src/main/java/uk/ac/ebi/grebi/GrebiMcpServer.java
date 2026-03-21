@@ -25,7 +25,7 @@ import io.modelcontextprotocol.spec.McpSchema.Content;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 import reactor.core.publisher.Mono;
 import uk.ac.ebi.grebi.repo.GrebiMetadataRepo;
-import uk.ac.ebi.grebi.repo.GrebiNeoRepo;
+import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
 import uk.ac.ebi.grebi.repo.GrebiSolrRepo;
 
@@ -44,13 +44,13 @@ public class GrebiMcpServer {
     """;
 
     public GrebiMcpServer(
-        final GrebiNeoRepo neo,
+        final GrebiCypherRepo cypher,
         final GrebiSolrRepo solr,
         final GrebiMetadataRepo metadata,
         final Set<String> subgraphs,
         final GrebiQueryTemplatesRepo queryTemplates
     ) {
-        var stats = neo != null ? neo.getStats() : null;
+        var stats = cypher != null ? cypher.getStats() : null;
 
         Gson gson = new Gson();
 
@@ -253,7 +253,7 @@ public class GrebiMcpServer {
                         params.put(p.getKey(), List.of(p.getValue().toString()));
                     }
 
-                    Page<Map<String,Object>> res = neo.runQueryFromTemplatePaginated(subgraph, qt, params, false, page);
+                    Page<Map<String,Object>> res = cypher.runQueryFromTemplatePaginated(subgraph, qt, params, false, page);
 
                     var edgeIdColumnIds = qt.result_columns.stream()
                         .filter(c -> c.column_type.equalsIgnoreCase("EdgeId"))

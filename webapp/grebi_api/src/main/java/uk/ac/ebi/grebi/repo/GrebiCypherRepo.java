@@ -1,98 +1,60 @@
 package uk.ac.ebi.grebi.repo;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 
-import io.javalin.http.Context;
-import io.netty.util.concurrent.CompleteFuture;
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import reactor.adapter.JdkFlowAdapter;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-
-import org.neo4j.driver.EagerResult;
-import org.neo4j.driver.QueryConfig;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.reactive.ReactiveResult;
-import org.neo4j.driver.types.Node;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 
 import uk.ac.ebi.grebi.GrebiApi;
-import uk.ac.ebi.grebi.db.Neo4jClient;
+import uk.ac.ebi.grebi.db.CypherServiceClient;
 import uk.ac.ebi.grebi.db.PrefixClient;
 import uk.ac.ebi.grebi.db.ResolverClient;
 import uk.ac.ebi.grebi.repo.QueryTemplate;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow.Publisher;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
-public class GrebiNeoRepo {
+public class GrebiCypherRepo {
 
-    public static String[] getNeo4jHosts() {
-        var env = System.getenv("GREBI_NEO4J_HOSTS");
-        if(env != null)
-            return env.split(";");
-        else
-            return List.of("bolt://localhost:7687/").toArray(new String[0]);
-    }
-
-    Map<String, Neo4jClient> subgraphToClient = new HashMap<>();
+    CypherServiceClient cypherClient;
+    Set<String> subgraphs;
 
     ResolverClient resolver = new ResolverClient();
     Gson gson = new Gson();
     PrefixClient prefixClient = new PrefixClient();
 
-    public GrebiNeoRepo() throws IOException {
-
-        for(String host : getNeo4jHosts()) {
-            Neo4jClient client = new Neo4jClient(host);
-
-            String subgraph = (String)
-                    client.rawQuery("MATCH (n:GraphNode) RETURN n.`grebi:subgraph` AS subgraph LIMIT 1")
-                        .get(0).get("subgraph");
-
-            subgraphToClient.put(subgraph, client);
-        }
-    }
-
-    private Neo4jClient getClient(String subgraph) {
-        var client = subgraphToClient.get(subgraph);
-        if(client != null)
-            return client;
-        throw new IllegalArgumentException("subgraph " + subgraph + " not found");
+    public GrebiCypherRepo() throws IOException {
+        cypherClient = new CypherServiceClient(CypherServiceClient.getCypherServiceUrl());
+        subgraphs = cypherClient.getSubgraphs();
     }
 
     public Set<String> getSubgraphs() {
-        return subgraphToClient.keySet();
+        return subgraphs;
     }
 
     final String STATS_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/stats.cypher").readAllBytes(), StandardCharsets.UTF_8);
     final String INCOMING_EDGES_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/incoming_edges.cypher").readAllBytes(), StandardCharsets.UTF_8);
 
+    @SuppressWarnings("unchecked")
     public Map<String, Map<String,Object>> getStats() {
         Map<String, Map<String,Object>> subgraphToStats = new HashMap<>();
-        for(var subgraph : subgraphToClient.keySet()) {
-            EagerResult props_res = getClient(subgraph).getDriver().executableQuery(STATS_QUERY).withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
-            subgraphToStats.put(subgraph, props_res.records().get(0).values().get(0).asMap());
+        for(var subgraph : subgraphs) {
+            try {
+                var records = cypherClient.query(subgraph, STATS_QUERY, Map.of());
+                if (!records.isEmpty()) {
+                    subgraphToStats.put(subgraph, (Map<String, Object>) records.get(0).values().iterator().next());
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to get stats for subgraph " + subgraph, e);
+            }
         }
         return subgraphToStats;
     }
@@ -106,28 +68,29 @@ public class GrebiNeoRepo {
     }
 
     public List<EdgeAndNode> getIncomingEdges(String subgraph, String nodeId, Pageable pageable) {
-        EagerResult res = getClient(subgraph).getDriver().executableQuery(INCOMING_EDGES_QUERY)
-            .withParameters(Map.of(
+        List<Map<String, Object>> records;
+        try {
+            records = cypherClient.query(subgraph, INCOMING_EDGES_QUERY, Map.of(
                     "nodeId", subgraph + ":" + nodeId,
                     "offset", pageable.getOffset(),
                     "limit", pageable.getPageSize()
-            ))
-            .withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
+            ));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to get incoming edges", e);
+        }
 
         var resolved = resolver.resolveToMap(
                 subgraph,
-                res.records().stream().flatMap(record -> {
-                    var props = record.asMap();
+                records.stream().flatMap(record -> {
                     return List.of(
-                            removeSubgraphPrefix((String) props.get("otherId"), subgraph),
-                            removeSubgraphPrefix((String) props.get("edgeId"), subgraph)
+                            removeSubgraphPrefix((String) record.get("otherId"), subgraph),
+                            removeSubgraphPrefix((String) record.get("edgeId"), subgraph)
                     ).stream();
                 }).collect(Collectors.toSet()));
 
-        return res.records().stream().map(record -> {
-            var props = record.asMap();
-            var otherId = removeSubgraphPrefix((String)props.get("otherId"), subgraph);
-            var edgeId = removeSubgraphPrefix((String)props.get("edgeId"), subgraph);
+        return records.stream().map(record -> {
+            var otherId = removeSubgraphPrefix((String) record.get("otherId"), subgraph);
+            var edgeId = removeSubgraphPrefix((String) record.get("edgeId"), subgraph);
             return new EdgeAndNode(resolved.get(edgeId), resolved.get(otherId));
         }).collect(Collectors.toList());
     }
@@ -147,25 +110,20 @@ public class GrebiNeoRepo {
 
 		ArrayList<SimilarResult> res = new ArrayList<>();
 
-        var neo4jClient = getClient(subgraph);
-		Session session = neo4jClient.getSession();
+        List<Map<String, Object>> records;
+        try {
+            records = cypherClient.query(subgraph, query, Map.of(
+                "id", subgraph + ":" + nodeId,
+                "n", n
+            ));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to get similar nodes", e);
+        }
 
-		Result result = session.run(query, Map.of(
-            "id", subgraph + ":" + nodeId,
-            "n", n
-        ));
-
-		for(Record r : result.list()) {
-
-			var rmap = r.asMap();
-
+		for(var rmap : records) {
             SimilarResult resRow = new SimilarResult();
-
-			double score = (Double) rmap.get("score");
-
+			resRow.score = ((Number) rmap.get("score")).doubleValue();
 			resRow.node = rmap.get("node");
-			resRow.score = score;
-
 			res.add(resRow);
 		}
 
@@ -187,7 +145,6 @@ public class GrebiNeoRepo {
             return Collections.emptyMap();
         }
 
-        var neo4jClient = getClient(subgraph);
         String prefixedNodeId = subgraph + ":" + nodeId;
 
         // Build a UNION ALL query with one branch per item, using the Cypher DSL
@@ -235,38 +192,35 @@ public class GrebiNeoRepo {
 
         String cypher = combined.getCypher();
 
-        Session session = neo4jClient.getSession();
+        List<Map<String, Object>> records;
         try {
-            Result result = session.run(cypher, Map.of("nodeId", prefixedNodeId));
-            List<Record> records = result.list();
-
-            if (records.isEmpty()) {
-                return Collections.emptyMap();
-            }
-
-            // Build result map keyed by "direction::edgeType" with minimal node data
-            Map<String, Map<String, Object>> resultMap = new LinkedHashMap<>();
-            for (Record r : records) {
-                String dir = r.get("dir").asString();
-                String et = r.get("et").asString();
-                String rawId = r.get("otherId").asString();
-                String cleanId = removeSubgraphPrefix(rawId, subgraph);
-
-                // Build a minimal node object with just the fields GraphNodeRef needs
-                Map<String, Object> nodeData = new LinkedHashMap<>();
-                nodeData.put("grebi:nodeId", cleanId);
-
-                var otherName = r.get("otherName");
-                if (otherName != null && !otherName.isNull()) {
-                    nodeData.put("grebi:name", otherName.asObject());
-                }
-
-                resultMap.put(dir + "::" + et, nodeData);
-            }
-            return resultMap;
-        } finally {
-            session.close();
+            records = cypherClient.query(subgraph, cypher, Map.of("nodeId", prefixedNodeId));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to resolve single edges", e);
         }
+
+        if (records.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Map<String, Object>> resultMap = new LinkedHashMap<>();
+        for (var r : records) {
+            String dir = (String) r.get("dir");
+            String et = (String) r.get("et");
+            String rawId = (String) r.get("otherId");
+            String cleanId = removeSubgraphPrefix(rawId, subgraph);
+
+            Map<String, Object> nodeData = new LinkedHashMap<>();
+            nodeData.put("grebi:nodeId", cleanId);
+
+            var otherName = r.get("otherName");
+            if (otherName != null) {
+                nodeData.put("grebi:name", otherName);
+            }
+
+            resultMap.put(dir + "::" + et, nodeData);
+        }
+        return resultMap;
     }
 
     private String removeSubgraphPrefix(String id, String subgraph) {
@@ -274,12 +228,6 @@ public class GrebiNeoRepo {
             throw new RuntimeException();
         }
         return id.substring(subgraph.length() + 1);
-    }
-
-    static Map<String, Object> mapValue(Value value) {
-        Map<String, Object> res = new TreeMap<>(value.asMap());
-        res.put("grebi:type", StreamSupport.stream(value.asNode().labels().spliterator(), false).collect(Collectors.toList()));
-        return res;
     }
 
     class PreparedQuery {
@@ -397,19 +345,20 @@ public class GrebiNeoRepo {
 
         System.err.println("Running query: " + query + "\nWith parameters: " + paramMap + "\nCount query: " + countQuery);
 
-        EagerResult res = getClient(subgraph).getDriver().executableQuery(query)
-            .withParameters(paramMap)
-            .withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
-
-        EagerResult countRes = getClient(subgraph).getDriver().executableQuery(countQuery)
-            .withParameters(paramMap)
-            .withConfig(QueryConfig.builder().withDatabase("neo4j").build()).execute();
+        List<Map<String, Object>> records;
+        List<Map<String, Object>> countRecords;
+        try {
+            records = cypherClient.query(subgraph, query, paramMap);
+            countRecords = cypherClient.query(subgraph, countQuery, paramMap);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to run query template", e);
+        }
         
-        if(countRes.records().isEmpty() || countRes.records().get(0).get("count") == null) {
+        if(countRecords.isEmpty() || countRecords.get(0).get("count") == null) {
             throw new RuntimeException("Count query did not return a count");
         }
 
-        var count = countRes.records().get(0).get("count").asInt();
+        var count = ((Number) countRecords.get(0).get("count")).intValue();
         if(count == 0) {
             return new org.springframework.data.domain.PageImpl<>(List.of(), pageable, 0);
         }
@@ -420,12 +369,13 @@ public class GrebiNeoRepo {
 
             var resolved = resolver.resolveToMap(
                 subgraph,
-                res.records().stream()
+                records.stream()
                     .flatMap(record -> columns.stream()
                         .filter(column -> column.column_type.equals("GraphNodeId"))
                         .map(column -> {
                             String columnId = column.column_id;
-                            var value = record.get(columnId).asMap();
+                            @SuppressWarnings("unchecked")
+                            var value = (Map<String, Object>) record.get(columnId);
                             String nodeId = value.get("grebi:nodeId").toString();
 
                             // TODO ?? 
@@ -439,13 +389,14 @@ public class GrebiNeoRepo {
                     .collect(Collectors.toSet())
             );
 
-            var results =  res.records().stream().map(record -> {
+            var results =  records.stream().map(record -> {
                 Map<String, Object> row = new HashMap<>();
                 for (QueryTemplate.ResultColumn column : columns) {
                     String columnId = column.column_id;
                     if (column.column_type.equals("GraphNodeId")) {
 
-                        var value = record.get(columnId).asMap();
+                        @SuppressWarnings("unchecked")
+                        var value = (Map<String, Object>) record.get(columnId);
                         String nodeId = value.get("grebi:nodeId").toString();
 
                         // TODO ??
@@ -455,7 +406,7 @@ public class GrebiNeoRepo {
 
                         row.put(columnId, resolved.get(nodeId));
                     } else {
-                        row.put(columnId, record.get(columnId).asObject());
+                        row.put(columnId, record.get(columnId));
                     }
                 }
                 return row;
@@ -469,14 +420,15 @@ public class GrebiNeoRepo {
 
         } else {
             return new PageImpl<Map<String, Object>>(
-                res.records().stream()
+                records.stream()
                     .map(record -> {
                         Map<String, Object> row = new HashMap<>();
 
                         for (QueryTemplate.ResultColumn column : columns) {
                             String columnId = column.column_id;
                             if (column.column_type.equals("GraphNodeId")) {
-                                var value = record.get(columnId).asMap();
+                                @SuppressWarnings("unchecked")
+                                var value = (Map<String, Object>) record.get(columnId);
                                 String nodeId = value.get("grebi:nodeId").toString();
 
                                 var valueCopy = new TreeMap<>(value);
@@ -489,7 +441,7 @@ public class GrebiNeoRepo {
 
                                 row.put(columnId, valueCopy);
                             } else {
-                                row.put(columnId, record.get(columnId).asObject());
+                                row.put(columnId, record.get(columnId));
                             }
                         }
 
@@ -503,6 +455,7 @@ public class GrebiNeoRepo {
     }
 
 
+    @SuppressWarnings("unchecked")
     public CompletableFuture<Void> runQueryFromTemplateStreamed(
             String subgraph,
             QueryTemplate template,
@@ -532,16 +485,10 @@ public class GrebiNeoRepo {
         writer.write("\n");
 
         var preparedQuery = prepareQuery(subgraph, template, params, sort);
-        var session = getClient(subgraph).getReactiveSession();
 
-        Flux<ReactiveResult> results = JdkFlowAdapter
-            .flowPublisherToFlux(session.run(preparedQuery.query, preparedQuery.params));
-
-            CompletableFuture<Void> future = new CompletableFuture<>();
-
-        results
-            .flatMap(result -> JdkFlowAdapter.flowPublisherToFlux(result.records()))
-            .doOnNext(record -> {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                cypherClient.streamQuery(subgraph, preparedQuery.query, preparedQuery.params, record -> {
 
                     boolean first = true;
 
@@ -559,12 +506,10 @@ public class GrebiNeoRepo {
 
                         String columnId = column.column_id;
                         if (column.column_type.equals("GraphNodeId")) {
-                            var value = record.get(columnId).asMap();
+                            var value = (Map<String, Object>) record.get(columnId);
 
                             var sourceIds = (List<String>) value.get("id");
                             var nodeId = pickFavouriteSourceId(sourceIds);
-
-                            // System.err.println("Source IDs for " + columnId + ": " + sourceIds);
 
                             String nodeLabel;
 
@@ -575,33 +520,24 @@ public class GrebiNeoRepo {
                                 nodeLabel = names.get(0).toString();
                             }
 
-
                             writer.write("\"" + nodeId.replace("\"", "\"\"") + "\",");
                             writer.write("\"" + nodeLabel.replace("\"", "\"\"") + "\"");
 
                         } else {
-                            String raw = Objects.toString(record.get(columnId).asObject(), "");
+                            String raw = Objects.toString(record.get(columnId), "");
                             writer.write("\"" + raw.replace("\"", "\"\"") + "\"");
                         }
                     }
 
                     writer.write("\n");
-            })
-            .doOnError(error -> {
-                    writer.write("ERROR: " + error.getMessage() + "\n");
-            })
-            .doFinally(sig -> {
-                writer.flush();      // best‐effort
-                future.complete(null);
-            })
-            .subscribe(
-                rec -> {
-                    // written in doOnNext
-                },
-                future::completeExceptionally
-            );
-
-            return future;
+                });
+                writer.flush();
+            } catch (Exception e) {
+                writer.write("ERROR: " + e.getMessage() + "\n");
+                writer.flush();
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     public CompletableFuture<Void> runQueryFromTemplateStreamed(

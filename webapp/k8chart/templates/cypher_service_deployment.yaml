@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-cypher-service
+  labels:
+    app: {{ .Release.Name }}-cypher-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-cypher-service
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-cypher-service
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                    - hh-rke-wp-webadmin-58-worker-{{.Values.neo_worker_n}}.caas.ebi.ac.uk
+      securityContext:
+        runAsUser: 5533
+        runAsGroup: 1279
+        fsGroup: 5533
+      volumes:
+        - name: {{ .Release.Name }}-import
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-import-pvc
+      containers:
+        - name: cypher-service
+          image: ghcr.io/ebispot/grebi_cypher_service:{{.Values.imageTag}}
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: "/data_import"
+              name: {{ .Release.Name }}-import
+          resources:
+            requests:
+              memory: 38Gi
+              cpu: 2
+            limits:
+              memory: 38Gi
+              cpu: 2
+          env:
+            - name: GREBI_NEO4J_DATA_SEARCH_PATH
+              value: /data_import/neo4j
+            - name: GREBI_CYPHER_PORT
+              value: "8085"
+            - name: JDK_JAVA_OPTIONS
+              value: "--add-modules jdk.incubator.vector -XX:InitialRAMPercentage=50.0 -XX:MaxRAMPercentage=70.0"
+          ports:
+            - containerPort: 8085

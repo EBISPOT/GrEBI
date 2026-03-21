@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: otar/disease_phenotype/
     sources:
-      - /nfs/ftp/public/databases/opentargets/platform/25.09/output/disease_phenotype/*.parquet
+      - /nfs/production/parkinso/spot/jmcl/otar/output/disease_phenotype/disease_phenotype.parquet
 ingests:
   - globs: ["otar/disease_phenotype/*.parquet"]
     command: '

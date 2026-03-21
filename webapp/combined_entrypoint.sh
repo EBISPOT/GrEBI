@@ -6,6 +6,75 @@ echo "================================"
 
 MODE="${1:-run}"
 
+# ---------------------------------------------------------------------------
+# Service selection: if GREBI_SERVICES is set (comma-separated list), only
+# start those supervisord programs.  Otherwise start everything.
+#
+# Neo4j / cypher_service interaction:
+#   - By default (no GREBI_SERVICES): neo4j starts, cypher_service connects
+#     via bolt (GREBI_NEO4J_HOSTS), no embedded path.
+#   - Explicit services including neo4j: same — cypher_service uses bolt.
+#   - Explicit services with cypher_service but NOT neo4j: cypher_service
+#     uses embedded mode (GREBI_NEO4J_DATA_SEARCH_PATH).
+# ---------------------------------------------------------------------------
+ALL_SERVICES="api cypher_service neo4j metadata_service postgres prefix_service resolver_service solr ui"
+SUPERVISORD_CONF="/etc/supervisor/conf.d/supervisord.conf"
+
+# Determine which services are enabled
+if [ -n "${GREBI_SERVICES:-}" ]; then
+    echo "Selected services: $GREBI_SERVICES"
+    IFS=',' read -ra SELECTED <<< "$GREBI_SERVICES"
+else
+    # All services
+    IFS=' ' read -ra SELECTED <<< "$ALL_SERVICES"
+fi
+
+# Check if neo4j is in the selected list
+has_neo4j=0
+has_cypher=0
+for sel in "${SELECTED[@]}"; do
+    if [ "$sel" = "neo4j" ]; then has_neo4j=1; fi
+    if [ "$sel" = "cypher_service" ]; then has_cypher=1; fi
+done
+
+# When neo4j is enabled, cypher_service must also be enabled (it proxies queries)
+if [ "$has_neo4j" -eq 1 ] && [ "$has_cypher" -eq 0 ]; then
+    SELECTED+=("cypher_service")
+    has_cypher=1
+    # Update GREBI_SERVICES so the filtering below sees it
+    if [ -n "${GREBI_SERVICES:-}" ]; then
+        GREBI_SERVICES="${GREBI_SERVICES},cypher_service"
+    fi
+fi
+
+# Always need a filtered copy so we can tweak cypher_service env
+SUPERVISORD_CONF="/tmp/supervisord_filtered.conf"
+cp /etc/supervisor/conf.d/supervisord.conf "$SUPERVISORD_CONF"
+
+# Disable services that are not in the selected list
+if [ -n "${GREBI_SERVICES:-}" ]; then
+    for svc in $ALL_SERVICES; do
+        enabled=0
+        for sel in "${SELECTED[@]}"; do
+            if [ "$svc" = "$sel" ]; then enabled=1; break; fi
+        done
+        if [ "$enabled" -eq 0 ]; then
+            sed -i "/^\[program:${svc}\]$/,/^\[/ s/^autostart=true/autostart=false/" "$SUPERVISORD_CONF"
+        fi
+    done
+fi
+
+# Configure cypher_service mode based on whether neo4j is running
+if [ "$has_neo4j" -eq 1 ]; then
+    # Bolt mode: tell cypher_service to connect to the local Neo4j server
+    # Remove the embedded path and add bolt host
+    sed -i '/^\[program:cypher_service\]$/,/^\[/ s/^environment=.*/environment=GREBI_NEO4J_HOSTS="bolt:\/\/localhost:7687",GREBI_CYPHER_PORT="8085"/' "$SUPERVISORD_CONF"
+fi
+# Otherwise cypher_service keeps its default embedded config (GREBI_NEO4J_DATA_SEARCH_PATH)
+
+# Create logs directory so supervisord writes logs there instead of cwd
+mkdir -p ./logs 2>/dev/null || true
+
 # Ensure the current UID is resolvable in /etc/passwd (required by PostgreSQL
 # and some Java tooling).  When Docker is invoked with -u UID:GID the numeric
 # UID may not have a passwd entry.
@@ -52,7 +121,7 @@ case "$MODE" in
         # Start all services in background
         # Redirect supervisord output to file so it doesn't keep the tee pipe open
         echo "Starting services with supervisord..."
-        /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf > supervisord_output.log 2>&1 &
+        /usr/bin/supervisord -c "$SUPERVISORD_CONF" > ./logs/supervisord_output.log 2>&1 &
         SUPERVISOR_PID=$!
         
         # Give supervisord a moment to start and check if it's running
@@ -88,7 +157,7 @@ case "$MODE" in
         sleep 1
         
         # Kill all remaining processes by name
-        killall -9 java neo4j solr caddy python3 postgres 2>/dev/null || true
+        killall -9 java solr caddy python3 postgres 2>/dev/null || true
         
         # Kill any remaining child processes
         pkill -9 -P $$ 2>/dev/null || true
@@ -104,8 +173,8 @@ case "$MODE" in
         echo "Running in CONTINUOUS mode - services will run until stopped"
         echo ""
         echo "Services will be available at:"
+        echo "  Cypher Service:     http://localhost:8085"
         echo "  Neo4j Browser:      http://localhost:7474"
-        echo "  Neo4j Bolt:         bolt://localhost:7687"
         echo "  Solr Admin:         http://localhost:8983"
         echo "  PostgreSQL:         localhost:5432"
         echo "  GrEBI API:          http://localhost:8090"
@@ -121,7 +190,7 @@ case "$MODE" in
         echo ""
         
         # Start supervisor in foreground
-        exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+        exec /usr/bin/supervisord -c "$SUPERVISORD_CONF"
         ;;
         
     bash)
@@ -129,7 +198,7 @@ case "$MODE" in
         echo ""
         echo "Services are NOT started automatically."
         echo "To start services manually, run:"
-        echo "  /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf &"
+        echo "  /usr/bin/supervisord -c $SUPERVISORD_CONF &"
         echo ""
         exec /bin/bash
         ;;

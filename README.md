@@ -205,10 +205,9 @@ There are four test subgraphs, each exercising a different aspect of the pipelin
 
 ### Prerequisites
 
-You need Docker with the `docker compose` plugin and enough disk space to build three images. Build them locally before running the tests:
+You need Docker with the `docker compose` plugin and enough disk space to build two images. Build them locally before running the tests:
 
     docker build -t ghcr.io/ebispot/grebi_dataload:dev -f dataload/Dockerfile dataload
-    docker build -t ghcr.io/ebispot/grebi_nextflow:latest -f docker_envs/Dockerfile.nextflow docker_envs
     docker build -t ghcr.io/ebispot/grebi_combined:dev -f webapp/Dockerfile.combined .
 
 ### Running all tests

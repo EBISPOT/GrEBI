@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: otar/evidence/
     sources:
-      - /nfs/ftp/public/databases/opentargets/platform/25.09/output/evidence/*/*.parquet
+      - /nfs/production/parkinso/spot/jmcl/otar/output/evidence/*/*.parquet
 ingests:
   - globs: ["otar/evidence/*/*.parquet"]
     command: '

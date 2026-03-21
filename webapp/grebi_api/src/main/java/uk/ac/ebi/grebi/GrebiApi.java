@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import uk.ac.ebi.grebi.repo.GrebiNeoRepo;
+import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
 import uk.ac.ebi.grebi.db.GrebiSolrQuery;
 import uk.ac.ebi.grebi.db.ResolverClient;
@@ -39,7 +39,7 @@ public class GrebiApi {
 
     public static void main(String[] args) throws ParseException, org.apache.commons.cli.ParseException, IOException {
 
-        GrebiNeoRepo neo = null;
+        GrebiCypherRepo cypher = null;
         GrebiSolrRepo solr = null;
         GrebiPostgresRepo postgres = null;
         GrebiMetadataRepo metadata= null;
@@ -49,7 +49,7 @@ public class GrebiApi {
         Set<String> solrSubgraphs = null;
         Set<String> postgresSubgraphs = null;
         Set<String> metadataServiceSubgraphs = null;
-        Set<String> neoSubgraphs = null;
+        Set<String> cypherSubgraphs = null;
 
         while(true) {
             try {
@@ -82,20 +82,20 @@ public class GrebiApi {
 
         for(int i = 0; i < 5; ++ i) {
             try {
-                neo = new GrebiNeoRepo();
-                neoSubgraphs = neo.getSubgraphs();
-                if(!sqliteSubgraphs.equals(neoSubgraphs)) {
-                    neo = null;
-                    throw new RuntimeException("SQLite/Solr/PostgreSQL/the summary jsons/neo4j do not seem to contain the same subgraphs. Found: "
+                cypher = new GrebiCypherRepo();
+                cypherSubgraphs = cypher.getSubgraphs();
+                if(!sqliteSubgraphs.equals(cypherSubgraphs)) {
+                    cypher = null;
+                    throw new RuntimeException("SQLite/Solr/PostgreSQL/the summary jsons/cypher service do not seem to contain the same subgraphs. Found: "
                             + String.join(",", sqliteSubgraphs) + " for SQLite (from resolver service) and "
                             + String.join(",", solrSubgraphs) + " for Solr (from list of solr cores) and "
                             + String.join(",", postgresSubgraphs) + " for PostgreSQL (from edge tables) and "
                             + String.join(",", metadataServiceSubgraphs) + " for the summary jsons (from summary server) and "
-                            + String.join(",", neoSubgraphs) + " for neo4j"
+                            + String.join(",", cypherSubgraphs) + " for cypher service"
                     );
                 }
             } catch (Throwable e) {
-                System.out.println("Could not get subgraphs from Neo4j. Retrying in 10 seconds ("+ (4-i) + " attempts left)");
+                System.out.println("Could not get subgraphs from cypher service. Retrying in 10 seconds ("+ (4-i) + " attempts left)");
                 e.printStackTrace();
                 try {
                     Thread.sleep(10000);
@@ -105,31 +105,31 @@ public class GrebiApi {
             }
         }
 
-        if(neo == null) {
-            System.out.println("Neo4j is unavailable; some graph query API endpoints will be disabled");
+        if(cypher == null) {
+            System.out.println("Cypher service is unavailable; some graph query API endpoints will be disabled");
         } else {
-            System.out.println("Neo4j is available");
+            System.out.println("Cypher service is available");
         }
 
         System.out.println("Found subgraphs: " + String.join(",", solrSubgraphs));
 
-        run(neo, solr, postgres, metadata, solrSubgraphs, queryTemplates);
+        run(cypher, solr, postgres, metadata, solrSubgraphs, queryTemplates);
     }
 
     static void run(
-        final GrebiNeoRepo neo,
+        final GrebiCypherRepo cypher,
         final GrebiSolrRepo solr,
         final GrebiPostgresRepo postgres,
         final GrebiMetadataRepo metadata,
         final Set<String> subgraphs,
         final GrebiQueryTemplatesRepo queryTemplates
     ) {
-        var stats = neo != null ? neo.getStats() : null;
+        var stats = cypher != null ? cypher.getStats() : null;
 
         Gson gson = new Gson();
 
         GrebiMcpServer mcpServer = new GrebiMcpServer(
-            neo, solr, metadata, subgraphs, queryTemplates
+            cypher, solr, metadata, subgraphs, queryTemplates
         );
 
         Javalin.create(config -> {
@@ -162,7 +162,7 @@ public class GrebiApi {
                     if(stats != null) {
                         ctx.result(gson.toJson(stats));
                     } else {
-                        ctx.result("{\"error\":\"neo4j is not available\"}");
+                        ctx.result("{\"error\":\"cypher service is not available\"}");
                     }
                 })
                 .get("/api/v1/topics", ctx -> {
@@ -280,7 +280,7 @@ public class GrebiApi {
 
                     ctx.future(() -> {
                         try {
-                            return neo.runQueryFromTemplateStreamed(subgraph, template, params, sort, ctx.res());
+                            return cypher.runQueryFromTemplateStreamed(subgraph, template, params, sort, ctx.res());
                         } catch (IOException e) {
                             throw new RuntimeException("Failed to write CSV response", e);
                         }
@@ -315,7 +315,7 @@ public class GrebiApi {
 
                     var resolve = "true".equals(ctx.queryParam("resolve"));
 
-                    var res = neo.runQueryFromTemplatePaginated(subgraph, template, params, resolve, page);
+                    var res = cypher.runQueryFromTemplatePaginated(subgraph, template, params, resolve, page);
 
                     ctx.result(
                         gson.toJson(
@@ -390,17 +390,17 @@ public class GrebiApi {
                 .post("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/resolve_single_edges", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
-                    if (neo == null) {
+                    if (cypher == null) {
                         ctx.result("{}");
                         return;
                     }
                     var body = ctx.body();
-                    var items = gson.fromJson(body, GrebiNeoRepo.DirectionAndEdgeType[].class);
+                    var items = gson.fromJson(body, GrebiCypherRepo.DirectionAndEdgeType[].class);
                     if (items == null || items.length == 0) {
                         ctx.result("{}");
                         return;
                     }
-                    var result = neo.resolveSingleEdges(ctx.pathParam("subgraph"), nodeId, List.of(items));
+                    var result = cypher.resolveSingleEdges(ctx.pathParam("subgraph"), nodeId, List.of(items));
                     ctx.result(gson.toJson(result));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/incoming_edges", ctx -> {
@@ -537,8 +537,8 @@ public class GrebiApi {
                     if ("solr".equalsIgnoreCase(backend)) {
                         res = solr.getSimilar(ctx.pathParam("subgraph"), nodeId, n, modelId);
                     } else {
-                        // Default to Neo4j (which uses hardcoded text-embedding-3-small)
-                        res = neo.getSimilar(ctx.pathParam("subgraph"), nodeId, n);
+                        // Default to cypher service (which uses hardcoded text-embedding-3-small)
+                        res = cypher.getSimilar(ctx.pathParam("subgraph"), nodeId, n);
                     }
 
                     ctx.contentType("application/json");

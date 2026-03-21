@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: otar/drug_indication/
     sources:
-      - /nfs/ftp/public/databases/opentargets/platform/25.09/output/drug_indication/*.parquet
+      - /nfs/production/parkinso/spot/jmcl/otar/output/drug_indication/part-00000-d933a69d-d5ec-42b6-9c76-38bc8ca8d735-c000.snappy.parquet
 ingests:
   - globs: ["otar/drug_indication/*.parquet"]
     command: '

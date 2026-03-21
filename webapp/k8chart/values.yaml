@@ -8,7 +8,3 @@ resolver_worker_n: "4"
 solr_worker_n: "3"
 postgres_worker_n: "3"
 
-subgraph1: ebi_monarch_xspecies
-subgraph2: impc_x_gwas
-
-

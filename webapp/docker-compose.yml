@@ -12,21 +12,21 @@ services:
       ports:
         - 8090:8090
       depends_on:
-        - grebi-neo4j
+        - grebi-cypher-service
         - grebi-solr
         - grebi-postgres
         - grebi-resolver-service
         - grebi-metadata-service
         - grebi-prefix-service
       links:
-        - grebi-neo4j
+        - grebi-cypher-service
         - grebi-solr
         - grebi-postgres
         - grebi-resolver-service
         - grebi-metadata-service
         - grebi-prefix-service
       environment:
-        - GREBI_NEO4J_HOST=bolt://grebi-neo4j:7687/
+        - GREBI_CYPHER_HOST=http://grebi-cypher-service:8085
         - GREBI_SOLR_HOST=http://grebi-solr:8983/
         - GREBI_POSTGRES_HOST=grebi-postgres
         - GREBI_POSTGRES_PORT=5432
@@ -35,16 +35,16 @@ services:
         - GREBI_RESOLVER_HOST=http://grebi-resolver-service:8084/
         - GREBI_METADATA_HOST=http://grebi-metadata-service:8081/
         - GREBI_PREFIX_HOST=http://grebi-prefix-service:8082/
-    grebi-neo4j:
-      image: neo4j:2025.03.0-community
+    grebi-cypher-service:
+      image: ghcr.io/ebispot/grebi_cypher_service:dev
       ports:
-        - 7474:7474
-        - 7687:7687
+        - 8085:8085
       volumes:
-        - ${GREBI_NEO_DATA_PATH:?Need path to Neo4j data folder}:/var/lib/neo4j/data
+        - ${GREBI_NEO_DATA_PATH:?Need path to Neo4j data folder}:/data/neo4j
       environment:
-        - NEO4J_AUTH=none
-        - NEO4J_PLUGINS=["apoc"]
+        - GREBI_NEO4J_DATA_SEARCH_PATH=/data/neo4j
+        - GREBI_CYPHER_PORT=8085
+        - JDK_JAVA_OPTIONS=--add-modules jdk.incubator.vector
     grebi-solr:
       image: solr:9.8.1
       ports:
@@ -86,7 +86,4 @@ services:
         - ${GREBI_PREFIX_MAP_PATH:?Need path for prefix map}:/prefix_map_normalise.json
       environment:
         - GREBI_PREFIX_MAP_PATH=/prefix_map_normalise.json
-volumes:
-    grebi-neo4j-data:
-
 

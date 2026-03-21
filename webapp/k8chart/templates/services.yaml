@@ -29,40 +29,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-{{.Values.subgraph1 | replace "_" "-" }}-neo4j
+  name: {{ .Release.Name }}-cypher-service
   labels:
-    app: {{ .Release.Name }}-{{.Values.subgraph1 | replace "_" "-" }}-neo4j
+    app: {{ .Release.Name }}-cypher-service
 spec:
   ports:
-      - port: 7474
-        targetPort: 7474
+      - port: 8085
+        targetPort: 8085
         name: http
         protocol: TCP
-      - port: 7687
-        targetPort: 7687
-        name: bolt
-        protocol: TCP
   selector:
-    app: {{ .Release.Name }}-{{.Values.subgraph1 | replace "_" "-" }}-neo4j
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Release.Name }}-{{.Values.subgraph2 | replace "_" "-" }}-neo4j
-  labels:
-    app: {{ .Release.Name }}-{{.Values.subgraph2 | replace "_" "-" }}-neo4j
-spec:
-  ports:
-      - port: 7474
-        targetPort: 7474
-        name: http
-        protocol: TCP
-      - port: 7687
-        targetPort: 7687
-        name: bolt
-        protocol: TCP
-  selector:
-    app: {{ .Release.Name }}-{{.Values.subgraph2 | replace "_" "-" }}-neo4j
+    app: {{ .Release.Name }}-cypher-service
 ---
 apiVersion: v1
 kind: Service

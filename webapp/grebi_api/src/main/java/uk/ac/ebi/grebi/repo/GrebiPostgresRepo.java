@@ -38,7 +38,7 @@ public class GrebiPostgresRepo {
             Pageable pageable) {
 
         var result = pgClient.queryEdges(subgraph, filterField, filterValue,
-                sortField, sortDir,
+                extraFilters, sortField, sortDir,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
         return new GrebiFacetedResultsPage<>(
@@ -59,7 +59,7 @@ public class GrebiPostgresRepo {
             Pageable pageable) {
 
         var result = pgClient.queryEdgeRefs(subgraph, filterField, filterValue,
-                sortField, sortDir,
+                extraFilters, sortField, sortDir,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
         // Collect unique from/to node IDs for resolution

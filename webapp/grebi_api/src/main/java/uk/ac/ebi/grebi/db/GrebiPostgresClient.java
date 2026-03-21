@@ -2,20 +2,33 @@ package uk.ac.ebi.grebi.db;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.jooq.*;
+import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
 
+import static org.jooq.impl.DSL.*;
+
 /**
  * Low-level PostgreSQL client for GrEBI edge queries.
- * Manages a connection pool to the pre-built PostgreSQL database.
+ * Uses jOOQ DSL for safe SQL generation — no string-concatenated SQL.
  */
 public class GrebiPostgresClient {
 
     private static final Logger logger = LoggerFactory.getLogger(GrebiPostgresClient.class);
     private final Gson gson = new Gson();
+
+    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+            "grebi:edgeId", "grebi:type", "grebi:fromNodeId", "grebi:toNodeId", "grebi:subgraph"
+    );
+
+    private static final Field<String> JSON_COL = field(name("_json"), String.class);
+    private static final Field<String> GREBI_TYPE = field(name("grebi:type"), String.class);
+    private static final Field<String> GREBI_FROM_NODE_ID = field(name("grebi:fromNodeId"), String.class);
+    private static final Field<String> GREBI_TO_NODE_ID = field(name("grebi:toNodeId"), String.class);
 
     private final String host;
     private final String port;
@@ -29,8 +42,6 @@ public class GrebiPostgresClient {
         this.user = getEnvOrDefault("GREBI_POSTGRES_USER", "grebi");
         this.dbName = getEnvOrDefault("GREBI_POSTGRES_DB", "grebi");
 
-        // Explicitly load the PostgreSQL JDBC driver so DriverManager can find it
-        // (the META-INF/services mechanism may not work in uber-jars built by maven-assembly-plugin)
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -53,6 +64,10 @@ public class GrebiPostgresClient {
             connection = DriverManager.getConnection(getJdbcUrl(), user, "");
         }
         return connection;
+    }
+
+    private DSLContext dsl() throws SQLException {
+        return DSL.using(getConnection(), SQLDialect.POSTGRES);
     }
 
     /**
@@ -88,54 +103,74 @@ public class GrebiPostgresClient {
         return subgraphs;
     }
 
+    private Table<?> edgesTable(String subgraph) {
+        if (!subgraph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid subgraph name");
+        }
+        return table(name("edges_" + subgraph));
+    }
+
+    private Field<String> checkedColumn(String columnName) {
+        if (!ALLOWED_COLUMNS.contains(columnName)) {
+            throw new IllegalArgumentException("Disallowed column: " + columnName);
+        }
+        return field(name(columnName), String.class);
+    }
+
+    private List<Condition> buildConditions(String filterField, String filterValue,
+                                             Map<String, List<String>> extraFilters) {
+        var conditions = new ArrayList<Condition>();
+        conditions.add(checkedColumn(filterField).eq(filterValue));
+        if (extraFilters != null) {
+            for (var entry : extraFilters.entrySet()) {
+                if (!ALLOWED_COLUMNS.contains(entry.getKey())) continue;
+                var values = entry.getValue();
+                if (values == null || values.isEmpty()) continue;
+                conditions.add(checkedColumn(entry.getKey()).eq(values.get(0)));
+            }
+        }
+        return conditions;
+    }
+
+    private List<OrderField<?>> buildOrderBy(String sortField, String sortDir) {
+        if (sortField == null) return List.of();
+        var col = checkedColumn(sortField);
+        return List.of("asc".equalsIgnoreCase(sortDir) ? col.asc() : col.desc());
+    }
+
     /**
      * Query edges with pagination and filtering.
      */
     public EdgeQueryResult queryEdges(String subgraph, String filterField, String filterValue,
+                                       Map<String, List<String>> extraFilters,
                                        String sortField, String sortDir,
                                        int offset, int limit) {
-        String tableName = "edges_" + subgraph;
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT \"_json\" FROM \"").append(tableName).append("\"");
-        sql.append(" WHERE \"").append(filterField).append("\" = ?");
-        if (sortField != null) {
-            sql.append(" ORDER BY \"").append(sortField).append("\"");
-            sql.append("asc".equalsIgnoreCase(sortDir) ? " ASC" : " DESC");
-        }
-        sql.append(" LIMIT ? OFFSET ?");
-
-        // Count query
-        String countSql = "SELECT COUNT(*) FROM \"" + tableName + "\" WHERE \"" + filterField + "\" = ?";
-
         try {
-            Connection conn = getConnection();
-            long totalCount;
-            try (PreparedStatement countStmt = conn.prepareStatement(countSql)) {
-                countStmt.setString(1, filterValue);
-                try (ResultSet rs = countStmt.executeQuery()) {
-                    rs.next();
-                    totalCount = rs.getLong(1);
-                }
-            }
+            var ctx = dsl();
+            var tbl = edgesTable(subgraph);
+            var conditions = buildConditions(filterField, filterValue, extraFilters);
+
+            long totalCount = ctx.select(count())
+                    .from(tbl)
+                    .where(conditions)
+                    .fetchSingle()
+                    .value1();
 
             List<Map<String, Object>> results = new ArrayList<>();
-            try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                stmt.setString(1, filterValue);
-                stmt.setInt(2, limit);
-                stmt.setInt(3, offset);
-                try (ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        String json = rs.getString("_json");
-                        Map<String, Object> map = gson.fromJson(json,
-                                new TypeToken<Map<String, Object>>() {}.getType());
-                        results.add(map);
-                    }
-                }
+            for (var record : ctx.select(JSON_COL)
+                    .from(tbl)
+                    .where(conditions)
+                    .orderBy(buildOrderBy(sortField, sortDir))
+                    .limit(limit)
+                    .offset(offset)
+                    .fetch()) {
+                results.add(gson.fromJson(record.get(JSON_COL),
+                        new TypeToken<Map<String, Object>>() {}.getType()));
             }
 
             return new EdgeQueryResult(results, totalCount);
         } catch (SQLException e) {
-            logger.error("Edge query failed: {}", sql, e);
+            logger.error("Edge query failed", e);
             throw new RuntimeException(e);
         }
     }
@@ -144,53 +179,40 @@ public class GrebiPostgresClient {
      * Query edge refs (lightweight: only type, datasources, fromNodeId, toNodeId).
      */
     public EdgeQueryResult queryEdgeRefs(String subgraph, String filterField, String filterValue,
+                                          Map<String, List<String>> extraFilters,
                                           String sortField, String sortDir,
                                           int offset, int limit) {
-        String tableName = "edges_" + subgraph;
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT \"grebi:type\", \"grebi:datasources\", \"grebi:fromNodeId\", \"grebi:toNodeId\"");
-        sql.append(" FROM \"").append(tableName).append("\"");
-        sql.append(" WHERE \"").append(filterField).append("\" = ?");
-        if (sortField != null) {
-            sql.append(" ORDER BY \"").append(sortField).append("\"");
-            sql.append("asc".equalsIgnoreCase(sortDir) ? " ASC" : " DESC");
-        }
-        sql.append(" LIMIT ? OFFSET ?");
-
-        String countSql = "SELECT COUNT(*) FROM \"" + tableName + "\" WHERE \"" + filterField + "\" = ?";
-
         try {
-            Connection conn = getConnection();
-            long totalCount;
-            try (PreparedStatement countStmt = conn.prepareStatement(countSql)) {
-                countStmt.setString(1, filterValue);
-                try (ResultSet rs = countStmt.executeQuery()) {
-                    rs.next();
-                    totalCount = rs.getLong(1);
-                }
-            }
+            var ctx = dsl();
+            var tbl = edgesTable(subgraph);
+            var conditions = buildConditions(filterField, filterValue, extraFilters);
+            var datasources = field(name("grebi:datasources"));
+
+            long totalCount = ctx.select(count())
+                    .from(tbl)
+                    .where(conditions)
+                    .fetchSingle()
+                    .value1();
 
             List<Map<String, Object>> results = new ArrayList<>();
-            try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-                stmt.setString(1, filterValue);
-                stmt.setInt(2, limit);
-                stmt.setInt(3, offset);
-                try (ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        Map<String, Object> ref = new LinkedHashMap<>();
-                        ref.put("grebi:type", rs.getString("grebi:type"));
-                        Array dsArr = rs.getArray("grebi:datasources");
-                        ref.put("grebi:datasources", dsArr != null ? Arrays.asList((String[]) dsArr.getArray()) : List.of());
-                        ref.put("grebi:fromNodeId", rs.getString("grebi:fromNodeId"));
-                        ref.put("grebi:toNodeId", rs.getString("grebi:toNodeId"));
-                        results.add(ref);
-                    }
-                }
+            for (var record : ctx.select(GREBI_TYPE, datasources, GREBI_FROM_NODE_ID, GREBI_TO_NODE_ID)
+                    .from(tbl)
+                    .where(conditions)
+                    .orderBy(buildOrderBy(sortField, sortDir))
+                    .limit(limit)
+                    .offset(offset)
+                    .fetch()) {
+                Map<String, Object> ref = new LinkedHashMap<>();
+                ref.put("grebi:type", record.get(GREBI_TYPE));
+                ref.put("grebi:datasources", toDatasourceList(record.get(datasources)));
+                ref.put("grebi:fromNodeId", record.get(GREBI_FROM_NODE_ID));
+                ref.put("grebi:toNodeId", record.get(GREBI_TO_NODE_ID));
+                results.add(ref);
             }
 
             return new EdgeQueryResult(results, totalCount);
         } catch (SQLException e) {
-            logger.error("Edge ref query failed: {}", sql, e);
+            logger.error("Edge ref query failed", e);
             throw new RuntimeException(e);
         }
     }
@@ -199,56 +221,61 @@ public class GrebiPostgresClient {
      * Get edge counts grouped by type and datasource.
      */
     public Map<String, Map<String, Integer>> getEdgeCounts(String subgraph, String filterField, String filterValue) {
-        String tableName = "edges_" + subgraph;
-        String sql = "SELECT \"grebi:type\", ds, COUNT(*) as cnt" +
-                " FROM \"" + tableName + "\", UNNEST(\"grebi:datasources\") AS ds" +
-                " WHERE \"" + filterField + "\" = ?" +
-                " GROUP BY \"grebi:type\", ds";
-
-        Map<String, Map<String, Integer>> result = new LinkedHashMap<>();
         try {
-            Connection conn = getConnection();
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, filterValue);
-                try (ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        String type = rs.getString("grebi:type");
-                        String datasource = rs.getString("ds");
-                        int count = rs.getInt("cnt");
-                        result.computeIfAbsent(type, k -> new LinkedHashMap<>()).put(datasource, count);
-                    }
-                }
+            var ctx = dsl();
+            var tbl = edgesTable(subgraph);
+            var dsField = field(name("ds"), String.class);
+            var cnt = count().as("cnt");
+            // jOOQ plain SQL template — {0} is rendered as a quoted identifier by jOOQ, not concatenated
+            var unnested = table("unnest({0}) as ds", field(name("grebi:datasources")));
+
+            Map<String, Map<String, Integer>> result = new LinkedHashMap<>();
+            for (var record : ctx.select(GREBI_TYPE, dsField, cnt)
+                    .from(tbl, unnested)
+                    .where(checkedColumn(filterField).eq(filterValue))
+                    .groupBy(GREBI_TYPE, dsField)
+                    .fetch()) {
+                result.computeIfAbsent(record.get(GREBI_TYPE), k -> new LinkedHashMap<>())
+                        .put(record.get(dsField), record.get(cnt));
             }
+            return result;
         } catch (SQLException e) {
             logger.error("Edge count query failed", e);
             throw new RuntimeException(e);
         }
-        return result;
     }
 
     /**
      * Get a single edge by its ID.
      */
     public Map<String, Object> getEdgeById(String subgraph, String edgeId) {
-        String tableName = "edges_" + subgraph;
-        String sql = "SELECT \"_json\" FROM \"" + tableName + "\" WHERE \"grebi:edgeId\" = ?";
-
         try {
-            Connection conn = getConnection();
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setString(1, edgeId);
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        return gson.fromJson(rs.getString("_json"),
-                                new TypeToken<Map<String, Object>>() {}.getType());
-                    }
-                }
+            var ctx = dsl();
+            var tbl = edgesTable(subgraph);
+            var record = ctx.select(JSON_COL)
+                    .from(tbl)
+                    .where(field(name("grebi:edgeId"), String.class).eq(edgeId))
+                    .fetchOne();
+
+            if (record != null) {
+                return gson.fromJson(record.get(JSON_COL),
+                        new TypeToken<Map<String, Object>>() {}.getType());
             }
         } catch (SQLException e) {
             logger.error("Get edge by ID failed", e);
             throw new RuntimeException(e);
         }
         return null;
+    }
+
+    private static List<String> toDatasourceList(Object raw) {
+        if (raw instanceof String[] arr) return Arrays.asList(arr);
+        if (raw instanceof Object[] arr) {
+            List<String> list = new ArrayList<>(arr.length);
+            for (Object o : arr) list.add(String.valueOf(o));
+            return list;
+        }
+        return List.of();
     }
 
     public static class EdgeQueryResult {

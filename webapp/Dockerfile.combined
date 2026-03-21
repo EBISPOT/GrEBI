@@ -98,6 +98,12 @@ WORKDIR /opt/grebi_api
 RUN mvn clean package assembly:single -DskipTests && \
     cp target/grebi-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_api.jar
 
+# Build grebi_cypher_service
+COPY webapp/grebi_cypher_service /opt/grebi_cypher_service
+WORKDIR /opt/grebi_cypher_service
+RUN mvn clean package -DskipTests && \
+    cp target/grebi_cypher_service-1.0-SNAPSHOT.jar /opt/grebi_cypher_service.jar
+
 # Build grebi_metadata_service
 COPY webapp/grebi_metadata_service /opt/grebi_metadata_service
 WORKDIR /opt/grebi_metadata_service
@@ -135,15 +141,16 @@ WORKDIR /opt
 
 # Expose all service ports
 # 5432 - PostgreSQL
-# 7474 - Neo4j browser
-# 7687 - Neo4j bolt
+# 7474 - Neo4j Browser
+# 7687 - Neo4j Bolt
+# 8085 - Cypher service
 # 8983 - Solr
 # 8080 - UI (Caddy)
 # 8081 - Metadata service
 # 8082 - Prefix service
 # 8084 - Resolver service
 # 8090 - API
-EXPOSE 5432 7474 7687 8983 8080 8081 8082 8084 8090
+EXPOSE 5432 7474 7687 8085 8983 8080 8081 8082 8084 8090
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
 CMD ["run"]

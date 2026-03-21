@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: otar/drug_molecule/
     sources:
-      - /nfs/ftp/public/databases/opentargets/platform/25.09/output/drug_molecule/*.parquet
+      - /nfs/production/parkinso/spot/jmcl/otar/output/drug_molecule/part-00000-871f412e-aec4-4d33-a50d-feee532ddcd2-c000.snappy.parquet
 ingests:
   - globs: ["otar/drug_molecule/*.parquet"]
     command: '
