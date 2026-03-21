@@ -1,15 +1,15 @@
 name: GWAS
 enabled: true
 download:
-  - dest: gwas/gwas-catalog-associations_ontology-annotated.tsv
+  - dest: gwas/
     sources:
-      - https://www.ebi.ac.uk/gwas/api/search/downloads/full
+      - https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-associations_ontology-annotated-full.zip
   - dest: gwas/gwas-catalog-studies-download-alternative-v1.0.2.1.txt
     sources:
-      - https://www.ebi.ac.uk/gwas/api/search/downloads/studies_alternative
+      - https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-studies-download-alternative-v1.0.2.1.txt
 ingests:
   - globs:
-      - "gwas/gwas-catalog-associations_ontology-annotated.tsv"
+      - "gwas/gwas-catalog-download-associations-alt-full.tsv"
       - "gwas/gwas-catalog-studies-download-alternative-v1.0.2.1.txt"
     command: '
       cat $GREBI_INGEST_FILENAME |

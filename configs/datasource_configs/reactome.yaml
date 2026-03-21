@@ -1,11 +1,11 @@
 name: Reactome
 enabled: true
 download:
-  - dest: reactome/reactome.json
+  - dest: reactome/reactome.json.gz
     sources:
-      - dataload/reactome/export/reactome.json
+      - https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/reactome.json.gz
 ingests:
-    - globs: ["reactome/reactome.json"]
+    - globs: ["reactome/reactome.json.gz"]
       command: '
-        cat $GREBI_INGEST_FILENAME |
+        zcat $GREBI_INGEST_FILENAME |
         grebi_ingest_reactome'

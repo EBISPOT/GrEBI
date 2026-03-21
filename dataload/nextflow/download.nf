@@ -38,6 +38,7 @@ process download_file {
         def is_url = source.contains("://")
         def is_last = (i == sources.size() - 1)
         def is_tarball = source.endsWith(".tar.gz") || source.endsWith(".tgz")
+        def is_zip = source.endsWith(".zip")
         def dest_is_dir = dest.endsWith("/")
 
         if (is_url) {
@@ -50,6 +51,25 @@ process download_file {
                 script_lines << "    echo \"Success: downloaded and extracted ${source}\""
                 script_lines << "    exit 0"
                 script_lines << "else"
+                if (is_last) {
+                    script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
+                    script_lines << "    exit 1"
+                } else {
+                    script_lines << "    echo \"Failed, trying next source...\""
+                }
+                script_lines << "fi"
+            } else if (is_zip && dest_is_dir) {
+                // Download zip and extract into dest directory
+                script_lines << "# Source ${i+1}: URL (zip extract)"
+                script_lines << "echo \"Trying source: ${source}\""
+                script_lines << "mkdir -p \"${downloads_path}/${dest}\""
+                script_lines << "GREBI_TMPZIP=\"${downloads_path}/${dest}/.grebi_tmp_download.zip\""
+                script_lines << "if curl -fSL -o \"\$GREBI_TMPZIP\" \"${source}\" && unzip -o \"\$GREBI_TMPZIP\" -d \"${downloads_path}/${dest}\"; then"
+                script_lines << "    rm -f \"\$GREBI_TMPZIP\""
+                script_lines << "    echo \"Success: downloaded and extracted ${source}\""
+                script_lines << "    exit 0"
+                script_lines << "else"
+                script_lines << "    rm -f \"\$GREBI_TMPZIP\""
                 if (is_last) {
                     script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
                     script_lines << "    exit 1"
