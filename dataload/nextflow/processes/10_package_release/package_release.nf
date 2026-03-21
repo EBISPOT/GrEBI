@@ -1,23 +1,23 @@
-process package_solr {
+process package_release {
     cache "lenient"
-    memory "4 GB" 
+    memory "4 GB"
     time "8h"
     cpus "4"
 
-    input: 
-    path(solr_dir)
+    input:
+    path(release_dir)
     val(subgraph)
     val(out_dir)
 
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("${subgraph}_solr.tgz")
+    path("${subgraph}.tgz")
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    tar -chf ${subgraph}_solr.tgz --use-compress-program="pigz --fast" ${solr_dir}
+    tar -chf ${subgraph}.tgz --use-compress-program="pigz --fast" ${release_dir}
     """
 }

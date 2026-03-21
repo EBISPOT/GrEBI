@@ -7,12 +7,7 @@ process run_integration_tests {
     container "ghcr.io/ebispot/grebi_combined:dev"
 
     input:
-    path(neo_tgz)
-    path(solr_tgz)
-    path(postgres_tgz)
-    path(sqlite)
-    path(metadata_json)
-    path(query_templates)
+    path(release_tgz)
     val(subgraph)
     val(out_dir)
     val(export_snapshots)
@@ -39,12 +34,10 @@ process run_integration_tests {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     
-    echo "Extracting Neo4j..."
-    mkdir -p /opt/grebi/data/neo4j
-    cat ${neo_tgz} | pigz -d | tar -xf -
-    
-    echo "Extracting Solr..."
-    mkdir -p /opt/grebi/data/solr
+    echo "Extracting release tarball..."
+    cat ${release_tgz} | pigz -d | tar -xf -
+    cd ${subgraph}
+
     # Ensure current user is resolvable (PostgreSQL requires this)
     if ! getent passwd \$(id -u) > /dev/null 2>&1; then
         echo "grebi:x:\$(id -u):\$(id -g):PostgreSQL:/tmp:/bin/bash" >> /etc/passwd 2>/dev/null || true
@@ -54,19 +47,14 @@ process run_integration_tests {
     mkdir -p /var/run/postgresql 2>/dev/null || true
     chmod 777 /var/run/postgresql 2>/dev/null || true
 
-    cat ${solr_tgz} | pigz -d | tar -xf - 
-
-    echo "Extracting PostgreSQL..."
-    cat ${postgres_tgz} | pigz -d | tar -xf -
     export GREBI_POSTGRES_DATA=\$PWD/postgres_data_${subgraph}
-
     export NEO4J_server_directories_data=\$PWD/${subgraph}_neo4j/data
     export NEO4J_server_directories_logs=\$PWD
     export SOLR_HOME=\$PWD/solr
     export SOLR_LOGS_DIR=\$PWD
     export GREBI_METADATA_JSON_SEARCH_PATH=\$PWD
     export GREBI_SQLITE_SEARCH_PATH=\$PWD
-    export GREBI_QUERY_TEMPLATES_PATH=\$PWD/${query_templates}
+    export GREBI_QUERY_TEMPLATES_PATH=\$PWD/query_templates
     export PUBLIC_URL=/
 
     # Configure database memory from Nextflow params
@@ -91,7 +79,7 @@ process run_integration_tests {
     # Run integration tests (waits for services internally)
     echo "Running integration tests..."
     set +e
-    python3 /opt/integration_tests.py --api-url http://localhost:8090 2>&1 | tee integration_test_results.txt
+    python3 /opt/integration_tests.py --api-url http://localhost:8090 2>&1 | tee ../integration_test_results.txt
     TEST_EXIT_CODE=\${PIPESTATUS[0]}
     set -e
     echo "Integration tests exited with code: \$TEST_EXIT_CODE"
@@ -108,6 +96,9 @@ process run_integration_tests {
         python3 ${grebi_home}/tests/export_neo4j.py ${subgraph}
         python3 ${grebi_home}/tests/export_solr.py ${subgraph}
         python3 ${grebi_home}/tests/export_postgres.py ${subgraph}
+
+        # Copy snapshots to parent dir for publishDir
+        cp -f ${subgraph}_snapshot_*.jsonl ../ 2>/dev/null || true
 
         # Compare DB snapshots against expected output (if it exists)
         EXPECTED_DIR="${grebi_home}/tests/expected_output/${subgraph}"

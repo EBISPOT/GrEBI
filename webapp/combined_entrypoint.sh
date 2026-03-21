@@ -6,6 +6,44 @@ echo "================================"
 
 MODE="${1:-run}"
 
+# Ensure the current UID is resolvable in /etc/passwd (required by PostgreSQL
+# and some Java tooling).  When Docker is invoked with -u UID:GID the numeric
+# UID may not have a passwd entry.
+CURRENT_UID=$(id -u)
+CURRENT_GID=$(id -g)
+
+if [ "$CURRENT_UID" = "0" ]; then
+    # Running as root — create a dedicated grebi user for postgres
+    if ! id grebi &>/dev/null; then
+        groupadd -r grebi 2>/dev/null || true
+        useradd -r -g grebi -d /tmp -s /bin/bash grebi 2>/dev/null || true
+    fi
+    GREBI_PG_USER="grebi"
+else
+    # Running as a non-root UID (e.g. host user via -u)
+    if ! getent passwd "$CURRENT_UID" >/dev/null 2>&1; then
+        echo "grebi:x:${CURRENT_UID}:${CURRENT_GID}:grebi:/tmp:/bin/bash" >> /etc/passwd 2>/dev/null || true
+    fi
+    if ! getent group "$CURRENT_GID" >/dev/null 2>&1; then
+        echo "grebi:x:${CURRENT_GID}:" >> /etc/group 2>/dev/null || true
+    fi
+    # Postgres will run as the current user (supervisord user= is ignored
+    # when supervisord itself is not root)
+    GREBI_PG_USER=""
+fi
+
+export GREBI_PG_USER
+
+mkdir -p /var/run/postgresql 2>/dev/null || true
+chmod 777 /var/run/postgresql 2>/dev/null || true
+
+# PostgreSQL requires the data directory to be 0700 or 0750
+for pgdir in /data/postgres_data_*; do
+    if [ -d "$pgdir" ]; then
+        chmod 0700 "$pgdir"
+    fi
+done
+
 case "$MODE" in
     test)
         echo "Running in TEST mode - will run tests and exit"

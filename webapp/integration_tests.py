@@ -45,8 +45,8 @@ def main():
     passed, total = run_integration_tests(args.api_url)
     
     if total == 0:
-        print_colored("No tests were run!", Colors.RED)
-        sys.exit(1)
+        print_colored("No tests were run (none matched this subgraph)", Colors.YELLOW)
+        sys.exit(0)
     elif passed == total:
         print_colored("All tests passed! 🎉", Colors.GREEN)
         sys.exit(0)

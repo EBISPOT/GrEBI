@@ -21,6 +21,7 @@ include { prepare_solr } from './processes/08_create_other_dbs/solr/prepare_solr
 include { create_solr_nodes_core } from './processes/08_create_other_dbs/solr/create_solr_nodes_core'
 include { create_solr_autocomplete_core } from './processes/08_create_other_dbs/solr/create_solr_autocomplete_core'
 include { create_solr_results_cores } from './processes/08_create_other_dbs/solr/create_solr_results_cores'
+include { construct_solr } from './processes/08_create_other_dbs/solr/construct_solr'
 include { package_solr } from './processes/08_create_other_dbs/solr/package_solr'
 include { prepare_postgres } from './processes/08_create_other_dbs/postgres/prepare_postgres'
 include { create_postgres } from './processes/08_create_other_dbs/postgres/create_postgres'
@@ -31,6 +32,8 @@ include { link_results } from './processes/07_run_queries/link_results'
 include { add_query_metadatas_to_graph_metadata } from './processes/07_run_queries/add_query_metadatas_to_graph_metadata'
 include { csvs_to_sqlite } from './processes/07_run_queries/csvs_to_sqlite'
 include { run_integration_tests } from './processes/09_integration_tests/run_integration_tests'
+include { construct_release } from './processes/10_package_release/construct_release'
+include { package_release } from './processes/10_package_release/package_release'
 
 params.out = "$GREBI_OUT_DIR"
 params.subgraph = "$GREBI_SUBGRAPH"
@@ -48,6 +51,7 @@ params.integration_pg_shared_buffers = "128MB"
 params.integration_pg_work_mem = "64MB"
 params.integration_pg_maintenance_work_mem = "256MB"
 params.integration_pg_max_wal_size = "1GB"
+params.docker_image = "ghcr.io/ebispot/grebi_combined:dev"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
 params.grebi_home = "$GREBI_HOME"
 params.downloads_path = "$GREBI_DOWNLOADS_PATH"
@@ -219,18 +223,34 @@ workflow {
     )
 
     // === PACKAGE OUTPUTS ===
-    solr_tgz = package_solr(all_solr_cores, Channel.value(params.subgraph), Channel.value(params.out))
+    solr_dir = construct_solr(all_solr_cores)
+    solr_tgz = package_solr(solr_dir, Channel.value(params.subgraph), Channel.value(params.out))
     neo_tgz = package_neo(neo_db, Channel.value(params.subgraph), Channel.value(params.out))
     postgres_tgz = package_postgres(postgres_db, Channel.value(params.subgraph), Channel.value(params.out))
 
-    // === RUN INTEGRATION TESTS ===
-    run_integration_tests(
-        neo_tgz,
-        solr_tgz,
-        postgres_tgz,
+    // === CONSTRUCT & PACKAGE RELEASE ===
+    release_dir = construct_release(
+        neo_db,
+        solr_dir,
+        postgres_db,
         sqlite,
         add_query_metadatas_to_graph_metadata.out,
         Channel.fromPath("${params.grebi_home}/query_templates"),
+        Channel.value(params.subgraph),
+        Channel.value(params.out),
+        Channel.value(params.docker_image),
+        Channel.value(params.dataload_home)
+    )
+
+    release_tgz = package_release(
+        release_dir,
+        Channel.value(params.subgraph),
+        Channel.value(params.out)
+    )
+
+    // === RUN INTEGRATION TESTS ===
+    run_integration_tests(
+        release_tgz,
         Channel.value(params.subgraph),
         Channel.value(params.out),
         Channel.value(params.export_snapshots),

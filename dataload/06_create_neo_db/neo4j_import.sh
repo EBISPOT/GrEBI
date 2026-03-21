@@ -32,8 +32,10 @@ case "$NEO_MEM" in
 esac
 THREADS=$(nproc)
 # read-buffer-size * threads must fit well within heap; use 1/4 of heap divided by threads
+# Cap at 256 MB to avoid integer overflow in Neo4j's Java int parsing
 READ_BUF_MB=$(( NEO_MEM_MB / 4 / THREADS ))
 if [ "$READ_BUF_MB" -lt 1 ]; then READ_BUF_MB=1; fi
+if [ "$READ_BUF_MB" -gt 256 ]; then READ_BUF_MB=256; fi
 
 neo4j-admin database import full \
     $(get_nodes) \

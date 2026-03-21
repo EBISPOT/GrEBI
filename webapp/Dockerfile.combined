@@ -64,7 +64,8 @@ RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --de
 
 # Install Solr 9.8.1
 RUN mkdir /opt/solr && \
-    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/solr-9.8.1.tgz | tar -xz --strip-components=1 -C /opt/solr
+    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/solr-9.8.1.tgz | tar -xz --strip-components=1 -C /opt/solr && \
+    mkdir -p /opt/solr/server/logs && chmod 777 /opt/solr/server/logs
 
 ENV PATH="$PATH:/opt/solr/bin"
 
@@ -143,3 +144,6 @@ WORKDIR /opt
 # 8084 - Resolver service
 # 8090 - API
 EXPOSE 5432 7474 7687 8983 8080 8081 8082 8084 8090
+
+ENTRYPOINT ["/opt/entrypoint.sh"]
+CMD ["run"]
