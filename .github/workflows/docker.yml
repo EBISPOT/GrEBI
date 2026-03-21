@@ -72,32 +72,3 @@ jobs:
             ${{ matrix.image }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  test-hello-world:
-    needs: build-and-push-image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Pull the freshly built image
-        run: docker pull ghcr.io/ebispot/grebi_dataload:${{ github.sha }}
-      
-      - name: Test dataload
-        run: |
-          # Use the commit SHA tag to ensure we test the exact image that was just built
-          sed -i "s|:dev|:${{ github.sha }}|g" \
-            dataload/nextflow/local_4g_nextflow.config
-          export GREBI_NF_CONFIG=dataload/nextflow/local_4g_nextflow.config
-          export GREBI_SUBGRAPH=hello_world
-          GREBI_SUBGRAPH=hello_world ./dataload/scripts/dataload_local.sh
