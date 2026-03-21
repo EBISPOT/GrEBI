@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: metabolights/eb-eye_metabolights_complete.xml
     sources:
-      - https://www.ebi.ac.uk/ebisearch/ws/rest/metabolights-compounds?query=*&format=XML&size=0
+      - https://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb_eye_metabolights_complete.xml
 ingests:
   - globs: ["metabolights/eb-eye_metabolights_complete.xml"]
     command: '
