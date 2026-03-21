@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: hgnc/hgnc_complete_set.json
     sources:
-      - https://g-a8b222.dd271.03c0.data.globus.org/pub/databases/genenames/hgnc/json/hgnc_complete_set.json
+      - https://ftp.ebi.ac.uk/pub/databases/genenames/out_of_date_hgnc/json/hgnc_complete_set.json
 ingests:
   - globs: ["hgnc/hgnc_complete_set.json"]
     command: '
