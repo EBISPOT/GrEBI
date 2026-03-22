@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: chembl/chembl_34.0_molecule.ttl.gz
     sources:
-      - https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBL-RDF/latest/chembl_34.0_molecule.ttl.gz
+      - https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBL-RDF/36.0/chembl_36.0_molecule.ttl.gz
 ingests:
   - globs: ["chembl/*.ttl.gz"]
     command: '
