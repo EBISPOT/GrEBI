@@ -72,6 +72,15 @@ if [ "$has_neo4j" -eq 1 ]; then
 fi
 # Otherwise cypher_service keeps its default embedded config (GREBI_NEO4J_DATA_SEARCH_PATH)
 
+# Inject GREBI_NEO_HEAP into the supervisord neo4j environment so the neo4j
+# command (which works on a /tmp copy of the conf) can apply memory settings.
+# We must NOT modify *_neo4j/conf/neo4j.conf directly because it may be a
+# bind-mount from the host.
+if [ -n "${GREBI_NEO_HEAP:-}" ]; then
+    echo "Configuring Neo4j memory: heap=$GREBI_NEO_HEAP, pagecache=$GREBI_NEO_HEAP"
+    sed -i "/^\[program:neo4j\]$/,/^\[/ s|^environment=.*|environment=NEO4J_AUTH=\"none\",GREBI_NEO_HEAP=\"$GREBI_NEO_HEAP\"|" "$SUPERVISORD_CONF"
+fi
+
 # Create logs directory so supervisord writes logs there instead of cwd
 mkdir -p ./logs 2>/dev/null || true
 
