@@ -36,7 +36,7 @@ public class ResolverClient {
     public static String getResolverHost() {
         if (RESOLVER_HOST != null)
             return RESOLVER_HOST;
-        return "http://localhost:8080/";
+        return "http://localhost:8084/";
     }
 
     public Set<String> getSubgraphs() {

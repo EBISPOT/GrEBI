@@ -6,7 +6,9 @@ process create_postgres {
 
     input:
     path(edges_tsvs)
-    path(schema_sqls)
+    path(edges_schema_sqls)
+    path(nodes_tsvs)
+    path(nodes_schema_sqls)
     val(subgraph)
 
     output:
@@ -64,12 +66,11 @@ EOF
 
     createdb -h \$PGSOCK -p \$PGPORT -U \$PGUSER grebi
 
-    # Apply schema (use the first schema file - all should be identical for same subgraph)
-    SCHEMA_FILE=\$(ls postgres_schema_${subgraph}_*.sql | head -1)
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$SCHEMA_FILE"
+    # === EDGES TABLE ===
+    EDGES_SCHEMA_FILE=\$(ls postgres_schema_${subgraph}_*.sql | head -1)
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$EDGES_SCHEMA_FILE"
 
-    # Import all TSV files
-    # First drop indexes for faster import
+    # Drop indexes for faster import
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "
         DROP INDEX IF EXISTS idx_edges_${subgraph}_fromNodeId;
         DROP INDEX IF EXISTS idx_edges_${subgraph}_toNodeId;
@@ -77,26 +78,47 @@ EOF
     "
 
     for TSV_FILE in postgres_edges_${subgraph}_*.tsv; do
-        echo "Importing \$TSV_FILE ..."
+        echo "Importing edges \$TSV_FILE ..."
         psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "\\COPY \\"edges_${subgraph}\\" FROM '\$TSV_FILE' WITH (FORMAT text)"
     done
 
-    # Recreate indexes
-    echo "Creating indexes..."
+    echo "Creating edge indexes..."
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "
         CREATE INDEX idx_edges_${subgraph}_fromNodeId ON \\"edges_${subgraph}\\" (\\"grebi:fromNodeId\\");
         CREATE INDEX idx_edges_${subgraph}_toNodeId ON \\"edges_${subgraph}\\" (\\"grebi:toNodeId\\");
         CREATE INDEX idx_edges_${subgraph}_type ON \\"edges_${subgraph}\\" (\\"grebi:type\\");
     "
 
-    # Analyse for query planner
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ANALYZE \\"edges_${subgraph}\\";"
+
+    # === NODES TABLE (with pgvector) ===
+    NODES_SCHEMA_FILE=\$(ls postgres_nodes_schema_${subgraph}_*.sql | head -1)
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$NODES_SCHEMA_FILE"
+
+    # Drop HNSW indexes for faster bulk import (they will be in the schema SQL)
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -t -A -c "
+        SELECT indexname FROM pg_indexes WHERE tablename = 'nodes_${subgraph}' AND indexname LIKE 'idx_%';
+    " | while read -r idx; do
+        [ -z "\$idx" ] && continue
+        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "DROP INDEX IF EXISTS \\"\$idx\\";" 2>/dev/null || true
+    done
+
+    for TSV_FILE in postgres_nodes_${subgraph}_*.tsv; do
+        echo "Importing nodes \$TSV_FILE ..."
+        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "\\COPY \\"nodes_${subgraph}\\" FROM '\$TSV_FILE' WITH (FORMAT text)"
+    done
+
+    echo "Creating node indexes (including HNSW vector indexes)..."
+    grep -i 'CREATE INDEX' "\$NODES_SCHEMA_FILE" | while read -r line; do
+        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "\$line" 2>/dev/null || true
+    done
+
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ANALYZE \\"nodes_${subgraph}\\";"
 
     # Stop PostgreSQL cleanly
     pg_ctl -D \$PGDATA stop -m fast
 
     # Re-enable WAL and update settings for production use
-    # Use temp file instead of sed -i (which fails on macOS Docker volumes)
     _TMPCONF=\$(mktemp)
     sed \\
       -e 's/^wal_level = minimal/wal_level = replica/' \\
@@ -111,6 +133,9 @@ EOF
 
     # Add pg_hba.conf entry for network connections
     echo "host all all 0.0.0.0/0 trust" >> \$PGDATA/pg_hba.conf
+
+    # Make data directory readable so downstream packaging steps can tar it
+    chmod -R a+rX \$PGDATA
 
     echo "PostgreSQL data directory built: \$PGDATA"
     """

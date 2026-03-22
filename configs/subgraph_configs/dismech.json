@@ -163,9 +163,12 @@
   ],
   "datasource_configs": [
     "./configs/datasource_configs/ols/ols_mondo.yaml",
-    "./configs/datasource_configs/ols/embeddings__llama-embed-nemotron-8b/ols_mondo_embeddings__llama-embed-nemotron-8b.yaml",
     "./configs/datasource_configs/ols/ols_hp.yaml",
     "./configs/datasource_configs/ols/ols_uberon.yaml",
+    "./configs/datasource_configs/ols/embeddings__llama-embed-nemotron-8b/ols_mondo_embeddings__llama-embed-nemotron-8b.yaml",
+    "./configs/datasource_configs/ols/embeddings__llama-embed-nemotron-8b/ols_hp_embeddings__llama-embed-nemotron-8b.yaml",
+    "./configs/datasource_configs/ols/embeddings__llama-embed-nemotron-8b/ols_uberon_embeddings__llama-embed-nemotron-8b.yaml",
+    "./configs/datasource_configs/ols/embeddings__llama-embed-nemotron-8b/ols_pca_model__llama-embed-nemotron-8b.yaml",
     "./configs/datasource_configs/dismech.yaml"
   ]
 }

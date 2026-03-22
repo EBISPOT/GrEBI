@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static org.jooq.impl.DSL.*;
 
@@ -25,7 +26,6 @@ public class GrebiPostgresClient {
             "grebi:edgeId", "grebi:type", "grebi:fromNodeId", "grebi:toNodeId", "grebi:subgraph"
     );
 
-    private static final Field<String> JSON_COL = field(name("_json"), String.class);
     private static final Field<String> GREBI_TYPE = field(name("grebi:type"), String.class);
     private static final Field<String> GREBI_FROM_NODE_ID = field(name("grebi:fromNodeId"), String.class);
     private static final Field<String> GREBI_TO_NODE_ID = field(name("grebi:toNodeId"), String.class);
@@ -85,6 +85,26 @@ public class GrebiPostgresClient {
             }
         } catch (SQLException e) {
             logger.error("Failed to list edge tables", e);
+            throw new RuntimeException(e);
+        }
+        return tables;
+    }
+
+    /**
+     * List all node tables (tables named nodes_*).
+     */
+    public Set<String> listNodeTables() {
+        Set<String> tables = new LinkedHashSet<>();
+        try {
+            Connection conn = getConnection();
+            DatabaseMetaData meta = conn.getMetaData();
+            try (ResultSet rs = meta.getTables(null, "public", "nodes_%", new String[]{"TABLE"})) {
+                while (rs.next()) {
+                    tables.add(rs.getString("TABLE_NAME"));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to list node tables", e);
             throw new RuntimeException(e);
         }
         return tables;
@@ -156,15 +176,16 @@ public class GrebiPostgresClient {
                     .fetchSingle()
                     .value1();
 
+            var rowJson = field("row_to_json({0})", String.class, tbl);
             List<Map<String, Object>> results = new ArrayList<>();
-            for (var record : ctx.select(JSON_COL)
+            for (var record : ctx.select(rowJson)
                     .from(tbl)
                     .where(conditions)
                     .orderBy(buildOrderBy(sortField, sortDir))
                     .limit(limit)
                     .offset(offset)
                     .fetch()) {
-                results.add(gson.fromJson(record.get(JSON_COL),
+                results.add(gson.fromJson(record.value1(),
                         new TypeToken<Map<String, Object>>() {}.getType()));
             }
 
@@ -252,13 +273,14 @@ public class GrebiPostgresClient {
         try {
             var ctx = dsl();
             var tbl = edgesTable(subgraph);
-            var record = ctx.select(JSON_COL)
+            var rowJson = field("row_to_json({0})", String.class, tbl);
+            var record = ctx.select(rowJson)
                     .from(tbl)
                     .where(field(name("grebi:edgeId"), String.class).eq(edgeId))
                     .fetchOne();
 
             if (record != null) {
-                return gson.fromJson(record.get(JSON_COL),
+                return gson.fromJson(record.value1(),
                         new TypeToken<Map<String, Object>>() {}.getType());
             }
         } catch (SQLException e) {
@@ -285,6 +307,140 @@ public class GrebiPostgresClient {
         public EdgeQueryResult(List<Map<String, Object>> results, long totalCount) {
             this.results = results;
             this.totalCount = totalCount;
+        }
+    }
+
+    private Table<?> nodesTable(String subgraph) {
+        if (!subgraph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid subgraph name");
+        }
+        return table(name("nodes_" + subgraph));
+    }
+
+    private static final Pattern EMBEDDING_COL_PATTERN = Pattern.compile("^embedding:[a-zA-Z0-9_-]+$");
+
+    private String checkedEmbeddingColumn(String embeddingModel) {
+        String col = "embedding:" + embeddingModel;
+        if (!EMBEDDING_COL_PATTERN.matcher(col).matches()) {
+            throw new IllegalArgumentException("Invalid embedding model name: " + embeddingModel);
+        }
+        return col;
+    }
+
+    /**
+     * Search nodes by vector similarity using pgvector cosine distance.
+     * Returns nodeIds and distances, ordered by distance ascending.
+     */
+    public List<VectorSearchResult> searchByVector(String subgraph, String embeddingModel,
+                                                    float[] queryVector, int limit) {
+        String col = checkedEmbeddingColumn(embeddingModel);
+
+        // Build the pgvector literal: [0.1,0.2,...]
+        StringBuilder vecLiteral = new StringBuilder("[");
+        for (int i = 0; i < queryVector.length; i++) {
+            if (i > 0) vecLiteral.append(",");
+            vecLiteral.append(queryVector[i]);
+        }
+        vecLiteral.append("]");
+
+        try {
+            Connection conn = getConnection();
+            var tbl = nodesTable(subgraph);
+            var nodeIdField = field(name("grebi:nodeId"), String.class);
+            var nameField = field(name("grebi:name"), String.class);
+
+            // Use raw SQL for the cosine distance operator since jOOQ doesn't natively support <=>
+            String sql = "SELECT \"grebi:nodeId\", \"grebi:name\", " +
+                    "\"grebi:datasources\", \"grebi:type\", \"grebi:sourceIds\", " +
+                    "\"" + col + "\" <=> ?::vector AS distance " +
+                    "FROM " + dsl().render(tbl) + " " +
+                    "WHERE \"" + col + "\" IS NOT NULL " +
+                    "ORDER BY distance " +
+                    "LIMIT ?";
+
+            List<VectorSearchResult> results = new ArrayList<>();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, vecLiteral.toString());
+                ps.setInt(2, limit);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        java.sql.Array dsArr = rs.getArray("grebi:datasources");
+                        java.sql.Array typeArr = rs.getArray("grebi:type");
+                        java.sql.Array srcArr = rs.getArray("grebi:sourceIds");
+                        results.add(new VectorSearchResult(
+                                rs.getString("grebi:nodeId"),
+                                rs.getString("grebi:name"),
+                                dsArr != null ? java.util.Arrays.asList((String[]) dsArr.getArray()) : List.of(),
+                                typeArr != null ? java.util.Arrays.asList((String[]) typeArr.getArray()) : List.of(),
+                                srcArr != null ? java.util.Arrays.asList((String[]) srcArr.getArray()) : List.of(),
+                                rs.getDouble("distance")
+                        ));
+                    }
+                }
+            }
+            return results;
+        } catch (SQLException e) {
+            logger.error("Vector search failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Get a node's embedding vector for a given model.
+     */
+    public float[] getNodeEmbedding(String subgraph, String nodeId, String embeddingModel) {
+        String col = checkedEmbeddingColumn(embeddingModel);
+
+        try {
+            Connection conn = getConnection();
+            var tbl = nodesTable(subgraph);
+
+            String sql = "SELECT \"" + col + "\"::text FROM " + dsl().render(tbl) +
+                    " WHERE \"grebi:nodeId\" = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, nodeId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String vecStr = rs.getString(1);
+                        if (vecStr == null) return null;
+                        return parseVectorLiteral(vecStr);
+                    }
+                }
+            }
+            return null;
+        } catch (SQLException e) {
+            logger.error("Get node embedding failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static float[] parseVectorLiteral(String literal) {
+        // pgvector returns "[0.1,0.2,...]"
+        String inner = literal.substring(1, literal.length() - 1);
+        String[] parts = inner.split(",");
+        float[] result = new float[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            result[i] = Float.parseFloat(parts[i]);
+        }
+        return result;
+    }
+
+    public static class VectorSearchResult {
+        public final String nodeId;
+        public final String name;
+        public final List<String> datasources;
+        public final List<String> type;
+        public final List<String> sourceIds;
+        public final double distance;
+
+        public VectorSearchResult(String nodeId, String name, List<String> datasources, List<String> type, List<String> sourceIds, double distance) {
+            this.nodeId = nodeId;
+            this.name = name;
+            this.datasources = datasources;
+            this.type = type;
+            this.sourceIds = sourceIds;
+            this.distance = distance;
         }
     }
 }

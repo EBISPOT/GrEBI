@@ -3,7 +3,7 @@ import { Close, KeyboardArrowDown } from "@mui/icons-material";
 import { Pagination } from "@mui/material";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { getPaginated } from "../app/api";
+import { get, getPaginated } from "../app/api";
 import { usePrevious, copyToClipboard, joinSearchParams } from "../app/util";
 import GraphNode from "../model/GraphNode";
 import CollapsingIdList from "./CollapsingIdList";
@@ -21,6 +21,7 @@ export default function SeachInterface(opts:{ subgraph:string }
   let [loadingResults, setLoadingResults] = useState<boolean>(true);
   let [results, setResults] = useState<GraphNode[]>([]);
   let [totalResults, setTotalResults] = useState<number>(0);
+  let [searchScores, setSearchScores] = useState<Map<string, number>>(new Map());
 
   let [facets, setFacets] = useState<any>({});
 
@@ -92,23 +93,53 @@ export default function SeachInterface(opts:{ subgraph:string }
       });
   };
 
+  const model = searchParams.get("model");
+  const isSemanticSearch = model && model !== "lexical";
+
   useEffect(() => {
 
     async function doSearch() {
       setLoadingResults(true)
 
-      let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, joinSearchParams(searchParams, new URLSearchParams([
-        ['page', page.toString()],
-        ['size', rowsPerPage.toString()],
-        ['q', search],
-        ['facet', 'grebi:datasources'],
-        ['facet', 'grebi:type']
-      ]))))
-      
-      let mapped = res.map(r => new GraphNode(r))
+      if (isSemanticSearch) {
+        // Semantic search via embeddings with resolve for full data
+        const semanticResults = await get<any[]>(
+          `api/v1/subgraphs/${subgraph}/semantic_search?${new URLSearchParams({
+            q: search,
+            model: model,
+            n: rowsPerPage.toString(),
+            resolve: "true",
+          })}`
+        );
 
-      setResults(mapped.elements)
-      setFacets(mapped.facetFieldsToCounts)
+        const scores = new Map<string, number>();
+        const mapped = (semanticResults || []).map(r => {
+          const nodeId = r["grebi:nodeId"];
+          const score = r["grebi:searchScore"];
+          if (nodeId && score !== undefined) {
+            scores.set(nodeId, score);
+          }
+          return new GraphNode(r);
+        });
+        setResults(mapped);
+        setTotalResults(mapped.length);
+        setSearchScores(scores);
+        setFacets({});
+      } else {
+        // Standard lexical search
+        let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, joinSearchParams(searchParams, new URLSearchParams([
+          ['page', page.toString()],
+          ['size', rowsPerPage.toString()],
+          ['q', search],
+          ['facet', 'grebi:datasources'],
+          ['facet', 'grebi:type']
+        ]))))
+        
+        let mapped = res.map(r => new GraphNode(r))
+
+        setResults(mapped.elements)
+        setFacets(mapped.facetFieldsToCounts)
+      }
 
       setLoadingResults(false)
     }
@@ -121,7 +152,8 @@ export default function SeachInterface(opts:{ subgraph:string }
     datasourceFacetselected,
     typeFacetSelected,
     searchParams,
-    subgraph
+    subgraph,
+    model
   ]);
   useEffect(() => {
     if (prevSearch !== search) setPage(0);
@@ -131,8 +163,8 @@ export default function SeachInterface(opts:{ subgraph:string }
         <div className="flex flex-nowrap gap-4 mb-6">
           <SearchBox subgraph={subgraph} initialQuery={search} />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-8">
-          <div
+        <div className={`grid grid-cols-1 ${isSemanticSearch ? '' : 'lg:grid-cols-4 lg:gap-8'}`}>
+          {!isSemanticSearch && <div
             className={`fixed top-0 left-0 mb-4 z-30 lg:z-0 lg:static lg:col-span-1 bg-gradient-to-r from-neutral-light to-white rounded-lg p-8 text-neutral-black overflow-x-auto h-full lg:h-fit lg:translate-x-0 transition-transform ${
               hideFilters ? "-translate-x-full" : "translate-x-0"
             }`}
@@ -272,14 +304,14 @@ export default function SeachInterface(opts:{ subgraph:string }
                 </fieldset>
               </div>
             ) : null}
-          </div>
-          <div className="lg:col-span-3">
+          </div>}
+          <div className={isSemanticSearch ? "lg:col-span-1" : "lg:col-span-3"}>
             <div className="flex flex-col-reverse gap-4 lg:flex-row justify-between mb-4">
               <div className="lg:basis-3/4 lg:self-center text-2xl font-bold text-neutral-dark">
                 Search results for: {search}
               </div>
               <div className="justify-between flex flex-row items-center gap-4">
-                <button
+                {!isSemanticSearch && <button
                   className="lg:hidden button-secondary"
                   type="button"
                   onClick={() => {
@@ -287,7 +319,7 @@ export default function SeachInterface(opts:{ subgraph:string }
                   }}
                 >
                   Filters
-                </button>
+                </button>}
                 <div className="flex-none flex group relative text-md">
                   <label className="self-center px-3">Show</label>
                   <select
@@ -312,17 +344,24 @@ export default function SeachInterface(opts:{ subgraph:string }
             </div>
             {results.length > 0 ? (
               <div>
-                <Pagination
+                {!isSemanticSearch && <Pagination
                   page={page}
                   onPageChange={setPage}
                   dataCount={totalResults}
                   rowsPerPage={rowsPerPage}
-                />
+                />}
                 {results.map((graphNode: GraphNode) => {
                   let nodeType = graphNode.extractType()
+                  let score = searchScores.get(graphNode.getNodeId())
                   return (
                     <div className="my-5">
                       <div className="my-2 leading-loose truncate flex flex-row items-center">
+                        {score !== undefined && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mr-2"
+                            style={{backgroundColor: '#f3e8ff', color: '#7c3aed'}}>
+                            {(score * 100).toFixed(1)}%
+                          </span>
+                        )}
                         <Link to={graphNode.getLinkUrl(subgraph)}
                           className={`link-default text-xl mr-2 ${
                             graphNode.isBoldForQuery(search) ? "font-bold" : ""
@@ -343,12 +382,12 @@ export default function SeachInterface(opts:{ subgraph:string }
                     </div>
                   );
                 })}
-                <Pagination
+                {!isSemanticSearch && <Pagination
                   page={page}
                   onPageChange={setPage}
                   dataCount={totalResults}
                   rowsPerPage={rowsPerPage}
-                />
+                />}
               </div>
             ) : (
               <div className="text-xl text-neutral-black font-bold">

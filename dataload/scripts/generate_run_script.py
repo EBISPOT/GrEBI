@@ -82,7 +82,7 @@ def generate_run_script(subgraph: str, image: str) -> str:
         done
 
         # Validate service names (both includes and excludes)
-        for svc in "${{INCLUDES[@]}}" "${{EXCLUDES[@]}}"; do
+        for svc in "${{INCLUDES[@]+${{INCLUDES[@]}}}}" "${{EXCLUDES[@]+${{EXCLUDES[@]}}}}"; do
             [ -z "$svc" ] && continue
             valid=0
             for ok in $ALL_SERVICES; do
@@ -105,7 +105,7 @@ def generate_run_script(subgraph: str, image: str) -> str:
         elif [ ${{#EXCLUDES[@]}} -gt 0 ]; then
             for svc in $ALL_SERVICES; do
                 excluded=0
-                for ex in "${{EXCLUDES[@]}}"; do
+                for ex in "${{EXCLUDES[@]+${{EXCLUDES[@]}}}}"; do
                     if [ "$svc" = "$ex" ]; then excluded=1; break; fi
                 done
                 if [ "$excluded" -eq 0 ]; then
@@ -204,6 +204,9 @@ def generate_run_script(subgraph: str, image: str) -> str:
         svc_enabled neo4j            && echo "  Neo4j Bolt:     bolt://localhost:7687"
         svc_enabled solr             && echo "  Solr Admin:     http://localhost:8983"
         svc_enabled postgres         && echo "  PostgreSQL:     localhost:5432"
+        svc_enabled metadata_service && echo "  Metadata:       http://localhost:8081"
+        svc_enabled prefix_service   && echo "  Prefix:         http://localhost:8082"
+        svc_enabled resolver_service && echo "  Resolver:       http://localhost:8084"
         echo ""
 
         ENV_VARS=(
@@ -230,6 +233,9 @@ def generate_run_script(subgraph: str, image: str) -> str:
                 -p 7687:7687 \\
                 -p 8080:8080 \\
                 -p 8085:8085 \\
+                -p 8081:8081 \\
+                -p 8082:8082 \\
+                -p 8084:8084 \\
                 -p 8090:8090 \\
                 -p 8983:8983 \\
                 -p 5432:5432 \\

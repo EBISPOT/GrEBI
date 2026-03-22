@@ -27,6 +27,7 @@ process run_integration_tests {
     path("${subgraph}_snapshot_neo4j_edges.jsonl"), optional: true
     path("${subgraph}_snapshot_solr_nodes.jsonl"), optional: true
     path("${subgraph}_snapshot_postgres_edges.jsonl"), optional: true
+    path("${subgraph}_snapshot_postgres_nodes.jsonl"), optional: true
     stdout
 
     script:

@@ -143,19 +143,7 @@ fn write_solr_object(line:&Vec<u8>, nodes_writer:&mut BufWriter<&File>) {
         }
 
         if k.starts_with("embedding:") {
-            // Convert JSON array to vector of floats for Solr
-            if v.is_array() {
-                let arr = v.as_array().unwrap();
-                let mut float_vec: Vec<f64> = Vec::new();
-                for el in arr {
-                    if let Some(num) = el.as_f64() {
-                        float_vec.push(num);
-                    }
-                }
-                out_json.insert(escape_key(k), Value::Array(float_vec.iter().map(|&f| Value::Number(serde_json::Number::from_f64(f).unwrap())).collect()));
-            } else {
-                out_json.insert(escape_key(k), v.clone());
-            }
+            // Embeddings are now stored in PostgreSQL with pgvector, not in Solr
             continue;
         }
 

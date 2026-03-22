@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
-"""Export PostgreSQL edges table to JSONL snapshot file."""
+"""Export PostgreSQL edges and nodes tables to JSONL snapshot files."""
 
 import json
 import os
+import re
 import subprocess
 import sys
 
 
-def export_edges(subgraph, output_file):
-    """Export edges from PostgreSQL to a JSONL snapshot file."""
-    table_name = f"edges_{subgraph}"
+def export_table(subgraph, table_name, sort_key, output_file):
+    """Export a PostgreSQL table to a JSONL snapshot file."""
     pg_host = os.environ.get("GREBI_POSTGRES_HOST", "localhost")
     pg_port = os.environ.get("GREBI_POSTGRES_PORT", "5432")
     pg_user = os.environ.get("GREBI_POSTGRES_USER", "grebi")
     pg_db = os.environ.get("GREBI_POSTGRES_DB", "grebi")
 
-    # Query all edges as JSON objects, sorted by edge ID for stable snapshots
     query = f"""
         SELECT row_to_json(t) FROM (
-            SELECT * FROM "{table_name}" ORDER BY "grebi:edgeId"
+            SELECT * FROM "{table_name}" ORDER BY "{sort_key}"
         ) t;
     """
 
@@ -32,6 +31,8 @@ def export_edges(subgraph, output_file):
         print(f"Error querying PostgreSQL: {result.stderr}", file=sys.stderr)
         return 0
 
+    embedding_col_re = re.compile(r'^embedding__')
+
     all_docs = []
     for line in result.stdout.strip().split("\n"):
         line = line.strip()
@@ -39,11 +40,9 @@ def export_edges(subgraph, output_file):
             continue
         try:
             doc = json.loads(line)
-            # Remove the _json field from snapshot (it's the full blob,
-            # would be redundant and make diffs harder to read)
-            doc.pop("_json", None)
-            # Remove null values for cleaner snapshots
-            doc = {k: v for k, v in doc.items() if v is not None}
+            # Remove embedding vector columns (large, not useful in snapshots)
+            doc = {k: v for k, v in doc.items()
+                   if v is not None and not embedding_col_re.match(k)}
             all_docs.append(doc)
         except json.JSONDecodeError:
             continue
@@ -58,5 +57,10 @@ def export_edges(subgraph, output_file):
 if __name__ == "__main__":
     subgraph = sys.argv[1]
 
-    n = export_edges(subgraph, f"{subgraph}_snapshot_postgres_edges.jsonl")
+    n = export_table(subgraph, f"edges_{subgraph}", "grebi:edgeId",
+                     f"{subgraph}_snapshot_postgres_edges.jsonl")
     print(f"Exported {n} PostgreSQL edges")
+
+    n = export_table(subgraph, f"nodes_{subgraph}", "grebi:nodeId",
+                     f"{subgraph}_snapshot_postgres_nodes.jsonl")
+    print(f"Exported {n} PostgreSQL nodes")

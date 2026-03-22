@@ -52,7 +52,7 @@ services:
       volumes:
         - ${GREBI_SOLR_PATH:?Need path to Solr data}:/var/solr/data
     grebi-postgres:
-      image: postgres:18
+      image: pgvector/pgvector:0.8.0-pg17
       ports:
         - 5432:5432
       volumes:

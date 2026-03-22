@@ -1,6 +1,8 @@
 import numbers
 import sys
 import json
+import os
+import glob
 from collections import defaultdict
 
 def merge(dict1, dict2):
@@ -20,11 +22,35 @@ def merge(dict1, dict2):
             dict1[key] = value
     return dict1
 
+# Parse arguments: positional args are metadata JSONs, --downloads-dir is optional
+metadata_files = []
+downloads_dir = None
+i = 1
+while i < len(sys.argv):
+    if sys.argv[i] == '--downloads-dir':
+        i += 1
+        downloads_dir = sys.argv[i]
+    else:
+        metadata_files.append(sys.argv[i])
+    i += 1
+
 merged_data = defaultdict(dict)
-for filename in sys.argv[1:]:
+for filename in metadata_files:
     with open(filename, 'r') as file:
         data = json.load(file)
         merge(merged_data, data)
+
+# Inject PCA model JSONs inline under "embedding_pca_models" key
+# Searches recursively for any *pca*.json files under the downloads directory
+if downloads_dir and os.path.isdir(downloads_dir):
+    pca_models = {}
+    for fpath in sorted(glob.glob(os.path.join(downloads_dir, '**/*pca*.json'), recursive=True)):
+        model_name = os.path.basename(fpath)[:-5]  # strip .json
+        with open(fpath, 'r') as f:
+            pca_models[model_name] = json.load(f)
+        print(f"Loaded PCA model: {model_name} from {fpath}", file=sys.stderr)
+    if pca_models:
+        merged_data['embedding_pca_models'] = pca_models
 
 print(json.dumps(merged_data, indent=2))
 

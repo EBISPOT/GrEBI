@@ -32,11 +32,8 @@ def main():
     summary = json.load(open(args.in_graph_metadata_json))
 
     entity_props_not_embeddings = list(filter(lambda p: not p.startswith('embedding:'), summary['entity_props'].keys()))
-    entity_props_embeddings = list(filter(lambda p: p.startswith('embedding:'), summary['entity_props'].keys()))
-    embedding_models2dims = summary.get('embedding_models2dims', {})
 
     node_props = list(map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_not_embeddings))
-    node_props_embeddings = list(map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_embeddings))
     edge_props = list(map(lambda f: f.replace(':', '__').replace('&', '_'), summary['edge_props'].keys()))
 
     # The API hardcodes these fields in its edismax qf (search) queries, so they
@@ -57,16 +54,6 @@ def main():
                 f'<copyField source="{f}" dest="str_{f}"/>',
                 f'<copyField source="{f}" dest="lowercase_{f}"/>'
             ]), node_props)
-        )
-        +
-        list(
-            map(
-                lambda f: (lambda model_id: '\n'.join([
-                    f'<fieldType name="knn_vector_{model_id}" class="solr.DenseVectorField" vectorDimension="{embedding_models2dims.get(model_id, "")}" similarityFunction="cosine"/>',
-                    f'<field name="embedding__{model_id}" type="knn_vector_{model_id}" indexed="true" stored="true"/>'
-                ]))(f.split('__')[1]),
-                node_props_embeddings
-            )
         )
     )))
 

@@ -29,7 +29,8 @@ members = [
 	"08_create_other_dbs/solr/grebi_link_results",
 	"08_create_other_dbs/sqlite/grebi_make_compressed_blob",
 	"08_create_other_dbs/sqlite/grebi_make_sqlite",
-	"08_create_other_dbs/postgres/grebi_make_postgres",
+	"08_create_other_dbs/postgres/grebi_make_postgres_edges",
+	"08_create_other_dbs/postgres/grebi_make_postgres_nodes",
 	"grebi_shared"
 ]
 

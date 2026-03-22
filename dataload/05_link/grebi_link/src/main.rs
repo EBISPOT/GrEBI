@@ -297,8 +297,8 @@ fn main() -> std::io::Result<()> {
         }).collect::<HashMap<String,serde_json::Value>>(),
         "edges": edge_summary,
         "embedding_models2dims": embedding_model2dim.iter().map(|(k,v)| {
-            return (String::from_utf8(k.to_vec()).unwrap(), v.to_string());
-        }).collect::<HashMap<String,String>>()
+            return (String::from_utf8(k.to_vec()).unwrap(), json!(*v));
+        }).collect::<HashMap<String,serde_json::Value>>()
     })).unwrap().as_bytes()).unwrap();
 
     graph_metadata_writer.flush().unwrap();

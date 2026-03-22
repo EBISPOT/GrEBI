@@ -102,14 +102,6 @@ fn main() -> std::io::Result<()> {
         nodes_writer.write_all(prop.as_bytes()).unwrap();
         nodes_writer.write_all(b":string[]").unwrap();
     }
-    for prop in &all_entity_props {
-        if !prop.starts_with("embedding:") {
-            continue;
-        }
-        nodes_writer.write_all(b",").unwrap();
-        nodes_writer.write_all(prop.as_bytes()).unwrap();
-        nodes_writer.write_all(b":float[]").unwrap();
-    }
     nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
@@ -284,31 +276,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
     }
 
     // Embedding vectors:
-    // Instead of parsing the JSON and rewriting it we do an ugly hack to convert the JSON to CSV.
-    // This is so that we don't make anything weird happen to the floats when parsing and re-serializing them.
-    //
-    for header_prop in all_node_props {
-        if !header_prop.starts_with("embedding:") {
-            continue;
-        }
-        nodes_writer.write_all(b",").unwrap();
-        let model_id = &header_prop["embedding:".len()..];
-        let embedding_vector = entity.model_id_to_embedding_vector.get(model_id.as_bytes());
-        if embedding_vector.is_some() {
-            for byte in embedding_vector.unwrap().iter() {
-                match byte {
-                    b'[' => nodes_writer.write_all(b"\"").unwrap(),
-                    b']' => nodes_writer.write_all(b"\"").unwrap(),
-                    b',' => nodes_writer.write_all(&[(31 as u8)]).unwrap(),
-                    b' ' => nodes_writer.write_all(b"").unwrap(),
-                    b'\n' => nodes_writer.write_all(b"").unwrap(),
-                    b'\r' => nodes_writer.write_all(b"").unwrap(),
-                    b'\t' => nodes_writer.write_all(b"").unwrap(),
-                    b => nodes_writer.write_all(&[*b]).unwrap()
-                }
-            }
-        }
-    }
+    // Embeddings are now stored in PostgreSQL with pgvector, not in Neo4j.
 
     nodes_writer.write_all(b"\n").unwrap();
 

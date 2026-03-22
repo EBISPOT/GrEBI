@@ -16,7 +16,7 @@ process prepare_postgres {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    grebi_make_postgres \
+    grebi_make_postgres_edges \
       --in-edges-jsonl ${edges_jsonl} \
       --in-graph-metadata-json ${graph_metadata_json} \
       --out-edges-tsv-path postgres_edges_${subgraph}_${task.index}.tsv \

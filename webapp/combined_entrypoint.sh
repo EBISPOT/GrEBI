@@ -112,6 +112,9 @@ for pgdir in /data/postgres_data_*; do
         chmod 0700 "$pgdir"
     fi
 done
+if [ -n "${GREBI_POSTGRES_DATA:-}" ] && [ -d "$GREBI_POSTGRES_DATA" ]; then
+    chmod 0700 "$GREBI_POSTGRES_DATA"
+fi
 
 case "$MODE" in
     test)
@@ -229,15 +232,19 @@ case "$MODE" in
         echo "Running in CONTINUOUS mode - services will run until stopped"
         echo ""
         echo "Services will be available at:"
-        echo "  Cypher Service:     http://localhost:8085"
-        echo "  Neo4j Browser:      http://localhost:7474"
-        echo "  Solr Admin:         http://localhost:8983"
-        echo "  PostgreSQL:         localhost:5432"
-        echo "  GrEBI API:          http://localhost:8090"
-        echo "  GrEBI UI:           http://localhost:8080"
-        echo "  Metadata Service:   http://localhost:8081"
-        echo "  Prefix Service:     http://localhost:8082"
-        echo "  Resolver Service:   http://localhost:8084"
+        for sel in "${SELECTED[@]}"; do
+            case "$sel" in
+                cypher_service)   echo "  Cypher Service:     http://localhost:8085" ;;
+                neo4j)            echo "  Neo4j Browser:      http://localhost:7474" ;;
+                solr)             echo "  Solr Admin:         http://localhost:8983" ;;
+                postgres)         echo "  PostgreSQL:         localhost:5432" ;;
+                api)              echo "  GrEBI API:          http://localhost:8090" ;;
+                ui)               echo "  GrEBI UI:           http://localhost:8080" ;;
+                metadata_service) echo "  Metadata Service:   http://localhost:8081" ;;
+                prefix_service)   echo "  Prefix Service:     http://localhost:8082" ;;
+                resolver_service) echo "  Resolver Service:   http://localhost:8084" ;;
+            esac
+        done
         echo ""
         echo "To run integration tests manually, execute:"
         echo "  python3 /opt/integration_tests.py --wait"

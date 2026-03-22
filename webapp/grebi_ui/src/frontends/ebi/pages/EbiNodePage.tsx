@@ -34,6 +34,7 @@ export default function EbiNodePage() {
 
   let [node, setNode] = useState<GraphNode|null>(null);
   const tab = searchParams.get("tab") || "graph";
+  const [hasEmbeddingModels, setHasEmbeddingModels] = useState<boolean>(false);
 
   useEffect(() => {
     async function getNode() {
@@ -42,6 +43,18 @@ export default function EbiNodePage() {
     }
     getNode()
   }, [nodeId, lang]);
+
+  useEffect(() => {
+    async function fetchModels() {
+      try {
+        const models = await get<{model: string, can_embed: boolean}[]>(`api/v1/subgraphs/${subgraph}/embedding_models`);
+        setHasEmbeddingModels(models != null && models.length > 0);
+      } catch (e) {
+        setHasEmbeddingModels(false);
+      }
+    }
+    fetchModels();
+  }, [subgraph]);
 
   return (
     <div>
@@ -90,7 +103,7 @@ export default function EbiNodePage() {
             <Tab label="Property View" icon={<FormatListBulleted/>} value="properties" />
             <Tab label="Edges In" icon={<CallReceived/>} value="edges_in" />
             <Tab label="Edges Out" icon={<CallMade/>} value="edges_out" />
-            <Tab label="Similar" icon={<AutoAwesome/>} value="similar" />
+            {hasEmbeddingModels && <Tab label="Similar" icon={<AutoAwesome/>} value="similar" />}
           </Tabs>
           </Grid>
           <Grid item xs={10}>
@@ -109,9 +122,9 @@ export default function EbiNodePage() {
         <TabPanel value={tab} index={"edges_out"}>
           <EdgesList direction="outgoing" subgraph={subgraph} node={node} />
         </TabPanel>
-        <TabPanel value={tab} index={"similar"}>
+        {hasEmbeddingModels && <TabPanel value={tab} index={"similar"}>
          <NodeSimilarList subgraph={subgraph} node={node} />
-        </TabPanel>
+        </TabPanel>}
         </Grid>
         </Grid>
       </main>}

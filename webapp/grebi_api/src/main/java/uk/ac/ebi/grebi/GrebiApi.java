@@ -30,6 +30,7 @@ import uk.ac.ebi.grebi.db.GrebiSolrQuery;
 import uk.ac.ebi.grebi.db.ResolverClient;
 import uk.ac.ebi.grebi.db.MetadataClient;
 import uk.ac.ebi.grebi.db.PrefixClient;
+import uk.ac.ebi.grebi.db.EmbeddingServiceClient;
 import uk.ac.ebi.grebi.repo.GrebiSolrRepo;
 import uk.ac.ebi.grebi.repo.GrebiPostgresRepo;
 import uk.ac.ebi.grebi.repo.GrebiMetadataRepo;
@@ -113,7 +114,17 @@ public class GrebiApi {
 
         System.out.println("Found subgraphs: " + String.join(",", solrSubgraphs));
 
-        run(cypher, solr, postgres, metadata, solrSubgraphs, queryTemplates);
+        // Initialize embedding service clients (one per subgraph with PCA models)
+        Map<String, EmbeddingServiceClient> embeddingClients = new LinkedHashMap<>();
+        for (String sg : solrSubgraphs) {
+            var meta = metadata.getMetadata(sg);
+            if (meta != null && meta.containsKey("embedding_pca_models")) {
+                embeddingClients.put(sg, new EmbeddingServiceClient(meta));
+                System.out.println("Initialized embedding client for subgraph: " + sg);
+            }
+        }
+
+        run(cypher, solr, postgres, metadata, solrSubgraphs, queryTemplates, embeddingClients);
     }
 
     static void run(
@@ -122,7 +133,8 @@ public class GrebiApi {
         final GrebiPostgresRepo postgres,
         final GrebiMetadataRepo metadata,
         final Set<String> subgraphs,
-        final GrebiQueryTemplatesRepo queryTemplates
+        final GrebiQueryTemplatesRepo queryTemplates,
+        final Map<String, EmbeddingServiceClient> embeddingClients
     ) {
         var stats = cypher != null ? cypher.getStats() : null;
 
@@ -175,7 +187,9 @@ public class GrebiApi {
                 })
                 .get("/api/v1/subgraphs/{subgraph}", ctx -> {
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(metadata.getMetadata(ctx.pathParam("subgraph"))));
+                    var meta = new java.util.LinkedHashMap<>(metadata.getMetadata(ctx.pathParam("subgraph")));
+                    meta.remove("embedding_pca_models");
+                    ctx.result(gson.toJson(meta));
                 })
                 .get("/api/v1/materialised_queries", ctx -> {
                     List<JsonElement> all_matqs = new ArrayList<>();
@@ -527,22 +541,80 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/similar", ctx -> {
-                    var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
-                    var n = Integer.parseInt( Objects.requireNonNullElse(ctx.queryParam("n"), "10") );
-                    var backend = Objects.requireNonNullElse(ctx.queryParam("backend"), "neo4j");
-                    var modelId = Objects.requireNonNullElse(ctx.queryParam("modelId"), "text-embedding-3-small");
+                .get("/api/v1/subgraphs/{subgraph}/embedding_models", ctx -> {
+                    var subgraph = ctx.pathParam("subgraph");
+                    var client = embeddingClients.get(subgraph);
+                    List<String> modelNames = (client != null) ? client.getAvailableModels() : List.of();
+                    Set<String> embeddable = (client != null) ? client.getEmbeddableModels() : Set.of();
+                    var result = new java.util.ArrayList<Map<String, Object>>();
+                    for (String m : modelNames) {
+                        result.add(Map.of("model", m, "can_embed", embeddable.contains(m)));
+                    }
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(result));
+                })
+                .get("/api/v1/subgraphs/{subgraph}/semantic_search", ctx -> {
+                    var subgraph = ctx.pathParam("subgraph");
+                    var q = ctx.queryParam("q");
+                    var model = ctx.queryParam("model");
+                    var n = Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("n"), "10"));
+                    var resolve = Boolean.parseBoolean(Objects.requireNonNullElse(ctx.queryParam("resolve"), "false"));
 
-                    List<?> res;
-                    if ("solr".equalsIgnoreCase(backend)) {
-                        res = solr.getSimilar(ctx.pathParam("subgraph"), nodeId, n, modelId);
-                    } else {
-                        // Default to cypher service (which uses hardcoded text-embedding-3-small)
-                        res = cypher.getSimilar(ctx.pathParam("subgraph"), nodeId, n);
+                    if (q == null || q.isBlank()) {
+                        ctx.status(400).result("{\"error\":\"q parameter is required\"}");
+                        return;
+                    }
+                    if (model == null || model.isBlank()) {
+                        ctx.status(400).result("{\"error\":\"model parameter is required\"}");
+                        return;
                     }
 
+                    var client = embeddingClients.get(subgraph);
+                    if (client == null) {
+                        ctx.status(400).result("{\"error\":\"No embedding models available for this subgraph\"}");
+                        return;
+                    }
+
+                    float[] queryVector = client.embedText(model, q);
+                    var vectorResults = postgres.searchByVector(subgraph, model, queryVector, n);
+
+                    if (resolve) {
+                        var nodeIds = vectorResults.stream().map(r -> r.nodeId).toList();
+                        var resolver = new ResolverClient();
+                        var resolvedMap = resolver.resolveToMap(subgraph, nodeIds);
+                        var results = new java.util.ArrayList<Map<String, Object>>();
+                        for (var vr : vectorResults) {
+                            var resolved = resolvedMap.get(vr.nodeId);
+                            if (resolved == null) {
+                                resolved = new java.util.HashMap<>();
+                                resolved.put("grebi:nodeId", vr.nodeId);
+                                resolved.put("grebi:name", vr.name != null ? List.of(vr.name) : List.of());
+                            }
+                            resolved.put("grebi:searchScore", 1.0 - vr.distance);
+                            results.add(resolved);
+                        }
+                        ctx.contentType("application/json");
+                        ctx.result(gson.toJson(results));
+                    } else {
+                        ctx.contentType("application/json");
+                        ctx.result(gson.toJson(vectorResults));
+                    }
+                })
+                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/similar", ctx -> {
+                    var subgraph = ctx.pathParam("subgraph");
+                    var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
+                    var n = Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("n"), "10"));
+                    var model = Objects.requireNonNullElse(ctx.queryParam("model"), "text-embedding-3-small_pca512");
+
+                    var nodeEmbedding = postgres.getNodeEmbedding(subgraph, nodeId, model);
+                    if (nodeEmbedding == null) {
+                        ctx.status(404).result("{\"error\":\"No embedding found for this node and model\"}");
+                        return;
+                    }
+
+                    var results = postgres.searchByVector(subgraph, model, nodeEmbedding, n);
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(res));
+                    ctx.result(gson.toJson(results));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/edges/{edgeId}", ctx -> {
                     var rawEdgeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("edgeId")));

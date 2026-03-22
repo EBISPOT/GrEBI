@@ -1,4 +1,4 @@
-import { Checkbox, FormControlLabel, ThemeProvider } from "@mui/material";
+import { Checkbox, FormControlLabel, ThemeProvider, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { get, getPaginated } from "../app/api";
@@ -49,6 +49,40 @@ export default function SearchBox({
     number | undefined
   >(undefined);
 
+  const [availableModels, setAvailableModels] = useState<{model: string, can_embed: boolean}[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>(searchParams.get("model") || "lexical");
+
+  useEffect(() => {
+    async function fetchModels() {
+      try {
+        const models = await get<{model: string, can_embed: boolean}[]>(`api/v1/subgraphs/${subgraph}/embedding_models`);
+        setAvailableModels(models || []);
+      } catch (e) {
+        setAvailableModels([]);
+      }
+    }
+    fetchModels();
+  }, [subgraph]);
+
+  const handleModelChange = useCallback(
+    (model: string) => {
+      setSelectedModel(model);
+      const currentQuery = searchParams.get("q");
+      if (currentQuery) {
+        const newSearchParams = new URLSearchParams(searchParams);
+        if (model && model !== "lexical") {
+          newSearchParams.set("model", model);
+        } else {
+          newSearchParams.delete("model");
+        }
+        navigate(`/subgraphs/${subgraph}/search?${newSearchParams}`);
+      }
+    },
+    [searchParams, navigate, subgraph]
+  );
+
+  const isEmbeddingSearch = selectedModel && selectedModel !== "lexical";
+
   let exact = searchParams.get("exactMatch") === "true";
   let obsolete = searchParams.get("includeObsoleteEntries") === "true";
   let canonical = searchParams.get("isDefiningcollection") === "true";
@@ -89,7 +123,23 @@ export default function SearchBox({
       curSearchToken = searchToken;
 
       const [nodes, autocomplete] = await Promise.all([
-        getPaginated<any>(
+        isEmbeddingSearch
+          ? get<any[]>(
+              `api/v1/subgraphs/${subgraph}/semantic_search?${new URLSearchParams({
+                q: query,
+                model: selectedModel,
+                n: "5",
+              })}`
+            ).then(results => results ? {
+              elements: results.map((r: any) => ({
+                "grebi:nodeId": r.nodeId,
+                "grebi:name": r.name ? [r.name] : [],
+                "grebi:datasources": r.datasources || [],
+                "grebi:type": r.type || [],
+                "grebi:sourceIds": r.sourceIds || [],
+              }))
+            } : null)
+          : getPaginated<any>(
           `api/v1/subgraphs/${subgraph}/search?${joinSearchParams(new URLSearchParams({
             q: query,
             size: "5",
@@ -101,7 +151,7 @@ export default function SearchBox({
             ...((canonical ? { isDefiningcollection: true } : {}) as any),
           }), additionalParams)}`
         ),
-        showSuggestions
+        showSuggestions && !isEmbeddingSearch
           ? get<string[]>(
               `api/v1/subgraphs/${subgraph}/suggest?${joinSearchParams(new URLSearchParams({
                 q: query,
@@ -114,10 +164,9 @@ export default function SearchBox({
       if (cancelPromisesRef.current && !mounted.current) return;
 
       if (searchToken === curSearchToken) {
-        setJumpTo([
-          ...nodes.elements.map(node => new GraphNode(node)),
-          // ...collections?.elements
-        ]);
+        setJumpTo(
+          nodes ? nodes.elements.map(node => new GraphNode(node)) : []
+        );
         setAutocomplete(autocomplete?.filter(ac => ac !== query) || []);
         setLoading(false);
       }
@@ -128,7 +177,7 @@ export default function SearchBox({
     return () => {
       cancelPromisesRef.current = true;
     };
-  }, [query, exact, obsolete, canonical]);
+  }, [query, exact, obsolete, canonical, isEmbeddingSearch]);
 
   let autocompleteToShow = autocomplete?.slice(0, 5) || [];
   let autocompleteElements = autocompleteToShow.map(
@@ -248,6 +297,11 @@ export default function SearchBox({
                   } else if (query) {
                     searchParams.set("q", query);
                     if (collectionId) searchParams.set("collection", collectionId);
+                    if (isEmbeddingSearch) {
+                      searchParams.set("model", selectedModel);
+                    } else {
+                      searchParams.delete("model");
+                    }
 
                     var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
                     navigate(linkUrl);
@@ -305,6 +359,11 @@ export default function SearchBox({
                       params.set("q", query);
                       if (collectionId)
                         params.set("collection", collectionId);
+                      if (isEmbeddingSearch) {
+                        params.set("model", selectedModel);
+                      } else {
+                        params.delete("model");
+                      }
 
                       var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
 
@@ -326,6 +385,11 @@ export default function SearchBox({
                   let params = additionalParams ? joinSearchParams(searchParams, additionalParams) : searchParams;
                   params.set("q", query);
                   if (collectionId) params.set("collection", collectionId);
+                  if (isEmbeddingSearch) {
+                    params.set("model", selectedModel);
+                  } else {
+                    params.delete("model");
+                  }
 
                   var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
 
@@ -336,6 +400,25 @@ export default function SearchBox({
               Search
             </button>
           </div>
+          {availableModels.filter(m => m.can_embed).length > 0 && (
+            <ThemeProvider theme={theme}>
+              <FormControl sx={{ minWidth: 200 }} size="small">
+                <InputLabel id="model-select-label">Search Model</InputLabel>
+                <Select
+                  labelId="model-select-label"
+                  id="model-select"
+                  value={selectedModel}
+                  label="Search Model"
+                  onChange={(e) => handleModelChange(e.target.value)}
+                >
+                  <MenuItem key="lexical" value="lexical">Lexical</MenuItem>
+                  {availableModels.filter(m => m.can_embed).map((model) => (
+                    <MenuItem key={model.model} value={model.model}>{model.model}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </ThemeProvider>
+          )}
         </div>
         {showExact !== false && <div className="col-span-2">
           <ThemeProvider theme={theme}>

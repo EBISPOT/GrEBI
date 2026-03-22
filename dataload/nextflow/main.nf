@@ -24,6 +24,7 @@ include { create_solr_results_cores } from './processes/08_create_other_dbs/solr
 include { construct_solr } from './processes/08_create_other_dbs/solr/construct_solr'
 include { package_solr } from './processes/08_create_other_dbs/solr/package_solr'
 include { prepare_postgres } from './processes/08_create_other_dbs/postgres/prepare_postgres'
+include { prepare_postgres_nodes } from './processes/08_create_other_dbs/postgres/prepare_postgres_nodes'
 include { create_postgres } from './processes/08_create_other_dbs/postgres/create_postgres'
 include { package_postgres } from './processes/08_create_other_dbs/postgres/package_postgres'
 include { run_materialised_queries } from './processes/07_run_queries/run_materialised_queries'
@@ -131,7 +132,8 @@ workflow {
     
     merge_graph_metadata_jsons(
         indexed.graph_metadata_json.collect() + link.out.linked_summary.collect(),
-        Channel.value(params.subgraph)
+        Channel.value(params.subgraph),
+        Channel.value(params.downloads_path)
     )
 
     // === STEP 6: CREATE DATABASES ===
@@ -214,11 +216,14 @@ workflow {
         .collect()
 
     // === STEP 8b: CREATE POSTGRESQL ===
-    postgres_inputs = prepare_postgres(link.out.edges, indexed.graph_metadata_json, Channel.value(params.subgraph))
+    postgres_edge_inputs = prepare_postgres(link.out.edges, indexed.graph_metadata_json, Channel.value(params.subgraph))
+    postgres_node_inputs = prepare_postgres_nodes(link.out.nodes, link.out.linked_summary, Channel.value(params.subgraph))
 
     postgres_db = create_postgres(
         prepare_postgres.out.edges_tsv.collect(),
         prepare_postgres.out.schema_sql.collect(),
+        prepare_postgres_nodes.out.nodes_tsv.collect(),
+        prepare_postgres_nodes.out.schema_sql.collect(),
         Channel.value(params.subgraph)
     )
 

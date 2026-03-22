@@ -76,7 +76,7 @@ fn main() -> std::io::Result<()> {
     edges_writer.flush().unwrap();
 
     eprintln!(
-        "grebi_make_postgres took {} seconds ({} edges)",
+        "grebi_make_postgres_edges took {} seconds ({} edges)",
         start_time.elapsed().as_secs(),
         n_edges
     );
@@ -119,7 +119,7 @@ fn write_edge_tsv_row(
     // Column order:
     // grebi:edgeId, grebi:type, grebi:fromNodeId, grebi:toNodeId,
     // grebi:datasources, grebi:subgraph, grebi:fromSourceIds,
-    // ...extra_props..., _json
+    // ...extra_props...
 
     let edge_id = json
         .get("grebi:edgeId")
@@ -153,13 +153,6 @@ fn write_edge_tsv_row(
         .map(|v| value_to_pg_array(v))
         .unwrap_or_else(|| "{}".to_string());
 
-    // Build the _json column: the full JSON object minus _refs
-    let json_blob = {
-        let mut clean = json.clone();
-        clean.remove("_refs");
-        serde_json::to_string(&clean).unwrap()
-    };
-
     // Write fixed columns
     write!(
         writer,
@@ -189,8 +182,7 @@ fn write_edge_tsv_row(
         }
     }
 
-    // Write _json column
-    write!(writer, "\t{}\n", escape_tsv(&json_blob)).unwrap();
+    write!(writer, "\n").unwrap();
 }
 
 /// Flatten reified values: extract grebi:value from objects, flatten nested arrays
@@ -279,13 +271,21 @@ fn write_schema_sql(
     writeln!(writer, "    \"grebi:toNodeId\" TEXT NOT NULL,").unwrap();
     writeln!(writer, "    \"grebi:datasources\" TEXT[] NOT NULL DEFAULT '{{}}',").unwrap();
     writeln!(writer, "    \"grebi:subgraph\" TEXT,").unwrap();
-    writeln!(writer, "    \"grebi:fromSourceIds\" TEXT[] DEFAULT '{{}}',").unwrap();
 
-    for prop in extra_props {
-        writeln!(writer, "    \"{}\" TEXT[],", prop).unwrap();
+    if extra_props.is_empty() {
+        writeln!(writer, "    \"grebi:fromSourceIds\" TEXT[] DEFAULT '{{}}'").unwrap();
+    } else {
+        writeln!(writer, "    \"grebi:fromSourceIds\" TEXT[] DEFAULT '{{}}',").unwrap();
+        let last_prop = &extra_props[extra_props.len() - 1];
+        for prop in extra_props {
+            if prop == last_prop {
+                writeln!(writer, "    \"{}\" TEXT[]", prop).unwrap();
+            } else {
+                writeln!(writer, "    \"{}\" TEXT[],", prop).unwrap();
+            }
+        }
     }
 
-    writeln!(writer, "    \"_json\" JSONB").unwrap();
     writeln!(writer, ");").unwrap();
     writeln!(writer).unwrap();
 

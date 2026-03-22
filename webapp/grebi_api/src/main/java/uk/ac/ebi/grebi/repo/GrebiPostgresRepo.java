@@ -154,4 +154,19 @@ public class GrebiPostgresRepo {
         }
         return refs;
     }
+
+    /**
+     * Search nodes by vector similarity using pgvector.
+     */
+    public List<GrebiPostgresClient.VectorSearchResult> searchByVector(
+            String subgraph, String embeddingModel, float[] queryVector, int limit) {
+        return pgClient.searchByVector(subgraph, embeddingModel, queryVector, limit);
+    }
+
+    /**
+     * Get a node's embedding vector for a given model.
+     */
+    public float[] getNodeEmbedding(String subgraph, String nodeId, String embeddingModel) {
+        return pgClient.getNodeEmbedding(subgraph, nodeId, embeddingModel);
+    }
 }

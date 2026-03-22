@@ -48,7 +48,7 @@ RUN apt-get install -y gnupg lsb-release && \
     echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     apt-get update -y && \
-    apt-get install -y postgresql-18 postgresql-client-18
+    apt-get install -y postgresql-18 postgresql-client-18 postgresql-18-pgvector
 
 # Add PostgreSQL 18 server binaries to PATH
 ENV PATH="$PATH:/usr/lib/postgresql/18/bin"
