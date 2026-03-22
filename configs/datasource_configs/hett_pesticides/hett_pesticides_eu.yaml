@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: hett_pesticides/ActiveSubstanceExport.xlsx
     sources:
-      - hett_pesticides/ActiveSubstanceExport.xlsx
+      - https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/ActiveSubstanceExport.xlsx
 ingests:
   - globs: ["hett_pesticides/ActiveSubstanceExport*"]
     command: '

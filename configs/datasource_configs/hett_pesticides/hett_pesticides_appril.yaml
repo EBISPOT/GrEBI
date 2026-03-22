@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: hett_pesticides/apprildatadump_public.xlsx
     sources:
-      - https://www3.epa.gov/pesticides/appril/apprildatadump_public.xlsx
+      - https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/apprildatadump_public.xlsx
 ingests:
   - globs: ["hett_pesticides/apprildatadump_public.xlsx"]
     command: '

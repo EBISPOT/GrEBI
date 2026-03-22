@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: hett_pesticides/active-substance-register.xlsx
     sources:
-      - https://www.hse.gov.uk/pesticides/assets/docs/active-substance-register.xlsx
+      - https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/active-substance-register.xlsx
 ingests:
   - globs: ["hett_pesticides/active-substance-register.xlsx"]
     command: '
