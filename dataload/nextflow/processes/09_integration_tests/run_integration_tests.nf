@@ -38,15 +38,7 @@ process run_integration_tests {
     cat ${release_tgz} | pigz -d | tar -xf -
     cd ${subgraph}
 
-    # Ensure current user is resolvable (PostgreSQL requires this)
-    if ! getent passwd \$(id -u) > /dev/null 2>&1; then
-        echo "grebi:x:\$(id -u):\$(id -g):PostgreSQL:/tmp:/bin/bash" >> /etc/passwd 2>/dev/null || true
-    fi
-
-    # Ensure PostgreSQL socket directory exists and is writable
-    mkdir -p /var/run/postgresql 2>/dev/null || true
-    chmod 777 /var/run/postgresql 2>/dev/null || true
-
+    # Configure environment for the entrypoint
     export GREBI_POSTGRES_DATA=\$PWD/postgres_data_${subgraph}
     export NEO4J_server_directories_data=\$PWD/${subgraph}_neo4j/data
     export NEO4J_server_directories_logs=\$PWD
@@ -57,97 +49,33 @@ process run_integration_tests {
     export GREBI_QUERY_TEMPLATES_PATH=\$PWD/query_templates
     export PUBLIC_URL=/
 
-    # Configure database memory from Nextflow params
+    # Database memory from Nextflow params
     export GREBI_NEO_HEAP=${neo_mem}
     export GREBI_SOLR_HEAP=${solr_mem}
     export GREBI_PG_SHARED_BUFFERS=${pg_shared_buffers}
     export GREBI_PG_WORK_MEM=${pg_work_mem}
     export GREBI_PG_MAINTENANCE_WORK_MEM=${pg_maintenance_work_mem}
     export GREBI_PG_MAX_WAL_SIZE=${pg_max_wal_size}
-    
-    # Start all services via supervisord
-    echo "Starting services with supervisord..."
-    /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf > supervisord_output.log 2>&1 &
-    SUPERVISOR_PID=\$!
-    sleep 2
-    if ! kill -0 \$SUPERVISOR_PID 2>/dev/null; then
-        echo "ERROR: supervisord failed to start"
-        cat supervisord.log 2>/dev/null || true
-        exit 1
-    fi
 
-    # Run integration tests (waits for services internally)
-    echo "Running integration tests..."
-    set +e
-    python3 /opt/integration_tests.py --api-url http://localhost:8090 2>&1 | tee ../integration_test_results.txt
-    TEST_EXIT_CODE=\${PIPESTATUS[0]}
-    set -e
-    echo "Integration tests exited with code: \$TEST_EXIT_CODE"
-
-    # Export and compare snapshots if requested
-    SNAPSHOT_EXIT_CODE=0
-    API_EXIT_CODE=0
-
+    # Snapshot export/comparison (only when requested)
     if [ "${export_snapshots}" = "true" ]; then
-        echo ""
-        echo "=== Exporting DB snapshots ==="
-
-        # Neo4j and Solr are already running via supervisord
-        python3 ${grebi_home}/tests/export_neo4j.py ${subgraph}
-        python3 ${grebi_home}/tests/export_solr.py ${subgraph}
-        python3 ${grebi_home}/tests/export_postgres.py ${subgraph}
-
-        # Copy snapshots to parent dir for publishDir
-        cp -f ${subgraph}_snapshot_*.jsonl ../ 2>/dev/null || true
-
-        # Compare DB snapshots against expected output (if it exists)
+        export GREBI_EXPORT_SNAPSHOTS=true
         EXPECTED_DIR="${grebi_home}/tests/expected_output/${subgraph}"
-        if ls "\$EXPECTED_DIR"/${subgraph}_snapshot_*.jsonl 1>/dev/null 2>&1; then
-            echo ""
-            echo "=== Comparing DB snapshots ==="
-            set +e
-            python3 ${grebi_home}/tests/compare_snapshots.py \\
-                --subgraph ${subgraph} \\
-                --actual-dir \$PWD \\
-                --expected-dir "\$EXPECTED_DIR"
-            SNAPSHOT_EXIT_CODE=\$?
-            set -e
-        else
-            echo "No expected DB snapshots found at \$EXPECTED_DIR — skipping comparison"
-            echo "To populate expected output, copy snapshot files from the pipeline output to: \$EXPECTED_DIR/"
-        fi
-
-        # Compare API snapshots (if expected snapshot exists)
-        if [ -f "\$EXPECTED_DIR/${subgraph}_api_snapshot.json" ]; then
-            echo ""
-            echo "=== Comparing API snapshots ==="
-            set +e
-            python3 ${grebi_home}/tests/test_api_snapshots.py \\
-                --subgraph ${subgraph} \\
-                --api-url http://localhost:8090 \\
-                --expected-dir "\$EXPECTED_DIR"
-            API_EXIT_CODE=\$?
-            set -e
-        else
-            echo "No expected API snapshot found — skipping API comparison"
+        if [ -d "\$EXPECTED_DIR" ]; then
+            export GREBI_EXPECTED_DIR="\$EXPECTED_DIR"
         fi
     fi
 
-    # Stop all services
-    echo ""
-    echo "Stopping services..."
-    supervisorctl stop all 2>/dev/null || true
-    kill \$SUPERVISOR_PID 2>/dev/null || true
-    sleep 1
-    killall -9 java neo4j solr caddy python3 postgres 2>/dev/null || true
-    pkill -9 -P \$\$ 2>/dev/null || true
-    pkill -9 -P \$SUPERVISOR_PID 2>/dev/null || true
+    # Run the entrypoint in test mode — it handles supervisord, integration
+    # tests, snapshot export, comparison, and cleanup.
+    set +e
+    /opt/entrypoint.sh test 2>&1 | tee ../integration_test_results.txt
+    EXIT_CODE=\${PIPESTATUS[0]}
+    set -e
 
-    # Exit with combined result
-    if [ \$TEST_EXIT_CODE -ne 0 ] || [ \$SNAPSHOT_EXIT_CODE -ne 0 ] || [ \$API_EXIT_CODE -ne 0 ]; then
-        echo "FAILED: integration_tests=\$TEST_EXIT_CODE, db_snapshots=\$SNAPSHOT_EXIT_CODE, api_snapshots=\$API_EXIT_CODE"
-        exit 1
-    fi
-    echo "All tests passed"
+    # Copy snapshot files to parent dir for Nextflow publishDir
+    cp -f ${subgraph}_snapshot_*.jsonl ../ 2>/dev/null || true
+
+    exit \$EXIT_CODE
     """
 }

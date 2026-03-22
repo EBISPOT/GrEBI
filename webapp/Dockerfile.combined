@@ -133,6 +133,11 @@ COPY query_templates /opt/query_templates
 # Create supervisor configuration
 COPY webapp/combined_supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY webapp/integration_tests.py /opt/integration_tests.py
+COPY tests/export_neo4j.py /opt/export_neo4j.py
+COPY tests/export_solr.py /opt/export_solr.py
+COPY tests/export_postgres.py /opt/export_postgres.py
+COPY tests/compare_snapshots.py /opt/compare_snapshots.py
+COPY tests/test_api_snapshots.py /opt/test_api_snapshots.py
 COPY webapp/combined_entrypoint.sh /opt/entrypoint.sh
 
 RUN chmod +x /opt/entrypoint.sh

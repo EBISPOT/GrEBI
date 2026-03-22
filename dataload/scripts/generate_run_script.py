@@ -32,7 +32,12 @@ def generate_run_script(subgraph: str, image: str) -> str:
         # Usage:
         #   ./grebi.sh                              # start all services
         #   ./grebi.sh api postgres solr             # start only named services
+        #   ./grebi.sh -api -ui                      # start all except api and ui
+        #   ./grebi.sh api -ui                       # start only api (-ui ignored)
         #   ./grebi.sh bash                          # open an interactive shell
+        #
+        # Prefix a service name with - to exclude it.  Exclusions only take
+        # effect when no positive (include) services are given.
         #
         # Valid service names:
         #   api  cypher_service  neo4j  metadata_service  postgres
@@ -64,26 +69,47 @@ def generate_run_script(subgraph: str, image: str) -> str:
         ALL_SERVICES="api cypher_service neo4j metadata_service postgres prefix_service resolver_service solr ui"
 
         # Parse arguments: "bash" and "test" are modes; anything else is a service name.
+        # A leading dash (e.g. -api) marks a service for exclusion.
         MODE="run"
-        SERVICES=()
+        INCLUDES=()
+        EXCLUDES=()
         for arg in "$@"; do
             case "$arg" in
                 bash|test) MODE="$arg" ;;
-                *)         SERVICES+=("$arg") ;;
+                -*)        EXCLUDES+=("${{arg#-}}") ;;
+                *)         INCLUDES+=("$arg") ;;
             esac
         done
 
-        # Validate service names
-        if [ ${{#SERVICES[@]}} -gt 0 ]; then
-            for svc in "${{SERVICES[@]}}"; do
-                valid=0
-                for ok in $ALL_SERVICES; do
-                    if [ "$svc" = "$ok" ]; then valid=1; break; fi
+        # Validate service names (both includes and excludes)
+        for svc in "${{INCLUDES[@]}}" "${{EXCLUDES[@]}}"; do
+            [ -z "$svc" ] && continue
+            valid=0
+            for ok in $ALL_SERVICES; do
+                if [ "$svc" = "$ok" ]; then valid=1; break; fi
+            done
+            if [ "$valid" -eq 0 ]; then
+                echo "ERROR: unknown service '$svc'"
+                echo "Valid services: $ALL_SERVICES"
+                exit 1
+            fi
+        done
+
+        # Resolve the final service list:
+        #   - If any includes given: use only those (excludes are ignored)
+        #   - If only excludes given: start all services minus the excluded
+        #   - If neither: start all services
+        SERVICES=()
+        if [ ${{#INCLUDES[@]}} -gt 0 ]; then
+            SERVICES=("${{INCLUDES[@]}}")
+        elif [ ${{#EXCLUDES[@]}} -gt 0 ]; then
+            for svc in $ALL_SERVICES; do
+                excluded=0
+                for ex in "${{EXCLUDES[@]}}"; do
+                    if [ "$svc" = "$ex" ]; then excluded=1; break; fi
                 done
-                if [ "$valid" -eq 0 ]; then
-                    echo "ERROR: unknown service '$svc'"
-                    echo "Valid services: $ALL_SERVICES"
-                    exit 1
+                if [ "$excluded" -eq 0 ]; then
+                    SERVICES+=("$svc")
                 fi
             done
         fi
@@ -161,13 +187,23 @@ def generate_run_script(subgraph: str, image: str) -> str:
             fi
         fi
 
-        echo "  UI:             http://localhost:8080"
-        echo "  API:            http://localhost:8090"
-        echo "  Cypher Service: http://localhost:8085"
-        echo "  Neo4j Browser:  http://localhost:7474"
-        echo "  Neo4j Bolt:     bolt://localhost:7687"
-        echo "  Solr Admin:     http://localhost:8983"
-        echo "  PostgreSQL:     localhost:5432"
+        # Helper to check if a service is enabled
+        svc_enabled() {{
+            if [ ${{#SERVICES[@]}} -eq 0 ]; then return 0; fi
+            for s in "${{SERVICES[@]}}"; do
+                if [ "$s" = "$1" ]; then return 0; fi
+            done
+            return 1
+        }}
+
+        echo "Endpoints:"
+        svc_enabled ui               && echo "  UI:             http://localhost:8080"
+        svc_enabled api              && echo "  API:            http://localhost:8090"
+        svc_enabled cypher_service   && echo "  Cypher Service: http://localhost:8085"
+        svc_enabled neo4j            && echo "  Neo4j Browser:  http://localhost:7474"
+        svc_enabled neo4j            && echo "  Neo4j Bolt:     bolt://localhost:7687"
+        svc_enabled solr             && echo "  Solr Admin:     http://localhost:8983"
+        svc_enabled postgres         && echo "  PostgreSQL:     localhost:5432"
         echo ""
 
         ENV_VARS=(
@@ -178,6 +214,12 @@ def generate_run_script(subgraph: str, image: str) -> str:
         )
         if [ -n "$GREBI_SERVICES_VAL" ]; then
             ENV_VARS+=("GREBI_SERVICES=$GREBI_SERVICES_VAL")
+        fi
+        if [ -n "${{GREBI_EXPORT_SNAPSHOTS:-}}" ]; then
+            ENV_VARS+=("GREBI_EXPORT_SNAPSHOTS=$GREBI_EXPORT_SNAPSHOTS")
+        fi
+        if [ -n "${{GREBI_EXPECTED_DIR:-}}" ]; then
+            ENV_VARS+=("GREBI_EXPECTED_DIR=$GREBI_EXPECTED_DIR")
         fi
 
         if [ "$RUNTIME" = "docker" ]; then

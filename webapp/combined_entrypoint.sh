@@ -47,8 +47,8 @@ if [ "$has_neo4j" -eq 1 ] && [ "$has_cypher" -eq 0 ]; then
     fi
 fi
 
-# Always need a filtered copy so we can tweak cypher_service env
-SUPERVISORD_CONF="/tmp/supervisord_filtered.conf"
+# Copy to a writable location so sed -i works even as non-root
+SUPERVISORD_CONF="/tmp/supervisord.conf"
 cp /etc/supervisor/conf.d/supervisord.conf "$SUPERVISORD_CONF"
 
 # Disable services that are not in the selected list
@@ -119,7 +119,6 @@ case "$MODE" in
         echo ""
         
         # Start all services in background
-        # Redirect supervisord output to file so it doesn't keep the tee pipe open
         echo "Starting services with supervisord..."
         /usr/bin/supervisord -c "$SUPERVISORD_CONF" > ./logs/supervisord_output.log 2>&1 &
         SUPERVISOR_PID=$!
@@ -129,44 +128,101 @@ case "$MODE" in
         if ! kill -0 $SUPERVISOR_PID 2>/dev/null; then
             echo "ERROR: supervisord failed to start"
             echo "Check supervisord.log for details"
-            cat supervisord.log 2>/dev/null || echo "No supervisord.log found"
+            cat ./logs/supervisord.log 2>/dev/null || echo "No supervisord.log found"
             exit 1
         fi
         
         echo "Supervisord started (PID: $SUPERVISOR_PID)"
         echo ""
         
-        # Wait for services to be ready and run the tests
-        # The integration_tests.py script handles the waiting with timeouts
-        python3 /opt/integration_tests.py --api-url http://localhost:8090
-        
-        # Get the test exit code
+        # ---------------------------------------------------------------
+        # Phase 1: Integration tests (query template validation)
+        # ---------------------------------------------------------------
+        set +e
+        python3 -u /opt/integration_tests.py --api-url http://localhost:8090
         TEST_EXIT_CODE=$?
+        set -e
+        echo ""
+        echo "Integration tests exited with code: $TEST_EXIT_CODE"
         
-        # Stop supervisor and all child processes
+        # ---------------------------------------------------------------
+        # Phase 2: Snapshot export (only when GREBI_EXPORT_SNAPSHOTS=true)
+        # ---------------------------------------------------------------
+        SNAPSHOT_EXIT_CODE=0
+        API_EXIT_CODE=0
+        
+        if [ "${GREBI_EXPORT_SNAPSHOTS:-}" = "true" ]; then
+            # Auto-detect subgraph name from *_metadata.json in working dir
+            SUBGRAPH=""
+            for f in *_metadata.json; do
+                [ -f "$f" ] || continue
+                SUBGRAPH="${f%_metadata.json}"
+                break
+            done
+            
+            if [ -n "$SUBGRAPH" ]; then
+                echo ""
+                echo "=== Exporting DB snapshots for '$SUBGRAPH' ==="
+                set +e
+                python3 /opt/export_neo4j.py "$SUBGRAPH"
+                python3 /opt/export_solr.py "$SUBGRAPH"
+                python3 /opt/export_postgres.py "$SUBGRAPH"
+                set -e
+                
+                # Phase 3: Compare snapshots against expected output (if requested)
+                if [ -n "${GREBI_EXPECTED_DIR:-}" ]; then
+                    if ls "$GREBI_EXPECTED_DIR"/${SUBGRAPH}_snapshot_*.jsonl 1>/dev/null 2>&1; then
+                        echo ""
+                        echo "=== Comparing DB snapshots ==="
+                        set +e
+                        python3 /opt/compare_snapshots.py \
+                            --subgraph "$SUBGRAPH" \
+                            --actual-dir "$PWD" \
+                            --expected-dir "$GREBI_EXPECTED_DIR"
+                        SNAPSHOT_EXIT_CODE=$?
+                        set -e
+                    else
+                        echo "No expected DB snapshots found at $GREBI_EXPECTED_DIR — skipping comparison"
+                    fi
+                    
+                    if [ -f "$GREBI_EXPECTED_DIR/${SUBGRAPH}_api_snapshot.json" ]; then
+                        echo ""
+                        echo "=== Comparing API snapshots ==="
+                        set +e
+                        python3 /opt/test_api_snapshots.py \
+                            --subgraph "$SUBGRAPH" \
+                            --api-url http://localhost:8090 \
+                            --expected-dir "$GREBI_EXPECTED_DIR"
+                        API_EXIT_CODE=$?
+                        set -e
+                    else
+                        echo "No expected API snapshot found — skipping API comparison"
+                    fi
+                fi
+            else
+                echo "Warning: could not detect subgraph name (no *_metadata.json found) — skipping snapshot export"
+            fi
+        fi
+        
+        # ---------------------------------------------------------------
+        # Cleanup
+        # ---------------------------------------------------------------
         echo ""
         echo "Stopping services..."
-        
-        # First, use supervisorctl to stop all managed services cleanly
         supervisorctl stop all 2>/dev/null || true
-        
-        # Kill supervisord itself
         kill $SUPERVISOR_PID 2>/dev/null || true
-        
-        # Don't wait - just kill everything aggressively
         sleep 1
-        
-        # Kill all remaining processes by name
-        killall -9 java solr caddy python3 postgres 2>/dev/null || true
-        
-        # Kill any remaining child processes
+        killall -9 java neo4j solr caddy python3 postgres 2>/dev/null || true
         pkill -9 -P $$ 2>/dev/null || true
         pkill -9 -P $SUPERVISOR_PID 2>/dev/null || true
         
-        echo "Tests completed with exit code: $TEST_EXIT_CODE"
-        
-        # Exit with test result
-        exit $TEST_EXIT_CODE
+        # Combined exit code
+        if [ $TEST_EXIT_CODE -ne 0 ] || [ $SNAPSHOT_EXIT_CODE -ne 0 ] || [ $API_EXIT_CODE -ne 0 ]; then
+            echo "FAILED: integration_tests=$TEST_EXIT_CODE, db_snapshots=$SNAPSHOT_EXIT_CODE, api_snapshots=$API_EXIT_CODE"
+            exit 1
+        fi
+        echo "All tests passed"
+        exit 0
         ;;
         
     run)
