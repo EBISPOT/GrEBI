@@ -40,13 +40,7 @@ struct Args {
     in_nodes_jsonl: String,
 
     #[arg(long)]
-    in_edges_jsonl: String,
-
-    #[arg(long)]
     out_nodes_jsonl_path: String,
-
-    #[arg(long)]
-    out_edges_jsonl_path: String,
 }
 
 fn main() -> std::io::Result<()> {
@@ -56,18 +50,11 @@ fn main() -> std::io::Result<()> {
     let start_time = std::time::Instant::now();
 
     let mut nodes_reader = BufReader::new(File::open(args.in_nodes_jsonl).unwrap());
-    let mut edges_reader = BufReader::new(File::open(args.in_edges_jsonl).unwrap());
 
     let mut nodes_file = File::create(args.out_nodes_jsonl_path).unwrap();
     let mut nodes_writer =
         BufWriter::with_capacity(1024*1024*32,
             &nodes_file
-        );
-
-    let mut edges_file = File::create(args.out_edges_jsonl_path).unwrap();
-    let mut edges_writer =
-        BufWriter::with_capacity(1024*1024*32,
-            &edges_file
         );
 
     let mut n_nodes:i64 = 0;
@@ -86,25 +73,8 @@ fn main() -> std::io::Result<()> {
         write_solr_object(&line, &mut nodes_writer);
     }
 
-    loop {
-        let mut line: Vec<u8> = Vec::new();
-        edges_reader.read_until(b'\n', &mut line).unwrap();
-
-        if line.len() == 0 {
-            break;
-        }
-        if line[line.len() - 1] == b'\n' {
-            line.pop();
-        }
-
-        write_solr_object(&line, &mut edges_writer);
-    }
-
     nodes_writer.flush().unwrap();
     nodes_file.sync_all().unwrap();
-
-    nodes_file.sync_all().unwrap();
-    edges_file.sync_all().unwrap();
 
     eprintln!("prepare_db_import for solr took {} seconds", start_time.elapsed().as_secs());
 

@@ -21,9 +21,7 @@ def main():
     os.makedirs(args.out_config_dir, exist_ok=True)
 
     nodes_core_path = os.path.join(args.out_config_dir, f'grebi_nodes_{args.subgraph_name}')
-    edges_core_path = os.path.join(args.out_config_dir, f'grebi_edges_{args.subgraph_name}')
     os.system('cp -r ' + shlex.quote(os.path.join(args.in_template_config_dir, "grebi_nodes")) + ' ' + shlex.quote(nodes_core_path))
-    os.system('cp -r ' + shlex.quote(os.path.join(args.in_template_config_dir, "grebi_edges")) + ' ' + shlex.quote(edges_core_path))
 
     os.system('cp ' + shlex.quote(os.path.join(args.in_template_config_dir, "solr.xml")) + ' ' + shlex.quote(args.out_config_dir))
     os.system('cp ' + shlex.quote(os.path.join(args.in_template_config_dir, "solrconfig.xml")) + ' ' + shlex.quote(args.out_config_dir))
@@ -34,7 +32,6 @@ def main():
     entity_props_not_embeddings = list(filter(lambda p: not p.startswith('embedding:'), summary['entity_props'].keys()))
 
     node_props = list(map(lambda f: f.replace(':', '__').replace('&', '_'), entity_props_not_embeddings))
-    edge_props = list(map(lambda f: f.replace(':', '__').replace('&', '_'), summary['edge_props'].keys()))
 
     # The API hardcodes these fields in its edismax qf (search) queries, so they
     # must always exist in the Solr schema even if no documents contain them.
@@ -44,7 +41,6 @@ def main():
             node_props.append(f)
 
     Path(f'{nodes_core_path}/core.properties').write_text(f"name=grebi_nodes_{args.subgraph_name}\n")
-    Path(f'{edges_core_path}/core.properties').write_text(f"name=grebi_edges_{args.subgraph_name}\n")
 
     nodes_schema = Path(f'{nodes_core_path}/conf/schema.xml')
     nodes_schema.write_text(nodes_schema.read_text().replace('[[GREBI_FIELDS]]', '\n'.join(
@@ -56,18 +52,6 @@ def main():
             ]), node_props)
         )
     )))
-
-#    sb.append("    <fieldType name=\"knn_vector_" + modelName + "\" class=\"solr.DenseVectorField\" vectorDimension=\"" + embeddingVectorSize + "\" similarityFunction=\"cosine\"/>\n");
-#             sb.append("    <field name=\"embeddings_" + modelName + "\" type=\"knn_vector_" + modelName + "\" indexed=\"true\" stored=\"true\"/>\n");
-#         }
-
-    edges_schema = Path(f'{edges_core_path}/conf/schema.xml')
-    edges_schema.write_text(edges_schema.read_text().replace('[[GREBI_FIELDS]]', '\n'.join(list(map(
-        lambda f: '\n'.join([
-            f'<field name="{f}" type="string" indexed="true" stored="false" required="false" multiValued="true" />',
-            f'<copyField source="{f}" dest="str_{f}"/>',
-            f'<copyField source="{f}" dest="lowercase_{f}"/>'
-        ]), edge_props)))))
 
 if __name__=="__main__":
     main()

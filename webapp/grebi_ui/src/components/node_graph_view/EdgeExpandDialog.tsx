@@ -62,7 +62,6 @@ export default function EdgeExpandDialog({
           ["sortBy", sortColumn],
           ["sortDir", sortDir],
           ["grebi:type", edgeType],
-          ["facet", "grebi:datasources"],
           ...(filter ? [["q", filter] as [string, string]] : []),
           ...(datasources.length > 0 && dsEnabled !== null
             ? difference(datasources, dsEnabled).map(

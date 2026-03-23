@@ -356,12 +356,6 @@ export default function SeachInterface(opts:{ subgraph:string }
                   return (
                     <div className="my-5">
                       <div className="my-2 leading-loose truncate flex flex-row items-center">
-                        {score !== undefined && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mr-2"
-                            style={{backgroundColor: '#f3e8ff', color: '#7c3aed'}}>
-                            {(score * 100).toFixed(1)}%
-                          </span>
-                        )}
                         <Link to={graphNode.getLinkUrl(subgraph)}
                           className={`link-default text-xl mr-2 ${
                             graphNode.isBoldForQuery(search) ? "font-bold" : ""
@@ -369,6 +363,12 @@ export default function SeachInterface(opts:{ subgraph:string }
                         >
                           {graphNode.getName()}
                         </Link>
+                        {score !== undefined && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mr-2"
+                            style={{backgroundColor: '#f3e8ff', color: '#7c3aed'}}>
+                            {(score * 100).toFixed(1)}%
+                          </span>
+                        )}
                       { nodeType &&
                       <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px',marginRight:'12px'}}>{nodeType.longName}</span>
                     }

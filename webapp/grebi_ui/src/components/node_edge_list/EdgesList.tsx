@@ -51,22 +51,22 @@ export default function EdgesList(params:{
                     ['size', rowsPerPage],
                     ['sortBy', sortColumn],
                     ['sortDir', sortDir],
-                    ['facet', 'grebi:datasources'],
                     ...(extraSearchParams||[]),
                     ...(filter ? [['q', filter]] : []),
                     ...(edgesState && dsEnabled!==null ? 
                             difference(edgesState.datasources, dsEnabled).map(ds => ['-grebi:datasources', ds]) : [])
                 ])
             }`)).map(e => new GraphEdge(e))
+            let facets = res.facetFieldsToCounts || {};
             let newEdgesState = {
                 total: res.totalElements,
-                datasources: Object.keys(res.facetFieldsToCounts['grebi:datasources']),
+                datasources: Object.keys(facets['grebi:datasources'] || {}),
                 edges: res.elements,
-                facetFieldToCounts: res.facetFieldsToCounts,
+                facetFieldToCounts: facets,
                 propertyColumns:
-                    Object.keys(res.facetFieldsToCounts)
+                    Object.keys(facets)
                         .filter(k => k !== 'grebi:datasources')
-                        .filter(k => Object.entries(res.facetFieldsToCounts[k]).length > 0)
+                        .filter(k => Object.entries(facets[k] || {}).length > 0)
             };
             if(onEdgesLoaded)
                 onEdgesLoaded(newEdgesState);

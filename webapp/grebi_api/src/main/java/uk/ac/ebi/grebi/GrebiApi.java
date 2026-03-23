@@ -441,17 +441,7 @@ public class GrebiApi {
                    var res = postgres.searchEdgesPaginated(ctx.pathParam("subgraph"),
                            "grebi:toNodeId", nodeId, extraFilters, sortBy, sortDir, page);
                    ctx.contentType("application/json");
-                   ctx.result(gson.toJson(res
-                           .map(edge -> {
-                               Map<String, Object> refs = (Map<String,Object>) edge.get("_refs");
-                               Map<String, Object> retEdge = new LinkedHashMap<>(edge);
-                               if (refs != null) {
-                                   retEdge.put("from", refs.get((String) edge.get("grebi:fromNodeId")));
-                                   retEdge.put("to", refs.get((String) edge.get("grebi:toNodeId")));
-                               }
-                               return retEdge;
-                           }))
-                   );
+                   ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/outgoing_edges", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
@@ -477,17 +467,7 @@ public class GrebiApi {
                     var res = postgres.searchEdgesPaginated(ctx.pathParam("subgraph"),
                             "grebi:fromNodeId", nodeId, extraFilters, sortBy, sortDir, page);
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(res
-                                    .map(edge -> {
-                                        Map<String, Object> refs = (Map<String,Object>) edge.get("_refs");
-                                        Map<String, Object> retEdge = new LinkedHashMap<>(edge);
-                                        if (refs != null) {
-                                            retEdge.put("from", refs.get((String) edge.get("grebi:fromNodeId")));
-                                            retEdge.put("to", refs.get((String) edge.get("grebi:toNodeId")));
-                                        }
-                                        return retEdge;
-                                    }))
-                    );
+                    ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/incoming_edge_refs", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));

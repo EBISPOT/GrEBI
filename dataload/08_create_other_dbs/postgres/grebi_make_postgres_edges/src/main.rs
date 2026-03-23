@@ -31,6 +31,7 @@ struct Args {
 
 /// Fixed columns that are always present and don't need to be discovered.
 const FIXED_PROPS: &[&str] = &[
+    "_json",
     "_refs",
     "grebi:edgeId",
     "grebi:fromNodeId",
@@ -153,16 +154,22 @@ fn write_edge_tsv_row(
         .map(|v| value_to_pg_array(v))
         .unwrap_or_else(|| "{}".to_string());
 
+    let refs_json = json
+        .get("_refs")
+        .map(|v| serde_json::to_string(v).unwrap())
+        .unwrap_or_else(|| "null".to_string());
+
     // Write fixed columns
     write!(
         writer,
-        "{}\t{}\t{}\t{}\t{}\t{}\t{}",
+        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
         escape_tsv(edge_id),
         escape_tsv(&edge_type),
         escape_tsv(from_node_id),
         escape_tsv(to_node_id),
         escape_tsv(&datasources),
         escape_tsv(subgraph),
+        escape_tsv(&refs_json),
         escape_tsv(&from_source_ids),
     )
     .unwrap();
@@ -271,6 +278,7 @@ fn write_schema_sql(
     writeln!(writer, "    \"grebi:toNodeId\" TEXT NOT NULL,").unwrap();
     writeln!(writer, "    \"grebi:datasources\" TEXT[] NOT NULL DEFAULT '{{}}',").unwrap();
     writeln!(writer, "    \"grebi:subgraph\" TEXT,").unwrap();
+    writeln!(writer, "    \"_refs\" JSONB,").unwrap();
 
     if extra_props.is_empty() {
         writeln!(writer, "    \"grebi:fromSourceIds\" TEXT[] DEFAULT '{{}}'").unwrap();

@@ -31,7 +31,6 @@ echo Removing old files from staging
 
 rm -rf $STAGING_PATH/neo4j/${SUBGRAPH}_neo4j
 rm -rf $STAGING_PATH/solr/grebi_nodes_${SUBGRAPH}
-rm -rf $STAGING_PATH/solr/grebi_edges_${SUBGRAPH}
 rm -rf $STAGING_PATH/solr/grebi_autocomplete_${SUBGRAPH}
 rm -rf $STAGING_PATH/solr/grebi_results__${SUBGRAPH}__*
 rm -rf $STAGING_PATH/metadata/${SUBGRAPH}_metadata.json

@@ -26,9 +26,16 @@ public class GrebiPostgresClient {
             "grebi:edgeId", "grebi:type", "grebi:fromNodeId", "grebi:toNodeId", "grebi:subgraph"
     );
 
+    private static final Set<String> ALLOWED_ARRAY_COLUMNS = Set.of(
+            "grebi:datasources"
+    );
+
+    private static final List<String> EDGE_FACET_FIELDS = List.of("grebi:datasources");
+
     private static final Field<String> GREBI_TYPE = field(name("grebi:type"), String.class);
     private static final Field<String> GREBI_FROM_NODE_ID = field(name("grebi:fromNodeId"), String.class);
     private static final Field<String> GREBI_TO_NODE_ID = field(name("grebi:toNodeId"), String.class);
+    private static final Field<String> GREBI_REFS = field(name("_refs"), String.class);
 
     private final String host;
     private final String port;
@@ -143,10 +150,24 @@ public class GrebiPostgresClient {
         conditions.add(checkedColumn(filterField).eq(filterValue));
         if (extraFilters != null) {
             for (var entry : extraFilters.entrySet()) {
-                if (!ALLOWED_COLUMNS.contains(entry.getKey())) continue;
+                String key = entry.getKey();
                 var values = entry.getValue();
                 if (values == null || values.isEmpty()) continue;
-                conditions.add(checkedColumn(entry.getKey()).eq(values.get(0)));
+
+                // Handle negative array filters like -grebi:datasources
+                if (key.startsWith("-")) {
+                    String arrayCol = key.substring(1);
+                    if (!ALLOWED_ARRAY_COLUMNS.contains(arrayCol)) continue;
+                    for (String val : values) {
+                        // NOT (col @> ARRAY[val]) — exclude rows containing this value
+                        conditions.add(
+                            condition("NOT ({0} @> ARRAY[{1}]::text[])",
+                                field(name(arrayCol)), inline(val))
+                        );
+                    }
+                } else if (ALLOWED_COLUMNS.contains(key)) {
+                    conditions.add(checkedColumn(key).eq(values.get(0)));
+                }
             }
         }
         return conditions;
@@ -189,7 +210,9 @@ public class GrebiPostgresClient {
                         new TypeToken<Map<String, Object>>() {}.getType()));
             }
 
-            return new EdgeQueryResult(results, totalCount);
+            var facets = computeFacets(ctx, tbl, conditions, EDGE_FACET_FIELDS);
+
+            return new EdgeQueryResult(results, totalCount, facets);
         } catch (SQLException e) {
             logger.error("Edge query failed", e);
             throw new RuntimeException(e);
@@ -216,7 +239,7 @@ public class GrebiPostgresClient {
                     .value1();
 
             List<Map<String, Object>> results = new ArrayList<>();
-            for (var record : ctx.select(GREBI_TYPE, datasources, GREBI_FROM_NODE_ID, GREBI_TO_NODE_ID)
+            for (var record : ctx.select(GREBI_TYPE, datasources, GREBI_FROM_NODE_ID, GREBI_TO_NODE_ID, GREBI_REFS)
                     .from(tbl)
                     .where(conditions)
                     .orderBy(buildOrderBy(sortField, sortDir))
@@ -228,10 +251,17 @@ public class GrebiPostgresClient {
                 ref.put("grebi:datasources", toDatasourceList(record.get(datasources)));
                 ref.put("grebi:fromNodeId", record.get(GREBI_FROM_NODE_ID));
                 ref.put("grebi:toNodeId", record.get(GREBI_TO_NODE_ID));
+                String refsJson = record.get(GREBI_REFS);
+                if (refsJson != null) {
+                    ref.put("_refs", gson.fromJson(refsJson,
+                            new com.google.gson.reflect.TypeToken<Map<String, Object>>() {}.getType()));
+                }
                 results.add(ref);
             }
 
-            return new EdgeQueryResult(results, totalCount);
+            var facets = computeFacets(ctx, tbl, conditions, EDGE_FACET_FIELDS);
+
+            return new EdgeQueryResult(results, totalCount, facets);
         } catch (SQLException e) {
             logger.error("Edge ref query failed", e);
             throw new RuntimeException(e);
@@ -300,13 +330,47 @@ public class GrebiPostgresClient {
         return List.of();
     }
 
+    /**
+     * Compute facet counts for array columns (e.g. grebi:datasources) using unnest + group by.
+     */
+    private Map<String, Map<String, Long>> computeFacets(DSLContext ctx, Table<?> tbl,
+                                                          List<Condition> conditions,
+                                                          List<String> facetFields) {
+        Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
+        if (facetFields == null || facetFields.isEmpty()) return facets;
+
+        for (String facetField : facetFields) {
+            if (!ALLOWED_ARRAY_COLUMNS.contains(facetField)) continue;
+
+            var valField = field(name("_facet_val"), String.class);
+            var cnt = count().as("cnt");
+            var unnested = table("unnest({0}) as {1}",
+                    field(name(facetField)), name("_facet_val"));
+
+            Map<String, Long> counts = new LinkedHashMap<>();
+            for (var record : ctx.select(valField, cnt)
+                    .from(tbl, unnested)
+                    .where(conditions)
+                    .groupBy(valField)
+                    .orderBy(cnt.desc())
+                    .fetch()) {
+                counts.put(record.get(valField), record.get(cnt).longValue());
+            }
+            facets.put(facetField, counts);
+        }
+        return facets;
+    }
+
     public static class EdgeQueryResult {
         public final List<Map<String, Object>> results;
         public final long totalCount;
+        public final Map<String, Map<String, Long>> facets;
 
-        public EdgeQueryResult(List<Map<String, Object>> results, long totalCount) {
+        public EdgeQueryResult(List<Map<String, Object>> results, long totalCount,
+                               Map<String, Map<String, Long>> facets) {
             this.results = results;
             this.totalCount = totalCount;
+            this.facets = facets;
         }
     }
 

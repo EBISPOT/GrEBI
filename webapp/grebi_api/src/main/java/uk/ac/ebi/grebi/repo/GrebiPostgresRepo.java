@@ -2,13 +2,11 @@ package uk.ac.ebi.grebi.repo;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Pageable;
 
 import uk.ac.ebi.grebi.GrebiFacetedResultsPage;
 import uk.ac.ebi.grebi.db.GrebiPostgresClient;
-import uk.ac.ebi.grebi.db.ResolverClient;
 
 /**
  * Repository for querying edges from PostgreSQL.
@@ -17,7 +15,6 @@ import uk.ac.ebi.grebi.db.ResolverClient;
 public class GrebiPostgresRepo {
 
     private final GrebiPostgresClient pgClient;
-    private final ResolverClient resolver = new ResolverClient();
 
     public GrebiPostgresRepo() {
         this.pgClient = new GrebiPostgresClient();
@@ -28,8 +25,8 @@ public class GrebiPostgresRepo {
     }
 
     /**
-     * Search edges with full resolution via the SQLite resolver.
-     * Returns the complete edge JSON including _refs for from/to nodes.
+     * Search edges with all fields. The _refs JSONB column already contains
+     * node metadata for referenced IDs; extract from/to from it.
      */
     public GrebiFacetedResultsPage<Map<String, Object>> searchEdgesPaginated(
             String subgraph, String filterField, String filterValue,
@@ -41,16 +38,21 @@ public class GrebiPostgresRepo {
                 extraFilters, sortField, sortDir,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
+        List<Map<String, Object>> enriched = new ArrayList<>();
+        for (var edge : result.results) {
+            enriched.add(attachFromTo(edge));
+        }
+
         return new GrebiFacetedResultsPage<>(
-                result.results,
-                new LinkedHashMap<>(),
+                enriched,
+                result.facets,
                 pageable,
                 result.totalCount
         );
     }
 
     /**
-     * Search edge refs (lightweight: type, datasources, fromNodeId, toNodeId + resolved node refs).
+     * Search edge refs (lightweight: type, datasources, fromNodeId, toNodeId + refs from _refs JSONB).
      */
     public GrebiFacetedResultsPage<Map<String, Object>> searchEdgeRefsPaginated(
             String subgraph, String filterField, String filterValue,
@@ -62,36 +64,14 @@ public class GrebiPostgresRepo {
                 extraFilters, sortField, sortDir,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
-        // Collect unique from/to node IDs for resolution
-        Set<String> nodeIds = new LinkedHashSet<>();
-        for (var edge : result.results) {
-            Object fromId = edge.get("grebi:fromNodeId");
-            Object toId = edge.get("grebi:toNodeId");
-            if (fromId instanceof String) nodeIds.add((String) fromId);
-            if (toId instanceof String) nodeIds.add((String) toId);
-        }
-
-        // Resolve node IDs to lightweight refs
-        Map<String, Map<String, Object>> nodeRefs = nodeIdsToNodeRefs(subgraph, nodeIds);
-
-        // Attach from/to node refs
         List<Map<String, Object>> enriched = new ArrayList<>();
         for (var edge : result.results) {
-            Map<String, Object> retEdge = new LinkedHashMap<>(edge);
-            Object fromId = edge.get("grebi:fromNodeId");
-            Object toId = edge.get("grebi:toNodeId");
-            if (fromId instanceof String && nodeRefs.containsKey(fromId)) {
-                retEdge.put("from", nodeRefs.get(fromId));
-            }
-            if (toId instanceof String && nodeRefs.containsKey(toId)) {
-                retEdge.put("to", nodeRefs.get(toId));
-            }
-            enriched.add(retEdge);
+            enriched.add(attachFromTo(edge));
         }
 
         return new GrebiFacetedResultsPage<>(
                 enriched,
-                new LinkedHashMap<>(),
+                result.facets,
                 pageable,
                 result.totalCount
         );
@@ -128,31 +108,24 @@ public class GrebiPostgresRepo {
     }
 
     /**
-     * Convert node IDs to lightweight node ref maps.
+     * Extract from/to node refs from the _refs JSONB field already stored in the edge row.
      */
-    private Map<String, Map<String, Object>> nodeIdsToNodeRefs(String subgraph, Collection<String> nodeIds) {
-        if (nodeIds.isEmpty()) return Collections.emptyMap();
-
-        Map<String, Map<String, Object>> fullNodes = resolver.resolveToMap(subgraph, nodeIds);
-        if (fullNodes == null) return Collections.emptyMap();
-
-        Set<String> REF_FIELDS = Set.of(
-                "grebi:nodeId", "grebi:name", "grebi:datasources",
-                "grebi:type", "grebi:sourceIds", "ols:curie"
-        );
-
-        Map<String, Map<String, Object>> refs = new LinkedHashMap<>();
-        for (var entry : fullNodes.entrySet()) {
-            if (entry.getValue() == null) continue;
-            Map<String, Object> ref = new LinkedHashMap<>();
-            for (String field : REF_FIELDS) {
-                if (entry.getValue().containsKey(field)) {
-                    ref.put(field, entry.getValue().get(field));
-                }
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> attachFromTo(Map<String, Object> edge) {
+        Map<String, Object> retEdge = new LinkedHashMap<>(edge);
+        Object refsObj = edge.get("_refs");
+        if (refsObj instanceof Map) {
+            Map<String, Object> refs = (Map<String, Object>) refsObj;
+            Object fromId = edge.get("grebi:fromNodeId");
+            Object toId = edge.get("grebi:toNodeId");
+            if (fromId instanceof String) {
+                retEdge.put("from", refs.get(fromId));
             }
-            refs.put(entry.getKey(), ref);
+            if (toId instanceof String) {
+                retEdge.put("to", refs.get(toId));
+            }
         }
-        return refs;
+        return retEdge;
     }
 
     /**

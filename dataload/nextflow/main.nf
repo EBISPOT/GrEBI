@@ -188,7 +188,7 @@ workflow {
     )
 
     // === STEP 8: CREATE SOLR CORES ===
-    solr_inputs = prepare_solr(link.out.nodes, link.out.edges, Channel.value(params.subgraph))
+    solr_inputs = prepare_solr(link.out.nodes, Channel.value(params.subgraph))
     
     solr_nodes_core = create_solr_nodes_core(
         prepare_solr.out.nodes.collect(), 

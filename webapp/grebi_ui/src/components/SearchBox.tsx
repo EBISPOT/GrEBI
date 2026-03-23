@@ -50,15 +50,29 @@ export default function SearchBox({
   >(undefined);
 
   const [availableModels, setAvailableModels] = useState<{model: string, can_embed: boolean}[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>(searchParams.get("model") || "lexical");
+  const [selectedModel, setSelectedModel] = useState<string>(searchParams.get("model") || "");
 
   useEffect(() => {
     async function fetchModels() {
       try {
         const models = await get<{model: string, can_embed: boolean}[]>(`api/v1/subgraphs/${subgraph}/embedding_models`);
         setAvailableModels(models || []);
+        // Default to first available embedding model alphabetically, if no model param set
+        if (!searchParams.get("model") && models && models.length > 0) {
+          const embeddable = models.filter(m => m.can_embed).sort((a, b) => a.model.localeCompare(b.model));
+          if (embeddable.length > 0) {
+            setSelectedModel(embeddable[0].model);
+          } else {
+            setSelectedModel("lexical");
+          }
+        } else if (!searchParams.get("model")) {
+          setSelectedModel("lexical");
+        }
       } catch (e) {
         setAvailableModels([]);
+        if (!searchParams.get("model")) {
+          setSelectedModel("lexical");
+        }
       }
     }
     fetchModels();
@@ -67,18 +81,8 @@ export default function SearchBox({
   const handleModelChange = useCallback(
     (model: string) => {
       setSelectedModel(model);
-      const currentQuery = searchParams.get("q");
-      if (currentQuery) {
-        const newSearchParams = new URLSearchParams(searchParams);
-        if (model && model !== "lexical") {
-          newSearchParams.set("model", model);
-        } else {
-          newSearchParams.delete("model");
-        }
-        navigate(`/subgraphs/${subgraph}/search?${newSearchParams}`);
-      }
     },
-    [searchParams, navigate, subgraph]
+    []
   );
 
   const isEmbeddingSearch = selectedModel && selectedModel !== "lexical";
@@ -116,6 +120,12 @@ export default function SearchBox({
   const cancelPromisesRef = useRef(false);
   useEffect(() => {
     async function loadSuggestions() {
+      if (!query) {
+        setJumpTo([]);
+        setAutocomplete([]);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setArrowKeySelectedN(undefined);
 
@@ -177,7 +187,7 @@ export default function SearchBox({
     return () => {
       cancelPromisesRef.current = true;
     };
-  }, [query, exact, obsolete, canonical, isEmbeddingSearch]);
+  }, [query, exact, obsolete, canonical, isEmbeddingSearch, selectedModel]);
 
   let autocompleteToShow = autocomplete?.slice(0, 5) || [];
   let autocompleteElements = autocompleteToShow.map(
