@@ -40,7 +40,7 @@ ENV PATH="$PATH:/opt/neo4j/bin:/opt/solr/bin"
 # RUN echo "server.jvm.additional=-Dorg.neo4j.kernel.impl.index.schema.GenericNativeIndexPopulator.blockBasedPopulation=true" >> /opt/neo4j/conf/neo4j.conf
 
 
-RUN apt-get install -y cmake clang pigz python3-pip && \
+RUN apt-get install -y cmake clang pigz python3-pip jq && \
         pip3 install pandas tabulate openpyxl pyyaml py2neo requests
 
 # Install PostgreSQL 18 from the official PGDG repository (Bullseye only ships PG 13)
