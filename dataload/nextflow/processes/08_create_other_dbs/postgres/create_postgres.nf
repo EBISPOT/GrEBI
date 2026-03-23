@@ -67,7 +67,8 @@ EOF
     createdb -h \$PGSOCK -p \$PGPORT -U \$PGUSER grebi
 
     # === EDGES TABLE ===
-    EDGES_SCHEMA_FILE=\$(ls postgres_schema_${subgraph}_*.sql | head -1)
+    EDGES_SCHEMA_FILES=(postgres_schema_${subgraph}_*.sql)
+    EDGES_SCHEMA_FILE=\${EDGES_SCHEMA_FILES[0]}
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$EDGES_SCHEMA_FILE"
 
     # Drop indexes for faster import
@@ -92,7 +93,8 @@ EOF
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ANALYZE \\"edges_${subgraph}\\";"
 
     # === NODES TABLE (with pgvector) ===
-    NODES_SCHEMA_FILE=\$(ls postgres_nodes_schema_${subgraph}_*.sql | head -1)
+    NODES_SCHEMA_FILES=(postgres_nodes_schema_${subgraph}_*.sql)
+    NODES_SCHEMA_FILE=\${NODES_SCHEMA_FILES[0]}
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$NODES_SCHEMA_FILE"
 
     # Drop HNSW indexes for faster bulk import (they will be in the schema SQL)
