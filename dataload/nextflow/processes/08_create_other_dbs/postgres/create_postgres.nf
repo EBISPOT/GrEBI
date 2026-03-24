@@ -1,8 +1,8 @@
 process create_postgres {
     cache "lenient"
-    memory "8 GB"
+    memory "32 GB"
     time "23h"
-    cpus "4"
+    cpus "8"
 
     input:
     path(edges_tsvs)
@@ -30,6 +30,9 @@ process create_postgres {
     export PGSOCK=/tmp/pg_sock_\$\$
     mkdir -p \$PGSOCK
 
+    NPROC=\$(nproc)
+    echo "Using \$NPROC parallel workers"
+
     # Initialise a fresh PostgreSQL data directory
     initdb --username=\$PGUSER --auth=trust --no-locale --encoding=UTF8 -D \$PGDATA
 
@@ -47,6 +50,11 @@ fsync = off
 synchronous_commit = off
 full_page_writes = off
 checkpoint_completion_target = 0.9
+autovacuum = off
+max_connections = 200
+max_worker_processes = \$((NPROC + 4))
+max_parallel_maintenance_workers = \$((NPROC > 2 ? NPROC - 2 : 1))
+effective_io_concurrency = 200
 EOF
 
     # Start PostgreSQL locally (unix socket only)
@@ -78,10 +86,20 @@ EOF
         DROP INDEX IF EXISTS idx_edges_${subgraph}_type;
     "
 
-    for TSV_FILE in postgres_edges_${subgraph}_*.tsv; do
-        echo "Importing edges \$TSV_FILE ..."
-        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "\\COPY \\"edges_${subgraph}\\" FROM '\$TSV_FILE' WITH (FORMAT text)"
-    done
+    # Helper for parallel server-side COPY
+    _pg_import() {
+        local TABLE=\$1
+        local TSV_FILE=\$2
+        local ABSFILE
+        ABSFILE=\$(readlink -f "\$TSV_FILE")
+        echo "Importing \$TABLE \$TSV_FILE ..."
+        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "COPY \\"\$TABLE\\" FROM '\$ABSFILE' WITH (FORMAT text)"
+    }
+    export -f _pg_import
+
+    echo "Importing \$(ls postgres_edges_${subgraph}_*.tsv | wc -l) edge files with \$NPROC parallel workers..."
+    printf '%s\\0' postgres_edges_${subgraph}_*.tsv | \\
+        xargs -0 -P \$NPROC -n1 bash -c 'set -e; _pg_import "edges_${subgraph}" "\$1"' _
 
     echo "Creating edge indexes..."
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "
@@ -105,10 +123,9 @@ EOF
         psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "DROP INDEX IF EXISTS \\"\$idx\\";" 2>/dev/null || true
     done
 
-    for TSV_FILE in postgres_nodes_${subgraph}_*.tsv; do
-        echo "Importing nodes \$TSV_FILE ..."
-        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "\\COPY \\"nodes_${subgraph}\\" FROM '\$TSV_FILE' WITH (FORMAT text)"
-    done
+    echo "Importing \$(ls postgres_nodes_${subgraph}_*.tsv | wc -l) node files with \$NPROC parallel workers..."
+    printf '%s\\0' postgres_nodes_${subgraph}_*.tsv | \\
+        xargs -0 -P \$NPROC -n1 bash -c 'set -e; _pg_import "nodes_${subgraph}" "\$1"' _
 
     echo "Creating node indexes (including HNSW vector indexes)..."
     grep -i 'CREATE INDEX' "\$NODES_SCHEMA_FILE" | while read -r line; do
@@ -127,6 +144,7 @@ EOF
       -e 's/^fsync = off/fsync = on/' \\
       -e 's/^synchronous_commit = off/synchronous_commit = on/' \\
       -e 's/^full_page_writes = off/full_page_writes = on/' \\
+      -e 's/^autovacuum = off/autovacuum = on/' \\
       -e "s|unix_socket_directories = .*|unix_socket_directories = '/var/run/postgresql'|" \\
       -e "s/^listen_addresses = ''/listen_addresses = '*'/" \\
       \$PGDATA/postgresql.conf > \$_TMPCONF
