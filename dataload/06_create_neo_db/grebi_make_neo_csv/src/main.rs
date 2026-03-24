@@ -98,18 +98,18 @@ fn main() -> std::io::Result<()> {
         if prop.starts_with("embedding:") {
             continue;
         }
-        nodes_writer.write_all(b",").unwrap();
+        nodes_writer.write_all(b",\"").unwrap();
         nodes_writer.write_all(prop.as_bytes()).unwrap();
-        nodes_writer.write_all(b":string[]").unwrap();
+        nodes_writer.write_all(b":string[]\"").unwrap();
     }
     nodes_writer.write_all("\n".as_bytes()).unwrap();
 
 
     edges_writer.write_all(":START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string,grebi:fromSourceIds:string[]".as_bytes()).unwrap();
     for prop in &all_edge_props {
-        edges_writer.write_all(b",").unwrap();
+        edges_writer.write_all(b",\"").unwrap();
         edges_writer.write_all(prop.as_bytes()).unwrap();
-        edges_writer.write_all(b":string[]").unwrap();
+        edges_writer.write_all(b":string[]\"").unwrap();
     }
     edges_writer.write_all("\n".as_bytes()).unwrap();
 
