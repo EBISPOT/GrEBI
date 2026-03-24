@@ -7,6 +7,46 @@
       "incoming_edges": {
         "content": [
           {
+            "_refs": {
+              "ex:chemical1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceB"
+                ],
+                "grebi:nodeId": "ex:chemical1",
+                "grebi:sourceIds": [
+                  "ex:chemical1"
+                ],
+                "grebi:type": [
+                  "biolink:ChemicalEntity"
+                ]
+              },
+              "ex:protein1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA",
+                  "TestMultiDatasourceB"
+                ],
+                "grebi:nodeId": "ex:protein1",
+                "grebi:sourceIds": [
+                  "ex:protein1"
+                ],
+                "grebi:type": [
+                  "biolink:Protein"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA",
+                "TestMultiDatasourceB"
+              ],
+              "grebi:nodeId": "ex:protein1",
+              "grebi:sourceIds": [
+                "ex:protein1"
+              ],
+              "grebi:type": [
+                "biolink:Protein"
+              ]
+            },
             "grebi:datasources": [
               "TestMultiDatasourceB"
             ],
@@ -20,10 +60,26 @@
             "grebi:type": "biolink:interacts_with",
             "test_mdb:id": [
               "edge-mdb-1"
-            ]
+            ],
+            "to": {
+              "grebi:datasources": [
+                "TestMultiDatasourceB"
+              ],
+              "grebi:nodeId": "ex:chemical1",
+              "grebi:sourceIds": [
+                "ex:chemical1"
+              ],
+              "grebi:type": [
+                "biolink:ChemicalEntity"
+              ]
+            }
           }
         ],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "TestMultiDatasourceB": 1
+          }
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -100,7 +156,9 @@
       },
       "outgoing_edges": {
         "content": [],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -122,6 +180,46 @@
       "incoming_edges": {
         "content": [
           {
+            "_refs": {
+              "ex:disease1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA"
+                ],
+                "grebi:nodeId": "ex:disease1",
+                "grebi:sourceIds": [
+                  "ex:disease1"
+                ],
+                "grebi:type": [
+                  "biolink:Disease"
+                ]
+              },
+              "ex:protein1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA",
+                  "TestMultiDatasourceB"
+                ],
+                "grebi:nodeId": "ex:protein1",
+                "grebi:sourceIds": [
+                  "ex:protein1"
+                ],
+                "grebi:type": [
+                  "biolink:Protein"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA",
+                "TestMultiDatasourceB"
+              ],
+              "grebi:nodeId": "ex:protein1",
+              "grebi:sourceIds": [
+                "ex:protein1"
+              ],
+              "grebi:type": [
+                "biolink:Protein"
+              ]
+            },
             "grebi:datasources": [
               "TestMultiDatasourceA"
             ],
@@ -135,10 +233,26 @@
             "grebi:type": "biolink:related_to",
             "test_mda:id": [
               "edge-mda-1"
-            ]
+            ],
+            "to": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA"
+              ],
+              "grebi:nodeId": "ex:disease1",
+              "grebi:sourceIds": [
+                "ex:disease1"
+              ],
+              "grebi:type": [
+                "biolink:Disease"
+              ]
+            }
           }
         ],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "TestMultiDatasourceA": 1
+          }
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -215,7 +329,9 @@
       },
       "outgoing_edges": {
         "content": [],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -237,6 +353,46 @@
       "incoming_edges": {
         "content": [
           {
+            "_refs": {
+              "ex:pathway1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA"
+                ],
+                "grebi:nodeId": "ex:pathway1",
+                "grebi:sourceIds": [
+                  "ex:pathway1"
+                ],
+                "grebi:type": [
+                  "biolink:Pathway"
+                ]
+              },
+              "ex:protein1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA",
+                  "TestMultiDatasourceB"
+                ],
+                "grebi:nodeId": "ex:protein1",
+                "grebi:sourceIds": [
+                  "ex:protein1"
+                ],
+                "grebi:type": [
+                  "biolink:Protein"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA",
+                "TestMultiDatasourceB"
+              ],
+              "grebi:nodeId": "ex:protein1",
+              "grebi:sourceIds": [
+                "ex:protein1"
+              ],
+              "grebi:type": [
+                "biolink:Protein"
+              ]
+            },
             "grebi:datasources": [
               "TestMultiDatasourceA"
             ],
@@ -250,10 +406,26 @@
             "grebi:type": "biolink:participates_in",
             "test_mda:id": [
               "edge-mda-2"
-            ]
+            ],
+            "to": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA"
+              ],
+              "grebi:nodeId": "ex:pathway1",
+              "grebi:sourceIds": [
+                "ex:pathway1"
+              ],
+              "grebi:type": [
+                "biolink:Pathway"
+              ]
+            }
           }
         ],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "TestMultiDatasourceA": 1
+          }
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -330,7 +502,9 @@
       },
       "outgoing_edges": {
         "content": [],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -351,7 +525,9 @@
     "ex:protein1": {
       "incoming_edges": {
         "content": [],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -556,38 +732,46 @@
       "outgoing_edges": {
         "content": [
           {
-            "grebi:datasources": [
-              "TestMultiDatasourceA"
-            ],
-            "grebi:edgeId": "2a0ca42ca39f7b9c124b91c12ba616179d789170",
-            "grebi:fromNodeId": "ex:protein1",
-            "grebi:fromSourceIds": [
-              "ex:protein1"
-            ],
-            "grebi:subgraph": "test_multi_datasource",
-            "grebi:toNodeId": "ex:pathway1",
-            "grebi:type": "biolink:participates_in",
-            "test_mda:id": [
-              "edge-mda-2"
-            ]
-          },
-          {
-            "grebi:datasources": [
-              "TestMultiDatasourceA"
-            ],
-            "grebi:edgeId": "e9ed2345d2312a58eb1cda7577a0f156e151d5c8",
-            "grebi:fromNodeId": "ex:protein1",
-            "grebi:fromSourceIds": [
-              "ex:protein1"
-            ],
-            "grebi:subgraph": "test_multi_datasource",
-            "grebi:toNodeId": "ex:disease1",
-            "grebi:type": "biolink:related_to",
-            "test_mda:id": [
-              "edge-mda-1"
-            ]
-          },
-          {
+            "_refs": {
+              "ex:chemical1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceB"
+                ],
+                "grebi:nodeId": "ex:chemical1",
+                "grebi:sourceIds": [
+                  "ex:chemical1"
+                ],
+                "grebi:type": [
+                  "biolink:ChemicalEntity"
+                ]
+              },
+              "ex:protein1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA",
+                  "TestMultiDatasourceB"
+                ],
+                "grebi:nodeId": "ex:protein1",
+                "grebi:sourceIds": [
+                  "ex:protein1"
+                ],
+                "grebi:type": [
+                  "biolink:Protein"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA",
+                "TestMultiDatasourceB"
+              ],
+              "grebi:nodeId": "ex:protein1",
+              "grebi:sourceIds": [
+                "ex:protein1"
+              ],
+              "grebi:type": [
+                "biolink:Protein"
+              ]
+            },
             "grebi:datasources": [
               "TestMultiDatasourceB"
             ],
@@ -601,10 +785,163 @@
             "grebi:type": "biolink:interacts_with",
             "test_mdb:id": [
               "edge-mdb-1"
-            ]
+            ],
+            "to": {
+              "grebi:datasources": [
+                "TestMultiDatasourceB"
+              ],
+              "grebi:nodeId": "ex:chemical1",
+              "grebi:sourceIds": [
+                "ex:chemical1"
+              ],
+              "grebi:type": [
+                "biolink:ChemicalEntity"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "ex:disease1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA"
+                ],
+                "grebi:nodeId": "ex:disease1",
+                "grebi:sourceIds": [
+                  "ex:disease1"
+                ],
+                "grebi:type": [
+                  "biolink:Disease"
+                ]
+              },
+              "ex:protein1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA",
+                  "TestMultiDatasourceB"
+                ],
+                "grebi:nodeId": "ex:protein1",
+                "grebi:sourceIds": [
+                  "ex:protein1"
+                ],
+                "grebi:type": [
+                  "biolink:Protein"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA",
+                "TestMultiDatasourceB"
+              ],
+              "grebi:nodeId": "ex:protein1",
+              "grebi:sourceIds": [
+                "ex:protein1"
+              ],
+              "grebi:type": [
+                "biolink:Protein"
+              ]
+            },
+            "grebi:datasources": [
+              "TestMultiDatasourceA"
+            ],
+            "grebi:edgeId": "e9ed2345d2312a58eb1cda7577a0f156e151d5c8",
+            "grebi:fromNodeId": "ex:protein1",
+            "grebi:fromSourceIds": [
+              "ex:protein1"
+            ],
+            "grebi:subgraph": "test_multi_datasource",
+            "grebi:toNodeId": "ex:disease1",
+            "grebi:type": "biolink:related_to",
+            "test_mda:id": [
+              "edge-mda-1"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA"
+              ],
+              "grebi:nodeId": "ex:disease1",
+              "grebi:sourceIds": [
+                "ex:disease1"
+              ],
+              "grebi:type": [
+                "biolink:Disease"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "ex:pathway1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA"
+                ],
+                "grebi:nodeId": "ex:pathway1",
+                "grebi:sourceIds": [
+                  "ex:pathway1"
+                ],
+                "grebi:type": [
+                  "biolink:Pathway"
+                ]
+              },
+              "ex:protein1": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA",
+                  "TestMultiDatasourceB"
+                ],
+                "grebi:nodeId": "ex:protein1",
+                "grebi:sourceIds": [
+                  "ex:protein1"
+                ],
+                "grebi:type": [
+                  "biolink:Protein"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA",
+                "TestMultiDatasourceB"
+              ],
+              "grebi:nodeId": "ex:protein1",
+              "grebi:sourceIds": [
+                "ex:protein1"
+              ],
+              "grebi:type": [
+                "biolink:Protein"
+              ]
+            },
+            "grebi:datasources": [
+              "TestMultiDatasourceA"
+            ],
+            "grebi:edgeId": "2a0ca42ca39f7b9c124b91c12ba616179d789170",
+            "grebi:fromNodeId": "ex:protein1",
+            "grebi:fromSourceIds": [
+              "ex:protein1"
+            ],
+            "grebi:subgraph": "test_multi_datasource",
+            "grebi:toNodeId": "ex:pathway1",
+            "grebi:type": "biolink:participates_in",
+            "test_mda:id": [
+              "edge-mda-2"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA"
+              ],
+              "grebi:nodeId": "ex:pathway1",
+              "grebi:sourceIds": [
+                "ex:pathway1"
+              ],
+              "grebi:type": [
+                "biolink:Pathway"
+              ]
+            }
           }
         ],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "TestMultiDatasourceA": 2,
+            "TestMultiDatasourceB": 1
+          }
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -625,7 +962,9 @@
     "hgnc:11603": {
       "incoming_edges": {
         "content": [],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -733,6 +1072,44 @@
       "outgoing_edges": {
         "content": [
           {
+            "_refs": {
+              "hgnc:11603": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA"
+                ],
+                "grebi:nodeId": "hgnc:11603",
+                "grebi:sourceIds": [
+                  "hgnc:11603"
+                ],
+                "grebi:type": [
+                  "biolink:Gene"
+                ]
+              },
+              "mondo:0005002": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA"
+                ],
+                "grebi:nodeId": "mondo:0005002",
+                "grebi:sourceIds": [
+                  "mondo:0005002"
+                ],
+                "grebi:type": [
+                  "biolink:Disease"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA"
+              ],
+              "grebi:nodeId": "hgnc:11603",
+              "grebi:sourceIds": [
+                "hgnc:11603"
+              ],
+              "grebi:type": [
+                "biolink:Gene"
+              ]
+            },
             "grebi:datasources": [
               "TestMultiDatasourceA"
             ],
@@ -746,10 +1123,26 @@
             "grebi:type": "biolink:related_to",
             "test_mda:id": [
               "edge-mda-hw"
-            ]
+            ],
+            "to": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA"
+              ],
+              "grebi:nodeId": "mondo:0005002",
+              "grebi:sourceIds": [
+                "mondo:0005002"
+              ],
+              "grebi:type": [
+                "biolink:Disease"
+              ]
+            }
           }
         ],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "TestMultiDatasourceA": 1
+          }
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -771,6 +1164,44 @@
       "incoming_edges": {
         "content": [
           {
+            "_refs": {
+              "hgnc:11603": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA"
+                ],
+                "grebi:nodeId": "hgnc:11603",
+                "grebi:sourceIds": [
+                  "hgnc:11603"
+                ],
+                "grebi:type": [
+                  "biolink:Gene"
+                ]
+              },
+              "mondo:0005002": {
+                "grebi:datasources": [
+                  "TestMultiDatasourceA"
+                ],
+                "grebi:nodeId": "mondo:0005002",
+                "grebi:sourceIds": [
+                  "mondo:0005002"
+                ],
+                "grebi:type": [
+                  "biolink:Disease"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA"
+              ],
+              "grebi:nodeId": "hgnc:11603",
+              "grebi:sourceIds": [
+                "hgnc:11603"
+              ],
+              "grebi:type": [
+                "biolink:Gene"
+              ]
+            },
             "grebi:datasources": [
               "TestMultiDatasourceA"
             ],
@@ -784,10 +1215,26 @@
             "grebi:type": "biolink:related_to",
             "test_mda:id": [
               "edge-mda-hw"
-            ]
+            ],
+            "to": {
+              "grebi:datasources": [
+                "TestMultiDatasourceA"
+              ],
+              "grebi:nodeId": "mondo:0005002",
+              "grebi:sourceIds": [
+                "mondo:0005002"
+              ],
+              "grebi:type": [
+                "biolink:Disease"
+              ]
+            }
           }
         ],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "TestMultiDatasourceA": 1
+          }
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -864,7 +1311,9 @@
       },
       "outgoing_edges": {
         "content": [],
-        "facetFieldToCounts": {},
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
         "pageable": {
           "pageNumber": 0,
           "pageSize": 100,
@@ -2041,12 +2490,12 @@
       {
         "cypher_query": "RETURN \"Hello, World!\" AS message",
         "description": "Tester query to see if the pipeline is working",
-        "end_time": "2026-03-01 16:10:42",
+        "end_time": "2026-03-24 10:25:02",
         "id": "hello_world",
         "num_results": 1,
-        "start_time": "2026-03-01 16:10:41",
+        "start_time": "2026-03-24 10:25:01",
         "subgraph": "test_multi_datasource",
-        "time": 0.613941,
+        "time": 0.615741,
         "title": "Hello world",
         "uses_datasources": [
           "IMPC",
