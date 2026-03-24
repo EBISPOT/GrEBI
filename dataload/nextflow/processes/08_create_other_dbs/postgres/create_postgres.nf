@@ -40,10 +40,10 @@ process create_postgres {
     cat >> \$PGDATA/postgresql.conf <<EOF
 listen_addresses = ''
 unix_socket_directories = '\$PGSOCK'
-shared_buffers = ${params.pg_shared_buffers}
-work_mem = ${params.pg_work_mem}
-maintenance_work_mem = ${params.pg_maintenance_work_mem}
-max_wal_size = ${params.pg_max_wal_size}
+shared_buffers = ${params.pg_build_shared_buffers}
+work_mem = ${params.pg_build_work_mem}
+maintenance_work_mem = ${params.pg_build_maintenance_work_mem}
+max_wal_size = ${params.pg_build_max_wal_size}
 wal_level = minimal
 max_wal_senders = 0
 fsync = off
@@ -53,8 +53,10 @@ checkpoint_completion_target = 0.9
 autovacuum = off
 max_connections = 200
 max_worker_processes = \$((NPROC + 4))
-max_parallel_maintenance_workers = \$((NPROC > 2 ? NPROC - 2 : 1))
+max_parallel_maintenance_workers = \$((NPROC < 12 ? NPROC : 12))
 effective_io_concurrency = 200
+huge_pages = try
+effective_cache_size = ${params.pg_build_effective_cache_size}
 EOF
 
     # Start PostgreSQL locally (unix socket only)
@@ -147,6 +149,13 @@ EOF
       -e 's/^autovacuum = off/autovacuum = on/' \\
       -e "s|unix_socket_directories = .*|unix_socket_directories = '/var/run/postgresql'|" \\
       -e "s/^listen_addresses = ''/listen_addresses = '*'/" \\
+      -e "s/^shared_buffers = .*/shared_buffers = ${params.pg_shared_buffers}/" \\
+      -e "s/^work_mem = .*/work_mem = ${params.pg_work_mem}/" \\
+      -e "s/^maintenance_work_mem = .*/maintenance_work_mem = ${params.pg_maintenance_work_mem}/" \\
+      -e "s/^max_wal_size = .*/max_wal_size = ${params.pg_max_wal_size}/" \\
+      -e '/^huge_pages = /d' \\
+      -e '/^effective_cache_size = /d' \\
+      -e 's/^max_parallel_maintenance_workers = .*/max_parallel_maintenance_workers = 2/' \\
       \$PGDATA/postgresql.conf > \$_TMPCONF
     cat \$_TMPCONF > \$PGDATA/postgresql.conf
     rm -f \$_TMPCONF
