@@ -278,7 +278,7 @@ fn write_schema_sql(
     writeln!(writer, "    \"grebi:toNodeId\" TEXT NOT NULL,").unwrap();
     writeln!(writer, "    \"grebi:datasources\" TEXT[] NOT NULL DEFAULT '{{}}',").unwrap();
     writeln!(writer, "    \"grebi:subgraph\" TEXT,").unwrap();
-    writeln!(writer, "    \"_refs\" JSONB,").unwrap();
+    writeln!(writer, "    \"_refs\" TEXT,").unwrap();
 
     if extra_props.is_empty() {
         writeln!(writer, "    \"grebi:fromSourceIds\" TEXT[] DEFAULT '{{}}'").unwrap();

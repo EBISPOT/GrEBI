@@ -6,6 +6,7 @@ download:
       - https://dataverse.harvard.edu/api/access/datafile/6180620
 ingests:
   - globs: ["primekg/kg.csv"]
+    memory: "8 GB"
     command: '
       cat $GREBI_INGEST_FILENAME |
       $GREBI_DATALOAD_HOME/01_ingest/primekg.py'

@@ -6,6 +6,7 @@ download:
       - https://ftp.ebi.ac.uk/pub/databases/metabolights/eb-eye/eb_eye_metabolights_complete.xml
 ingests:
   - globs: ["metabolights/eb-eye_metabolights_complete.xml"]
+    memory: "8 GB"
     command: '
       cat $GREBI_INGEST_FILENAME |
       $GREBI_DATALOAD_HOME/01_ingest/metabolights.py'

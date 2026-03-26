@@ -9,6 +9,7 @@ download:
       - https://nlmpubs.nlm.nih.gov/projects/mesh/rdf/2024/vocabulary_1.0.0.ttl
 ingests:
   - globs: ["mesh/mesh2024.nt.gz"]
+    memory: "8 GB"
     command: '
       zcat $GREBI_INGEST_FILENAME |
       grebi_rdf2jsonl

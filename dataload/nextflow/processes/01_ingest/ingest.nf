@@ -1,6 +1,6 @@
 process ingest {
     cache "lenient"
-    memory { 4.GB + 128.GB * (task.attempt-1) }
+    memory { (file_listing.ingest.memory ? MemoryUnit.of(file_listing.ingest.memory) : 4.GB) + 128.GB * (task.attempt-1) }
     time { 1.hour + 8.hour * (task.attempt-1) }
     errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
     maxRetries 5

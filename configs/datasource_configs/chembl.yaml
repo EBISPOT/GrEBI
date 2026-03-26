@@ -6,6 +6,7 @@ download:
       - https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBL-RDF/36.0/chembl_36.0_molecule.ttl.gz
 ingests:
   - globs: ["chembl/*.ttl.gz"]
+    memory: "64 GB"
     command: '
       zcat $GREBI_INGEST_FILENAME |
       grebi_rdf2jsonl

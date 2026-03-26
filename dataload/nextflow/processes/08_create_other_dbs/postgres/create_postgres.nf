@@ -79,10 +79,15 @@ EOF
     # === EDGES TABLE ===
     EDGES_SCHEMA_FILES=(postgres_schema_${subgraph}_*.sql)
     EDGES_SCHEMA_FILE=\${EDGES_SCHEMA_FILES[0]}
+
+    # Use UNLOGGED table for bulk import (skips WAL entirely)
+    sed -i 's/CREATE TABLE/CREATE UNLOGGED TABLE/g' "\$EDGES_SCHEMA_FILE"
+
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$EDGES_SCHEMA_FILE"
 
-    # Drop indexes for faster import
+    # Drop indexes AND primary key for faster import
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "
+        ALTER TABLE \\"edges_${subgraph}\\" DROP CONSTRAINT IF EXISTS \\"edges_${subgraph}_pkey\\" CASCADE;
         DROP INDEX IF EXISTS idx_edges_${subgraph}_fromNodeId;
         DROP INDEX IF EXISTS idx_edges_${subgraph}_toNodeId;
         DROP INDEX IF EXISTS idx_edges_${subgraph}_type;
@@ -99,12 +104,15 @@ EOF
     }
     export -f _pg_import
 
-    echo "Importing \$(ls postgres_edges_${subgraph}_*.tsv | wc -l) edge files with \$NPROC parallel workers..."
+    # Cap edge COPY parallelism at 8 to reduce table extension lock contention
+    EDGE_WORKERS=\$((NPROC < 8 ? NPROC : 8))
+    echo "Importing \$(ls postgres_edges_${subgraph}_*.tsv | wc -l) edge files with \$EDGE_WORKERS parallel workers..."
     printf '%s\\0' postgres_edges_${subgraph}_*.tsv | \\
-        xargs -0 -P \$NPROC -n1 bash -c 'set -e; _pg_import "edges_${subgraph}" "\$1"' _
+        xargs -0 -P \$EDGE_WORKERS -n1 bash -c 'set -e; _pg_import "edges_${subgraph}" "\$1"' _
 
-    echo "Creating edge indexes..."
+    echo "Recreating primary key and edge indexes..."
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "
+        ALTER TABLE \\"edges_${subgraph}\\" ADD PRIMARY KEY (\\"grebi:edgeId\\");
         CREATE INDEX idx_edges_${subgraph}_fromNodeId ON \\"edges_${subgraph}\\" (\\"grebi:fromNodeId\\");
         CREATE INDEX idx_edges_${subgraph}_toNodeId ON \\"edges_${subgraph}\\" (\\"grebi:toNodeId\\");
         CREATE INDEX idx_edges_${subgraph}_type ON \\"edges_${subgraph}\\" (\\"grebi:type\\");
@@ -115,6 +123,10 @@ EOF
     # === NODES TABLE (with pgvector) ===
     NODES_SCHEMA_FILES=(postgres_nodes_schema_${subgraph}_*.sql)
     NODES_SCHEMA_FILE=\${NODES_SCHEMA_FILES[0]}
+
+    # Use UNLOGGED table for bulk import
+    sed -i 's/CREATE TABLE/CREATE UNLOGGED TABLE/g' "\$NODES_SCHEMA_FILE"
+
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$NODES_SCHEMA_FILE"
 
     # Drop HNSW indexes for faster bulk import (they will be in the schema SQL)
@@ -135,6 +147,11 @@ EOF
     done
 
     psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ANALYZE \\"nodes_${subgraph}\\";"
+
+    # Convert UNLOGGED tables back to LOGGED for production durability
+    echo "Converting tables to LOGGED..."
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ALTER TABLE \\"edges_${subgraph}\\" SET LOGGED;"
+    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ALTER TABLE \\"nodes_${subgraph}\\" SET LOGGED;"
 
     # Stop PostgreSQL cleanly
     pg_ctl -D \$PGDATA stop -m fast

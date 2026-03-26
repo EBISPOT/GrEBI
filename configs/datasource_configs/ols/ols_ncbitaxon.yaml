@@ -7,6 +7,7 @@ download:
       - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/ncbitaxon.json.gz
 ingests:
   - globs: ["ols/ncbitaxon.json.gz"]
+    memory: "16 GB"
     command: '
       zcat $GREBI_INGEST_FILENAME |
       grebi_ingest_ols

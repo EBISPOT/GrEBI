@@ -186,3 +186,8 @@ npm run build
 - CURIE format is standardized via Bioregistry
 - Cross-species phenotype matching uses special mapping predicates
 - Nodes in GrEBI represent cliques of equivalent entities from multiple sources
+
+## Debugging EBI deployment
+
+- ssh spotbot@codon-slurm-login
+- Runs from /nfs/production/parkinso/spot/grebi/ in /hps/nobackup/parkinso/spot/grebi

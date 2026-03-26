@@ -6,6 +6,7 @@ download:
       - https://ubergraph.apps.renci.org/downloads/current/ubergraph.nq.gz
 ingests:
   - globs: ["ubergraph/ubergraph.nq.gz"]
+    memory: "32 GB"
     command: '
       zcat $GREBI_INGEST_FILENAME |
       grebi_rdf2jsonl
