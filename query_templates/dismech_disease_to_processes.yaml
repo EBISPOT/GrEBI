@@ -1,0 +1,46 @@
+title: Biological processes affected by a disease
+description: Given a disease, find biological processes (Gene Ontology terms) that are affected, as curated by DisMech
+subgraphs:
+  - dismech
+  - ebi_monarch_xspecies
+topics:
+  - dismech
+cypher_match_fragment: |-
+  MATCH (disease)-[:sourceId]->(:Id {id: $disease_id})
+  MATCH (disease)-[r:`biolink:affects`]->(process)
+  WHERE "DisMech" IN r.`grebi:datasources`
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      disease { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(disease) } AS disease,
+      process { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(process) } AS process,
+      r.`dismech:qualifiers`[0] AS direction,
+      r.edge_id AS edge_id
+cypher_count_fragment: |-
+  WITH DISTINCT disease, process
+  RETURN count(*) AS count
+params:
+  - param_id: disease_id
+    param_name: Disease
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'mondo:0000001'
+result_columns:
+  - column_id: disease
+    column_type: GraphNodeId
+  - column_id: process
+    column_type: GraphNodeId
+  - column_id: direction
+    column_type: string
+    optional: true
+  - column_id: edge_id
+    column_type: EdgeId
+examples:
+  - title: Parkinson disease
+    params:
+      disease_id: mondo:0005180
+  - title: Alzheimer disease
+    params:
+      disease_id: mondo:0004975
+  - title: Huntington disease
+    params:
+      disease_id: mondo:0007739

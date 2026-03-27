@@ -1,0 +1,49 @@
+title: Anatomical locations and cell types involved in a disease
+description: Given a disease, find its anatomical locations and cell types from any source
+subgraphs:
+  - ebi_monarch_xspecies
+  - dismech
+topics:
+  - dismech
+  - uberon
+  - cl
+cypher_match_fragment: |-
+  MATCH (disease)-[:sourceId]->(:Id {id: $disease_id})
+  MATCH (disease)-[r:(`biolink:disease_has_location`|`biolink:has_participant`)]->(entity)
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      disease { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(disease) } AS disease,
+      entity { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(entity) } AS entity,
+      type(r) AS relationship,
+      r.`grebi:datasources` AS from_datasources,
+      r.edge_id AS edge_id
+cypher_count_fragment: |-
+  WITH DISTINCT disease, entity, type(r) AS relationship
+  RETURN count(*) AS count
+params:
+  - param_id: disease_id
+    param_name: Disease
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'mondo:0000001'
+result_columns:
+  - column_id: disease
+    column_type: GraphNodeId
+  - column_id: entity
+    column_type: GraphNodeId
+  - column_id: relationship
+    column_type: string
+  - column_id: from_datasources
+    column_type: DatasourceList
+  - column_id: edge_id
+    column_type: EdgeId
+examples:
+  - title: Parkinson disease
+    params:
+      disease_id: mondo:0005180
+  - title: gastric cancer
+    params:
+      disease_id: mondo:0001056
+  - title: hepatocellular carcinoma
+    params:
+      disease_id: mondo:0007256

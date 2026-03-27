@@ -48,6 +48,11 @@ topics:
     type: Ontology
     description: The Cell Ontology (CL) is an ontology designed to classify and describe cell types across different organisms. 
     url: https://obofoundry.org/ontology/cl.html
+  - id: dismech
+    name: DisMech
+    type: Resource
+    description: The Disorder Mechanisms Knowledge Base (DisMech) is a curated, evidence-backed knowledge base of disease pathophysiology, phenotypes, and treatments linked to authoritative ontologies. Part of the Monarch Initiative.
+    url: https://dismech.monarchinitiative.org/
   - id: qc
     name: Quality Control
     type: Domain
