@@ -23,10 +23,7 @@ struct Args {
     out_nodes_tsv_path: String,
 
     #[arg(long)]
-    out_schema_sql_path: String,
-
-    #[arg(long)]
-    table_name: String,
+    out_columns_path: String,
 }
 
 fn main() -> std::io::Result<()> {
@@ -40,11 +37,11 @@ fn main() -> std::io::Result<()> {
         embedding_models.len()
     );
 
-    // Write schema SQL
-    let schema_file = File::create(&args.out_schema_sql_path)?;
-    let mut schema_writer = BufWriter::new(schema_file);
-    write_schema_sql(&args.table_name, &embedding_models, &mut schema_writer);
-    schema_writer.flush()?;
+    // Write column definitions (one per line, no CREATE TABLE wrapper)
+    let cols_file = File::create(&args.out_columns_path)?;
+    let mut cols_writer = BufWriter::new(cols_file);
+    write_columns(&embedding_models, &mut cols_writer);
+    cols_writer.flush()?;
 
     // Stream nodes JSONL → TSV
     let nodes_reader = std::io::BufReader::new(File::open(&args.in_nodes_jsonl)?);
@@ -234,60 +231,19 @@ fn escape_tsv(s: &str) -> String {
         .replace('\r', "\\r")
 }
 
-fn write_schema_sql(
-    table_name: &str,
+/// Write one column definition per line (no CREATE TABLE, no indexes).
+/// The Nextflow script assembles the full DDL.
+fn write_columns(
     embedding_models: &BTreeMap<String, i64>,
     writer: &mut BufWriter<File>,
 ) {
-    writeln!(writer, "-- Auto-generated schema for GrEBI PostgreSQL nodes table").unwrap();
-    writeln!(writer, "-- Table: {}", table_name).unwrap();
-    writeln!(writer).unwrap();
-    writeln!(writer, "CREATE EXTENSION IF NOT EXISTS vector;").unwrap();
-    writeln!(writer).unwrap();
-    writeln!(writer, "DROP TABLE IF EXISTS \"{}\" CASCADE;", table_name).unwrap();
-    writeln!(writer).unwrap();
-    writeln!(writer, "CREATE TABLE \"{}\" (", table_name).unwrap();
-    writeln!(writer, "    \"grebi:nodeId\" TEXT PRIMARY KEY,").unwrap();
-    writeln!(writer, "    \"grebi:name\" TEXT,").unwrap();
-    writeln!(writer, "    \"grebi:type\" TEXT[] NOT NULL DEFAULT '{{}}',").unwrap();
-    writeln!(writer, "    \"grebi:datasources\" TEXT[] NOT NULL DEFAULT '{{}}',").unwrap();
-    writeln!(writer, "    \"grebi:sourceIds\" TEXT[] DEFAULT '{{}}',").unwrap();
-
-    if embedding_models.is_empty() {
-        writeln!(writer, "    \"ols:curie\" TEXT").unwrap();
-    } else {
-        writeln!(writer, "    \"ols:curie\" TEXT,").unwrap();
-        let last_model = embedding_models.keys().last().unwrap();
-        for (model_name, dim) in embedding_models {
-            if model_name == last_model {
-                writeln!(writer, "    \"embedding:{}\" vector({})", model_name, dim).unwrap();
-            } else {
-                writeln!(writer, "    \"embedding:{}\" vector({}),", model_name, dim).unwrap();
-            }
-        }
+    writeln!(writer, "\"grebi:nodeId\" TEXT").unwrap();
+    writeln!(writer, "\"grebi:name\" TEXT").unwrap();
+    writeln!(writer, "\"grebi:type\" TEXT[] NOT NULL DEFAULT '{{}}'").unwrap();
+    writeln!(writer, "\"grebi:datasources\" TEXT[] NOT NULL DEFAULT '{{}}'").unwrap();
+    writeln!(writer, "\"grebi:sourceIds\" TEXT[] DEFAULT '{{}}'").unwrap();
+    writeln!(writer, "\"ols:curie\" TEXT").unwrap();
+    for (model_name, dim) in embedding_models {
+        writeln!(writer, "\"embedding:{}\" vector({})", model_name, dim).unwrap();
     }
-
-    writeln!(writer, ");").unwrap();
-    writeln!(writer).unwrap();
-
-    // Create HNSW indexes for each embedding column
-    let safe_name = table_name.replace('"', "");
-    for model_name in embedding_models.keys() {
-        let safe_model = model_name.replace('-', "_").replace('.', "_");
-        writeln!(
-            writer,
-            "CREATE INDEX \"idx_{}_embedding_{}\" ON \"{}\" USING hnsw (\"embedding:{}\" vector_cosine_ops);",
-            safe_name, safe_model, table_name, model_name
-        )
-        .unwrap();
-    }
-
-    writeln!(writer).unwrap();
-    // Text indexes for common lookups
-    writeln!(
-        writer,
-        "CREATE INDEX \"idx_{}_name\" ON \"{}\" (\"grebi:name\");",
-        safe_name, table_name
-    )
-    .unwrap();
 }

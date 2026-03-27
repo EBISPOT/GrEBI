@@ -6,9 +6,9 @@ process create_postgres {
 
     input:
     path(edges_tsvs)
-    path(edges_schema_sqls)
+    path(edges_columns)
     path(nodes_tsvs)
-    path(nodes_schema_sqls)
+    path(nodes_columns)
     val(subgraph)
 
     output:
@@ -31,7 +31,9 @@ process create_postgres {
     mkdir -p \$PGSOCK
 
     NPROC=\$(nproc)
-    echo "Using \$NPROC parallel workers"
+    echo "Using \$NPROC parallel workers, PGDATA=\$PGDATA"
+
+    trap 'pg_ctl -D \$PGDATA stop -m immediate 2>/dev/null || true' EXIT
 
     # Initialise a fresh PostgreSQL data directory
     initdb --username=\$PGUSER --auth=trust --no-locale --encoding=UTF8 -D \$PGDATA
@@ -57,6 +59,7 @@ max_parallel_maintenance_workers = \$((NPROC < 12 ? NPROC : 12))
 effective_io_concurrency = 200
 huge_pages = try
 effective_cache_size = ${params.pg_build_effective_cache_size}
+default_toast_compression = 'lz4'
 EOF
 
     # Start PostgreSQL locally (unix socket only)
@@ -76,82 +79,102 @@ EOF
 
     createdb -h \$PGSOCK -p \$PGPORT -U \$PGUSER grebi
 
-    # === EDGES TABLE ===
-    EDGES_SCHEMA_FILES=(postgres_schema_${subgraph}_*.sql)
-    EDGES_SCHEMA_FILE=\${EDGES_SCHEMA_FILES[0]}
+    PSQL="psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi"
 
-    # Use UNLOGGED table for bulk import (skips WAL entirely)
-    sed -i 's/CREATE TABLE/CREATE UNLOGGED TABLE/g' "\$EDGES_SCHEMA_FILE"
+    # === EDGES TABLE (hash-partitioned) ===
+    EDGES_COLS_FILE=\$(ls postgres_edges_columns_${subgraph}_*.txt | head -1)
+    EDGES_COLS=\$(paste -sd',' < "\$EDGES_COLS_FILE")
 
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$EDGES_SCHEMA_FILE"
+    NUM_PARTITIONS=${params.pg_edge_partitions}
+    if [ "\$NUM_PARTITIONS" -gt 1 ]; then
+        \$PSQL -c "
+            CREATE UNLOGGED TABLE \\"edges_${subgraph}\\" (
+                \$EDGES_COLS
+            ) WITH (fillfactor=100)
+            PARTITION BY HASH (\\"grebi:edgeId\\");
+        "
+        for i in \$(seq 0 \$((NUM_PARTITIONS - 1))); do
+            \$PSQL -c "CREATE TABLE \\"edges_${subgraph}_p\${i}\\" PARTITION OF \\"edges_${subgraph}\\" FOR VALUES WITH (MODULUS \$NUM_PARTITIONS, REMAINDER \$i);"
+        done
+    else
+        \$PSQL -c "
+            CREATE UNLOGGED TABLE \\"edges_${subgraph}\\" (
+                \$EDGES_COLS
+            ) WITH (fillfactor=100);
+        "
+    fi
 
-    # Drop indexes AND primary key for faster import
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "
-        ALTER TABLE \\"edges_${subgraph}\\" DROP CONSTRAINT IF EXISTS \\"edges_${subgraph}_pkey\\" CASCADE;
-        DROP INDEX IF EXISTS idx_edges_${subgraph}_fromNodeId;
-        DROP INDEX IF EXISTS idx_edges_${subgraph}_toNodeId;
-        DROP INDEX IF EXISTS idx_edges_${subgraph}_type;
-    "
-
-    # Helper for parallel server-side COPY
+    # Helper for parallel COPY from gzipped files
     _pg_import() {
         local TABLE=\$1
-        local TSV_FILE=\$2
+        local GZ_FILE=\$2
         local ABSFILE
-        ABSFILE=\$(readlink -f "\$TSV_FILE")
-        echo "Importing \$TABLE \$TSV_FILE ..."
-        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "COPY \\"\$TABLE\\" FROM '\$ABSFILE' WITH (FORMAT text)"
+        ABSFILE=\$(readlink -f "\$GZ_FILE")
+        echo "Importing \$TABLE \$GZ_FILE ..."
+        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "COPY \\"\$TABLE\\" FROM PROGRAM 'pigz -dc \$ABSFILE' WITH (FORMAT text)"
     }
     export -f _pg_import
 
-    # Cap edge COPY parallelism at 8 to reduce table extension lock contention
+    # Cap edge COPY parallelism at 8 to reduce contention
     EDGE_WORKERS=\$((NPROC < 8 ? NPROC : 8))
-    echo "Importing \$(ls postgres_edges_${subgraph}_*.tsv | wc -l) edge files with \$EDGE_WORKERS parallel workers..."
-    printf '%s\\0' postgres_edges_${subgraph}_*.tsv | \\
+    echo "Importing \$(ls postgres_edges_${subgraph}_*.tsv.gz | wc -l) edge files with \$EDGE_WORKERS parallel workers..."
+    printf '%s\\0' postgres_edges_${subgraph}_*.tsv.gz | \\
         xargs -0 -P \$EDGE_WORKERS -n1 bash -c 'set -e; _pg_import "edges_${subgraph}" "\$1"' _
 
-    echo "Recreating primary key and edge indexes..."
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "
-        ALTER TABLE \\"edges_${subgraph}\\" ADD PRIMARY KEY (\\"grebi:edgeId\\");
-        CREATE INDEX idx_edges_${subgraph}_fromNodeId ON \\"edges_${subgraph}\\" (\\"grebi:fromNodeId\\");
-        CREATE INDEX idx_edges_${subgraph}_toNodeId ON \\"edges_${subgraph}\\" (\\"grebi:toNodeId\\");
-        CREATE INDEX idx_edges_${subgraph}_type ON \\"edges_${subgraph}\\" (\\"grebi:type\\");
-    "
+    echo "Creating edge hash indexes (parallel)..."
+    \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_edgeId\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:edgeId\\");" &
+    \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_fromNodeId\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:fromNodeId\\");" &
+    \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_toNodeId\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:toNodeId\\");" &
+    \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_type\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:type\\");" &
+    wait
 
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ANALYZE \\"edges_${subgraph}\\";"
+    \$PSQL -c "ANALYZE \\"edges_${subgraph}\\";"
 
     # === NODES TABLE (with pgvector) ===
-    NODES_SCHEMA_FILES=(postgres_nodes_schema_${subgraph}_*.sql)
-    NODES_SCHEMA_FILE=\${NODES_SCHEMA_FILES[0]}
+    NODES_COLS_FILE=\$(ls postgres_nodes_columns_${subgraph}_*.txt | head -1)
+    NODES_COLS=\$(paste -sd',' < "\$NODES_COLS_FILE")
 
-    # Use UNLOGGED table for bulk import
-    sed -i 's/CREATE TABLE/CREATE UNLOGGED TABLE/g' "\$NODES_SCHEMA_FILE"
+    \$PSQL -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -f "\$NODES_SCHEMA_FILE"
+    NUM_NODE_PARTITIONS=${params.pg_node_partitions}
+    if [ "\$NUM_NODE_PARTITIONS" -gt 1 ]; then
+        \$PSQL -c "
+            CREATE UNLOGGED TABLE \\"nodes_${subgraph}\\" (
+                \$NODES_COLS
+            ) WITH (fillfactor=100)
+            PARTITION BY HASH (\\"grebi:nodeId\\");
+        "
+        for i in \$(seq 0 \$((NUM_NODE_PARTITIONS - 1))); do
+            \$PSQL -c "CREATE TABLE \\"nodes_${subgraph}_p\${i}\\" PARTITION OF \\"nodes_${subgraph}\\" FOR VALUES WITH (MODULUS \$NUM_NODE_PARTITIONS, REMAINDER \$i);"
+        done
+    else
+        \$PSQL -c "
+            CREATE UNLOGGED TABLE \\"nodes_${subgraph}\\" (
+                \$NODES_COLS
+            ) WITH (fillfactor=100);
+        "
+    fi
 
-    # Drop HNSW indexes for faster bulk import (they will be in the schema SQL)
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -t -A -c "
-        SELECT indexname FROM pg_indexes WHERE tablename = 'nodes_${subgraph}' AND indexname LIKE 'idx_%';
-    " | while read -r idx; do
-        [ -z "\$idx" ] && continue
-        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "DROP INDEX IF EXISTS \\"\$idx\\";" 2>/dev/null || true
-    done
-
-    echo "Importing \$(ls postgres_nodes_${subgraph}_*.tsv | wc -l) node files with \$NPROC parallel workers..."
-    printf '%s\\0' postgres_nodes_${subgraph}_*.tsv | \\
+    echo "Importing \$(ls postgres_nodes_${subgraph}_*.tsv.gz | wc -l) node files with \$NPROC parallel workers..."
+    printf '%s\\0' postgres_nodes_${subgraph}_*.tsv.gz | \\
         xargs -0 -P \$NPROC -n1 bash -c 'set -e; _pg_import "nodes_${subgraph}" "\$1"' _
 
-    echo "Creating node indexes (including HNSW vector indexes)..."
-    grep -i 'CREATE INDEX' "\$NODES_SCHEMA_FILE" | while read -r line; do
-        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "\$line" 2>/dev/null || true
+    echo "Creating node indexes in parallel..."
+    # Hash index for name lookups
+    \$PSQL -c "CREATE INDEX \\"idx_nodes_${subgraph}_name\\" ON \\"nodes_${subgraph}\\" USING hash (\\"grebi:name\\");" &
+    # HNSW indexes for embedding columns (identified by column name pattern)
+    for COL_NAME in \$(grep '^"embedding:' "\$NODES_COLS_FILE" | sed 's/^"\\([^"]*\\)".*/\\1/'); do
+        SAFE_MODEL=\$(echo "\$COL_NAME" | sed 's/embedding://' | tr '-.' '__')
+        \$PSQL -c "CREATE INDEX \\"idx_nodes_${subgraph}_embedding_\${SAFE_MODEL}\\" ON \\"nodes_${subgraph}\\" USING hnsw (\\"\${COL_NAME}\\" vector_cosine_ops);" &
     done
+    wait
 
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ANALYZE \\"nodes_${subgraph}\\";"
+    \$PSQL -c "ANALYZE \\"nodes_${subgraph}\\";"
 
     # Convert UNLOGGED tables back to LOGGED for production durability
     echo "Converting tables to LOGGED..."
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ALTER TABLE \\"edges_${subgraph}\\" SET LOGGED;"
-    psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "ALTER TABLE \\"nodes_${subgraph}\\" SET LOGGED;"
+    \$PSQL -c "ALTER TABLE \\"edges_${subgraph}\\" SET LOGGED;"
+    \$PSQL -c "ALTER TABLE \\"nodes_${subgraph}\\" SET LOGGED;"
 
     # Stop PostgreSQL cleanly
     pg_ctl -D \$PGDATA stop -m fast
@@ -180,7 +203,6 @@ EOF
     # Add pg_hba.conf entry for network connections
     echo "host all all 0.0.0.0/0 trust" >> \$PGDATA/pg_hba.conf
 
-    # Make data directory readable so downstream packaging steps can tar it
     chmod -R a+rX \$PGDATA
 
     echo "PostgreSQL data directory built: \$PGDATA"

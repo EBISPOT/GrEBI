@@ -23,10 +23,7 @@ struct Args {
     out_edges_tsv_path: String,
 
     #[arg(long)]
-    out_schema_sql_path: String,
-
-    #[arg(long)]
-    table_name: String,
+    out_columns_path: String,
 }
 
 /// Fixed columns that are always present and don't need to be discovered.
@@ -50,11 +47,11 @@ fn main() -> std::io::Result<()> {
     let extra_props = read_extra_props_from_metadata(&args.in_graph_metadata_json);
     eprintln!("Loaded {} extra edge property names from graph metadata", extra_props.len());
 
-    // Write schema SQL up-front (we know all columns now)
-    let schema_file = File::create(&args.out_schema_sql_path).unwrap();
-    let mut schema_writer = BufWriter::new(schema_file);
-    write_schema_sql(&args.table_name, &extra_props, &mut schema_writer);
-    schema_writer.flush().unwrap();
+    // Write column definitions (one per line, no CREATE TABLE wrapper)
+    let cols_file = File::create(&args.out_columns_path).unwrap();
+    let mut cols_writer = BufWriter::new(cols_file);
+    write_columns(&extra_props, &mut cols_writer);
+    cols_writer.flush().unwrap();
 
     // Single pass: stream edges JSONL → TSV
     let edges_reader = std::io::BufReader::new(File::open(&args.in_edges_jsonl).unwrap());
@@ -261,69 +258,21 @@ fn escape_tsv(s: &str) -> String {
         .replace('\r', "\\r")
 }
 
-fn write_schema_sql(
-    table_name: &str,
+/// Write one column definition per line (no CREATE TABLE, no indexes).
+/// The Nextflow script assembles the full DDL.
+fn write_columns(
     extra_props: &[String],
     writer: &mut BufWriter<File>,
 ) {
-    writeln!(writer, "-- Auto-generated schema for GrEBI PostgreSQL edges table").unwrap();
-    writeln!(writer, "-- Table: {}", table_name).unwrap();
-    writeln!(writer).unwrap();
-    writeln!(writer, "DROP TABLE IF EXISTS \"{}\" CASCADE;", table_name).unwrap();
-    writeln!(writer).unwrap();
-    writeln!(writer, "CREATE TABLE \"{}\" (", table_name).unwrap();
-    writeln!(writer, "    \"grebi:edgeId\" TEXT PRIMARY KEY,").unwrap();
-    writeln!(writer, "    \"grebi:type\" TEXT NOT NULL,").unwrap();
-    writeln!(writer, "    \"grebi:fromNodeId\" TEXT NOT NULL,").unwrap();
-    writeln!(writer, "    \"grebi:toNodeId\" TEXT NOT NULL,").unwrap();
-    writeln!(writer, "    \"grebi:datasources\" TEXT[] NOT NULL DEFAULT '{{}}',").unwrap();
-    writeln!(writer, "    \"grebi:subgraph\" TEXT,").unwrap();
-    writeln!(writer, "    \"_refs\" TEXT,").unwrap();
-
-    if extra_props.is_empty() {
-        writeln!(writer, "    \"grebi:fromSourceIds\" TEXT[] DEFAULT '{{}}'").unwrap();
-    } else {
-        writeln!(writer, "    \"grebi:fromSourceIds\" TEXT[] DEFAULT '{{}}',").unwrap();
-        let last_prop = &extra_props[extra_props.len() - 1];
-        for prop in extra_props {
-            if prop == last_prop {
-                writeln!(writer, "    \"{}\" TEXT[]", prop).unwrap();
-            } else {
-                writeln!(writer, "    \"{}\" TEXT[],", prop).unwrap();
-            }
-        }
+    writeln!(writer, "\"grebi:edgeId\" TEXT").unwrap();
+    writeln!(writer, "\"grebi:type\" TEXT NOT NULL").unwrap();
+    writeln!(writer, "\"grebi:fromNodeId\" TEXT NOT NULL").unwrap();
+    writeln!(writer, "\"grebi:toNodeId\" TEXT NOT NULL").unwrap();
+    writeln!(writer, "\"grebi:datasources\" TEXT[] NOT NULL DEFAULT '{{}}'").unwrap();
+    writeln!(writer, "\"grebi:subgraph\" TEXT").unwrap();
+    writeln!(writer, "\"_refs\" TEXT").unwrap();
+    writeln!(writer, "\"grebi:fromSourceIds\" TEXT[] DEFAULT '{{}}'").unwrap();
+    for prop in extra_props {
+        writeln!(writer, "\"{}\" TEXT[]", prop).unwrap();
     }
-
-    writeln!(writer, ");").unwrap();
-    writeln!(writer).unwrap();
-
-    // Create indexes for the most common query patterns
-    let safe_name = table_name.replace('"', "");
-    writeln!(
-        writer,
-        "CREATE INDEX \"idx_{}_fromNodeId\" ON \"{}\" (\"grebi:fromNodeId\");",
-        safe_name, table_name
-    )
-    .unwrap();
-    writeln!(
-        writer,
-        "CREATE INDEX \"idx_{}_toNodeId\" ON \"{}\" (\"grebi:toNodeId\");",
-        safe_name, table_name
-    )
-    .unwrap();
-    writeln!(
-        writer,
-        "CREATE INDEX \"idx_{}_type\" ON \"{}\" (\"grebi:type\");",
-        safe_name, table_name
-    )
-    .unwrap();
-
-    writeln!(writer).unwrap();
-    writeln!(writer, "-- Import data with:").unwrap();
-    writeln!(
-        writer,
-        "-- COPY \"{}\" FROM 'edges.tsv' WITH (FORMAT text);",
-        table_name
-    )
-    .unwrap();
 }

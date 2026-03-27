@@ -9,8 +9,8 @@ process prepare_postgres_nodes {
     val(subgraph)
 
     output:
-    path("postgres_nodes_${subgraph}_${task.index}.tsv"), emit: nodes_tsv
-    path("postgres_nodes_schema_${subgraph}_${task.index}.sql"), emit: schema_sql
+    path("postgres_nodes_${subgraph}_${task.index}.tsv.gz"), emit: nodes_tsv
+    path("postgres_nodes_columns_${subgraph}_${task.index}.txt"), emit: columns
 
     script:
     """
@@ -20,7 +20,7 @@ process prepare_postgres_nodes {
       --in-nodes-jsonl ${nodes_jsonl} \
       --in-graph-metadata-json ${graph_metadata_json} \
       --out-nodes-tsv-path postgres_nodes_${subgraph}_${task.index}.tsv \
-      --out-schema-sql-path postgres_nodes_schema_${subgraph}_${task.index}.sql \
-      --table-name nodes_${subgraph}
+      --out-columns-path postgres_nodes_columns_${subgraph}_${task.index}.txt
+    pigz --best postgres_nodes_${subgraph}_${task.index}.tsv
     """
 }
