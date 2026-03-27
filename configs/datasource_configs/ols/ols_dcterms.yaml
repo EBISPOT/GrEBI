@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: ols/dcterms.json.gz
     sources:
-      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/dcterms.json.gz
+      - /nfs/production/parkinso/spot/ols4/dev2/out/ontology_jsons/dcterms.json.gz
       - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/dcterms.json.gz
 ingests:
   - globs: ["ols/dcterms.json.gz"]

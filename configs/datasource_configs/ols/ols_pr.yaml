@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: ols/pr.json.gz
     sources:
-      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/pr.json.gz
+      - /nfs/production/parkinso/spot/ols4/dev2/out/ontology_jsons/pr.json.gz
       - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/pr.json.gz
 ingests:
   - globs: ["ols/pr.json.gz"]

@@ -3,7 +3,7 @@ enabled: true
 download:
   - dest: ols/ncit.json.gz
     sources:
-      - /nfs/production/parkinso/spot/ols4/dev-nextflow/out/ontology_jsons/ncit.json.gz
+      - /nfs/production/parkinso/spot/ols4/dev2/out/ontology_jsons/ncit.json.gz
       - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/ncit.json.gz
 ingests:
   - globs: ["ols/ncit.json.gz"]

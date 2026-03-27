@@ -85,24 +85,11 @@ EOF
     EDGES_COLS_FILE=\$(ls postgres_edges_columns_${subgraph}_*.txt | head -1)
     EDGES_COLS=\$(paste -sd',' < "\$EDGES_COLS_FILE")
 
-    NUM_PARTITIONS=${params.pg_edge_partitions}
-    if [ "\$NUM_PARTITIONS" -gt 1 ]; then
-        \$PSQL -c "
-            CREATE UNLOGGED TABLE \\"edges_${subgraph}\\" (
-                \$EDGES_COLS
-            ) WITH (fillfactor=100)
-            PARTITION BY HASH (\\"grebi:edgeId\\");
-        "
-        for i in \$(seq 0 \$((NUM_PARTITIONS - 1))); do
-            \$PSQL -c "CREATE TABLE \\"edges_${subgraph}_p\${i}\\" PARTITION OF \\"edges_${subgraph}\\" FOR VALUES WITH (MODULUS \$NUM_PARTITIONS, REMAINDER \$i);"
-        done
-    else
-        \$PSQL -c "
-            CREATE UNLOGGED TABLE \\"edges_${subgraph}\\" (
-                \$EDGES_COLS
-            ) WITH (fillfactor=100);
-        "
-    fi
+    \$PSQL -c "
+        CREATE UNLOGGED TABLE \\"edges_${subgraph}\\" (
+            \$EDGES_COLS
+        ) WITH (fillfactor=100);
+    "
 
     # Helper for parallel COPY from gzipped files
     _pg_import() {
@@ -136,24 +123,11 @@ EOF
 
     \$PSQL -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
-    NUM_NODE_PARTITIONS=${params.pg_node_partitions}
-    if [ "\$NUM_NODE_PARTITIONS" -gt 1 ]; then
-        \$PSQL -c "
-            CREATE UNLOGGED TABLE \\"nodes_${subgraph}\\" (
-                \$NODES_COLS
-            ) WITH (fillfactor=100)
-            PARTITION BY HASH (\\"grebi:nodeId\\");
-        "
-        for i in \$(seq 0 \$((NUM_NODE_PARTITIONS - 1))); do
-            \$PSQL -c "CREATE TABLE \\"nodes_${subgraph}_p\${i}\\" PARTITION OF \\"nodes_${subgraph}\\" FOR VALUES WITH (MODULUS \$NUM_NODE_PARTITIONS, REMAINDER \$i);"
-        done
-    else
-        \$PSQL -c "
-            CREATE UNLOGGED TABLE \\"nodes_${subgraph}\\" (
-                \$NODES_COLS
-            ) WITH (fillfactor=100);
-        "
-    fi
+    \$PSQL -c "
+        CREATE UNLOGGED TABLE \\"nodes_${subgraph}\\" (
+            \$NODES_COLS
+        ) WITH (fillfactor=100);
+    "
 
     echo "Importing \$(ls postgres_nodes_${subgraph}_*.tsv.gz | wc -l) node files with \$NPROC parallel workers..."
     printf '%s\\0' postgres_nodes_${subgraph}_*.tsv.gz | \\
@@ -164,7 +138,7 @@ EOF
     \$PSQL -c "CREATE INDEX \\"idx_nodes_${subgraph}_name\\" ON \\"nodes_${subgraph}\\" USING hash (\\"grebi:name\\");" &
     # HNSW indexes for embedding columns (identified by column name pattern)
     for COL_NAME in \$(grep '^"embedding:' "\$NODES_COLS_FILE" | sed 's/^"\\([^"]*\\)".*/\\1/'); do
-        SAFE_MODEL=\$(echo "\$COL_NAME" | sed 's/embedding://' | tr '-.' '__')
+        SAFE_MODEL=\$(echo "\$COL_NAME" | sed 's/embedding://' | tr -- '-.' '__')
         \$PSQL -c "CREATE INDEX \\"idx_nodes_${subgraph}_embedding_\${SAFE_MODEL}\\" ON \\"nodes_${subgraph}\\" USING hnsw (\\"\${COL_NAME}\\" vector_cosine_ops);" &
     done
     wait
