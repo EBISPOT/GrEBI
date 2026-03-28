@@ -12,7 +12,6 @@ export interface BreadcrumbsEntry {
 export default function Breadcrumbs(props:{ subgraph?:string, setSubgraph?:(s:string)=>void, entries: BreadcrumbsEntry[] }) {
 
     let entries: BreadcrumbsEntry[] = props.entries;
-    let subgraph = props.subgraph;
 
     return <MuiBreadcrumbs
   separator={<NavigateNext fontSize="small" />}
@@ -20,17 +19,23 @@ export default function Breadcrumbs(props:{ subgraph?:string, setSubgraph?:(s:st
 >
 
 <Link
-  to={subgraph ? `/subgraphs/${subgraph}` : "/"}
+  to={"/"}
   className="hover:text-gray-800 flex items-center"
 >
   <Home fontSize="small" />
 </Link>
 
-{subgraph && props.setSubgraph && (
-  <SubgraphPicker subgraph={subgraph} setSubgraph={props.setSubgraph} compact />
-)}
+  {entries.length > 0 && (
+    <Link to={entries[0].url} className="hover:text-gray-800">
+      {entries[0].label}
+    </Link>
+  )}
 
-  {entries.map((entry, index) => (
+  {props.subgraph && props.setSubgraph && (
+    <SubgraphPicker subgraph={props.subgraph} setSubgraph={props.setSubgraph} compact />
+  )}
+
+  {entries.slice(1).map((entry, index) => (
     <Link key={index} to={entry.url} className="hover:text-gray-800">
       {entry.label}
     </Link>

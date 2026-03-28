@@ -1,5 +1,6 @@
-name: OLS.mp
+id: OLS.mp
 enabled: true
+description: "Standardised vocabulary of phenotypic abnormalities in mammalian organisms"
 download:
   - dest: ols/mp.json.gz
     sources:

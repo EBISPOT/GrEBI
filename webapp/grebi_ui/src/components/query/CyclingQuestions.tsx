@@ -6,9 +6,12 @@ import QueryQuestion from "./QueryQuestion";
 
 interface CyclingQuestionsProps {
   subgraph: string;
+  autoPlay?: boolean;
+  onExampleChange?: (firstParamValue: string | null, exampleTitle: string | null) => void;
+  onAllSourceIds?: (sourceIds: string[]) => void;
 }
 
-export default function CyclingQuestions({ subgraph }: CyclingQuestionsProps) {
+export default function CyclingQuestions({ subgraph, autoPlay = true, onExampleChange, onAllSourceIds }: CyclingQuestionsProps) {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<QueryTemplate[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -26,6 +29,21 @@ export default function CyclingQuestions({ subgraph }: CyclingQuestionsProps) {
       setTemplates(withQuestions);
       setExampleIndices(new Array(withQuestions.length).fill(0));
       setCurrentIndex(0);
+
+      // Report all unique first-param source IDs for precaching
+      if (onAllSourceIds) {
+        const ids = new Set<string>();
+        for (const t of withQuestions) {
+          if (t.params?.length > 0 && t.examples) {
+            const pid = t.params[0].param_id;
+            for (const ex of t.examples) {
+              const v = ex.params[pid];
+              if (v) ids.add(v);
+            }
+          }
+        }
+        onAllSourceIds(Array.from(ids));
+      }
     });
   }, [subgraph]);
 
@@ -56,6 +74,17 @@ export default function CyclingQuestions({ subgraph }: CyclingQuestionsProps) {
     setCurrentIndex(i);
     setAnimKey((k) => k + 1);
   }, []);
+
+  // Stop cycling when autoPlay becomes false
+  useEffect(() => {
+    if (!autoPlay) {
+      setIsCycling(false);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+  }, [autoPlay]);
 
   // Auto-cycling
   useEffect(() => {
@@ -96,6 +125,21 @@ export default function CyclingQuestions({ subgraph }: CyclingQuestionsProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cycleToNext, cycleToPrev, stopCycling]);
 
+  // Notify parent of the current example's first param value
+  useEffect(() => {
+    if (!onExampleChange || !templates || templates.length === 0) return;
+    const tmpl = templates[currentIndex];
+    const exIdx = exampleIndices[currentIndex] ?? 0;
+    const example = tmpl.examples?.[exIdx];
+    if (example && tmpl.params?.length > 0) {
+      const firstParamId = tmpl.params[0].param_id;
+      const val = example.params[firstParamId];
+      onExampleChange(val ?? null, example.title ?? null);
+    } else {
+      onExampleChange(null, null);
+    }
+  }, [currentIndex, exampleIndices, templates, onExampleChange]);
+
   if (!templates || templates.length === 0) return null;
 
   const template = templates[currentIndex];
@@ -111,9 +155,9 @@ export default function CyclingQuestions({ subgraph }: CyclingQuestionsProps) {
         const example = template.examples?.[exIdx];
         if (example) {
           const qs = new URLSearchParams(example.params).toString();
-          navigate(`/subgraphs/${subgraph}/queries/${template.id}?${qs}`);
+          navigate(`/graphs/${subgraph}/queries/${template.id}?${qs}`);
         } else {
-          navigate(`/subgraphs/${subgraph}/queries/${template.id}`);
+          navigate(`/graphs/${subgraph}/queries/${template.id}`);
         }
       }}
       onFocus={stopCycling}

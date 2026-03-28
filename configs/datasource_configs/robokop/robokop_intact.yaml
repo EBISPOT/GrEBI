@@ -1,5 +1,6 @@
-name: Robokop.IntAct
+id: Robokop.IntAct
 enabled: true
+description: "Molecular interactions data derived from literature curation or direct user submission, from the IntAct Molecular Interaction Database"
 download:
   - dest: robokop/intact_edges.jsonl.gz
     sources:

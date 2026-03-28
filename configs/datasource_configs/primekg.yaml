@@ -1,5 +1,6 @@
-name: PrimeKG
+id: PrimeKG
 enabled: true
+description: "A precision medicine knowledge graph integrating 20 biomedical resources covering diseases, drugs, genes, and biological processes"
 download:
   - dest: primekg/kg.csv
     sources:

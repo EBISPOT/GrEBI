@@ -1,5 +1,6 @@
-name: OLS.pato
+id: OLS.pato
 enabled: true
+description: "An ontology of phenotypic qualities used in phenotype descriptions"
 download:
   - dest: ols/pato.json.gz
     sources:

@@ -1,6 +1,7 @@
 {
   "id": "dismech",
   "name": "Disorder Mechanisms Knowledge Base",
+  "description": "Integrates ontologies (phenotype, disease, anatomy, gene function), gene-disease associations (MONARCH, IMPC, GWAS Catalog, ChEMBL, CTD), and cross-species phenotype mappings to support mechanistic understanding of human disease.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

@@ -62,9 +62,9 @@ export default function QueryTable({
                         const example = template.examples?.[0];
                         if (example) {
                             const qs = new URLSearchParams(example.params).toString();
-                            navigate(`/subgraphs/${subgraph}/queries/${template.id}?${qs}`);
+                            navigate(`/graphs/${subgraph}/queries/${template.id}?${qs}`);
                         } else {
-                            navigate(`/subgraphs/${subgraph}/queries/${template.id}`);
+                            navigate(`/graphs/${subgraph}/queries/${template.id}`);
                         }
                     }}
                 >

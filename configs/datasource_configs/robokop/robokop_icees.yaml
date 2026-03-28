@@ -1,5 +1,6 @@
-name: Robokop.ICEES
+id: Robokop.ICEES
 enabled: true
+description: "Clinical data (e.g., electronic health records, survey data) integrated at the patient level with environmental exposures data (e.g., airborne pollutants, socio-economic indicators) from ICEES"
 download:
   - dest: robokop/icees_edges.jsonl.gz
     sources:

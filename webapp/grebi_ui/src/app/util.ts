@@ -84,10 +84,12 @@ export function difference(a:any[], b:any[]) {
 export function joinSearchParams(a:URLSearchParams, b?:URLSearchParams):URLSearchParams {
   let res = new URLSearchParams(a.toString())
   if(b) {
+    // Delete all keys from a that will be overridden by b
     for (let p of b) {
-      if(res.has(p[0])) {
-        res.delete(p[0])
-      }
+      res.delete(p[0])
+    }
+    // Then append all entries from b
+    for (let p of b) {
       res.append(p[0], p[1])
     }
   }

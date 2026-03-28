@@ -1,5 +1,6 @@
-name: OLS.dcterms
+id: OLS.dcterms
 enabled: true
+description: "An extended vocabulary of metadata properties building on the Dublin Core element set"
 download:
   - dest: ols/dcterms.json.gz
     sources:

@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import React, { Fragment } from "react";
-import { List, ListItem, MenuItem, Select } from "@mui/material";
+import { List, ListItem, MenuItem, Select, IconButton } from "@mui/material";
+import { InfoOutlined } from "@mui/icons-material";
 import { get, getPaginated } from "../../../app/api";
-import EbiHeader from "../EbiHeader";
 import SearchBox from "../../../components/SearchBox";
 import SubgraphPicker from "../../../components/SubgraphPicker";
 import CyclingQuestions from "../../../components/query/CyclingQuestions";
@@ -24,31 +24,62 @@ export default function EbiHomePage() {
   let [subgraphs, setSubgraphs] = useState<string[]|null>(null);
   let [subgraphNames, setSubgraphNames] = useState<Record<string, string>>({});
   let [subgraph, setSubgraph] = useState<string|null>(params.subgraph || null);
-  let [bronchiectasisNode, setBronchiectasisNode] = useState<GraphNode|null>(null);
+  let [graphNode, setGraphNode] = useState<GraphNode|null>(null);
+  let [graphLocked, setGraphLocked] = useState(false);
+  let nodeCacheRef = useRef<Record<string, GraphNode>>({});
 
 function navigateToSubgraph(sg: string) {
   let currentUrl = loc.pathname;
     setSubgraph(sg);
-  if(currentUrl.indexOf("subgraphs") !== -1) {
-    let newUrl = currentUrl.replace(/subgraphs\/[^/]+/, `subgraphs/${sg}`);
+  if(currentUrl.indexOf("graphs/") !== -1) {
+    let newUrl = currentUrl.replace(/graphs\/[^/]+/, `graphs/${sg}`);
     navigate(newUrl);
-  } 
+  } else {
+    navigate(`/graphs/${sg}`);
+  }
 }
 
 
   useEffect(() => {
     get<Stats>("api/v1/stats").then(r => setStats(r));
   }, [subgraph]);
-  useEffect(() => {
-    if (!subgraph) return;
-    getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes`, { "grebi:sourceIds": "mondo:0004822", size: "1" })
+
+  const onExampleChange = useCallback((sourceId: string | null, title: string | null) => {
+    if (!subgraph || !sourceId) return;
+    const cached = nodeCacheRef.current[sourceId];
+    if (cached) {
+      setGraphNode(cached);
+      return;
+    }
+    getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes`, { "grebi:sourceIds": sourceId, size: "1" })
       .then(r => {
         if (r.elements.length > 0) {
-          setBronchiectasisNode(new GraphNode(r.elements[0]));
+          const node = new GraphNode(r.elements[0]);
+          nodeCacheRef.current[sourceId] = node;
+          setGraphNode(node);
         }
       })
       .catch(() => {});
   }, [subgraph]);
+
+  const onAllSourceIds = useCallback((sourceIds: string[]) => {
+    if (!subgraph) return;
+    for (const sid of sourceIds) {
+      if (nodeCacheRef.current[sid]) continue;
+      getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes`, { "grebi:sourceIds": sid, size: "1" })
+        .then(r => {
+          if (r.elements.length > 0) {
+            nodeCacheRef.current[sid] = new GraphNode(r.elements[0]);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [subgraph]);
+
+  const lockGraph = useCallback(() => {
+    setGraphLocked(true);
+  }, []);
+
   useEffect(() => {
     get<string[]>("api/v1/subgraphs").then(r => {
       setSubgraphs(r)
@@ -70,9 +101,6 @@ function navigateToSubgraph(sg: string) {
 
   return (
     <div>
-        {/* <EbiHeader subgraph={subgraph} section="home" showBreadcrumbsBar={true} breadcrumbs={[
-        ]} /> */}
-        <EbiHeader subgraph={subgraph} section="home" />
       <main className="container mx-auto px-4 h-fit">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
           <div className="lg:col-span-3">
@@ -96,7 +124,7 @@ function navigateToSubgraph(sg: string) {
                     </div>
                     {subgraphs.length > 0 && (
                     <div className="flex-shrink-0">
-                      <div className="text-lg font-semibold text-gray-700 mb-2">Selected graph: <code className="font-mono">{subgraph}</code></div>
+                      <div className="text-lg font-semibold text-gray-700 mb-2">Select a graph to search</div>
                     <table className="text-sm border border-gray-200 rounded-lg overflow-hidden">
                       <thead>
                         <tr className="bg-gray-100 text-left text-gray-600 border-b border-gray-200">
@@ -104,6 +132,7 @@ function navigateToSubgraph(sg: string) {
                           <th className="py-2 px-3 font-medium">Name</th>
                           <th className="py-2 px-3 font-medium text-right">Nodes</th>
                           <th className="py-2 px-3 font-medium text-right">Edges</th>
+                          <th className="py-2 px-3 w-8"></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -129,6 +158,13 @@ function navigateToSubgraph(sg: string) {
                             </td>
                             <td className="py-2 px-3 text-right tabular-nums text-gray-600">
                               {stats && stats[sg] ? stats[sg].num_edges.toLocaleString() : '—'}
+                            </td>
+                            <td className="py-2 px-3">
+                              <Link to={`/graphs/${sg}`} onClick={(e) => e.stopPropagation()}>
+                                <IconButton size="small" title="Subgraph info">
+                                  <InfoOutlined fontSize="small" />
+                                </IconButton>
+                              </Link>
                             </td>
                           </tr>
                         ))}
@@ -160,20 +196,20 @@ function navigateToSubgraph(sg: string) {
 
           {subgraph && (
             <div className="mt-2 mb-8">
-              <CyclingQuestions subgraph={subgraph} />
+              <CyclingQuestions subgraph={subgraph} autoPlay={!graphLocked} onExampleChange={onExampleChange} onAllSourceIds={onAllSourceIds} />
             </div>
           )}
 
 
 
 
-{subgraph && bronchiectasisNode && (
+{subgraph && graphNode && (
           <div className="mt-8">
-            <div className="text-xl font-bold mb-2 text-neutral-black">
-              Exploring a disease network: Bronchiectasis
-            </div>
-            <div style={{ height: "600px", border: "1px solid #e0e0e0", borderRadius: "8px", overflow: "hidden", position: "relative" }}>
-              <GraphView subgraph={subgraph} node={bronchiectasisNode} />
+            <div
+              style={{ height: "600px", border: "1px solid #e0e0e0", borderRadius: "8px", overflow: "hidden", position: "relative" }}
+              onMouseDown={lockGraph}
+            >
+              <GraphView subgraph={subgraph} node={graphNode} />
             </div>
           </div>
         )}

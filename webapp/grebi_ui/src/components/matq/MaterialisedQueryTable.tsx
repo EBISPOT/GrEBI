@@ -81,7 +81,7 @@ export default function MaterialisedQueryTable({
                     defaultSelector={(row,key)=>row[key]}
                     columns={cols}
                     onSelectRow={(row) => {
-                        navigate(`/subgraphs/${row['subgraph']}/tables/${row['id']}`)
+                        navigate(`/graphs/${row['subgraph']}/tables/${row['id']}`)
                     }}
                     />
 

@@ -1,5 +1,6 @@
-name: MedGen
+id: MedGen
 enabled: true
+description: "NCBI's portal for medical genetics information, providing concepts and relationships for inherited conditions"
 download:
   - dest: medgen/medgen.obo
     sources:

@@ -1,5 +1,6 @@
-name: OLS.ro
+id: OLS.ro
 enabled: true
+description: "A collection of OBO Foundry relation types used across biomedical ontologies"
 download:
   - dest: ols/ro.json.gz
     sources:

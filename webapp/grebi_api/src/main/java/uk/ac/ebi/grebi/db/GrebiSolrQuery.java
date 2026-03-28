@@ -13,6 +13,7 @@ public class GrebiSolrQuery {
     List<SearchField> searchFields = new ArrayList<>();
     List<BoostField> boostFields = new ArrayList<>();
     List<String> facetFields = new ArrayList<>();
+    int facetLimit = 100;
     List<Filter> filters = new ArrayList<>();
     List<String> returnFields = new ArrayList<>();
 
@@ -42,6 +43,10 @@ public class GrebiSolrQuery {
 
     public void addFacetField(String propertyName) {
         this.facetFields.add(propertyName);
+    }
+
+    public void setFacetLimit(int limit) {
+        this.facetLimit = limit;
     }
 
     public void addFilter(String propertyName, Collection<String> propertyValues, SearchType searchType, boolean negate) {
@@ -157,6 +162,7 @@ public class GrebiSolrQuery {
                 query.addFacetField("{!ex=grebifacet}" + facetField.replace(":", "__"));
             }
             query.setFacetMinCount(1);
+            query.setFacetLimit(facetLimit);
         }
 
         return query;

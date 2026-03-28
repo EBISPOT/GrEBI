@@ -105,7 +105,7 @@ export default function EdgeMetadataDialog({
                     <b>From:</b>{" "}
                     <Link
                       className="link-default"
-                      to={`/subgraphs/${subgraph}/nodes/${fromNode.getEncodedNodeId()}`}
+                      to={`/graphs/${subgraph}/nodes/${fromNode.getEncodedNodeId()}`}
                     >
                       {fromNode.getName()}
                     </Link>
@@ -124,7 +124,7 @@ export default function EdgeMetadataDialog({
                     <b>&rarr;</b>{" "}
                     <Link
                       className="link-default"
-                      to={`/subgraphs/${subgraph}/nodes/${toNode.getEncodedNodeId()}`}
+                      to={`/graphs/${subgraph}/nodes/${toNode.getEncodedNodeId()}`}
                     >
                       {toNode.getName()}
                     </Link>

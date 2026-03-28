@@ -1,5 +1,6 @@
-name: IMPC
+id: IMPC
 enabled: true
+description: "Experimental observations including categorical, time series, and unidimensional phenotype measurements from mouse knockout studies"
 download:
   - dest: impc/categorical_observation_json/
     sources:

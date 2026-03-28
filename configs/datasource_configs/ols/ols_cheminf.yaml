@@ -1,5 +1,6 @@
-name: OLS.cheminf
+id: OLS.cheminf
 enabled: true
+description: "An ontology for the description of chemical information and chemical entities"
 download:
   - dest: ols/cheminf.json.gz
     sources:

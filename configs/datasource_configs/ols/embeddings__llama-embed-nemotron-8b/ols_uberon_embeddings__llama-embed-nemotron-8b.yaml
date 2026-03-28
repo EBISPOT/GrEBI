@@ -1,4 +1,4 @@
-name: OLS.uberon
+id: OLS.uberon
 enabled: true
 download:
   - dest: ols_embeddings/llama-embed-nemotron-8b_pca512/uberon.parquet.gz

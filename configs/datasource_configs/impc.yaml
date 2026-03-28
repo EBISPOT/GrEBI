@@ -1,5 +1,6 @@
-name: IMPC
+id: IMPC
 enabled: true
+description: "Mouse gene, specimen, experiment, and gene-phenotype association data from systematic mouse knockout phenotyping"
 download:
   - dest: impc/mouse_gene_json/
     sources:

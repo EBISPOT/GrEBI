@@ -1,5 +1,6 @@
-name: CTD
+id: CTD
 enabled: true
+description: "Curated chemical-gene, chemical-disease, and gene-disease interactions with pathway and GO annotations"
 download:
   - dest: ctd/CTD_anatomy.tsv.gz
     sources:

@@ -1,5 +1,6 @@
-name: HETT_Pesticides.APPRIL
+id: HETT_Pesticides.APPRIL
 enabled: true
+description: "Australian Pesticides and Veterinary Medicines Authority approved pesticides data"
 download:
   - dest: hett_pesticides/apprildatadump_public.xlsx
     sources:

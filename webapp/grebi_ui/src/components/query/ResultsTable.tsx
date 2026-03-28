@@ -73,7 +73,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
         const node = new GraphNodeRef(val);
         return (
           <Link
-            to={`/subgraphs/${subgraph}/nodes/${node.getEncodedNodeId()}`}
+            to={`/graphs/${subgraph}/nodes/${node.getEncodedNodeId()}`}
           >
             {node.getName()}
           </Link>

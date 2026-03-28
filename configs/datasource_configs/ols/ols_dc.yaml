@@ -1,5 +1,6 @@
-name: OLS.dc
+id: OLS.dc
 enabled: true
+description: "A vocabulary of metadata properties for resource description"
 download:
   - dest: ols/dc.json.gz
     sources:

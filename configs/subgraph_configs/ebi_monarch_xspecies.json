@@ -1,6 +1,7 @@
 {
   "id": "EBI_MONARCH_XSPECIES",
   "name": "EBI Resources and MONARCH Initiative KG with merged cross-species phenotypes",
+  "description": "Same as the EBI+MONARCH graph but with cross-species phenotype equivalences merged, enabling queries that link mouse and zebrafish phenotypes to human disease phenotypes.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

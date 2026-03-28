@@ -1,5 +1,6 @@
-name: OLS.ncbitaxon
+id: OLS.ncbitaxon
 enabled: true
+description: "The NCBI organismal classification covering all publicly available nucleotide and protein sequences"
 download:
   - dest: ols/ncbitaxon.json.gz
     sources:

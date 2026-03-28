@@ -1,5 +1,6 @@
-name: Robokop.GTEx
+id: Robokop.GTEx
 enabled: true
+description: "Tissue-specific gene expression and regulation data derived from molecular assays on 54 non-diseased tissue sites across nearly 1000 individuals, from the GTEx portal"
 download:
   - dest: robokop/gtex_edges.jsonl.gz
     sources:

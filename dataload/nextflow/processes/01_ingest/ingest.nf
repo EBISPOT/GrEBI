@@ -11,14 +11,15 @@ process ingest {
     val(bytes_per_merged_file)
 
     output:
-    tuple val(file_listing.datasource.name), path("nodes_${task.index}.jsonl.*"), emit: nodes
+    tuple val(file_listing.datasource.id), path("nodes_${task.index}.jsonl.*"), emit: nodes
     path("identifiers_${task.index}.tsv"), emit: identifiers
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    export GREBI_INGEST_DATASOURCE_NAME=${file_listing.datasource.name}
+    export GREBI_DATASOURCE_ID=${file_listing.datasource.id}
+    export GREBI_INGEST_DATASOURCE_NAME=${file_listing.datasource.id}
     export GREBI_INGEST_FILENAME=${file_listing.filename}
     export GREBI_DATALOAD_HOME=/opt/grebi_dataload
     echo "Ingesting: \$GREBI_INGEST_FILENAME"

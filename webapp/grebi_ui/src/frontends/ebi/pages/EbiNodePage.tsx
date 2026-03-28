@@ -8,7 +8,7 @@ import {
 } from "react-router-dom";
 import { Helmet } from 'react-helmet'
 import React from "react";
-import EbiHeader from "../EbiHeader";
+import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
 import { FormatListBulleted, CallReceived, CallMade, Share, AutoAwesome } from "@mui/icons-material";
 import { Typography, Grid, Tabs, Tab, Box } from "@mui/material";
 import { copyToClipboard } from "../../../app/util";
@@ -23,6 +23,7 @@ import encodeNodeId from "../../../encodeNodeId";
 import EdgesList from "../../../components/node_edge_list/EdgesList";
 import NodeLinks from "../../../components/NodeLinks";
 import NodeSimilarList from "../../../components/NodeSimilarList";
+import { useEmbeddingModels } from "../../../app/useEmbeddingModels";
 
 
 export default function EbiNodePage() {
@@ -34,7 +35,7 @@ export default function EbiNodePage() {
 
   let [node, setNode] = useState<GraphNode|null>(null);
   const tab = searchParams.get("tab") || "graph";
-  const [hasEmbeddingModels, setHasEmbeddingModels] = useState<boolean>(false);
+  const { availableModels, selectedModel, setSelectedModel, hasEmbeddingModels } = useEmbeddingModels(subgraph);
 
   useEffect(() => {
     async function getNode() {
@@ -44,26 +45,15 @@ export default function EbiNodePage() {
     getNode()
   }, [nodeId, lang]);
 
-  useEffect(() => {
-    async function fetchModels() {
-      try {
-        const models = await get<{model: string, can_embed: boolean}[]>(`api/v1/subgraphs/${subgraph}/embedding_models`);
-        setHasEmbeddingModels(models != null && models.length > 0);
-      } catch (e) {
-        setHasEmbeddingModels(false);
-      }
-    }
-    fetchModels();
-  }, [subgraph]);
-
   return (
     <div>
-      <EbiHeader section="explore" subgraph={subgraph} showBreadcrumbsBar={true} breadcrumbs={[
+      <EbiBreadcrumbsBar subgraph={subgraph} entries={[
 
-        { url: `/subgraphs/${subgraph}`, label: "Nodes" },
+        { url: `/graphs`, label: "Graphs" },
+        { url: `/graphs/${subgraph}`, label: "Nodes" },
 
         ...(node ? (
-          [{ url: `/subgraphs/${subgraph}/nodes/${encodeNodeId(nodeId)}`, label: node.getName() }]
+          [{ url: `/graphs/${subgraph}/nodes/${encodeNodeId(nodeId)}`, label: node.getName() }]
         ) : [])
 
       ]} />
@@ -75,7 +65,7 @@ export default function EbiNodePage() {
         { node == null && <LoadingOverlay message="Loading node..." /> }
         {node !== null &&
       <main className="container mx-auto px-4 pt-1">
-        <SearchBox subgraph={subgraph} />
+        <SearchBox subgraph={subgraph} availableModels={availableModels} selectedModel={selectedModel} onModelChange={setSelectedModel} />
         <div className="text-center pb-5">
         <Typography variant="h5">{node.getName()} {
           node.extractType()?.longName && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.longName}</span>}</Typography>
@@ -123,7 +113,7 @@ export default function EbiNodePage() {
           <EdgesList direction="outgoing" subgraph={subgraph} node={node} />
         </TabPanel>
         {hasEmbeddingModels && <TabPanel value={tab} index={"similar"}>
-         <NodeSimilarList subgraph={subgraph} node={node} />
+         <NodeSimilarList subgraph={subgraph} node={node} model={selectedModel} />
         </TabPanel>}
         </Grid>
         </Grid>

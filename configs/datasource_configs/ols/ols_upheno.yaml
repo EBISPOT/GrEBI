@@ -1,5 +1,6 @@
-name: OLS.upheno
+id: OLS.upheno
 enabled: true
+description: "A cross-species phenotype ontology integrating species-specific phenotype ontologies"
 download:
   - dest: ols/upheno.json.gz
     sources:

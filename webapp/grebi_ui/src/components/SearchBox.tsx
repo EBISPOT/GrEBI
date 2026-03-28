@@ -26,7 +26,10 @@ export default function SearchBox({
   collectionId,
   showExact,
   showSuggestions,
-  additionalParams
+  additionalParams,
+  availableModels: controlledModels,
+  selectedModel: controlledSelectedModel,
+  onModelChange: controlledOnModelChange,
 }: {
   subgraph:string,
   initialQuery?: string;
@@ -34,7 +37,10 @@ export default function SearchBox({
   collectionId?: string;
   showExact?: boolean;
   showSuggestions?: boolean;
-  additionalParams?:URLSearchParams
+  additionalParams?:URLSearchParams;
+  availableModels?: {model: string, can_embed: boolean}[];
+  selectedModel?: string;
+  onModelChange?: (model: string) => void;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   //   let lang = searchParams.get("lang") || "en";
@@ -49,41 +55,48 @@ export default function SearchBox({
     number | undefined
   >(undefined);
 
-  const [availableModels, setAvailableModels] = useState<{model: string, can_embed: boolean}[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>(searchParams.get("model") || "");
+  const [internalModels, setInternalModels] = useState<{model: string, can_embed: boolean}[]>([]);
+  const [internalSelectedModel, setInternalSelectedModel] = useState<string>(searchParams.get("model") || "");
+
+  const isControlled = controlledModels !== undefined;
+  const availableModels = isControlled ? controlledModels : internalModels;
+  const selectedModel = isControlled ? (controlledSelectedModel || "") : internalSelectedModel;
+  const handleModelChange = useCallback(
+    (model: string) => {
+      if (isControlled && controlledOnModelChange) {
+        controlledOnModelChange(model);
+      } else {
+        setInternalSelectedModel(model);
+      }
+    },
+    [isControlled, controlledOnModelChange]
+  );
 
   useEffect(() => {
+    if (isControlled) return;
     async function fetchModels() {
       try {
         const models = await get<{model: string, can_embed: boolean}[]>(`api/v1/subgraphs/${subgraph}/embedding_models`);
-        setAvailableModels(models || []);
-        // Default to first available embedding model alphabetically, if no model param set
+        setInternalModels(models || []);
         if (!searchParams.get("model") && models && models.length > 0) {
           const embeddable = models.filter(m => m.can_embed).sort((a, b) => a.model.localeCompare(b.model));
           if (embeddable.length > 0) {
-            setSelectedModel(embeddable[0].model);
+            setInternalSelectedModel(embeddable[0].model);
           } else {
-            setSelectedModel("lexical");
+            setInternalSelectedModel("lexical");
           }
         } else if (!searchParams.get("model")) {
-          setSelectedModel("lexical");
+          setInternalSelectedModel("lexical");
         }
       } catch (e) {
-        setAvailableModels([]);
+        setInternalModels([]);
         if (!searchParams.get("model")) {
-          setSelectedModel("lexical");
+          setInternalSelectedModel("lexical");
         }
       }
     }
     fetchModels();
-  }, [subgraph]);
-
-  const handleModelChange = useCallback(
-    (model: string) => {
-      setSelectedModel(model);
-    },
-    []
-  );
+  }, [subgraph, isControlled]);
 
   const isEmbeddingSearch = selectedModel && selectedModel !== "lexical";
 
@@ -195,7 +208,7 @@ export default function SearchBox({
       searchParams.set("q", text);
       if (collectionId) searchParams.set("collection", collectionId);
 
-      var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
+      var linkUrl = `/graphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
 
       return {
         linkUrl,
@@ -313,7 +326,7 @@ export default function SearchBox({
                       searchParams.delete("model");
                     }
 
-                    var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
+                    var linkUrl = `/graphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
                     navigate(linkUrl);
                   }
                 } else if (ev.key === "ArrowDown") {
@@ -375,7 +388,7 @@ export default function SearchBox({
                         params.delete("model");
                       }
 
-                      var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
+                      var linkUrl = `/graphs/${subgraph}/search?${new URLSearchParams(params)}`;
 
                       navigate(linkUrl);
                     }
@@ -401,7 +414,7 @@ export default function SearchBox({
                     params.delete("model");
                   }
 
-                  var linkUrl = `/subgraphs/${subgraph}/search?${new URLSearchParams(params)}`;
+                  var linkUrl = `/graphs/${subgraph}/search?${new URLSearchParams(params)}`;
 
                   navigate(linkUrl);
                 }

@@ -1,5 +1,6 @@
-name: GWAS
+id: GWAS
 enabled: true
+description: "The NHGRI-EBI Catalog of Genome-Wide Association Studies, linking genetic variants to traits and diseases"
 download:
   - dest: gwas/
     sources:

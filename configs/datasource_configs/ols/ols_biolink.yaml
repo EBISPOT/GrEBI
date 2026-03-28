@@ -1,5 +1,6 @@
-name: OLS.biolink
+id: OLS.biolink
 enabled: true
+description: "A high-level data model for representing biomedical knowledge graphs"
 download:
   - dest: ols/biolink.json.gz
     sources:

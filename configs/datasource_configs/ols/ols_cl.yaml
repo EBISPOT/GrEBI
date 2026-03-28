@@ -1,5 +1,6 @@
-name: OLS.cl
+id: OLS.cl
 enabled: true
+description: "An ontology of cell types covering both prokaryotic and eukaryotic cells"
 download:
   - dest: ols/cl.json.gz
     sources:

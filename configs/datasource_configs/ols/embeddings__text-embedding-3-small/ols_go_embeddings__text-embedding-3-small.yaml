@@ -1,4 +1,4 @@
-name: OLS.go
+id: OLS.go
 enabled: true
 download:
   - dest: ols_embeddings/text-embedding-3-small_pca512/go.parquet.gz

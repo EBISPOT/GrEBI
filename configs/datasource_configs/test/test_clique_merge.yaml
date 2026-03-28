@@ -1,5 +1,6 @@
-name: TestCliqueMerge
+id: TestCliqueMerge
 enabled: true
+description: "Test datasource for clique merge testing"
 download:
   - dest: test_clique_merge/edges.jsonl
     sources:

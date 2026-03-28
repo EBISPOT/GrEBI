@@ -1,4 +1,4 @@
-name: OLS.ro
+id: OLS.ro
 enabled: true
 download:
   - dest: ols_embeddings/llama-embed-nemotron-8b_pca512/ro.parquet.gz

@@ -1,5 +1,6 @@
-name: Robokop.PANTHER
+id: Robokop.PANTHER
 enabled: true
+description: "Gene family phylogenetic trees with annotations for family, protein class, subfamily, orthologs, paralogs, GO function, and Reactome pathways, from the PANTHER classification system"
 download:
   - dest: robokop/panther_edges.jsonl.gz
     sources:

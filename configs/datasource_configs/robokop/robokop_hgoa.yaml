@@ -1,5 +1,6 @@
-name: Robokop.HumanGOA
+id: Robokop.HumanGOA
 enabled: true
+description: "Curated GO term assignments to proteins in UniProtKB, RNA molecules from RNACentral, and protein complexes from the Complex Portal, from the GO Consortium's Human GOA resource"
 download:
   - dest: robokop/hgoa_edges.jsonl.gz
     sources:

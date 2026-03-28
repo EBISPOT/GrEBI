@@ -1,6 +1,7 @@
 {
   "id": "IMPC",
   "name": "International Mouse Phenotyping Consortium (IMPC)",
+  "description": "IMPC mouse phenotyping data linked to ontologies, enabling discovery of gene function through systematic knockout phenotyping.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

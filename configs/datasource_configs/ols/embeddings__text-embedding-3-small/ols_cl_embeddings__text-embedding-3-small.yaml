@@ -1,4 +1,4 @@
-name: OLS.cl
+id: OLS.cl
 enabled: true
 download:
   - dest: ols_embeddings/text-embedding-3-small_pca512/cl.parquet.gz

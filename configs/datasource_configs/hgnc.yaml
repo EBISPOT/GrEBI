@@ -1,5 +1,6 @@
-name: HGNC
+id: HGNC
 enabled: true
+description: "The authoritative resource for approved human gene symbols and names"
 download:
   - dest: hgnc/hgnc_complete_set.json
     sources:

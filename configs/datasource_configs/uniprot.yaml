@@ -1,5 +1,6 @@
-name: UniProt
+id: UniProt
 enabled: true
+description: "The Universal Protein Resource providing comprehensive, high-quality protein sequence and functional annotation data"
 download:
   - dest: uniprot/
     sources:

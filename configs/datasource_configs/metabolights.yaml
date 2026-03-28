@@ -1,5 +1,6 @@
-name: Metabolights
+id: Metabolights
 enabled: true
+description: "EMBL-EBI's database for metabolomics experiments, including study metadata and chemical compound information"
 download:
   - dest: metabolights/eb-eye_metabolights_complete.xml
     sources:

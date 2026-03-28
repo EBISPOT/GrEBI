@@ -108,12 +108,44 @@ public class GrebiPostgresRepo {
     }
 
     /**
-     * Extract from/to node refs from the _refs JSONB field already stored in the edge row.
+     * Search edges with optional filters (no required node ID).
+     */
+    public GrebiFacetedResultsPage<Map<String, Object>> searchEdges(
+            String subgraph,
+            Map<String, List<String>> filters,
+            String sortField, String sortDir,
+            Pageable pageable) {
+
+        var result = pgClient.searchEdges(subgraph, filters, sortField, sortDir,
+                (int) pageable.getOffset(), pageable.getPageSize());
+
+        List<Map<String, Object>> enriched = new ArrayList<>();
+        for (var edge : result.results) {
+            enriched.add(attachFromTo(edge));
+        }
+
+        return new GrebiFacetedResultsPage<>(
+                enriched,
+                result.facets,
+                pageable,
+                result.totalCount
+        );
+    }
+
+    /**
+     * Extract from/to node refs from the _refs field stored in the edge row.
+     * _refs is a TEXT column containing JSON, so it may arrive as a String
+     * (from row_to_json) or a Map (from explicit parsing in queryEdgeRefs).
      */
     @SuppressWarnings("unchecked")
     private Map<String, Object> attachFromTo(Map<String, Object> edge) {
         Map<String, Object> retEdge = new LinkedHashMap<>(edge);
         Object refsObj = edge.get("_refs");
+        if (refsObj instanceof String) {
+            refsObj = new com.google.gson.Gson().fromJson((String) refsObj,
+                    new com.google.gson.reflect.TypeToken<Map<String, Object>>() {}.getType());
+            retEdge.put("_refs", refsObj);
+        }
         if (refsObj instanceof Map) {
             Map<String, Object> refs = (Map<String, Object>) refsObj;
             Object fromId = edge.get("grebi:fromNodeId");

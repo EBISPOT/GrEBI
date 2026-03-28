@@ -1,5 +1,6 @@
-name: TestMultiDatasourceB
+id: TestMultiDatasourceB
 enabled: true
+description: "Test datasource B for multi-datasource merge testing"
 download:
   - dest: test_multi_datasource/source_b_edges.jsonl
     sources:

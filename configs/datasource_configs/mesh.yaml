@@ -1,5 +1,6 @@
-name: MeSH
+id: MeSH
 enabled: true
+description: "The NLM controlled vocabulary thesaurus used for indexing articles in PubMed"
 download:
   - dest: mesh/mesh2024.nt.gz
     sources:

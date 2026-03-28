@@ -1,5 +1,6 @@
-name: OLS.mondo
+id: OLS.mondo
 enabled: true
+description: "A harmonised disease ontology integrating multiple disease classifications"
 download:
   - dest: ols/mondo.json.gz
     sources:

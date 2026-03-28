@@ -1,5 +1,6 @@
-name: AOPWiki
+id: AOPWiki
 enabled: true
+description: "A knowledge base of adverse outcome pathways linking molecular initiating events to adverse outcomes via key events"
 download:
   - dest: aopwiki/AOPWikiRDF.ttl
     sources:

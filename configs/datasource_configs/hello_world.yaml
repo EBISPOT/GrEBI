@@ -1,5 +1,6 @@
-name: HelloWorld
+id: HelloWorld
 enabled: true
+description: "A minimal test datasource used for development and testing of the GrEBI pipeline"
 download:
   - dest: hello_world/valid_edges.jsonl
     sources:

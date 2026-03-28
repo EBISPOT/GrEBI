@@ -1,5 +1,6 @@
-name: ChEMBL
+id: ChEMBL
 enabled: true
+description: "EMBL-EBI's database of bioactive drug-like small molecules, including compound structures, targets, and bioactivity data"
 download:
   - dest: chembl/chembl_34.0_molecule.ttl.gz
     sources:

@@ -1,5 +1,6 @@
-name: HETT_Pesticides.GB
+id: HETT_Pesticides.GB
 enabled: true
+description: "Great Britain Health and Safety Executive approved active substances register"
 download:
   - dest: hett_pesticides/active-substance-register.xlsx
     sources:

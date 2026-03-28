@@ -1,6 +1,7 @@
 {
   "id": "IMPC x GWAS",
   "name": "IMPC and the GWAS Catalog",
+  "description": "Links IMPC mouse phenotyping results with GWAS Catalog human genetic associations to find mouse models for human disease-associated genes.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

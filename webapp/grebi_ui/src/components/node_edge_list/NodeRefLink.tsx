@@ -14,7 +14,7 @@ export default function NodeRefLink({
 }) {
     let type = nodeRef.extractType()
 
-    var linkUrl = `/subgraphs/${subgraph}/nodes/${nodeRef.getEncodedNodeId()}`;
+    var linkUrl = `/graphs/${subgraph}/nodes/${nodeRef.getEncodedNodeId()}`;
 
     return <Link to={linkUrl}>
         {nodeRef.getName()}

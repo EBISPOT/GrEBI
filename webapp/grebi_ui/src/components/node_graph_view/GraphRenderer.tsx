@@ -317,6 +317,7 @@ export default function GraphRenderer({
       stagePadding: 60,
       minEdgeThickness: 1,
       zoomDuration: 200,
+      minCameraRatio: 1,
       autoRescale: true,
       autoCenter: true,
       itemSizesReference: "positions",

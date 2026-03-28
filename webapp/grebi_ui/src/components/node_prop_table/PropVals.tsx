@@ -106,7 +106,7 @@ function PropValue(params:{subgraph:string,refs:Refs,value:PropVal,monospace:boo
   
     // todo mapped value datasources
     if(mapped_value) {
-        var linkUrl =  "/subgraphs/" + subgraph + "/nodes/" + encodeNodeId(value.value);
+        var linkUrl =  "/graphs/" + subgraph + "/nodes/" + encodeNodeId(value.value);
       return (
         <span className="mr-0">
           {separator} <Link className="link-default" to={linkUrl}>{

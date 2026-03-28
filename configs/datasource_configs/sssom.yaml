@@ -1,5 +1,6 @@
-name: SSSOM
+id: SSSOM
 enabled: true
+description: "Standardised cross-species and cross-ontology entity mappings from the Monarch Initiative"
 download:
   - dest: sssom/gene_mappings.sssom.tsv
     sources:

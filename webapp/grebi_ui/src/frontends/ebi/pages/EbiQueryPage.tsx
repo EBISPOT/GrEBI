@@ -1,6 +1,6 @@
 import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import MaterialisedQueryTable from "../../../components/matq/MaterialisedQueryTable";
-import EbiHeader from "../EbiHeader";
+import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
 import { useEffect, useState } from "react";
 import { Link, Typography } from "@mui/material";
 import ResultsTable from "../../../components/matq/ResultsTable";
@@ -31,13 +31,14 @@ export default function EbiQueriesPage() {
   }
 
   let breadcrumbs = [
-    { url: `/subgraphs/${subgraph}/queries`, label: "Queries" },
-    { url: `/subgraphs/${subgraph}/queries/${queryid}`, label: <code>{queryid}</code> }
+    { url: `/graphs`, label: "Graphs" },
+    { url: `/graphs/${subgraph}/queries`, label: "Queries" },
+    { url: `/graphs/${subgraph}/queries/${queryid}`, label: <code>{queryid}</code> }
   ]
 
     return (
         <div>
-        <EbiHeader section="queries" subgraph={subgraph} showBreadcrumbsBar={true} breadcrumbs={breadcrumbs} />
+        <EbiBreadcrumbsBar subgraph={subgraph} entries={breadcrumbs} />
         <main className="container mx-auto px-4 h-fit pt-2">
 
           { !queryTemplate && 

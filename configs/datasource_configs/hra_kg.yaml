@@ -1,5 +1,6 @@
-name: HRA
+id: HRA
 enabled: true
+description: "Anatomical structure data from the NIH Human BioMolecular Atlas Program (HuBMAP)"
 download:
   - dest: hra_kg/graph.nt
     sources:

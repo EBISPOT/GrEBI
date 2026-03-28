@@ -1,5 +1,6 @@
-name: TestTypeHierarchy
+id: TestTypeHierarchy
 enabled: true
+description: "Test datasource for type hierarchy testing"
 download:
   - dest: test_type_hierarchy/edges.jsonl
     sources:

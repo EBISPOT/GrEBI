@@ -1,4 +1,4 @@
-name: OLS.chebi
+id: OLS.chebi
 enabled: true
 download:
   - dest: ols_embeddings/text-embedding-3-small_pca512/chebi.parquet.gz

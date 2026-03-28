@@ -1,5 +1,6 @@
-name: OLS.bspo
+id: OLS.bspo
 enabled: true
+description: "An ontology for representing spatial and anatomical directions and axes"
 download:
   - dest: ols/bspo.json.gz
     sources:

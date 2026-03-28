@@ -1,4 +1,4 @@
-name: OLS.cheminf
+id: OLS.cheminf
 enabled: true
 download:
   - dest: ols_embeddings/text-embedding-3-small_pca512/cheminf.parquet.gz

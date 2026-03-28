@@ -1,4 +1,4 @@
-name: OLS.so
+id: OLS.so
 enabled: true
 download:
   - dest: ols_embeddings/llama-embed-nemotron-8b_pca512/so.parquet.gz

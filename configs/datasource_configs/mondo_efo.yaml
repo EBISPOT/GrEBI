@@ -1,5 +1,6 @@
-name: EFO.mappings
+id: EFO.mappings
 enabled: true
+description: "Curated mappings between the Mondo Disease Ontology and the Experimental Factor Ontology (EFO)"
 download:
   - dest: mondo_efo/mondo_efo_mappings.tsv
     sources:

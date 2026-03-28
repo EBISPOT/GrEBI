@@ -6,6 +6,7 @@ process index {
     input:
     val(merged_filenames)
     val(subgraph)
+    val(subgraph_config_json_path)
 
     output:
     path("entity_metadata.jsonl"), emit: entity_metadata_jsonl
@@ -20,7 +21,7 @@ process index {
     cat ${merged_filenames.iterator().join(" ")} \
         | grebi_index \
         --subgraph-name ${subgraph} \
-        --subgraph-config-json-path ${params.grebi_home}/configs/subgraph_configs/${subgraph}.json \
+        --subgraph-config-json-path ${subgraph_config_json_path} \
         --out-entity-metadata-jsonl-path entity_metadata.jsonl \
         --out-graph-metadata-json-path graph_metadata.json \
         --out-names-txt names.txt \

@@ -1,5 +1,6 @@
-name: OLS.oba
+id: OLS.oba
 enabled: true
+description: "An ontology of biological attributes covering organism-level traits and characteristics"
 download:
   - dest: ols/oba.json.gz
     sources:

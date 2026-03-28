@@ -1,5 +1,6 @@
-name: HETT_Pesticides.EU
+id: HETT_Pesticides.EU
 enabled: true
+description: "European Union approved active substances for plant protection products"
 download:
   - dest: hett_pesticides/ActiveSubstanceExport.xlsx
     sources:

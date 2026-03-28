@@ -1,5 +1,6 @@
-name: OpenTargets
+id: OpenTargets
 enabled: true
+description: "Drug indication data linking drugs to their therapeutic indications from the Open Targets evidence pipeline"
 download:
   - dest: otar/drug_indication/
     sources:

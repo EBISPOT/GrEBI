@@ -1,5 +1,6 @@
-name: Robokop.BINDING
+id: Robokop.BINDING
 enabled: true
+description: "Curated data on chemical entities and their molecular targets from the Binding DataBase (BindingDB)"
 download:
   - dest: robokop/binding_edges.jsonl.gz
     sources:

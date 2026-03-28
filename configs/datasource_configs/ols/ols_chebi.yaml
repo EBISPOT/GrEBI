@@ -1,5 +1,6 @@
-name: OLS.chebi
+id: OLS.chebi
 enabled: true
+description: "An ontology of molecular entities focused on small chemical compounds"
 download:
   - dest: ols/chebi.json.gz
     sources:

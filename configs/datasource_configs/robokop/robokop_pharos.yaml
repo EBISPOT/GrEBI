@@ -1,5 +1,6 @@
-name: Robokop.Pharos
+id: Robokop.Pharos
 enabled: true
+description: "Comprehensive knowledge-base for the Druggable Genome focusing on G-protein-coupled receptors, ion channels, and kinases, from the Pharos/IDG Knowledge Management Center"
 download:
   - dest: robokop/pharos_edges.jsonl.gz
     sources:

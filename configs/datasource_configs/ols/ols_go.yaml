@@ -1,5 +1,6 @@
-name: OLS.go
+id: OLS.go
 enabled: true
+description: "The comprehensive ontology of gene functions, biological processes, and cellular components"
 download:
   - dest: ols/go.json.gz
     sources:

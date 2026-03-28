@@ -1,5 +1,6 @@
-name: Robokop.TextMining
+id: Robokop.TextMining
 enabled: true
+description: "Subject-predicate-object assertions derived from NLP applied to PubMedCentral Open Access publications and PubMed titles/abstracts, from the Text Mining Provider KG"
 download:
   - dest: robokop/textmining_edges.jsonl.gz
     sources:

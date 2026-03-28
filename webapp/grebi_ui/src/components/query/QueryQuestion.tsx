@@ -170,7 +170,7 @@ export default function QueryQuestion({
       if (urlParams && autoNavigate) {
         setNavigatedViaAutocomplete(true);
         const qs = new URLSearchParams(urlParams).toString();
-        navigate(`/subgraphs/${subgraph}/queries/${template.id}?${qs}`);
+        navigate(`/graphs/${subgraph}/queries/${template.id}?${qs}`);
       }
       if (urlParams && onAllParamsFilled) {
         onAllParamsFilled(urlParams);
@@ -239,7 +239,7 @@ export default function QueryQuestion({
     const urlParams = buildUrlParams();
     if (urlParams) {
       const qs = new URLSearchParams(urlParams).toString();
-      navigate(`/subgraphs/${subgraph}/queries/${template.id}?${qs}`);
+      navigate(`/graphs/${subgraph}/queries/${template.id}?${qs}`);
     }
   }, [buildUrlParams, navigate, subgraph, template.id]);
 

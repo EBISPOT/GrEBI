@@ -1,5 +1,6 @@
-name: Robokop.Alliance
+id: Robokop.Alliance
 enabled: true
+description: "Integrated view of data from seven model organism databases and the GO Consortium, including benchmarked ortholog results and curated ortholog inferences, from the Alliance of Genome Resources"
 download:
   - dest: robokop/alliance_edges.jsonl.gz
     sources:

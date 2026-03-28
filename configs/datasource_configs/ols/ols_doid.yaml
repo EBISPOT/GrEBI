@@ -1,5 +1,6 @@
-name: OLS.doid
+id: OLS.doid
 enabled: true
+description: "An ontology providing consistent, reusable descriptions of human disease terms"
 download:
   - dest: ols/doid.json.gz
     sources:

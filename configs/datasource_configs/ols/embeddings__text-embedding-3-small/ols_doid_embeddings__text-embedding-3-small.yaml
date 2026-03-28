@@ -1,4 +1,4 @@
-name: OLS.doid
+id: OLS.doid
 enabled: true
 download:
   - dest: ols_embeddings/text-embedding-3-small_pca512/doid.parquet.gz

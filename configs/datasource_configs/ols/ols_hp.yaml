@@ -1,5 +1,6 @@
-name: OLS.hp
+id: OLS.hp
 enabled: true
+description: "Standardised vocabulary of phenotypic abnormalities encountered in human disease"
 download:
   - dest: ols/hp.json.gz
     sources:

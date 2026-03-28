@@ -1,5 +1,6 @@
-name: OpenTargets
+id: OpenTargets
 enabled: true
+description: "Drug molecule data including compound information from the Open Targets evidence pipeline"
 download:
   - dest: otar/drug_molecule/
     sources:

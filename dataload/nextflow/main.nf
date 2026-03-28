@@ -2,6 +2,7 @@
 nextflow.enable.dsl=2
 
 import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
 import groovy.yaml.YamlSlurper
 
 include { ingest } from './processes/01_ingest/ingest'
@@ -66,10 +67,16 @@ params.export_snapshots = false
 workflow {
 
     // Load subgraph configuration
-    config = (new JsonSlurper().parse(new File(params.grebi_home, 'configs/subgraph_configs/' + params.subgraph + '.json')))
+    def sg_config = (new JsonSlurper().parse(new File(params.grebi_home, 'configs/subgraph_configs/' + params.subgraph + '.json')))
 
     // Load datasource configurations
-    datasources = config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.grebi_home, ds)) }
+    def datasources = sg_config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.grebi_home, ds)) }
+
+    // Write resolved subgraph config with inline datasource configs (so they are loaded only once)
+    def resolved_config = [:] + sg_config
+    resolved_config.datasource_configs = datasources
+    def resolved_config_path = "${workflow.workDir}/resolved_${params.subgraph}_subgraph_config.json"
+    new File(resolved_config_path).text = JsonOutput.prettyPrint(JsonOutput.toJson(resolved_config))
 
     // Create channel of all datasource files
     // Globs are resolved relative to GREBI_DOWNLOADS_PATH
@@ -90,14 +97,14 @@ workflow {
     // === STEP 1: INGEST ===
     ingest(
         datasource_files, 
-        Channel.value(config.identifier_props), 
-        Channel.value(config.bytes_per_merged_file)
+        Channel.value(sg_config.identifier_props), 
+        Channel.value(sg_config.bytes_per_merged_file)
     )
 
     // Build equivalence groups from identifiers
     groups_txt = build_equiv_groups(
         ingest.out.identifiers.collect(), 
-        Channel.value(config.additional_equivalence_groups)
+        Channel.value(sg_config.additional_equivalence_groups)
     )
 
     // === STEP 2: ASSIGN IDS ===
@@ -109,29 +116,29 @@ workflow {
     assigned = assign_ids(
         nodes_for_assign, 
         groups_txt, 
-        Channel.value(config.identifier_props), 
-        Channel.value(config.type_superclasses)
+        Channel.value(sg_config.identifier_props), 
+        Channel.value(sg_config.type_superclasses)
     ).collect(flat: false)
 
     // === STEP 3: MERGE ===
     merged = merge_ingests(
         assigned,
-        Channel.value(config.exclude_props),
-        Channel.value(config.prioritise_datasources),
-        Channel.value(config.bytes_per_merged_file),
+        Channel.value(sg_config.exclude_props),
+        Channel.value(sg_config.prioritise_datasources),
+        Channel.value(sg_config.bytes_per_merged_file),
         Channel.value(params.subgraph)
     )
 
     // === STEP 4: INDEX ===
-    indexed = index(merged.collect(), Channel.value(params.subgraph))
+    indexed = index(merged.collect(), Channel.value(params.subgraph), Channel.value(resolved_config_path))
 
     // === STEP 5: LINK ===
     link(
         merged.flatten(), 
         indexed.entity_metadata_jsonl, 
         indexed.graph_metadata_json, 
-        Channel.value(config.exclude_edges + config.identifier_props), 
-        Channel.value(config.exclude_self_referential_edges + config.identifier_props), 
+        Channel.value(sg_config.exclude_edges + sg_config.identifier_props), 
+        Channel.value(sg_config.exclude_self_referential_edges + sg_config.identifier_props), 
         groups_txt
     )
     

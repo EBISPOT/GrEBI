@@ -1,4 +1,4 @@
-name: OLS.efo
+id: OLS.efo
 enabled: true
 download:
   - dest: ols_embeddings/llama-embed-nemotron-8b_pca512/efo.parquet.gz

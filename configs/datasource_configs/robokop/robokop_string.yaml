@@ -1,5 +1,6 @@
-name: Robokop.STRING
+id: Robokop.STRING
 enabled: true
+description: "Known and predicted protein-protein interactions derived from genomic context predictions, high-throughput experiments, conserved co-expression, automated text mining, and primary data sources, from STRING"
 download:
   - dest: robokop/string_edges.jsonl.gz
     sources:

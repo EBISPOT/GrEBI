@@ -1,6 +1,7 @@
 {
   "id": "MONARCH",
   "name": "Monarch Initiative KG",
+  "description": "The MONARCH Initiative knowledge graph integrating gene, disease, phenotype, and variant data across species for translational research.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

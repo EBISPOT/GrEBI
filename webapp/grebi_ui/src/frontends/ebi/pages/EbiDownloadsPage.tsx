@@ -2,7 +2,7 @@
 
 import { Fragment } from "react";
 import DataTable, { Column } from "../../../components/datatable/DataTable";
-import EbiHeader from "../EbiHeader";
+import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
 import React from "react";
 import { useParams } from "react-router-dom";
 
@@ -12,9 +12,10 @@ export default function EbiDownloadsPage() {
 
   return (
     <Fragment>
-      <EbiHeader section="downloads" subgraph={params.subgraph} showBreadcrumbsBar={true} breadcrumbs={[
-        { url: `/subgraphs/${params.subgraph}/downloads`, label: "Downloads" }
-      ]}/>
+      <EbiBreadcrumbsBar subgraph={params.subgraph} entries={[
+        { url: `/graphs`, label: "Graphs" },
+        { url: `/graphs/${params.subgraph}/downloads`, label: "Downloads" }
+      ]} />
       <main className="container mx-auto px-4 my-8">
         <div className="text-2xl font-bold my-6">
           Downloading Knowledge Graph Exports

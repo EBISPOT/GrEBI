@@ -1,5 +1,6 @@
-name: Robokop.ViralProteome
+id: Robokop.ViralProteome
 enabled: true
+description: "Curated GO term assignments to proteins and proteome relationships derived from UniProt for all NCBI taxa classified as viruses, from the GO Consortium's Viral Proteome resource"
 download:
   - dest: robokop/viralproteome_edges.jsonl.gz
     sources:

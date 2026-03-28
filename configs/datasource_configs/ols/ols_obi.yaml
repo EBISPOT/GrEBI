@@ -1,5 +1,6 @@
-name: OLS.obi
+id: OLS.obi
 enabled: true
+description: "An ontology for the description of biological and clinical investigations"
 download:
   - dest: ols/obi.json.gz
     sources:

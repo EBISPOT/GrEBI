@@ -1,8 +1,10 @@
 package uk.ac.ebi.grebi.db;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.reflect.TypeToken;
 import org.jooq.*;
+import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,10 @@ public class GrebiPostgresClient {
     );
 
     private static final Set<String> ALLOWED_ARRAY_COLUMNS = Set.of(
+            "grebi:datasources"
+    );
+
+    private static final Set<String> ALLOWED_ARRAY_CONTAINS_COLUMNS = Set.of(
             "grebi:datasources"
     );
 
@@ -177,6 +183,129 @@ public class GrebiPostgresClient {
         if (sortField == null) return List.of();
         var col = checkedColumn(sortField);
         return List.of("asc".equalsIgnoreCase(sortDir) ? col.asc() : col.desc());
+    }
+
+    /**
+     * Build conditions from a filters map only (no required filter field).
+     * Supports:
+     *   - grebi:type=value (exact column match)
+     *   - grebi:datasources=value (array contains)
+     *   - -grebi:datasources=value (array excludes)
+     */
+    private List<Condition> buildConditionsFromFilters(Map<String, List<String>> filters) {
+        var conditions = new ArrayList<Condition>();
+        if (filters != null) {
+            for (var entry : filters.entrySet()) {
+                String key = entry.getKey();
+                var values = entry.getValue();
+                if (values == null || values.isEmpty()) continue;
+
+                if (key.startsWith("-")) {
+                    String arrayCol = key.substring(1);
+                    if (!ALLOWED_ARRAY_COLUMNS.contains(arrayCol)) continue;
+                    for (String val : values) {
+                        conditions.add(
+                            condition("NOT ({0} @> ARRAY[{1}]::text[])",
+                                field(name(arrayCol)), inline(val))
+                        );
+                    }
+                } else if (ALLOWED_ARRAY_CONTAINS_COLUMNS.contains(key)) {
+                    for (String val : values) {
+                        conditions.add(
+                            condition("{0} @> ARRAY[{1}]::text[]",
+                                field(name(key)), inline(val))
+                        );
+                    }
+                } else if (ALLOWED_COLUMNS.contains(key)) {
+                    conditions.add(checkedColumn(key).eq(values.get(0)));
+                }
+            }
+        }
+        return conditions;
+    }
+
+    /**
+     * Search edges with optional filters (no required node ID). Returns full edge rows.
+     * When unfiltered, uses estimated count from pg_class and skips facets for performance.
+     */
+    public EdgeQueryResult searchEdges(String subgraph,
+                                        Map<String, List<String>> filters,
+                                        String sortField, String sortDir,
+                                        int offset, int limit) {
+        try {
+            var ctx = dsl();
+            var tbl = edgesTable(subgraph);
+            var conditions = buildConditionsFromFilters(filters);
+            boolean unfiltered = conditions.isEmpty();
+
+            // Fast estimated count — avoids COUNT(*) full scan
+            long totalCount = estimateRowCount(ctx, tbl, conditions, subgraph, unfiltered);
+            boolean cheapFacets = totalCount < 100_000;
+
+            var rowJson = field("row_to_json({0})", String.class, tbl);
+            List<Map<String, Object>> results = new ArrayList<>();
+            for (var record : ctx.select(rowJson)
+                    .from(tbl)
+                    .where(conditions)
+                    .orderBy(buildOrderBy(sortField, sortDir))
+                    .limit(limit)
+                    .offset(offset)
+                    .fetch()) {
+                results.add(gson.fromJson(record.value1(),
+                        new TypeToken<Map<String, Object>>() {}.getType()));
+            }
+
+            Map<String, Map<String, Long>> facets;
+            if (cheapFacets && !unfiltered) {
+                facets = computeFacets(ctx, tbl, conditions, EDGE_FACET_FIELDS);
+                var typeField = field(name("grebi:type"), String.class);
+                var cnt = count().as("cnt");
+                Map<String, Long> typeCounts = new LinkedHashMap<>();
+                for (var record : ctx.select(typeField, cnt)
+                        .from(tbl)
+                        .where(conditions)
+                        .groupBy(typeField)
+                        .orderBy(cnt.desc())
+                        .fetch()) {
+                    typeCounts.put(record.get(typeField), record.get(cnt).longValue());
+                }
+                facets.put("grebi:type", typeCounts);
+            } else {
+                // Too many rows — skip expensive facet queries; frontend uses /stats endpoint
+                facets = new LinkedHashMap<>();
+            }
+
+            return new EdgeQueryResult(results, totalCount, facets);
+        } catch (SQLException e) {
+            logger.error("Edge search failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private long estimateRowCount(DSLContext ctx, Table<?> tbl, List<Condition> conditions,
+                                   String subgraph, boolean unfiltered) {
+        if (unfiltered) {
+            var tableName = "edges_" + subgraph;
+            return ctx.select(field("reltuples::bigint", Long.class))
+                    .from(table("pg_class"))
+                    .where(field("relname").eq(tableName))
+                    .fetchOptional()
+                    .map(r -> r.value1())
+                    .orElse(0L);
+        }
+        try {
+            var query = ctx.selectOne().from(tbl).where(conditions);
+            String sql = query.getSQL(ParamType.INLINED);
+            var result = ctx.fetchOne("EXPLAIN (FORMAT JSON) " + sql);
+            String json = result.get(0, String.class);
+            var arr = gson.fromJson(json, JsonArray.class);
+            return arr.get(0).getAsJsonObject()
+                    .getAsJsonObject("Plan")
+                    .get("Plan Rows").getAsLong();
+        } catch (Exception e) {
+            logger.warn("EXPLAIN estimate failed, falling back to COUNT", e);
+            return ctx.select(count()).from(tbl).where(conditions).fetchSingle().value1();
+        }
     }
 
     /**

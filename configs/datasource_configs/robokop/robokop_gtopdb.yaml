@@ -1,5 +1,6 @@
-name: Robokop.GtoPdb
+id: Robokop.GtoPdb
 enabled: true
+description: "Quantitative information on drug targets and the prescription medicines and experimental drugs that act on them, from the IUPHAR/BPS Guide to Pharmacology database"
 download:
   - dest: robokop/gtopdb_edges.jsonl.gz
     sources:

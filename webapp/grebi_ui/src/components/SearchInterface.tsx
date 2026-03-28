@@ -1,6 +1,5 @@
 
 import { Close, KeyboardArrowDown } from "@mui/icons-material";
-import { Pagination } from "@mui/material";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { get, getPaginated } from "../app/api";
@@ -53,7 +52,7 @@ export default function SeachInterface(opts:{ subgraph:string }
     [datasourceFacetselected, setDatasourceFacetselected]
   );
   const typeFacets =
-    facets && Object.keys(facets).length > 0 ? facets["type"] : {};
+    facets && Object.keys(facets).length > 0 ? facets["grebi:type"] : {};
   const [typeFacetSelected, setTypeFacetSelected] = useState<string[]>([]);
   const handleTypeFacet = useCallback(
     (checked, key) => {
@@ -71,12 +70,13 @@ export default function SeachInterface(opts:{ subgraph:string }
     [typeFacetSelected, setTypeFacetSelected]
   );
 
-  const [ontologyFacetFiltered, setOntologyFacetFiltered] = useState<object>(
-    {}
-  );
-  useEffect(() => {
-    setOntologyFacetFiltered(datasourceFacets);
-  }, [JSON.stringify(datasourceFacets)]);
+  const ontologyFacetFiltered = ontologyFacetQuery
+    ? Object.fromEntries(
+        Object.entries(datasourceFacets || {}).filter(([k]) =>
+          k.toLowerCase().includes(ontologyFacetQuery.toLowerCase())
+        )
+      )
+    : datasourceFacets || {};
 
   const [isShortFormCopied, setIsShortFormCopied] = useState(false);
   const copyShortForm = (text: string) => {
@@ -107,7 +107,7 @@ export default function SeachInterface(opts:{ subgraph:string }
           `api/v1/subgraphs/${subgraph}/semantic_search?${new URLSearchParams({
             q: search,
             model: model,
-            n: rowsPerPage.toString(),
+            n: ((page + 1) * rowsPerPage).toString(),
             resolve: "true",
           })}`
         );
@@ -122,22 +122,36 @@ export default function SeachInterface(opts:{ subgraph:string }
           return new GraphNode(r);
         });
         setResults(mapped);
-        setTotalResults(mapped.length);
         setSearchScores(scores);
+        // If we got as many as requested, there are likely more
+        const requested = (page + 1) * rowsPerPage;
+        setTotalResults(mapped.length >= requested ? mapped.length + 1 : mapped.length);
         setFacets({});
       } else {
         // Standard lexical search
-        let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, joinSearchParams(searchParams, new URLSearchParams([
+        const filterParams: string[][] = [
           ['page', page.toString()],
           ['size', rowsPerPage.toString()],
           ['q', search],
           ['facet', 'grebi:datasources'],
           ['facet', 'grebi:type']
-        ]))))
+        ];
+        for (const ds of datasourceFacetselected) {
+          filterParams.push(['grebi:datasources', ds]);
+        }
+        for (const t of typeFacetSelected) {
+          filterParams.push(['grebi:type', t]);
+        }
+        let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, joinSearchParams(searchParams, new URLSearchParams(filterParams))))
         
         let mapped = res.map(r => new GraphNode(r))
 
-        setResults(mapped.elements)
+        if (page === 0) {
+          setResults(mapped.elements);
+        } else {
+          setResults(prev => [...prev, ...mapped.elements]);
+        }
+        setTotalResults(mapped.totalElements);
         setFacets(mapped.facetFieldsToCounts)
       }
 
@@ -171,9 +185,7 @@ export default function SeachInterface(opts:{ subgraph:string }
           >
             <div className="flex flex-row items-center justify-between mb-4">
               <div className="font-bold text-neutral-dark text-sm mr-2">
-                {`Showing ${
-                  totalResults > rowsPerPage ? rowsPerPage : totalResults
-                } from a total of ${totalResults}`}
+                Filter results
               </div>
               <button
                 className="lg:hidden"
@@ -191,22 +203,22 @@ export default function SeachInterface(opts:{ subgraph:string }
                 <fieldset className="mb-4">
                   {typeFacets && Object.keys(typeFacets).length > 0
                     ? Object.keys(typeFacets)
+                        .filter((key) => key !== "entity" && typeFacets[key] > 0)
                         .sort((a, b) => {
                           const ac = a ? a.toString() : "";
                           const bc = b ? b.toString() : "";
                           return ac.localeCompare(bc);
                         })
                         .map((key) => {
-                          if (key !== "entity" && typeFacets[key] > 0) {
                             return (
                               <label
                                 key={key}
-                                htmlFor={key}
+                                htmlFor={`type-facet-${key}`}
                                 className="block p-1 w-fit"
                               >
                                 <input
                                   type="checkbox"
-                                  id={key}
+                                  id={`type-facet-${key}`}
                                   className="invisible hidden peer"
                                   checked={typeFacetSelected.includes(key)}
                                   onChange={(e) => {
@@ -219,36 +231,20 @@ export default function SeachInterface(opts:{ subgraph:string }
                                 </span>
                               </label>
                             );
-                          } else return null;
                         })
                     : null}
                 </fieldset>
-                <div className="font-semibold text-lg mb-2">Ontology</div>
+                <div className="font-semibold text-lg mb-2">Datasource</div>
                 <div className="relative grow">
                   <input
                     id="facet-search-ontology"
                     type="text"
                     autoComplete="off"
-                    placeholder="Search id..."
+                    placeholder="Filter datasources..."
                     className="input-default text-sm mb-3 pl-3"
                     value={ontologyFacetQuery}
                     onChange={(event) => {
-                      if (event.target.value) {
-                        setOntologyFacetFiltered(
-                          Object.fromEntries(
-                            Object.entries(datasourceFacets).filter((key) =>
-                              key
-                                .toString()
-                                .toLowerCase()
-                                .includes(event.target.value.toLowerCase())
-                            )
-                          )
-                        );
-                        setOntologyFacetQuery(event.target.value);
-                      } else {
-                        setOntologyFacetFiltered(datasourceFacets);
-                        setOntologyFacetQuery("");
-                      }
+                      setOntologyFacetQuery(event.target.value);
                     }}
                   />
                   {ontologyFacetQuery ? (
@@ -256,7 +252,6 @@ export default function SeachInterface(opts:{ subgraph:string }
                       <button
                         type="button"
                         onClick={() => {
-                          setOntologyFacetFiltered(datasourceFacets);
                           setOntologyFacetQuery("");
                         }}
                       >
@@ -265,26 +260,24 @@ export default function SeachInterface(opts:{ subgraph:string }
                     </div>
                   ) : null}
                 </div>
-                <fieldset>
+                <fieldset className="max-h-80 overflow-y-auto border border-neutral-300 rounded-md p-2">
                   {ontologyFacetFiltered &&
                   Object.keys(ontologyFacetFiltered).length > 0
                     ? Object.keys(ontologyFacetFiltered)
+                        .filter((key) => ontologyFacetFiltered[key] > 0)
                         .sort((a, b) => {
-                          const ac = a ? a.toString() : "";
-                          const bc = b ? b.toString() : "";
-                          return ac.localeCompare(bc);
+                          return ontologyFacetFiltered[b] - ontologyFacetFiltered[a];
                         })
                         .map((key) => {
-                          if (ontologyFacetFiltered[key] > 0) {
                             return (
                               <label
                                 key={key}
-                                htmlFor={key}
+                                htmlFor={`ds-facet-${key}`}
                                 className="block p-1 w-fit"
                               >
                                 <input
                                   type="checkbox"
-                                  id={key}
+                                  id={`ds-facet-${key}`}
                                   className="invisible hidden peer"
                                   checked={datasourceFacetselected.includes(key)}
                                   onChange={(e) => {
@@ -298,7 +291,6 @@ export default function SeachInterface(opts:{ subgraph:string }
                                 </span>
                               </label>
                             );
-                          } else return null;
                         })
                     : null}
                 </fieldset>
@@ -344,12 +336,6 @@ export default function SeachInterface(opts:{ subgraph:string }
             </div>
             {results.length > 0 ? (
               <div>
-                {!isSemanticSearch && <Pagination
-                  page={page}
-                  onPageChange={setPage}
-                  dataCount={totalResults}
-                  rowsPerPage={rowsPerPage}
-                />}
                 {results.map((graphNode: GraphNode) => {
                   let nodeType = graphNode.extractType()
                   let score = searchScores.get(graphNode.getNodeId())
@@ -382,12 +368,16 @@ export default function SeachInterface(opts:{ subgraph:string }
                     </div>
                   );
                 })}
-                {!isSemanticSearch && <Pagination
-                  page={page}
-                  onPageChange={setPage}
-                  dataCount={totalResults}
-                  rowsPerPage={rowsPerPage}
-                />}
+                {results.length < totalResults && (
+                  <div className="flex justify-center p-4">
+                    <button
+                      className="px-6 py-2 text-neutral-default hover:bg-neutral-default hover:rounded-md hover:text-white font-medium"
+                      onClick={() => setPage(prev => prev + 1)}
+                    >
+                      Load more results...
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-xl text-neutral-black font-bold">

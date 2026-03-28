@@ -1,5 +1,6 @@
-name: OLS.edam
+id: OLS.edam
 enabled: true
+description: "An ontology of bioscientific data analysis and data management concepts"
 download:
   - dest: ols/edam.json.gz
     sources:

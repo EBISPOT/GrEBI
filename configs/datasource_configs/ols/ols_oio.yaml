@@ -1,5 +1,6 @@
-name: OLS.oio
+id: OLS.oio
 enabled: true
+description: "Annotation properties used in OBO ontology representation in OWL"
 download:
   - dest: ols/oio.json.gz
     sources:

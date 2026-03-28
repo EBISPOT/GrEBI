@@ -1,5 +1,6 @@
-name: OLS.pr
+id: OLS.pr
 enabled: true
+description: "An ontological representation of protein-related entities including genes, sequences, and complexes"
 download:
   - dest: ols/pr.json.gz
     sources:

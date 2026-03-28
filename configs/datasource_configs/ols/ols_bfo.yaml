@@ -1,5 +1,6 @@
-name: OLS.bfo
+id: OLS.bfo
 enabled: true
+description: "A top-level ontology providing a framework for domain ontologies"
 download:
   - dest: ols/bfo.json.gz
     sources:

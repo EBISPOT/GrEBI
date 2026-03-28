@@ -57,8 +57,31 @@ fn main() {
     let mut entity_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut edge_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut types_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
+    let mut node_counts_by_datasource:HashMap<Vec<u8>,i64> = HashMap::new();
     let mut all_names:BTreeSet<Vec<u8>> = BTreeSet::new();
     let mut all_ids:BTreeSet<Vec<u8>> = BTreeSet::new();
+
+    // Load subgraph config to find datasource IDs
+    let mut subgraph_config:Option<serde_json::Value> = None;
+    let mut datasource_ids:HashSet<Vec<u8>> = HashSet::new();
+    if let Some(ref config_path) = args.subgraph_config_json_path {
+        if let Ok(config_file) = File::open(config_path) {
+            if let Ok(config_json) = serde_json::from_reader::<_, serde_json::Value>(BufReader::new(config_file)) {
+                if let Some(ds_configs) = config_json.get("datasource_configs").and_then(|v| v.as_array()) {
+                    for ds in ds_configs {
+                        if let Some(ds_id) = ds.get("id").and_then(|v| v.as_str()) {
+                            datasource_ids.insert(ds_id.as_bytes().to_vec());
+                        }
+                    }
+                }
+                subgraph_config = Some(config_json);
+            }
+        }
+    }
+    eprintln!("Tracking {} datasource IDs for metadata enrichment", datasource_ids.len());
+
+    // Collect properties for entities that match datasource IDs
+    let mut datasource_entity_props:HashMap<Vec<u8>, Vec<u8>> = HashMap::new();
 
     let mut graph_metadata_writer = BufWriter::new(File::create(&args.out_graph_metadata_json_path).unwrap());
     let mut metadata_writer = BufWriter::new(File::create(&args.out_entity_metadata_jsonl_path).unwrap());
@@ -80,6 +103,12 @@ fn main() {
 
         let sliced = SlicedEntity::from_json(&line);
 
+        // If this entity matches a datasource ID, capture its full JSON
+        if datasource_ids.contains(sliced.id) {
+            eprintln!("Found datasource entity: {}", String::from_utf8_lossy(sliced.id));
+            datasource_entity_props.insert(sliced.id.to_vec(), line.clone());
+        }
+
         metadata_writer.write_all(r#"{"grebi:nodeId":""#.as_bytes()).unwrap();
         metadata_writer.write_all(sliced.id).unwrap();
         metadata_writer.write_all(r#"","grebi:datasources":["#.as_bytes()).unwrap();
@@ -93,6 +122,8 @@ fn main() {
             metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
             metadata_writer.write_all(ds).unwrap();
             metadata_writer.write_all(r#"""#.as_bytes()).unwrap();
+
+            *node_counts_by_datasource.entry(ds.to_vec()).or_insert(0) += 1;
         }
         metadata_writer.write_all(r#"],"grebi:sourceIds":["#.as_bytes()).unwrap();
         let mut is_first_sid = true;
@@ -259,15 +290,40 @@ fn main() {
                         "count": v
                     }))
             }).collect::<HashMap<String,serde_json::Value>>(),
+            "node_counts_by_datasource": node_counts_by_datasource.iter().map(|(k,v)| {
+                    return (String::from_utf8(k.to_vec()).unwrap(), json!(v))
+            }).collect::<HashMap<String,serde_json::Value>>(),
         });
-        if let Some(ref config_path) = args.subgraph_config_json_path {
-            if let Ok(config_file) = File::open(config_path) {
-                if let Ok(config_json) = serde_json::from_reader::<_, serde_json::Value>(BufReader::new(config_file)) {
-                    if let Some(config_obj) = config_json.as_object() {
-                        let md = metadata.as_object_mut().unwrap();
-                        md.insert("subgraph_config".to_string(), serde_json::Value::Object(config_obj.clone()));
+        if let Some(ref mut config_json) = subgraph_config {
+            // Enrich datasource configs with properties from their graph entities
+            if let Some(ds_configs) = config_json.get_mut("datasource_configs").and_then(|v| v.as_array_mut()) {
+                for ds in ds_configs.iter_mut() {
+                    if let Some(ds_id) = ds.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()) {
+                        if let Some(entity_json) = datasource_entity_props.get(ds_id.as_bytes()) {
+                            if let Ok(entity_value) = serde_json::from_slice::<serde_json::Value>(entity_json) {
+                                if let Some(entity_obj) = entity_value.as_object() {
+                                    let ds_obj = ds.as_object_mut().unwrap();
+                                    if !ds_obj.contains_key("graph_properties") {
+                                        ds_obj.insert("graph_properties".to_string(), json!({}));
+                                    }
+                                    let graph_props = ds_obj.get_mut("graph_properties").unwrap().as_object_mut().unwrap();
+                                    for (k, v) in entity_obj.iter() {
+                                        // Skip internal grebi fields
+                                        if k.starts_with("grebi:") {
+                                            continue;
+                                        }
+                                        graph_props.insert(k.clone(), v.clone());
+                                    }
+                                    eprintln!("Enriched datasource config '{}' with {} graph properties", ds_id, graph_props.len());
+                                }
+                            }
+                        }
                     }
                 }
+            }
+            if let Some(config_obj) = config_json.as_object() {
+                let md = metadata.as_object_mut().unwrap();
+                md.insert("subgraph_config".to_string(), serde_json::Value::Object(config_obj.clone()));
             }
         }
         metadata

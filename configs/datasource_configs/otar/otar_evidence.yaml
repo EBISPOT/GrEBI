@@ -1,5 +1,6 @@
-name: OpenTargets
+id: OpenTargets
 enabled: true
+description: "Target-disease evidence records from the Open Targets evidence pipeline"
 download:
   - dest: otar/evidence/
     sources:

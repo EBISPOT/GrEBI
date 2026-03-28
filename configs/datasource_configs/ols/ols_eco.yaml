@@ -1,5 +1,6 @@
-name: OLS.eco
+id: OLS.eco
 enabled: true
+description: "An ontology for representing types of evidence used in scientific assertions"
 download:
   - dest: ols/eco.json.gz
     sources:

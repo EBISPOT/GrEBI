@@ -1,5 +1,6 @@
-name: OpenTargets
+id: OpenTargets
 enabled: true
+description: "Disease-to-phenotype associations derived from the Open Targets evidence pipeline"
 download:
   - dest: otar/disease_phenotype/
     sources:

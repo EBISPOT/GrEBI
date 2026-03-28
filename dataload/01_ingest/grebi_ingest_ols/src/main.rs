@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufWriter, self, BufReader, StdinLock, StdoutLock, Write};
 use std::ptr::eq;
+use std::env;
 use clap::Parser;
 use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
@@ -45,6 +46,8 @@ fn main() {
     }
 
 
+    let datasource_id = env::var("GREBI_DATASOURCE_ID").ok();
+
     let mut json = JsonStreamReader::new(reader);
 
     json.begin_object().unwrap();
@@ -54,14 +57,14 @@ fn main() {
     }
     json.begin_array().unwrap();
     while json.has_next().unwrap() {
-        read_ontology(&mut json, &mut output_nodes, &ontology_whitelist, args.defining_only, args.skip_obsolete);
+        read_ontology(&mut json, &mut output_nodes, &ontology_whitelist, args.defining_only, args.skip_obsolete, &datasource_id);
     }
     json.end_array().unwrap();
     json.end_object().unwrap();
 
 }
 
-fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, ontology_whitelist:&HashSet<String>, defining_only:bool, skip_obsolete:bool) {
+fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_nodes: &mut BufWriter<StdoutLock>, ontology_whitelist:&HashSet<String>, defining_only:bool, skip_obsolete:bool, datasource_id:&Option<String>) {
 
     json.begin_object().unwrap();
 
@@ -95,9 +98,14 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
 
     let ontology_iri = metadata.get("iri");
 
+    let entity_id = match datasource_id {
+        Some(ref ds_id) => ds_id.clone(),
+        None => ontology_id.clone(),
+    };
+
     output_nodes.write_all(r#"{"id":""#.as_bytes()).unwrap();
-    output_nodes.write_all(ontology_id.as_bytes()).unwrap();
-    output_nodes.write_all(r#"","grebi:type":["ols:Ontology"]"#.as_bytes()).unwrap();
+    output_nodes.write_all(entity_id.as_bytes()).unwrap();
+    output_nodes.write_all(r#"","grebi:type":["ols:Ontology","grebi:Datasource"]"#.as_bytes()).unwrap();
 
     for k in metadata.keys() {
 

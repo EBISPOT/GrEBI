@@ -1,5 +1,6 @@
-name: OLS.efo
+id: OLS.efo
 enabled: true
+description: "An application-focused ontology for experimental variables in EMBL-EBI resources"
 download:
   - dest: ols/efo.json.gz
     sources:

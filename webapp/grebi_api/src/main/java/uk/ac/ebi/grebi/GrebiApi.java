@@ -191,6 +191,69 @@ public class GrebiApi {
                     meta.remove("embedding_pca_models");
                     ctx.result(gson.toJson(meta));
                 })
+                .get("/api/v1/subgraphs/{subgraph}/stats", ctx -> {
+                    var subgraph = ctx.pathParam("subgraph");
+                    ctx.contentType("application/json");
+
+                    // Node counts by datasource and type from Solr faceting
+                    var q = new GrebiSolrQuery();
+                    q.addFacetField("grebi:datasources");
+                    q.addFacetField("grebi:type");
+                    q.setFacetLimit(-1);
+                    var facetResult = solr.searchNodesPaginated(subgraph, q, false,
+                            PageRequest.of(0, 1));
+
+                    var nodeDsByDs = facetResult.facetFieldToCounts.getOrDefault("grebi:datasources", Map.of());
+                    var nodesByType = facetResult.facetFieldToCounts.getOrDefault("grebi:type", Map.of());
+
+                    // Edge counts by type from metadata edges nested structure (srcType → edgeType → dstType → dsSig → count)
+                    Map<String, Long> edgesByType = new LinkedHashMap<>();
+                    var meta = metadata.getMetadata(subgraph);
+                    var edgesEl = meta.get("edges");
+                    if (edgesEl != null && edgesEl.isJsonObject()) {
+                        for (var srcType : edgesEl.getAsJsonObject().entrySet()) {
+                            if (!srcType.getValue().isJsonObject()) continue;
+                            for (var edgeType : srcType.getValue().getAsJsonObject().entrySet()) {
+                                if (!edgeType.getValue().isJsonObject()) continue;
+                                long edgeTypeTotal = 0;
+                                for (var dstType : edgeType.getValue().getAsJsonObject().entrySet()) {
+                                    if (!dstType.getValue().isJsonObject()) continue;
+                                    for (var dsSig : dstType.getValue().getAsJsonObject().entrySet()) {
+                                        edgeTypeTotal += dsSig.getValue().getAsLong();
+                                    }
+                                }
+                                edgesByType.merge(edgeType.getKey(), edgeTypeTotal, Long::sum);
+                            }
+                        }
+                    }
+
+                    // Edge counts by datasource from metadata edges nested structure
+                    Map<String, Long> edgeDsByDs = new LinkedHashMap<>();
+                    if (edgesEl != null && edgesEl.isJsonObject()) {
+                        for (var srcType : edgesEl.getAsJsonObject().entrySet()) {
+                            if (!srcType.getValue().isJsonObject()) continue;
+                            for (var edgeType : srcType.getValue().getAsJsonObject().entrySet()) {
+                                if (!edgeType.getValue().isJsonObject()) continue;
+                                for (var dstType : edgeType.getValue().getAsJsonObject().entrySet()) {
+                                    if (!dstType.getValue().isJsonObject()) continue;
+                                    for (var dsSig : dstType.getValue().getAsJsonObject().entrySet()) {
+                                        long count = dsSig.getValue().getAsLong();
+                                        for (String ds : dsSig.getKey().split(",")) {
+                                            edgeDsByDs.merge(ds, count, Long::sum);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    var result = new LinkedHashMap<String, Object>();
+                    result.put("node_counts_by_datasource", nodeDsByDs);
+                    result.put("node_counts_by_type", nodesByType);
+                    result.put("edge_counts_by_datasource", edgeDsByDs);
+                    result.put("edge_counts_by_type", edgesByType);
+                    ctx.result(gson.toJson(result));
+                })
                 .get("/api/v1/materialised_queries", ctx -> {
                     List<JsonElement> all_matqs = new ArrayList<>();
                     for(String graph : metadata.getSubgraphs()) {
@@ -584,7 +647,20 @@ public class GrebiApi {
                     var subgraph = ctx.pathParam("subgraph");
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     var n = Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("n"), "10"));
-                    var model = Objects.requireNonNullElse(ctx.queryParam("model"), "text-embedding-3-small_pca512");
+                    var modelParam = ctx.queryParam("model");
+                    String model;
+                    if (modelParam != null && !modelParam.isBlank()) {
+                        model = modelParam;
+                    } else {
+                        // Default to first available model for this subgraph
+                        var embClient = embeddingClients.get(subgraph);
+                        var models = (embClient != null) ? embClient.getAvailableModels() : List.<String>of();
+                        if (models.isEmpty()) {
+                            ctx.status(404).result("{\"error\":\"No embedding models available for this subgraph\"}");
+                            return;
+                        }
+                        model = models.get(0);
+                    }
 
                     var nodeEmbedding = postgres.getNodeEmbedding(subgraph, nodeId, model);
                     if (nodeEmbedding == null) {
@@ -595,6 +671,30 @@ public class GrebiApi {
                     var results = postgres.searchByVector(subgraph, model, nodeEmbedding, n);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(results));
+                })
+                .get("/api/v1/subgraphs/{subgraph}/edges", ctx -> {
+                    var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
+                    var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
+                    var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), "grebi:type");
+                    var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
+                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size),
+                            Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
+
+                    Map<String, List<String>> filters = new LinkedHashMap<>();
+                    for(var queryParam : ctx.queryParamMap().entrySet()) {
+                        var queryParamName = queryParam.getKey();
+                        if(queryParamName.equals("page") || queryParamName.equals("size")
+                                || queryParamName.equals("sortBy") || queryParamName.equals("sortDir")
+                        ) {
+                            continue;
+                        }
+                        filters.put(queryParamName, queryParam.getValue());
+                    }
+
+                    var res = postgres.searchEdges(ctx.pathParam("subgraph"),
+                            filters, sortBy, sortDir, page);
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/subgraphs/{subgraph}/edges/{edgeId}", ctx -> {
                     var rawEdgeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("edgeId")));

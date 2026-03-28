@@ -1,5 +1,6 @@
-name: OLS.ecto
+id: OLS.ecto
 enabled: true
+description: "An ontology of environmental exposure terms"
 download:
   - dest: ols/ecto.json.gz
     sources:

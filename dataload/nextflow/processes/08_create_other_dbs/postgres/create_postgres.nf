@@ -81,8 +81,9 @@ EOF
 
     PSQL="psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi"
 
-    # === EDGES TABLE (hash-partitioned) ===
-    EDGES_COLS_FILE=\$(ls postgres_edges_columns_${subgraph}_*.txt | head -1)
+    # === EDGES TABLE ===
+    EDGES_COLS_FILES=(postgres_edges_columns_${subgraph}_*.txt)
+    EDGES_COLS_FILE="\${EDGES_COLS_FILES[0]}"
     EDGES_COLS=\$(paste -sd',' < "\$EDGES_COLS_FILE")
 
     \$PSQL -c "
@@ -112,13 +113,16 @@ EOF
     \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_edgeId\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:edgeId\\");" &
     \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_fromNodeId\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:fromNodeId\\");" &
     \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_toNodeId\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:toNodeId\\");" &
-    \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_type\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:type\\");" &
+    \$PSQL -c "CREATE INDEX \"idx_edges_${subgraph}_type_hash\" ON \"edges_${subgraph}\" USING hash (\"grebi:type\");" &
+    \$PSQL -c "CREATE INDEX \"idx_edges_${subgraph}_type_btree\" ON \"edges_${subgraph}\" USING btree (\"grebi:type\");" &
+    \$PSQL -c "CREATE INDEX \"idx_edges_${subgraph}_datasources_gin\" ON \"edges_${subgraph}\" USING gin (\"grebi:datasources\");" &
     wait
 
     \$PSQL -c "ANALYZE \\"edges_${subgraph}\\";"
 
     # === NODES TABLE (with pgvector) ===
-    NODES_COLS_FILE=\$(ls postgres_nodes_columns_${subgraph}_*.txt | head -1)
+    NODES_COLS_FILES=(postgres_nodes_columns_${subgraph}_*.txt)
+    NODES_COLS_FILE="\${NODES_COLS_FILES[0]}"
     NODES_COLS=\$(paste -sd',' < "\$NODES_COLS_FILE")
 
     \$PSQL -c "CREATE EXTENSION IF NOT EXISTS vector;"

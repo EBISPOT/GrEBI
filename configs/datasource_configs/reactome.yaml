@@ -1,5 +1,6 @@
-name: Reactome
+id: Reactome
 enabled: true
+description: "A curated and peer-reviewed pathway database providing biological pathway and reaction data"
 download:
   - dest: reactome/reactome.json.gz
     sources:

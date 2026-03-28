@@ -1,4 +1,4 @@
-name: OLS.ncit
+id: OLS.ncit
 enabled: true
 download:
   - dest: ols_embeddings/llama-embed-nemotron-8b_pca512/ncit.parquet.gz

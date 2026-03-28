@@ -1,5 +1,6 @@
-name: ols_top_k
+id: ols_top_k
 enabled: true
+description: "Precomputed top-k semantic similarity matches between OLS ontology terms"
 download:
   - dest: ols_top_k/ols_top_k.tsv.gz
     sources:

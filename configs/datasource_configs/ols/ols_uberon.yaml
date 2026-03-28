@@ -1,5 +1,6 @@
-name: OLS.uberon
+id: OLS.uberon
 enabled: true
+description: "A cross-species ontology covering anatomical structures in animals"
 download:
   - dest: ols/uberon.json.gz
     sources:

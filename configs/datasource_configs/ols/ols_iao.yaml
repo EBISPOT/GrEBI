@@ -1,5 +1,6 @@
-name: OLS.iao
+id: OLS.iao
 enabled: true
+description: "An ontology of information entities such as documents, databases, and identifiers"
 download:
   - dest: ols/iao.json.gz
     sources:

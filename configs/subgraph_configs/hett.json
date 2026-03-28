@@ -1,6 +1,7 @@
 {
   "id": "HETT",
   "name": "EMBL Human Ecosystems",
+  "description": "EMBL Human Ecosystems Thinking and Tracking graph exploring the interactions between human health and environmental factors.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

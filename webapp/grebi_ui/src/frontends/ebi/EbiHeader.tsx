@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 import { Stack } from "@mui/material";
 import DownloadIcon from '@mui/icons-material/Download';
 import TravelExplore from '@mui/icons-material/TravelExplore';
+import Apps from '@mui/icons-material/Apps';
 import { ManageSearch, TableChart } from "@mui/icons-material";
 import Breadcrumbs, { BreadcrumbsEntry } from "../../components/Breadcrumbs";
 
@@ -21,9 +22,15 @@ export default function EbiHeader({
   let loc = useLocation();
   let navigate = useNavigate();
 
+  // Persist last-selected subgraph so nav items work even on /graphs
+  if (subgraph) {
+    sessionStorage.setItem("grebi_last_subgraph", subgraph);
+  }
+  const effectiveSubgraph = subgraph || sessionStorage.getItem("grebi_last_subgraph") || undefined;
+
 function setSubgraph(subgraph: string) {
   const { pathname, search, hash } = loc; 
-  const newPath = pathname.replace(/subgraphs\/[^/]+/, `subgraphs/${subgraph}`);
+  const newPath = pathname.replace(/graphs\/[^/]+/, `graphs/${subgraph}`);
   const newUrl = `${newPath}${search}${hash}`;
   navigate(newUrl);
 }
@@ -61,11 +68,11 @@ function setSubgraph(subgraph: string) {
             role="menubar"
             data-dropdown-menu="6mg2ht-dropdown-menu"
           >
-            <Link to={`/subgraphs/${subgraph}`}>
+            <Link to={`/`}>
               <li
                 role="menuitem"
                 className={`rounded-l-md px-4 py-3  ${
-                  section === "home" || section === "explore"
+                  section === "home" || section === "explore" || section === "search"
                     ? "bg-opacity-30 bg-neutral-500"
                     : "hover:bg-opacity-50 hover:bg-neutral-500"
                 }`}
@@ -76,7 +83,22 @@ function setSubgraph(subgraph: string) {
                 </Stack>
               </li>
             </Link>
-            <Link to={`/subgraphs/${subgraph}/queries`}>
+            <Link to={`/graphs`}>
+              <li
+                role="menuitem"
+                className={`px-4 py-3 ${
+                  section === "graphs" || section === "about"
+                    ? " bg-opacity-30 bg-neutral-500"
+                    : "hover:bg-opacity-50 hover:bg-neutral-500 "
+                }`}
+              >
+                <Stack alignItems="center" direction="row" gap={1}>
+                  <Apps />
+                  Graphs
+                </Stack>
+              </li>
+            </Link>
+            <Link to={effectiveSubgraph ? `/graphs/${effectiveSubgraph}/queries` : `/graphs`}>
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -91,7 +113,7 @@ function setSubgraph(subgraph: string) {
                 </Stack>
               </li>
             </Link>
-            <Link to={`/subgraphs/${subgraph}/tables`}>
+            <Link to={effectiveSubgraph ? `/graphs/${effectiveSubgraph}/tables` : `/graphs`}>
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -106,7 +128,7 @@ function setSubgraph(subgraph: string) {
                 </Stack>
               </li>
             </Link>
-            <Link to={`/subgraphs/${subgraph}/downloads`}>
+            <Link to={effectiveSubgraph ? `/graphs/${effectiveSubgraph}/downloads` : `/graphs`}>
               <li
                 role="menuitem"
                 className={`rounded-r-md px-4 py-3 ${

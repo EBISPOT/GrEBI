@@ -1,5 +1,6 @@
-name: OLS.ncit
+id: OLS.ncit
 enabled: true
+description: "A reference terminology for cancer research and clinical care"
 download:
   - dest: ols/ncit.json.gz
     sources:

@@ -1,4 +1,4 @@
-name: OLS.pr
+id: OLS.pr
 enabled: true
 download:
   - dest: ols_embeddings/llama-embed-nemotron-8b_pca512/pr.parquet.gz

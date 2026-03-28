@@ -1,5 +1,6 @@
-name: TestEdgeLinking
+id: TestEdgeLinking
 enabled: true
+description: "Test datasource for edge linking testing"
 download:
   - dest: test_edge_linking/edges.jsonl
     sources:

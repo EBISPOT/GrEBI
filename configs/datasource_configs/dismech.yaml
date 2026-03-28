@@ -1,5 +1,6 @@
-name: DisMech
+id: DisMech
 enabled: true
+description: "A Monarch Initiative knowledge graph linking diseases to their underlying molecular mechanisms"
 download:
   - dest: dismech/
     sources:

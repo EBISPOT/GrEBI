@@ -1,4 +1,4 @@
-name: OLS.so
+id: OLS.so
 enabled: true
 download:
   - dest: ols_embeddings/text-embedding-3-small_pca512/so.parquet.gz

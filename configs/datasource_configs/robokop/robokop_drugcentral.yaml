@@ -1,5 +1,6 @@
-name: Robokop.DrugCentral
+id: Robokop.DrugCentral
 enabled: true
+description: "Active ingredients, chemical entities, pharmaceutical products, drug mode of action, indications, and pharmacologic action for approved drugs, from DrugCentral"
 download:
   - dest: robokop/drugcentral_edges.jsonl.gz
     sources:

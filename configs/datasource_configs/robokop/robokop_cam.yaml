@@ -1,5 +1,6 @@
-name: Robokop.CAM
+id: Robokop.CAM
 enabled: true
+description: "Causal Activity Models (CAMs) — small OWL knowledge graphs modelling interactions between biological concept instances as interlinked representations of complex biological or environmental processes"
 download:
   - dest: robokop/cam_edges.jsonl.gz
     sources:

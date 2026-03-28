@@ -116,6 +116,7 @@ fn main() -> std::io::Result<()> {
     let mut embedding_model2dim:BTreeMap<Vec<u8>, usize> = BTreeMap::new();
 
     let mut displaytype_to_count:HashMap<Vec<u8>, i64> = HashMap::new();
+    let mut edge_counts_by_datasource:HashMap<Vec<u8>, u64> = HashMap::new();
 
     let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
 
@@ -215,7 +216,7 @@ fn main() -> std::io::Result<()> {
             all_entity_props.insert(prop_key.to_vec());
 
             for val in &prop.values {
-                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &exclude_self_ref, &node_metadata, &val.datasources, sliced.subgraph, &mut edge_summary, &mut all_edge_props);
+                maybe_write_edge(sliced.id, prop, &val, &mut edges_writer, &exclude, &exclude_self_ref, &node_metadata, &val.datasources, sliced.subgraph, &mut edge_summary, &mut all_edge_props, &mut edge_counts_by_datasource);
             }
         });
 
@@ -296,6 +297,9 @@ fn main() -> std::io::Result<()> {
             }))
         }).collect::<HashMap<String,serde_json::Value>>(),
         "edges": edge_summary,
+        "edge_counts_by_datasource": edge_counts_by_datasource.iter().map(|(k,v)| {
+            return (String::from_utf8(k.to_vec()).unwrap(), json!(*v))
+        }).collect::<HashMap<String,serde_json::Value>>(),
         "embedding_models2dims": embedding_model2dim.iter().map(|(k,v)| {
             return (String::from_utf8(k.to_vec()).unwrap(), json!(*v));
         }).collect::<HashMap<String,serde_json::Value>>()
@@ -306,7 +310,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable, all_edge_props: &mut BTreeSet<Vec<u8>>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable, all_edge_props: &mut BTreeSet<Vec<u8>>, edge_counts_by_datasource: &mut HashMap<Vec<u8>, u64>) {
 
     if prop.key.starts_with(b"grebi:") || prop.key.starts_with(b"embedding:") || exclude.contains(prop.key) {
         return;
@@ -342,7 +346,8 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
                         node_metadata,
                         &datasources,
                         &subgraph,
-                        edge_summary);
+                        edge_summary,
+                        edge_counts_by_datasource);
                 }
             } else {
                 // panic!("unexpected kind: {:?}", reified_u.value_kind);
@@ -359,7 +364,7 @@ fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyVal
             if from_id.eq(to_node_id) &&  exclude_self_ref.contains(prop.key) {
                 return;
             }
-            write_edge(from_id, &val.source_ids, to_node_id, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph, edge_summary);
+            write_edge(from_id, &val.source_ids, to_node_id, prop.key, None, edges_writer, node_metadata, &datasources, &subgraph, edge_summary, edge_counts_by_datasource);
         }
 
     } else if val.kind == JsonTokenType::StartArray {
@@ -384,7 +389,8 @@ fn write_edge(
     node_metadata:&BTreeMap<Vec<u8>,Metadata>,
     datasources:&Vec<&[u8]>,
     subgraph:&[u8],
-    edge_summary:&mut EdgeSummaryTable) {
+    edge_summary:&mut EdgeSummaryTable,
+    edge_counts_by_datasource:&mut HashMap<Vec<u8>, u64>) {
  
     let mut buf = Vec::new();
 
@@ -424,6 +430,10 @@ fn write_edge(
         buf.extend(b"\"");
     });
     buf.extend(b"]");
+
+    for ds in datasources.iter() {
+        *edge_counts_by_datasource.entry(ds.to_vec()).or_insert(0) += 1;
+    }
 
     if edge_props.is_some() {
         for prop in edge_props.unwrap() {

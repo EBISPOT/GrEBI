@@ -1,4 +1,4 @@
-name: OLS.obi
+id: OLS.obi
 enabled: true
 download:
   - dest: ols_embeddings/text-embedding-3-small_pca512/obi.parquet.gz

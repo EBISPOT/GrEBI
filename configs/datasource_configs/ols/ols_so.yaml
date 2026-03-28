@@ -1,5 +1,6 @@
-name: OLS.so
+id: OLS.so
 enabled: true
+description: "A structured vocabulary for sequence annotation covering genomic feature types"
 download:
   - dest: ols/so.json.gz
     sources:

@@ -1,5 +1,6 @@
-name: OLS.cob
+id: OLS.cob
 enabled: true
+description: "A core upper-level ontology for biology providing common terms"
 download:
   - dest: ols/cob.json.gz
     sources:

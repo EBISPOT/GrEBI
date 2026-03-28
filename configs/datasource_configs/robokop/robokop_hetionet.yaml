@@ -1,5 +1,6 @@
-name: Robokop.Hetionet
+id: Robokop.Hetionet
 enabled: true
+description: "Relationships uncovered by millions of biomedical research studies over the past fifty years, from the Hetionet heterogeneous information network"
 download:
   - dest: robokop/hetionet_edges.jsonl.gz
     sources:

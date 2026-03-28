@@ -1,4 +1,4 @@
-name: OLS.dcterms
+id: OLS.dcterms
 enabled: true
 download:
   - dest: ols_embeddings/llama-embed-nemotron-8b_pca512/dcterms.parquet.gz

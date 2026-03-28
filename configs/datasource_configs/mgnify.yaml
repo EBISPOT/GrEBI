@@ -1,5 +1,6 @@
-name: MGnify
+id: MGnify
 enabled: true
+description: "EMBL-EBI's resource for the analysis and archival of metagenomic and metatranscriptomic sequence data"
 download:
   - dest: mgnify/mgnify_nodes.jsonl.gz
     sources:

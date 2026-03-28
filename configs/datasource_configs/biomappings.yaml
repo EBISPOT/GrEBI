@@ -1,5 +1,6 @@
-name: Biomappings
+id: Biomappings
 enabled: true
+description: "Community-curated cross-reference mappings between biomedical entities from the Biopragmatics project"
 download:
   - dest: biomappings/mappings.tsv
     sources:

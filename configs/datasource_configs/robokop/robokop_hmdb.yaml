@@ -1,5 +1,6 @@
-name: Robokop.HMDB
+id: Robokop.HMDB
 enabled: true
+description: "Detailed information about small molecule metabolites found in the human body, with links between chemical, clinical, and molecular biology/biochemistry data, from HMDB"
 download:
   - dest: robokop/hmdb_edges.jsonl.gz
     sources:

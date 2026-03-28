@@ -1,4 +1,4 @@
-name: OLS.oba
+id: OLS.oba
 enabled: true
 download:
   - dest: ols_embeddings/text-embedding-3-small_pca512/oba.parquet.gz

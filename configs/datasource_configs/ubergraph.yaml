@@ -1,5 +1,6 @@
-name: UberGraph
+id: UberGraph
 enabled: true
+description: "A large-scale integrated ontology graph combining multiple OBO Foundry ontologies with precomputed inferred edges"
 download:
   - dest: ubergraph/ubergraph.nq.gz
     sources:

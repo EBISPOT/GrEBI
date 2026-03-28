@@ -1,5 +1,6 @@
-name: MONARCH
+id: MONARCH
 enabled: true
+description: "An integrated knowledge graph of genes, diseases, phenotypes, and genotypes across species"
 download:
   - dest: monarch/
     sources:

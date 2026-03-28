@@ -18,6 +18,10 @@ import EbiTablesPage from "./pages/EbiTablesPage";
 import EbiTablesHomePage from "./pages/EbiTablesHomePage";
 import EbiQueryPage from "./pages/EbiQueryPage";
 import EbiQueriesHomePage from "./pages/EbiQueriesHomePage";
+import EbiDatasourcesPage from "./pages/EbiDatasourcesPage";
+import EbiSubgraphPage from "./pages/EbiSubgraphPage";
+import EbiEdgeSearchPage from "./pages/EbiEdgeSearchPage";
+import EbiLayout from "./EbiLayout";
 
 const theme = createTheme({
   palette: {
@@ -42,26 +46,27 @@ class EbiApp extends React.Component {
         </Helmet>
       <BrowserRouter basename={process.env.PUBLIC_URL!}>
         <Routes>
-          <Route path={`*`} element={<EbiErrorPage />} />
-          <Route path={`/error`} element={<EbiErrorPage />} />
+          <Route element={<EbiLayout />}>
+            <Route path={`*`} element={<EbiErrorPage />} />
+            <Route path={`/error`} element={<EbiErrorPage />} />
 
-          <Route path={`/`} element={<EbiHomePage />} />
-          <Route path={`/subgraphs/:subgraph`} element={<EbiHomePage />} />
-          <Route path={`/subgraphs/:subgraph/search`} element={<EbiSearchPage />} />
-          <Route path={`/subgraphs/:subgraph/nodes/:nodeId`} element={<EbiNodePage />} />
+            <Route path={`/`} element={<EbiHomePage />} />
+            <Route path={`/graphs`} element={<EbiDatasourcesPage />} />
+            <Route path={`/graphs/:subgraph`} element={<EbiSubgraphPage />} />
+            <Route path={`/graphs/:subgraph/search`} element={<EbiSearchPage />} />
+            <Route path={`/graphs/:subgraph/edges`} element={<EbiEdgeSearchPage />} />
+            <Route path={`/graphs/:subgraph/nodes/:nodeId`} element={<EbiNodePage />} />
 
-          <Route path={`/tables`} element={<EbiTablesHomePage />} />
-          {/* <Route path={`/results/:queryid`} element={<EbiResultsPage />} /> */}
-          <Route path={`/subgraphs/:subgraph/tables`} element={<EbiTablesHomePage />} />
-          <Route path={`/subgraphs/:subgraph/tables/:queryid`} element={<EbiTablesPage />} />
+            <Route path={`/tables`} element={<EbiTablesHomePage />} />
+            {/* <Route path={`/results/:queryid`} element={<EbiResultsPage />} /> */}
+            <Route path={`/graphs/:subgraph/tables`} element={<EbiTablesHomePage />} />
+            <Route path={`/graphs/:subgraph/tables/:queryid`} element={<EbiTablesPage />} />
 
+            <Route path={`/graphs/:subgraph/queries`} element={<EbiQueriesHomePage />} />
+            <Route path={`/graphs/:subgraph/queries/:queryid`} element={<EbiQueryPage />} />
 
-          <Route path={`/subgraphs/:subgraph/queries`} element={<EbiQueriesHomePage />} />
-          <Route path={`/subgraphs/:subgraph/queries/:queryid`} element={<EbiQueryPage />} />
-
-
-
-          <Route path={`/subgraphs/:subgraph/downloads`} element={<EbiDownloadsPage />} />
+            <Route path={`/graphs/:subgraph/downloads`} element={<EbiDownloadsPage />} />
+          </Route>
         </Routes>
         {/* <EbiFooter /> */}
       </BrowserRouter>
