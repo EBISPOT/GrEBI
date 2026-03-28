@@ -38,7 +38,7 @@ class EbiApp extends React.Component {
       <Fragment>
         <Helmet>
           <meta charSet="utf-8" />
-          <title>EMBL-EBI Knowledge Graph</title>
+          <title>GrEBI: Knowledge Graphs @ EMBL-EBI</title>
         </Helmet>
       <BrowserRouter basename={process.env.PUBLIC_URL!}>
         <Routes>
