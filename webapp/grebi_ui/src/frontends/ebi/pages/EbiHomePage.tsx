@@ -79,7 +79,7 @@ function navigateToSubgraph(sg: string) {
             <div className="bg-gradient-to-r from-neutral-light/50 to-white rounded-lg mt-8 mb-2 p-8 pb-4">
               <div className="mb-4">
                 <div className="text-3xl text-neutral-black font-bold">
-                  Welcome to the EMBL-EBI Ontology Graph
+                  Welcome to GrEBI (Graphs@EBI)
                 </div>
               </div>
               {subgraphs && subgraph ?
@@ -88,7 +88,7 @@ function navigateToSubgraph(sg: string) {
                   <div className="flex gap-6 items-start mb-4 mt-4">
                     <div className="flex-grow min-w-0">
                       <p>
-                        This website enables LLM agents to search and explore data from multiple EBI resources, linked together using knowledge graphs and ontologies via the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other datasources.  For source code and more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI (Graphs@EBI) GitHub repository</Link>.
+                        GrEBI enables researchers and their LLM agents to search and explore biomedical knowledge graphs from <Link className="link-default" to="https://www.ebi.ac.uk/services/">EMBL-EBI databases</Link>, the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other sources.  For more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI GitHub repository</Link>.
                         <br/>
                         <br/>
                         MCP endpoint (Streamable HTTP): <code className="text-sm text-blue-600">https://wwwdev.ebi.ac.uk/kg/api/v1/mcp</code>
