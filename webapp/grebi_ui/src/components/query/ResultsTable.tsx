@@ -6,6 +6,7 @@ import GraphNodeRef from "../../model/GraphNodeRef";
 import DataTable, { Column } from "../datatable/DataTable";
 import LoadingOverlay from "../LoadingOverlay";
 import { Download, Info } from "@mui/icons-material";
+import OutputBadge from "../query/OutputBadge";
 import EdgeMetadataDialog from "./EdgeMetadataDialog";
 
 interface ResultsTableProps {
@@ -64,7 +65,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
 
   const columns: Column[] = resultColumns.map(col => ({
     id: col.column_id,
-    name: col.column_type === 'EdgeId' ? '' : col.column_id,
+    name: col.column_type === 'EdgeId' ? '' : <OutputBadge>{col.column_id}</OutputBadge>,
     sortable: col.column_type !== 'EdgeId',
     selector: (row: any) => {
       const val = row[col.column_id];

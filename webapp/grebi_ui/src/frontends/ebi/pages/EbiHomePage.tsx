@@ -6,9 +6,9 @@ import { get, getPaginated } from "../../../app/api";
 import EbiHeader from "../EbiHeader";
 import SearchBox from "../../../components/SearchBox";
 import SubgraphPicker from "../../../components/SubgraphPicker";
+import CyclingQuestions from "../../../components/query/CyclingQuestions";
 import urlJoin from "url-join";
 import SourceCodeSection from "../../../components/query/SourceCodeSection";
-import { Power } from "@mui/icons-material";
 import GraphView from "../../../components/node_graph_view/GraphView";
 import GraphNode from "../../../model/GraphNode";
 
@@ -22,6 +22,7 @@ export default function EbiHomePage() {
 
   let [stats, setStats] = useState<any|null>(null);
   let [subgraphs, setSubgraphs] = useState<string[]|null>(null);
+  let [subgraphNames, setSubgraphNames] = useState<Record<string, string>>({});
   let [subgraph, setSubgraph] = useState<string|null>(params.subgraph || null);
   let [bronchiectasisNode, setBronchiectasisNode] = useState<GraphNode|null>(null);
 
@@ -54,6 +55,12 @@ function navigateToSubgraph(sg: string) {
 
       if(!subgraph)
         setSubgraph(r[0])
+
+      Promise.all(r.map(sg => get<any>(`api/v1/subgraphs/${sg}`).then(meta => {
+        const name = meta.subgraph_config?.name || meta.subgraph_name || sg;
+        return [sg, name] as [string, string];
+      }).catch(() => [sg, sg] as [string, string])))
+        .then(pairs => setSubgraphNames(Object.fromEntries(pairs)));
     });
   }, []);
 
@@ -69,126 +76,101 @@ function navigateToSubgraph(sg: string) {
       <main className="container mx-auto px-4 h-fit">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
           <div className="lg:col-span-3">
-            <div className="bg-gradient-to-r from-neutral-light to-white rounded-lg my-8 p-8">
-              <div className="text-3xl mb-4 text-neutral-black font-bold">
-                Welcome to the EMBL-EBI Ontology Graph
+            <div className="bg-gradient-to-r from-neutral-light/50 to-white rounded-lg mt-8 mb-2 p-8 pb-4">
+              <div className="mb-4">
+                <div className="text-3xl text-neutral-black font-bold">
+                  Welcome to the EMBL-EBI Ontology Graph
+                </div>
               </div>
               {subgraphs && subgraph ?
                 <Fragment>
-                  <div className="flex flex-nowrap gap-4 mb-4">
-                    <SubgraphPicker
-                      subgraph={subgraph}
-                      setSubgraph={navigateToSubgraph}
-                      compact={false}
-                    />
+                  <SearchBox subgraph={subgraph} placeholder={`Search ${subgraphNames[subgraph] || subgraph} for knowledge about...`} />
+                  <div className="flex gap-6 items-start mb-4 mt-4">
+                    <div className="flex-grow min-w-0">
+                      <p>
+                        This website enables LLM agents to search and explore data from multiple EBI resources, linked together using knowledge graphs and ontologies via the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other datasources.  For source code and more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI (Graphs@EBI) GitHub repository</Link>.
+                        <br/>
+                        <br/>
+                        MCP endpoint (Streamable HTTP): <code className="text-sm text-blue-600">https://wwwdev.ebi.ac.uk/kg/api/v1/mcp</code>
+                      </p>
+                    </div>
+                    {subgraphs.length > 0 && (
+                    <div className="flex-shrink-0">
+                      <div className="text-lg font-semibold text-gray-700 mb-2">Selected graph: <code className="font-mono">{subgraph}</code></div>
+                    <table className="text-sm border border-gray-200 rounded-lg overflow-hidden">
+                      <thead>
+                        <tr className="bg-gray-100 text-left text-gray-600 border-b border-gray-200">
+                          <th className="py-2 px-3 font-medium">Graph</th>
+                          <th className="py-2 px-3 font-medium">Name</th>
+                          <th className="py-2 px-3 font-medium text-right">Nodes</th>
+                          <th className="py-2 px-3 font-medium text-right">Edges</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subgraphs.map((sg, i) => (
+                          <tr
+                            key={sg}
+                            className={`hover:bg-blue-50 cursor-pointer transition-colors ${sg === subgraph ? 'bg-blue-50/50' : i % 2 === 1 ? 'bg-gray-50' : ''}`}
+                            onClick={() => navigateToSubgraph(sg)}
+                          >
+                            <td className="py-2 px-3 font-mono text-gray-700 whitespace-nowrap">
+                              <input
+                                type="radio"
+                                name="subgraph"
+                                checked={sg === subgraph}
+                                onChange={() => navigateToSubgraph(sg)}
+                                className="mr-2"
+                              />
+                              {sg}
+                            </td>
+                            <td className="py-2 px-3 whitespace-nowrap">{subgraphNames[sg] || sg}</td>
+                            <td className="py-2 px-3 text-right tabular-nums text-gray-600">
+                              {stats && stats[sg] ? stats[sg].num_nodes.toLocaleString() : '—'}
+                            </td>
+                            <td className="py-2 px-3 text-right tabular-nums text-gray-600">
+                              {stats && stats[sg] ? stats[sg].num_edges.toLocaleString() : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    </div>
+                    )}
                   </div>
-                  <div className="flex flex-nowrap gap-4 mb-4">
-                    <SearchBox subgraph={subgraph} />
+                  <div className="flex items-center gap-12 mt-8 mb-4">
+                    <a target="_blank" href="https://www.ebi.ac.uk/">
+                      <img style={{width:'100px'}} src={urlJoin(process.env.PUBLIC_URL!, "/ebi.png")} alt="EMBL-EBI" />
+                    </a>
+                    <a target="_blank" href="https://monarchinitiative.org/">
+                      <img style={{width:'100px'}} src={urlJoin(process.env.PUBLIC_URL!, "/monarch.png")} alt="MONARCH Initiative" />
+                    </a>
+                    <a target="_blank" href="https://mousephenotype.org/">
+                      <img style={{width:'100px'}} src={urlJoin(process.env.PUBLIC_URL!, "/impc.svg")} alt="International Mouse Phenotyping Consortium (IMPC)" />
+                    </a>
                   </div>
                 </Fragment>
                 :
-                <div className="flex flex-nowrap gap-4 mb-4">
+                <div className="flex flex-nowrap gap-4">
                   Loading graphs...
                 </div>
               }
-              <div className="grid md:grid-cols-2 grid-cols-1 gap-2">
-                <div className="text-neutral-black">
-                  <span>
-                    Examples:&nbsp;
-                    <Link to={"/subgraphs/" + subgraph + "/search?q=diabetes"} className="link-default">
-                      diabetes
-                    </Link>
-                    &#44;&nbsp;
-                    <Link to={"/subgraphs/" + subgraph + "/search?q=BRCA1"} className="link-default">
-                      BRCA1
-                    </Link>
-                  </span>
-                </div>
-                <div className="md:text-right">
-         
-              {stats && subgraph && stats[subgraph] ? (
-                <div className="text-neutral-black text-sm">
-                  {/* <div className="mb-2 text-sm italic">
-                    Updated&nbsp;
-                    {moment(stats.lastModified).format(
-                      "D MMM YYYY ddd HH:mm(Z)"
-                    )}
-                  </div> */}
-                  <p>
-                      <i>{stats[subgraph].num_nodes.toLocaleString()} nodes</i><br/>
-                      <i>{stats[subgraph].num_edges.toLocaleString()} edges</i>
-                    </p>
-                </div>
-              ) : (
-                stats !== undefined ? <div className="text-neutral-black text-sm"></div> : <div className="spinner-default w-7 h-7" />
-              )}
-                </div>
-              </div>
             </div>
           </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-          <div className="grid gap-4">
-                <p>
-                  This website enables LLM agents to search and explore data from multiple EBI resources, linked together using knowledge graphs and ontologies via the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative KG</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other datasources.
-                  <br/>
-                  <br/>
-                  For source code and more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI (Graphs@EBI) GitHub repository</Link>.
-                </p>
-<div className="flex justify-left items-center gap-4">
-  <a target="_blank" href="https://www.ebi.ac.uk/">
-    <img 
-      style={{width:'100px'}}
-      src={urlJoin(process.env.PUBLIC_URL!, "/ebi.png")}
-      alt="EMBL-EBI" 
-    />
-  </a>
-  <a target="_blank" href="https://monarchinitiative.org/">
-    <img 
-      style={{width:'100px'}}
-      src={urlJoin(process.env.PUBLIC_URL!, "/monarch.png")}
-      alt="MONARCH Initiative" 
-    />
-  </a>
-  <a target="_blank" href="https://mousephenotype.org/">
-    <img 
-      style={{width:'100px'}}
-      src={urlJoin(process.env.PUBLIC_URL!, "/impc.svg")}
-      alt="International Mouse Phenotyping Consortium (IMPC)" 
-    />
-  </a>
-</div>
+          {subgraph && (
+            <div className="mt-2 mb-8">
+              <CyclingQuestions subgraph={subgraph} />
             </div>
-                  
-          <div className="grid gap-4">
-
-<p className="flex items-center text-lg font-bold mb-3">
-  <Power className="mr-2 h-5 w-5" />
-  MCP Endpoints
-</p>
+          )}
 
 
-  <ul className="space-y-3 pl-2">
-    <li className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl shadow-sm">
-      <span className="font-medium text-gray-700 w-28">Legacy</span>
-      <code className="text-sm text-blue-600 break-all">
-        https://wwwdev.ebi.ac.uk/kg/api/v1/mcp/sse
-      </code>
-    </li>
-    <li className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl shadow-sm">
-      <span className="font-medium text-gray-700 w-28">Streamable HTTP</span>
-      <code className="text-sm text-blue-600 break-all">
-        https://wwwdev.ebi.ac.uk/kg/api/v1/mcp
-      </code>
-    </li>
-  </ul>
-          </div>
-          </div>
+
+
 {subgraph && bronchiectasisNode && (
           <div className="mt-8">
             <div className="text-xl font-bold mb-2 text-neutral-black">
-              Example: Bronchiectasis
+              Exploring a disease network: Bronchiectasis
             </div>
             <div style={{ height: "600px", border: "1px solid #e0e0e0", borderRadius: "8px", overflow: "hidden", position: "relative" }}>
               <GraphView subgraph={subgraph} node={bronchiectasisNode} />

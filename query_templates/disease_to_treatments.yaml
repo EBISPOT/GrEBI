@@ -1,5 +1,5 @@
 title: Search for treatments for a disease
-description: Given a disease, find treatments or drugs indicated/studied for it, including evidence from DisMech when available
+question: What [treatments]{treatment} exist for {disease_id}?
 subgraphs:
   - ebi_monarch_xspecies
   - dismech

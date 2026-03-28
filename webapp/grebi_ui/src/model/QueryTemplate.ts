@@ -2,6 +2,7 @@
 export interface QueryTemplate {
   id: string;
   title: string;
+  question: string;
   description: string;
   subgraphs: string[];
   topics: string[];

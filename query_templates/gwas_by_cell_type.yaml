@@ -1,5 +1,5 @@
 title: Search GWAS Catalog by cell type
-description: Given a cell type from CL, find GWAS studies with traits characteristic of this cell type
+question: What GWAS studies have [traits]{trait} characteristic of {cell_type_id}?
 subgraphs:
   - ebi_monarch_xspecies
 topics:

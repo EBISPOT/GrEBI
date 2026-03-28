@@ -1,5 +1,5 @@
 title: Anatomical locations and cell types involved in a disease
-description: Given a disease, find its anatomical locations and cell types from any source
+question: What [anatomical locations]{entity} and [cell types]{entity} are involved in {disease_id}?
 subgraphs:
   - ebi_monarch_xspecies
   - dismech

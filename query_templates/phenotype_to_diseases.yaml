@@ -1,5 +1,5 @@
 title: Diseases associated with a phenotype
-description: Given a phenotype (e.g. HPO term), find diseases that have this phenotype, including frequency and evidence from DisMech when available
+question: What [diseases]{disease} are associated with {phenotype_id}?
 subgraphs:
   - ebi_monarch_xspecies
   - dismech

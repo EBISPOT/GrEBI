@@ -1,5 +1,5 @@
 title: Genes related to a disease
-description: Return genes related to a disease; this is a hello world example for integration tests
+question: What [genes]{gene} are related to {disease_id}?
 subgraphs:
   - hello_world
   - test_clique_merge

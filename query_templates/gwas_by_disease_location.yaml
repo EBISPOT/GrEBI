@@ -1,5 +1,5 @@
 title: Search GWAS Catalog by disease location
-description: Given an anatomical location from UBERON, find GWAS associations for linked diseases
+question: What [diseases]{disease} have GWAS associations located in {location_id}?
 subgraphs:
   - ebi_monarch_xspecies
   - impc_x_gwas

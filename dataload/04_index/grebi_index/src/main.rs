@@ -30,6 +30,9 @@ struct Args {
     subgraph_name: String,
 
     #[arg(long)]
+    subgraph_config_json_path: Option<String>,
+
+    #[arg(long)]
     out_graph_metadata_json_path: String,
 
     #[arg(long)]
@@ -238,24 +241,37 @@ fn main() {
     let start_time3 = std::time::Instant::now();
 
     graph_metadata_writer.write_all(
-    serde_json::to_string_pretty(&json!({
-        "subgraph_name": args.subgraph_name,
-        "entity_props": entity_props_to_count.iter().map(|(k,v)| {
-                return (String::from_utf8(k.to_vec()).unwrap(), json!({
-                    "count": v
-                }))
-        }).collect::<HashMap<String,serde_json::Value>>(),
-        "edge_props": edge_props_to_count.iter().map(|(k,v)| {
-                return (String::from_utf8(k.to_vec()).unwrap(), json!({
-                    "count": v
-                }))
-        }).collect::<HashMap<String,serde_json::Value>>(),
-        "types": types_to_count.iter().map(|(k,v)| {
-                return (String::from_utf8(k.to_vec()).unwrap(), json!({
-                    "count": v
-                }))
-        }).collect::<HashMap<String,serde_json::Value>>(),
-    })).unwrap().as_bytes()).unwrap();
+    serde_json::to_string_pretty(&{
+        let mut metadata = json!({
+            "subgraph_name": args.subgraph_name,
+            "entity_props": entity_props_to_count.iter().map(|(k,v)| {
+                    return (String::from_utf8(k.to_vec()).unwrap(), json!({
+                        "count": v
+                    }))
+            }).collect::<HashMap<String,serde_json::Value>>(),
+            "edge_props": edge_props_to_count.iter().map(|(k,v)| {
+                    return (String::from_utf8(k.to_vec()).unwrap(), json!({
+                        "count": v
+                    }))
+            }).collect::<HashMap<String,serde_json::Value>>(),
+            "types": types_to_count.iter().map(|(k,v)| {
+                    return (String::from_utf8(k.to_vec()).unwrap(), json!({
+                        "count": v
+                    }))
+            }).collect::<HashMap<String,serde_json::Value>>(),
+        });
+        if let Some(ref config_path) = args.subgraph_config_json_path {
+            if let Ok(config_file) = File::open(config_path) {
+                if let Ok(config_json) = serde_json::from_reader::<_, serde_json::Value>(BufReader::new(config_file)) {
+                    if let Some(config_obj) = config_json.as_object() {
+                        let md = metadata.as_object_mut().unwrap();
+                        md.insert("subgraph_config".to_string(), serde_json::Value::Object(config_obj.clone()));
+                    }
+                }
+            }
+        }
+        metadata
+    }).unwrap().as_bytes()).unwrap();
 
     for name in all_names {
         names_writer.write_all(&name).unwrap();

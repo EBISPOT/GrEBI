@@ -20,6 +20,7 @@ process index {
     cat ${merged_filenames.iterator().join(" ")} \
         | grebi_index \
         --subgraph-name ${subgraph} \
+        --subgraph-config-json-path ${params.grebi_home}/configs/subgraph_configs/${subgraph}.json \
         --out-entity-metadata-jsonl-path entity_metadata.jsonl \
         --out-graph-metadata-json-path graph_metadata.json \
         --out-names-txt names.txt \

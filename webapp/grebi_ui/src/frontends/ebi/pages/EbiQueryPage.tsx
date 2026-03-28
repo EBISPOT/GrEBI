@@ -8,6 +8,9 @@ import { QueryTemplate } from "../../../model/QueryTemplate";
 import {get} from "../../../app/api";
 import addLinksToText from "../../../addLinksToText";
 import QueryInterface from "../../../components/query/QueryInterface";
+import QueryQuestion from "../../../components/query/QueryQuestion";
+import InputBadge from "../../../components/query/InputBadge";
+import OutputBadge from "../../../components/query/OutputBadge";
 
 export default function EbiQueriesPage() {
 
@@ -42,12 +45,42 @@ export default function EbiQueriesPage() {
           }
 
           { queryTemplate &&
-            <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
-              <Typography variant="h4">{addLinksToText(queryTemplate.title, subgraph)}</Typography>
-              <p>{addLinksToText(queryTemplate.description, subgraph)}</p>
-              <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-2">
-              <QueryInterface subgraph={subgraph} queryTemplate={queryTemplate} />
-              </div>
+            <div>
+              <Typography variant="h4" sx={{ mt: 3 }}>{addLinksToText(queryTemplate.title, subgraph)}</Typography>
+              <p className="text-lg text-neutral-dark mt-6 mb-6">
+                  {queryTemplate.question.split(/(\[[^\]]+\]\{[^}]+\}|\{[^}]+\})/).map((part, i) => {
+                    let mRef = part.match(/^\[([^\]]+)\]\{(.+)\}$/);
+                    if (mRef) {
+                      return <span key={i}><strong>{mRef[1]}</strong> (<OutputBadge>{mRef[2]}</OutputBadge>)</span>;
+                    }
+                    let mParam = part.match(/^\{(.+)\}$/);
+                    if (mParam) {
+                      return <InputBadge key={i}>{mParam[1]}</InputBadge>;
+                    }
+                    return part;
+                  })}
+              </p>
+              <QueryInterface subgraph={subgraph} queryTemplate={queryTemplate} sidebar={
+                queryTemplate.examples && queryTemplate.examples.length > 0 ? (
+                  <div>
+                    <Typography variant="subtitle2" className="text-gray-500 mb-2">Examples</Typography>
+                    <div className="flex flex-col gap-2 mt-2">
+                      {queryTemplate.examples.map((example, idx) => (
+                        <div
+                          key={idx}
+                          className="text-left text-sm hover:bg-blue-50 rounded px-2 py-1.5 transition-colors cursor-pointer"
+                          onClick={() => {
+                            const qs = new URLSearchParams(example.params);
+                            setSearchParams(qs);
+                          }}
+                        >
+                          <QueryQuestion subgraph={subgraph} template={queryTemplate} exampleIndex={idx} readOnly={true} fontSize="0.85rem" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : undefined
+              } />
             </div>
           }
 

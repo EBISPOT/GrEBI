@@ -1,5 +1,5 @@
 title: Search GWAS reported different from mapped
-description: Search for GWAS with reported traits different from mapped trait label or synonyms
+question: Which [GWAS reported traits]{reported_trait} under {parent_id} differ from their mapped ontology term?
 subgraphs:
   - ebi_monarch_xspecies
 topics:

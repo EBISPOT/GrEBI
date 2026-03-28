@@ -5,7 +5,6 @@ import { Stack } from "@mui/material";
 import DownloadIcon from '@mui/icons-material/Download';
 import TravelExplore from '@mui/icons-material/TravelExplore';
 import { ManageSearch, TableChart } from "@mui/icons-material";
-import SubgraphPicker from "../../components/SubgraphPicker";
 import Breadcrumbs, { BreadcrumbsEntry } from "../../components/Breadcrumbs";
 
 export default function EbiHeader({
@@ -130,14 +129,8 @@ function setSubgraph(subgraph: string) {
     <div className="bg-stone-100 pt-1 pl-2 pr-2 pb-1 flex flex-row justify-between items-center">
       
     {breadcrumbs !== undefined 
-      ? <Breadcrumbs subgraph={subgraph} entries={breadcrumbs} /> 
+      ? <Breadcrumbs subgraph={subgraph} setSubgraph={setSubgraph} entries={breadcrumbs} /> 
       : <div />}
-
-      <SubgraphPicker 
-        subgraph={subgraph}
-        setSubgraph={setSubgraph}
-        compact
-      />
     </div>
   )
 }

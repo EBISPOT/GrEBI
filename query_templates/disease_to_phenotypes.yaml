@@ -1,5 +1,5 @@
 title: Search for phenotypes associated with a disease
-description: Given a disease, search for phenotypes associated with it and its subclasses, including evidence and frequency from DisMech when available
+question: What [phenotypes]{phenotype} are associated with {disease_id}?
 subgraphs:
   - ebi_monarch_xspecies
   - dismech

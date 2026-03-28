@@ -1,5 +1,5 @@
 title: Biological processes affected by a disease
-description: Given a disease, find biological processes (e.g. GO terms) that are affected
+question: What [biological processes]{process} are affected by {disease_id}?
 subgraphs:
   - ebi_monarch_xspecies
   - dismech

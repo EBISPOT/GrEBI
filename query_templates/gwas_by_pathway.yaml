@@ -1,5 +1,5 @@
 title: Search GWAS Catalog by Reactome pathway
-description: Given a pathway from Reactome, find variants, traits, and studies for its genes in the GWAS Catalog
+question: Which GWAS [SNPs]{snp} are linked to genes in {pathway_id}?
 subgraphs:
   - ebi_monarch_xspecies
 topics:

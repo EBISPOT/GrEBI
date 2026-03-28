@@ -1,4 +1,4 @@
-import { Checkbox, FormControlLabel, ThemeProvider, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
+import { ThemeProvider, Select, MenuItem, FormControl, InputLabel } from "@mui/material";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { get, getPaginated } from "../app/api";
@@ -430,19 +430,7 @@ export default function SearchBox({
             </ThemeProvider>
           )}
         </div>
-        {showExact !== false && <div className="col-span-2">
-          <ThemeProvider theme={theme}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={exact}
-                  onChange={(ev) => setExact(!!ev.target.checked)}
-                />
-              }
-              label="Exact match"
-            />
-          </ThemeProvider>
-        </div>}
+
       </div>
     </Fragment>
   );

@@ -1,5 +1,5 @@
 title: Search for gene disease associations
-description: Given a disease, search for genes associated with it and its subclasses
+question: What [genes]{gene} are associated with {disease_id}?
 subgraphs:
   - ebi_monarch_xspecies
 topics:

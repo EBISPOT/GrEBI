@@ -1,5 +1,5 @@
 title: Search GWAS Catalog by drugs indicated for a disease
-description: Given a disease, find GWAS studies for its medications
+question: What [GWAS study traits]{trait} are associated with drugs used to treat {disease_id}?
 subgraphs:
   - ebi_monarch_xspecies
 topics:

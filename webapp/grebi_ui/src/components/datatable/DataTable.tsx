@@ -6,7 +6,7 @@ import DtSortIcon from "./DtSortIcon";
 
 export interface Column {
   id: string;
-  name: string;
+  name: React.ReactNode;
   minWidth?: number;
   align?: "right";
   selector: (row: any, key:string) => any;

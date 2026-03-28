@@ -1,7 +1,8 @@
 import { Fragment, useMemo, useState } from 'react';
-import { Box, Typography, IconButton, Collapse } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Box, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CloseIcon from '@mui/icons-material/Close';
 
 import prismjs from "prismjs";
 import "prismjs/components/prism-cypher";
@@ -10,7 +11,7 @@ import { copyToClipboard } from '../../app/util';
 
 export default function SourceCodeSection({ title, source, lang }) {
 
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
 
     let highlightedSource = useMemo<string>(() => {
 
@@ -25,53 +26,27 @@ export default function SourceCodeSection({ title, source, lang }) {
 
   return (
     <Fragment>
-      <Box
-        onClick={() => setExpanded(!expanded)}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'pointer',
-          userSelect: 'none'
-        }}
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
       >
-        <ExpandMoreIcon
-          sx={{
-            transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
-            transition: 'transform 0.3s',
-            mr: 1,
-          }}
-        />
-        <Typography variant="h7">{title}</Typography>
-      </Box>
+        {title}
+        <OpenInNewIcon sx={{ fontSize: 16 }} />
+      </button>
 
-      <Collapse in={expanded}>
-        <Box
-          sx={{
-            mb: 2,
-            p: 0,
-            border: 'none',
-            position: 'relative',
-            '&:hover .copy-btn': { opacity: 1 },
-          }}
-        >
-          {/* Copy Button */}
-          <IconButton
-            className="copy-btn"
-            onClick={handleCopy}
-            size="small"
-            sx={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              opacity: 0,
-              transition: 'opacity 0.3s',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              '&:hover': { backgroundColor: 'rgba(255,255,255,0.2)' },
-            }}
-          >
-            <ContentCopyIcon fontSize="small" sx={{ color: 'white' }} />
-          </IconButton>
-
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
+          {title}
+          <div>
+            <IconButton onClick={handleCopy} size="small" title="Copy to clipboard" sx={{ mr: 0.5 }}>
+              <ContentCopyIcon fontSize="small" />
+            </IconButton>
+            <IconButton onClick={() => setOpen(false)} size="small">
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </div>
+        </DialogTitle>
+        <DialogContent>
           <pre
             style={{
               whiteSpace: 'pre-wrap',
@@ -80,10 +55,10 @@ export default function SourceCodeSection({ title, source, lang }) {
               fontSize: '0.875rem',
             }}
             dangerouslySetInnerHTML={{ __html: highlightedSource }}
-            className="bg-slate-900 p-2 rounded"
+            className="bg-slate-900 p-4 rounded"
           />
-        </Box>
-      </Collapse>
+        </DialogContent>
+      </Dialog>
     </Fragment>
   );
 }

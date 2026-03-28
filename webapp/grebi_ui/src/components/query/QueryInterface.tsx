@@ -5,21 +5,22 @@ import { QueryTemplate } from "../../model/QueryTemplate";
 import QueryTopic from "../../model/QueryTopic";
 import {get, getPaginated} from "../../app/api";
 import NodeSelectorBox from "../NodeSelectorBox";
-import { Box, Typography, FormControl, TextField, InputLabel, Button, Table, TableBody, TableCell, TableRow, Stack } from "@mui/material";
+import { Box, Typography, FormControl, TextField, InputLabel, Button, Table, TableBody, TableCell, TableRow } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import GraphNodeRef from "../../model/GraphNodeRef";
-import { Search } from "@mui/icons-material";
+import InputBadge from "./InputBadge";
 import ResultsTable from "./ResultsTable";
-import { Link } from "react-router-dom";
-import SourceCodeSection from "./SourceCodeSection";
+import TabbedSourceView from "./TabbedSourceView";
 import query2code from "./query2code";
+import React from "react";
 
 
 export default function QueryInterface({
     subgraph,
-    queryTemplate
+    queryTemplate,
+    sidebar
 }:{
-    subgraph:string, queryTemplate:QueryTemplate
+    subgraph:string, queryTemplate:QueryTemplate, sidebar?:React.ReactNode
 }) {
 
     let params = queryTemplate.params
@@ -90,53 +91,42 @@ export default function QueryInterface({
  let cypherSource = queryTemplate.cypher_match_fragment.trim() + "\n" + queryTemplate.cypher_return_fragment.trim();
  let codeSnippets = query2code(queryTemplate, paramValues)
 
+ const sourceTabs = [
+   { title: "Cypher Query", source: cypherSource, lang: "cypher" },
+   ...Object.keys(codeSnippets).map(srcLang => ({ title: srcLang, source: codeSnippets[srcLang], lang: srcLang }))
+ ];
+
 return (
   <Fragment>
 
-    <SourceCodeSection title="Cypher Query" source={cypherSource} lang="cypher" />
-    {Object.keys(codeSnippets).map(srcLang =>
-      <SourceCodeSection key={srcLang} title={srcLang} source={codeSnippets[srcLang]} lang={srcLang} />
-    )}
+    <div className="flex gap-4 items-stretch mb-4">
+      <div className="flex-1 min-w-0 flex flex-col">
+        <TabbedSourceView tabs={sourceTabs} />
+      </div>
+      {sidebar && (
+        <div className="flex-shrink-0 bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-y-auto" style={{ width: 350 }}>
+          {sidebar}
+        </div>
+      )}
+    </div>
 
     <Box
       component="form"
     >
 
-        {queryTemplate.examples && queryTemplate.examples.length > 0 &&
-        <Fragment>
-        <Typography variant="h5" gutterBottom>
-        Examples
-        </Typography>
-        <Box sx={{ mb: 3 }}>
-                <Stack direction="column" spacing={0}>
-                    {queryTemplate.examples.map((example, index) => {
-                        let exampleParams = new URLSearchParams(example.params).toString();
-                        return (
-                            <Link key={index} to={`/subgraphs/${subgraph}/queries/${queryTemplate.id}?${exampleParams}`} className="link-default">
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Search fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
-                                    {example.title}
-                                </Box>
-                            </Link>
-                        );
-                    })}
-                </Stack>
-        </Box>
-        </Fragment>}
-
         {params && params.length > 0 &&
         <Fragment>
         <Typography variant="h5" gutterBottom>
-        Parameters
+        Inputs
         </Typography>
-      <Table sx={{ mb: 3 }}>
+      <Table sx={{ mb: 3, '& tr:last-child td': { borderBottom: 'none' } }}>
         <TableBody>
           {params.map((param) => (
             <TableRow key={param.param_id}>
               <TableCell
                 sx={{ width: "200px", verticalAlign: "middle", fontSize:"large" }}
               >
-                {param.param_name}
+                <InputBadge>{param.param_id}</InputBadge>
               </TableCell>
               <TableCell>
                 {param.param_type === "string" && (
@@ -197,7 +187,10 @@ return (
 }
     </Box>
 
-    {paramValuesSubmitted !== undefined && <ResultsTable subgraph={subgraph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} />}
+    {paramValuesSubmitted !== undefined && <Fragment>
+      <Typography variant="h5" gutterBottom>Results</Typography>
+      <ResultsTable subgraph={subgraph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} />
+    </Fragment>}
   </Fragment>
 );
 }

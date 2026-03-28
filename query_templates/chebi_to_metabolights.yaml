@@ -1,5 +1,5 @@
 title: Search MetaboLights by chemical or chemical classification
-description: Given a biolink:ChemicalEntity or chemical classification, find every metabolights:Study in MetaboLights that references it or its subclasses as a metabolite
+question: What [MetaboLights studies]{study} involve {chemical_id}?
 subgraphs:
   - ebi_monarch_xspecies
 topics:
