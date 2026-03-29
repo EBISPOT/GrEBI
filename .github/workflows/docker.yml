@@ -40,7 +40,7 @@ jobs:
             file: webapp/grebi_prefix_service/Dockerfile
           - name: ui
             image: ghcr.io/ebispot/grebi_ui
-            context: webapp/grebi_ui
+            context: .
             file: webapp/grebi_ui/Dockerfile
           - name: combined
             image: ghcr.io/ebispot/grebi_combined

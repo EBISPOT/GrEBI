@@ -19,10 +19,11 @@ RUN mkdir /opt/grebi_ui
 WORKDIR /opt/grebi_ui
 
 
-COPY package.json package-lock.json /opt/grebi_ui/
+COPY webapp/grebi_ui/package.json webapp/grebi_ui/package-lock.json /opt/grebi_ui/
 RUN npm install
 
-COPY . /opt/grebi_ui/
+COPY docs /opt/grebi_ui/docs
+COPY webapp/grebi_ui /opt/grebi_ui
 
 RUN chmod +x /opt/grebi_ui/entrypoint.dockersh
 

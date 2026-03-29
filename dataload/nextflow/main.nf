@@ -63,6 +63,7 @@ params.dataload_home = "$GREBI_DATALOAD_HOME"
 params.grebi_home = "$GREBI_HOME"
 params.downloads_path = "$GREBI_DOWNLOADS_PATH"
 params.export_snapshots = false
+params.make_docs = false
 
 workflow {
 
@@ -271,6 +272,7 @@ workflow {
         Channel.value(params.subgraph),
         Channel.value(params.out),
         Channel.value(params.export_snapshots),
+        Channel.value(params.make_docs),
         Channel.value(params.grebi_home),
         Channel.value(params.integration_neo_heap),
         Channel.value(params.integration_solr_heap),

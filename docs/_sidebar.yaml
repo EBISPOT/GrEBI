@@ -1,0 +1,26 @@
+# Documentation sidebar navigation tree.
+# Each entry has a title, a path (relative .md file), and optional children.
+# The path is also used as the URL slug (without the .md extension).
+
+- title: What is GrEBI?
+  path: index.md
+- title: Getting Started
+  path: getting-started.md
+- title: Developer Overview
+  path: developer-overview.md
+  children:
+    - title: GrEBI Dataload
+      path: dataload.md
+      children:
+        - title: Downloads & Ingests
+          path: downloads-and-ingests.md
+    - title: Identifiers & CURIEs
+      path: identifiers.md
+- title: Using GrEBI
+  children:
+    - title: Query Templates
+      path: query-templates.md
+    - title: API Reference
+      path: api-reference.md
+    - title: Graph Queries
+      path: queries.md

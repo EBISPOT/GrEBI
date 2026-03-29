@@ -11,6 +11,7 @@ process test_query_templates {
     val(subgraph)
     val(out_dir)
     val(export_snapshots)
+    val(make_docs)
     val(grebi_home)
     val(neo_mem)
     val(solr_mem)
@@ -23,6 +24,7 @@ process test_query_templates {
 
     output:
     path("integration_test_results.txt"), optional: true
+    path("grebi-docs.pdf"), optional: true
     path("${subgraph}_snapshot_neo4j_nodes.jsonl"), optional: true
     path("${subgraph}_snapshot_neo4j_edges.jsonl"), optional: true
     path("${subgraph}_snapshot_solr_nodes.jsonl"), optional: true
@@ -67,6 +69,11 @@ process test_query_templates {
         fi
     fi
 
+    # Documentation generation (only when requested)
+    if [ "${make_docs}" = "true" ]; then
+        export GREBI_MAKE_DOCS=true
+    fi
+
     # Run the entrypoint in test mode — it handles supervisord, integration
     # tests, snapshot export, comparison, and cleanup.
     set +e
@@ -76,6 +83,7 @@ process test_query_templates {
 
     # Copy snapshot files to parent dir for Nextflow publishDir
     cp -f ${subgraph}_snapshot_*.jsonl ../ 2>/dev/null || true
+    cp -f grebi-docs.pdf ../ 2>/dev/null || true
 
     exit \$EXIT_CODE
     """

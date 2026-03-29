@@ -1,8 +1,9 @@
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, Link as RouterLink } from "react-router-dom";
 import MaterialisedQueryTable from "../../../components/matq/MaterialisedQueryTable";
 import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
 import { useEffect, useState } from "react";
-import { Box, Link, Typography } from "@mui/material";
+import { Box, Link, Typography, Stack } from "@mui/material";
+import { MenuBook } from "@mui/icons-material";
 import QueryTable from "../../../components/query/QueryTable";
 import QueryFacets from "../../../components/query/QueryFacets";
 import QueryTopic from "../../../model/QueryTopic";
@@ -40,6 +41,12 @@ export default function EbiTablesHomePage() {
             <Typography variant="h4">Graph Queries</Typography>
             <p>
             The EBI KG can be queried using a selection of graph query templates, for which you can fill in your own parameters. Results are returned in a tabular format and can be downloaded as CSV. These query templates are also available as tools on the MCP server.</p>
+            <RouterLink to="/docs/queries" style={{ textDecoration: 'none' }}>
+              <Stack direction="row" alignItems="center" gap={0.5} sx={{ color: '#1976d2', fontSize: '0.95rem', '&:hover': { textDecoration: 'underline' } }}>
+                <MenuBook fontSize="small" />
+                Learn more about GrEBI queries &raquo;
+              </Stack>
+            </RouterLink>
             
             <Box sx={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: 3 }}>
               {topics && (

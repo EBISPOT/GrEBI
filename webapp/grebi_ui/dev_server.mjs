@@ -3,10 +3,16 @@ import express from 'express'
 import fetch from 'node-fetch'
 import urlJoin from 'url-join'
 import nocache from 'nocache'
+import livereload from 'livereload'
+import connectLivereload from 'connect-livereload'
 
+// Live-reload: watch dist/ for changes and notify the browser
+const lrServer = livereload.createServer({ delay: 300 })
+lrServer.watch(process.cwd() + '/dist')
 
 let server = express()
 
+server.use(connectLivereload())
 server.use(nocache())
 server.set('etag', false)
 
