@@ -1,5 +1,7 @@
 # GrEBI (Graphs@EBI)
 
+[![SafeSkill 77/100](https://img.shields.io/badge/SafeSkill-77%2F100_Passes%20with%20Notes-yellow)](https://safeskill.dev/scan/ebispot-grebi)
+
 HPC pipeline using ontologies and LLM embeddings to aggregate knowledge graphs from [EMBL-EBI resources](https://www.ebi.ac.uk/services/data-resources-and-tools), the [MONARCH Initiative](https://monarch-initiative.github.io/monarch-ingest/Sources/), [DisMech](https://dismech.monarchinitiative.org/), [ROBOKOP](https://robokop.renci.org/), [Ubergraph](https://github.com/INCATools/ubergraph), and other sources.
 
 The aim is to make it easier for humans and machines to perform integrative queries which span multiple biomedical resources, in contrast to existing REST APIs which are typically constrainted to one resource.
