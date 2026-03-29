@@ -12,7 +12,7 @@ import { Close, KeyboardArrowDown } from "@mui/icons-material";
 
 export default function EbiEdgeSearchPage() {
   let params = useParams();
-  const subgraph: string = params.subgraph as string;
+  const graph: string = params.graph as string;
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -37,13 +37,13 @@ export default function EbiEdgeSearchPage() {
   // Fetch stats for sidebar facets (used when API skips expensive facet computation)
   const [statsFacets, setStatsFacets] = useState<any>({});
   useEffect(() => {
-    get<any>(`api/v1/subgraphs/${subgraph}/stats`).then((stats) => {
+    get<any>(`api/v1/graphs/${graph}/stats`).then((stats) => {
       const f: any = {};
       if (stats.edge_counts_by_type) f["grebi:type"] = stats.edge_counts_by_type;
       if (stats.edge_counts_by_datasource) f["grebi:datasources"] = stats.edge_counts_by_datasource;
       setStatsFacets(f);
     }).catch(() => {});
-  }, [subgraph]);
+  }, [graph]);
 
   useEffect(() => {
     setPage(0);
@@ -62,7 +62,7 @@ export default function EbiEdgeSearchPage() {
       if (dsFilter) params.push(["grebi:datasources", dsFilter]);
 
       let res = await getPaginated<any>(
-        `api/v1/subgraphs/${subgraph}/edges?${new URLSearchParams(params)}`
+        `api/v1/graphs/${graph}/edges?${new URLSearchParams(params)}`
       );
       setEdges(res.elements.map((e: any) => new GraphEdge(e)));
       setTotalResults(res.totalElements);
@@ -73,7 +73,7 @@ export default function EbiEdgeSearchPage() {
       setLoading(false);
     }
     fetchEdges();
-  }, [subgraph, typeFilter, dsFilter, page, rowsPerPage, statsFacets]);
+  }, [graph, typeFilter, dsFilter, page, rowsPerPage, statsFacets]);
 
   const setFilter = useCallback(
     (key: string, value: string) => {
@@ -92,13 +92,13 @@ export default function EbiEdgeSearchPage() {
 
   const breadcrumbs = [
     { url: `/graphs`, label: "Graphs" },
-    { url: `/graphs/${subgraph}/edges`, label: "Edges" },
+    { url: `/graphs/${graph}/edges`, label: "Edges" },
   ];
 
   return (
     <div>
       <EbiBreadcrumbsBar
-        subgraph={subgraph}
+        graph={graph}
         entries={breadcrumbs}
       />
       <main className="container mx-auto px-4 my-8">
@@ -226,7 +226,7 @@ export default function EbiEdgeSearchPage() {
                         >
                           <td className="py-2 px-3">
                             {from ? (
-                              <NodeRefLink subgraph={subgraph} nodeRef={from} showTypeChip={true} />
+                              <NodeRefLink graph={graph} nodeRef={from} showTypeChip={true} />
                             ) : (
                               <span className="text-gray-400 font-mono text-xs">
                                 {edge.props["grebi:fromNodeId"]}
@@ -238,7 +238,7 @@ export default function EbiEdgeSearchPage() {
                           </td>
                           <td className="py-2 px-3">
                             {to ? (
-                              <NodeRefLink subgraph={subgraph} nodeRef={to} showTypeChip={true} />
+                              <NodeRefLink graph={graph} nodeRef={to} showTypeChip={true} />
                             ) : (
                               <span className="text-gray-400 font-mono text-xs">
                                 {edge.props["grebi:toNodeId"]}

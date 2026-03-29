@@ -20,11 +20,11 @@ export interface ResultsState {
 };
 
 export default function ResultsTable({
-    subgraph,
+    graph,
     queryid,
     extraSearchParams
 }:{
-    subgraph:string,
+    graph:string,
     queryid:string,
     extraSearchParams?: string[][]|undefined
 }
@@ -45,7 +45,7 @@ export default function ResultsTable({
     useEffect(() => {
         async function getResults() {
             setLoading(true)
-            let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/materialised_queries/${queryid}?${
+            let res = (await getPaginated<any>(`api/v1/graphs/${graph}/materialised_queries/${queryid}?${
                 new URLSearchParams([
                     ['page', page],
                     ['size', rowsPerPage],
@@ -65,7 +65,7 @@ export default function ResultsTable({
         }
         getResults()
 
-    }, [ subgraph, queryid, page, rowsPerPage, filter, sortColumn, sortDir ]);
+    }, [ graph, queryid, page, rowsPerPage, filter, sortColumn, sortDir ]);
 
     if(resultsState == null) {
         return <LoadingOverlay message="Loading results..." />
@@ -103,7 +103,7 @@ function DefaultSelector(row:any, key:string) {
     }
 
     return <PropVals 
-     subgraph={row['subgraph']} 
+     graph={row['graph']} 
     refs={new Refs(row['_refs'])}
     values={vals} />
 }

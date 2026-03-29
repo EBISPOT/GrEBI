@@ -1,6 +1,6 @@
 title: Search for gene disease associations
 question: What [genes]{gene} are associated with {disease_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
 topics:
   - gwas_catalog

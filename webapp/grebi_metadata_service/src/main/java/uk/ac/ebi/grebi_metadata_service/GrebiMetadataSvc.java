@@ -23,9 +23,9 @@ public class GrebiMetadataSvc {
         var files = Arrays.stream(new File(System.getenv("GREBI_METADATA_JSON_SEARCH_PATH")).listFiles()).filter(File::isFile).filter(f -> f.getName().endsWith("_metadata.json")).toArray(File[]::new);
 
         for (File f : files) {
-            var subgraph = f.getName().split("_metadata.json")[0];
-            jsons.put(subgraph, gson.fromJson(new InputStreamReader(new FileInputStream(f)), JsonElement.class));
-            System.out.println("Loaded metadata JSON for subgraph " + subgraph + " from " + f.getAbsolutePath());
+            var graph = f.getName().split("_metadata.json")[0];
+            jsons.put(graph, gson.fromJson(new InputStreamReader(new FileInputStream(f)), JsonElement.class));
+            System.out.println("Loaded metadata JSON for graph " + graph + " from " + f.getAbsolutePath());
         }
 
         Javalin app = Javalin.create(config -> {

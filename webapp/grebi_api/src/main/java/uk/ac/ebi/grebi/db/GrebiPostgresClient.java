@@ -124,23 +124,23 @@ public class GrebiPostgresClient {
     }
 
     /**
-     * Get subgraph names from edge table names (edges_{subgraph} -> subgraph).
+     * Get graph names from edge table names (edges_{graph} -> graph).
      */
-    public Set<String> getSubgraphs() {
-        Set<String> subgraphs = new LinkedHashSet<>();
+    public Set<String> getGraphs() {
+        Set<String> graphs = new LinkedHashSet<>();
         for (String table : listEdgeTables()) {
             if (table.startsWith("edges_")) {
-                subgraphs.add(table.substring("edges_".length()));
+                graphs.add(table.substring("edges_".length()));
             }
         }
-        return subgraphs;
+        return graphs;
     }
 
-    private Table<?> edgesTable(String subgraph) {
-        if (!subgraph.matches("[a-zA-Z0-9_]+")) {
-            throw new IllegalArgumentException("Invalid subgraph name");
+    private Table<?> edgesTable(String graph) {
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
         }
-        return table(name("edges_" + subgraph));
+        return table(name("edges_" + graph));
     }
 
     private Field<String> checkedColumn(String columnName) {
@@ -228,18 +228,18 @@ public class GrebiPostgresClient {
      * Search edges with optional filters (no required node ID). Returns full edge rows.
      * When unfiltered, uses estimated count from pg_class and skips facets for performance.
      */
-    public EdgeQueryResult searchEdges(String subgraph,
+    public EdgeQueryResult searchEdges(String graph,
                                         Map<String, List<String>> filters,
                                         String sortField, String sortDir,
                                         int offset, int limit) {
         try {
             var ctx = dsl();
-            var tbl = edgesTable(subgraph);
+            var tbl = edgesTable(graph);
             var conditions = buildConditionsFromFilters(filters);
             boolean unfiltered = conditions.isEmpty();
 
             // Fast estimated count — avoids COUNT(*) full scan
-            long totalCount = estimateRowCount(ctx, tbl, conditions, subgraph, unfiltered);
+            long totalCount = estimateRowCount(ctx, tbl, conditions, graph, unfiltered);
             boolean cheapFacets = totalCount < 100_000;
 
             var rowJson = field("row_to_json({0})", String.class, tbl);
@@ -283,9 +283,9 @@ public class GrebiPostgresClient {
     }
 
     private long estimateRowCount(DSLContext ctx, Table<?> tbl, List<Condition> conditions,
-                                   String subgraph, boolean unfiltered) {
+                                   String graph, boolean unfiltered) {
         if (unfiltered) {
-            var tableName = "edges_" + subgraph;
+            var tableName = "edges_" + graph;
             return ctx.select(field("reltuples::bigint", Long.class))
                     .from(table("pg_class"))
                     .where(field("relname").eq(tableName))
@@ -311,13 +311,13 @@ public class GrebiPostgresClient {
     /**
      * Query edges with pagination and filtering.
      */
-    public EdgeQueryResult queryEdges(String subgraph, String filterField, String filterValue,
+    public EdgeQueryResult queryEdges(String graph, String filterField, String filterValue,
                                        Map<String, List<String>> extraFilters,
                                        String sortField, String sortDir,
                                        int offset, int limit) {
         try {
             var ctx = dsl();
-            var tbl = edgesTable(subgraph);
+            var tbl = edgesTable(graph);
             var conditions = buildConditions(filterField, filterValue, extraFilters);
 
             long totalCount = ctx.select(count())
@@ -351,13 +351,13 @@ public class GrebiPostgresClient {
     /**
      * Query edge refs (lightweight: only type, datasources, fromNodeId, toNodeId).
      */
-    public EdgeQueryResult queryEdgeRefs(String subgraph, String filterField, String filterValue,
+    public EdgeQueryResult queryEdgeRefs(String graph, String filterField, String filterValue,
                                           Map<String, List<String>> extraFilters,
                                           String sortField, String sortDir,
                                           int offset, int limit) {
         try {
             var ctx = dsl();
-            var tbl = edgesTable(subgraph);
+            var tbl = edgesTable(graph);
             var conditions = buildConditions(filterField, filterValue, extraFilters);
             var datasources = field(name("grebi:datasources"));
 
@@ -400,10 +400,10 @@ public class GrebiPostgresClient {
     /**
      * Get edge counts grouped by type and datasource.
      */
-    public Map<String, Map<String, Integer>> getEdgeCounts(String subgraph, String filterField, String filterValue) {
+    public Map<String, Map<String, Integer>> getEdgeCounts(String graph, String filterField, String filterValue) {
         try {
             var ctx = dsl();
-            var tbl = edgesTable(subgraph);
+            var tbl = edgesTable(graph);
             var dsField = field(name("ds"), String.class);
             var cnt = count().as("cnt");
             // jOOQ plain SQL template — {0} is rendered as a quoted identifier by jOOQ, not concatenated
@@ -428,10 +428,10 @@ public class GrebiPostgresClient {
     /**
      * Get a single edge by its ID.
      */
-    public Map<String, Object> getEdgeById(String subgraph, String edgeId) {
+    public Map<String, Object> getEdgeById(String graph, String edgeId) {
         try {
             var ctx = dsl();
-            var tbl = edgesTable(subgraph);
+            var tbl = edgesTable(graph);
             var rowJson = field("row_to_json({0})", String.class, tbl);
             var record = ctx.select(rowJson)
                     .from(tbl)
@@ -503,11 +503,11 @@ public class GrebiPostgresClient {
         }
     }
 
-    private Table<?> nodesTable(String subgraph) {
-        if (!subgraph.matches("[a-zA-Z0-9_]+")) {
-            throw new IllegalArgumentException("Invalid subgraph name");
+    private Table<?> nodesTable(String graph) {
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
         }
-        return table(name("nodes_" + subgraph));
+        return table(name("nodes_" + graph));
     }
 
     private static final Pattern EMBEDDING_COL_PATTERN = Pattern.compile("^embedding:[a-zA-Z0-9_-]+$");
@@ -524,7 +524,7 @@ public class GrebiPostgresClient {
      * Search nodes by vector similarity using pgvector cosine distance.
      * Returns nodeIds and distances, ordered by distance ascending.
      */
-    public List<VectorSearchResult> searchByVector(String subgraph, String embeddingModel,
+    public List<VectorSearchResult> searchByVector(String graph, String embeddingModel,
                                                     float[] queryVector, int limit) {
         String col = checkedEmbeddingColumn(embeddingModel);
 
@@ -538,7 +538,7 @@ public class GrebiPostgresClient {
 
         try {
             Connection conn = getConnection();
-            var tbl = nodesTable(subgraph);
+            var tbl = nodesTable(graph);
             var nodeIdField = field(name("grebi:nodeId"), String.class);
             var nameField = field(name("grebi:name"), String.class);
 
@@ -581,12 +581,12 @@ public class GrebiPostgresClient {
     /**
      * Get a node's embedding vector for a given model.
      */
-    public float[] getNodeEmbedding(String subgraph, String nodeId, String embeddingModel) {
+    public float[] getNodeEmbedding(String graph, String nodeId, String embeddingModel) {
         String col = checkedEmbeddingColumn(embeddingModel);
 
         try {
             Connection conn = getConnection();
-            var tbl = nodesTable(subgraph);
+            var tbl = nodesTable(graph);
 
             String sql = "SELECT \"" + col + "\"::text FROM " + dsl().render(tbl) +
                     " WHERE \"grebi:nodeId\" = ?";

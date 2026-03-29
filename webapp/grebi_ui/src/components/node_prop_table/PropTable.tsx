@@ -6,11 +6,11 @@ import DatasourceSelector from "../DatasourceSelector";
 import LoadingOverlay from "../LoadingOverlay";
 
 export default function PropTable(params:{
-    subgraph:string,
+    graph:string,
     node:GraphNode,
     lang:string
 }) {
-    let { subgraph, node, lang } = params
+    let { graph, node, lang } = params
 
   let [datasources,setDatasources] =
     useState<string[]>(node.getDatasources())
@@ -30,7 +30,7 @@ export default function PropTable(params:{
     let rows:JSX.Element[] = []
 
     for(let key of propkeys) {
-       let elem = <PropRow subgraph={subgraph} key={key} node={node} prop={key} values={props[key]} datasources={datasources} dsEnabled={dsEnabled} /> 
+       let elem = <PropRow graph={graph} key={key} node={node} prop={key} values={props[key]} datasources={datasources} dsEnabled={dsEnabled} /> 
        if(elem) {
           rows.push(elem)
           rows.push(<Grid item xs={12} style={{padding:'4px'}} />)

@@ -152,8 +152,8 @@ public class GrebiSolrClient {
         return qr;
     }
 
-    public List<String> autocomplete(String subgraph, String q) {
-        org.apache.solr.client.solrj.SolrClient mySolrClient = new HttpSolrClient.Builder(getSolrHost() + "/solr/grebi_autocomplete_" + subgraph).build();
+    public List<String> autocomplete(String graph, String q) {
+        org.apache.solr.client.solrj.SolrClient mySolrClient = new HttpSolrClient.Builder(getSolrHost() + "/solr/grebi_autocomplete_" + graph).build();
 
         SolrQuery query = new SolrQuery();
         query.set("defType", "edismax");

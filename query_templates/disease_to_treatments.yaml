@@ -1,6 +1,6 @@
 title: Search for treatments for a disease
 question: What [treatments]{treatment} exist for {disease_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
   - dismech
 topics:

@@ -8,7 +8,7 @@ import GraphViewControls from "./GraphViewControls";
 import EdgeExpandPanel, { ChainSegment } from "./EdgeExpandPanel";
 import LoadingOverlay from "../LoadingOverlay";
 import { expandedKey } from "./useGraphViewState";
-import { ArrowForward as ArrowForwardIcon, Close as CloseIcon } from "@mui/icons-material";
+import { ArrowForward as ArrowForwardIcon, Close as CloseIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 
 interface ExpandDialogState {
@@ -20,15 +20,16 @@ interface ExpandDialogState {
 }
 
 export default function GraphView({
-  subgraph,
+  graph,
   node,
 }: {
-  subgraph: string;
+  graph: string;
   node: GraphNode;
 }) {
-  const state = useGraphViewState(subgraph);
+  const state = useGraphViewState(graph);
   const [highlightedDs, setHighlightedDs] = useState<string | null>(null);
   const [highlightedEdgeType, setHighlightedEdgeType] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Debounce highlight changes to avoid rapid re-renders during fast mouse movement
   const highlightDsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -294,10 +295,21 @@ export default function GraphView({
   const showExpandInline = expandDialog.open;
 
   return (
-    <div style={{ display: "flex", gap: "8px", alignItems: "stretch" }}>
+    <div style={{
+      display: "flex",
+      gap: "8px",
+      alignItems: "stretch",
+      ...(isFullscreen ? {
+        position: "fixed" as const,
+        inset: 0,
+        zIndex: 9999,
+        background: "#fff",
+        padding: "8px",
+      } : {}),
+    }}>
       {/* Side panel: filters */}
       {!state.loading && state.allDatasources.length > 0 && (
-        <div style={{ width: "240px", flexShrink: 0, height: "600px" }}>
+        <div style={{ width: "240px", flexShrink: 0, height: isFullscreen ? "100%" : "600px" }}>
           <GraphViewControls
             datasources={state.allDatasources}
             dsEnabled={state.allDatasources.filter(
@@ -323,11 +335,27 @@ export default function GraphView({
           position: "relative",
           flex: "1 1 0",
           minWidth: 0,
-          height: "600px",
+          height: isFullscreen ? "100%" : "600px",
           display: "flex",
           flexDirection: "column",
         }}
       >
+        {/* Fullscreen toggle */}
+        <IconButton
+          onClick={() => setIsFullscreen((f) => !f)}
+          size="small"
+          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          sx={{
+            position: "absolute",
+            top: 4,
+            right: 4,
+            zIndex: 20,
+            background: "rgba(255,255,255,0.85)",
+            "&:hover": { background: "rgba(255,255,255,1)" },
+          }}
+        >
+          {isFullscreen ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
+        </IconButton>
         {/* Top path bar */}
         {(() => {
           // Expand dialog heading
@@ -426,7 +454,7 @@ export default function GraphView({
               <EdgeExpandPanel
                 onSelectNode={handleSelectNodeFromDialog}
                 onCancel={handleCloseDialog}
-                subgraph={subgraph}
+                graph={graph}
                 nodeId={expandDialog.parentNodeId || state.root.getNodeId()}
                 encodedNodeId={expandDialog.parentEncodedNodeId || state.root.getEncodedNodeId()}
                 direction={expandDialog.direction}

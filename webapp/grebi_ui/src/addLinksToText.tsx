@@ -2,8 +2,8 @@
 import hardcodedNodeTypes from "./hardcoded_node_types.json";
 import * as Muicon from "@mui/icons-material";
 
-export default function addLinksToText(text:string, subgraph:string|undefined) {
-    if(!subgraph)
+export default function addLinksToText(text:string, graph:string|undefined) {
+    if(!graph)
         return text;
 
     let curieRegex = /\b([a-z]+:[a-z0-9_]+)\b/gi;

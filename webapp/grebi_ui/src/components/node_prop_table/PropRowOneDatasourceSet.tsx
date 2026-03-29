@@ -7,9 +7,9 @@ import GraphNode from "../../model/GraphNode";
 import PropVal from "../../model/PropVal";
 import { DatasourceTags } from "../DatasourceTag";
 
-export default function PropRowOneDatasourceSet(params:{subgraph:string,node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
+export default function PropRowOneDatasourceSet(params:{graph:string,node:GraphNode,prop:string,values:PropVal[],datasources:string[],dsEnabled:string[]}) {
 
-    let {subgraph,node,prop,values,datasources,dsEnabled } = params
+    let {graph,node,prop,values,datasources,dsEnabled } = params
 
     return (
         <Fragment>
@@ -21,7 +21,7 @@ export default function PropRowOneDatasourceSet(params:{subgraph:string,node:Gra
               </Grid>
               <Grid item xs={12} style={{padding:'8px'}}>
                 <div className="pl-2 mb-2">
-                <PropVals subgraph={subgraph} refs={node.getRefs()} values={values} />
+                <PropVals graph={graph} refs={node.getRefs()} values={values} />
                 </div>
               </Grid>
            </Fragment>

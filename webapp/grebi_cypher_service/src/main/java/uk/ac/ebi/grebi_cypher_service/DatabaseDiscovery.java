@@ -50,7 +50,7 @@ class DatabaseDiscovery {
     /**
      * Two-phase embedded database discovery:
      *  Phase 1 — open each database with a minimal page cache (8 MB) to discover
-     *            the subgraph name and get the node count via the count store.
+     *            the graph name and get the node count via the count store.
      *  Phase 2 — close and reopen each database with a proportional share of
      *            the total page cache budget based on node count.
      */
@@ -62,15 +62,15 @@ class DatabaseDiscovery {
         if (homes.isEmpty()) return;
 
         // Phase 1: open with minimal cache, count nodes, then close
-        record ProbeResult(Path home, String subgraph, long nodeCount) {}
+        record ProbeResult(Path home, String graph, long nodeCount) {}
         List<ProbeResult> probes = new ArrayList<>();
 
         for (Path home : homes) {
             try {
                 EmbeddedBackend probe = new EmbeddedBackend(home, 8);
-                String sg = probe.getSubgraph();
+                String sg = probe.getGraph();
                 if (backends.containsKey(sg)) {
-                    System.out.println("WARNING: subgraph '" + sg + "' already loaded, skipping " + home);
+                    System.out.println("WARNING: graph '" + sg + "' already loaded, skipping " + home);
                     probe.close();
                     continue;
                 }
@@ -100,11 +100,11 @@ class DatabaseDiscovery {
             } else {
                 cacheMb = Math.max(8, totalPageCacheMb / probes.size());
             }
-            System.out.println("Reopening '" + p.subgraph + "' with " + cacheMb + " MB page cache"
+            System.out.println("Reopening '" + p.graph + "' with " + cacheMb + " MB page cache"
                     + " (" + p.nodeCount + "/" + totalNodes + " nodes)");
             try {
                 EmbeddedBackend backend = new EmbeddedBackend(p.home, cacheMb);
-                backends.put(p.subgraph, backend);
+                backends.put(p.graph, backend);
             } catch (Exception e) {
                 System.err.println("ERROR opening embedded database at " + p.home + ": " + e.getMessage());
                 e.printStackTrace();

@@ -1,7 +1,6 @@
 {
   "id": "DiseaseOntologies",
   "name": "Disease Ontologies (EFO, MONDO, DOID)",
-  "description": "A focused graph of disease ontologies including EFO, MONDO, and DOID with their cross-references, hierarchies, and mappings.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

@@ -10,13 +10,13 @@ import OutputBadge from "../query/OutputBadge";
 import EdgeMetadataDialog from "./EdgeMetadataDialog";
 
 interface ResultsTableProps {
-  subgraph: string;
+  graph: string;
   queryId: string;
   params: Record<string, any>|undefined;
   resultColumns: { column_id: string; column_type: string }[];
 }
 
-export default function ResultsTable({ subgraph, queryId, params, resultColumns }: ResultsTableProps) {
+export default function ResultsTable({ graph, queryId, params, resultColumns }: ResultsTableProps) {
   const [data, setData] = useState<any[]>([]);
   const [dataCount, setDataCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
@@ -47,7 +47,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
       }
       reqParams.set('resolve', 'false');
       const response = await getPaginated<any>(
-        `api/v1/subgraphs/${subgraph}/query/${queryId}`,
+        `api/v1/graphs/${graph}/query/${queryId}`,
         reqParams
       );
       setData(response.elements);
@@ -73,7 +73,7 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
         const node = new GraphNodeRef(val);
         return (
           <Link
-            to={`/graphs/${subgraph}/nodes/${node.getEncodedNodeId()}`}
+            to={`/graphs/${graph}/nodes/${node.getEncodedNodeId()}`}
           >
             {node.getName()}
           </Link>
@@ -108,12 +108,12 @@ export default function ResultsTable({ subgraph, queryId, params, resultColumns 
   <EdgeMetadataDialog
     open={edgeMetadata !== null}
     onClose={() => setEdgeMetadata(null)}
-    subgraph={subgraph}
+    graph={graph}
     edgeId={edgeMetadata?.edgeId || null}
   />
 <div className="relative mt-4 w-full">
 
-  <a href={process.env.REACT_APP_APIURL + `api/v1/subgraphs/${subgraph}/query/${queryId}.csv?` + new URLSearchParams(params).toString()}>
+  <a href={process.env.REACT_APP_APIURL + `api/v1/graphs/${graph}/query/${queryId}.csv?` + new URLSearchParams(params).toString()}>
   <button
     className="
       absolute top-2 right-4 z-10

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { getPaginated } from "../../app/api";
 import { difference } from "../../app/util";
 import GraphEdge from "../../model/GraphEdge";
@@ -20,7 +20,7 @@ export interface ChainSegment {
 export default function EdgeExpandPanel({
   onSelectNode,
   onCancel,
-  subgraph,
+  graph,
   nodeId,
   encodedNodeId,
   direction,
@@ -31,7 +31,7 @@ export default function EdgeExpandPanel({
 }: {
   onSelectNode: (node: GraphNodeRef) => void;
   onCancel: () => void;
-  subgraph: string;
+  graph: string;
   nodeId: string;
   encodedNodeId: string;
   direction: "incoming" | "outgoing";
@@ -69,7 +69,7 @@ export default function EdgeExpandPanel({
 
         const res = (
           await getPaginated<any>(
-            `api/v1/subgraphs/${subgraph}/nodes/${encodedNodeId}/${endpoint}?${params}`
+            `api/v1/graphs/${graph}/nodes/${encodedNodeId}/${endpoint}?${params}`
           )
         ).map((e) => new GraphEdge(e));
 
@@ -83,12 +83,24 @@ export default function EdgeExpandPanel({
     }
 
     fetchEdges();
-  }, [direction, edgeType, encodedNodeId, subgraph, page, dsExclude]);
+  }, [direction, edgeType, encodedNodeId, graph, page, dsExclude]);
 
   // Reset page when key params change
   useEffect(() => {
     setPage(0);
   }, [edgeType, direction]);
+
+  // Deduplicate edges by target/source node ID so each node appears once
+  const uniqueEdges = useMemo(() => {
+    const seen = new Set<string>();
+    return edges.filter(edge => {
+      const nodeRef = direction === "incoming" ? edge.getFrom() : edge.getTo();
+      const nid = nodeRef.getNodeId();
+      if (seen.has(nid)) return false;
+      seen.add(nid);
+      return true;
+    });
+  }, [edges, direction]);
 
   const handleSelect = (row: GraphEdge) => {
     const selectedNode =
@@ -235,11 +247,11 @@ export default function EdgeExpandPanel({
           padding: "4px 0",
         }}>
           {loading && <LoadingOverlay message="Loading..." />}
-          {edges.map((edge, i) => {
+          {uniqueEdges.map((edge, i) => {
             const nodeRef = direction === "incoming" ? edge.getFrom() : edge.getTo();
             return (
               <div
-                key={i}
+                key={nodeRef.getNodeId()}
                 onClick={() => handleSelect(edge)}
                 style={{
                   padding: "8px 14px",
@@ -260,7 +272,7 @@ export default function EdgeExpandPanel({
               </div>
             );
           })}
-          {!loading && edges.length === 0 && (
+          {!loading && uniqueEdges.length === 0 && (
             <div style={{ padding: "20px", textAlign: "center", color: "#999" }}>
               No nodes found
             </div>

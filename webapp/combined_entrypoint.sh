@@ -151,7 +151,7 @@ case "$MODE" in
         # Phase 1: Integration tests (query template validation)
         # ---------------------------------------------------------------
         set +e
-        python3 -u /opt/integration_tests.py --api-url http://localhost:8090
+        python3 -u /opt/test_query_templates.py --api-url http://localhost:8090
         TEST_EXIT_CODE=$?
         set -e
         echo ""
@@ -256,7 +256,7 @@ case "$MODE" in
         done
         echo ""
         echo "To run integration tests manually, execute:"
-        echo "  python3 /opt/integration_tests.py --wait"
+        echo "  python3 /opt/test_query_templates.py --wait"
         echo ""
         echo "Logs are available in the current directory"
         echo ""

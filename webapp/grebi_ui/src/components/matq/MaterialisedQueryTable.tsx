@@ -48,9 +48,9 @@ const cols= [
 
 
 export default function MaterialisedQueryTable({
-    subgraph
+    graph
 }:{
-    subgraph?:string|undefined
+    graph?:string|undefined
 }) {
 
 
@@ -59,19 +59,19 @@ export default function MaterialisedQueryTable({
   const navigate = useNavigate();
 
     useEffect(() => {
-        get<MaterialisedQuery[]>(`api/v1/subgraphs/${subgraph}/materialised_queries`).then(r => setMatQs(r));
-    }, [subgraph]);
+        get<MaterialisedQuery[]>(`api/v1/graphs/${graph}/materialised_queries`).then(r => setMatQs(r));
+    }, [graph]);
 
     useEffect(() => {
-        if(subgraph)
-            get<GraphMetadata>(`api/v1/subgraphs/${subgraph}`).then(r => setGraphMetadata(r));
-    }, [subgraph]);
+        if(graph)
+            get<GraphMetadata>(`api/v1/graphs/${graph}`).then(r => setGraphMetadata(r));
+    }, [graph]);
 
     if(!matQs) {
         return <CircularProgress />
     }
 
-    if(subgraph && !graphMetadata) {
+    if(graph && !graphMetadata) {
         return <CircularProgress />
     }
 
@@ -81,7 +81,7 @@ export default function MaterialisedQueryTable({
                     defaultSelector={(row,key)=>row[key]}
                     columns={cols}
                     onSelectRow={(row) => {
-                        navigate(`/graphs/${row['subgraph']}/tables/${row['id']}`)
+                        navigate(`/graphs/${row['graph']}/tables/${row['id']}`)
                     }}
                     />
 

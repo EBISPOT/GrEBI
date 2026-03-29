@@ -18,7 +18,7 @@ import { OpenInNew, Share } from "@mui/icons-material";
 import TabPanel from "./TabPanel";
 
 
-export default function NodeLinks({node, subgraph}:{node:GraphNode, subgraph:string}) {
+export default function NodeLinks({node, graph}:{node:GraphNode, graph:string}) {
 
   let [searchParams, setSearchParams] = useSearchParams();
   let linksTab = searchParams.get("linksTab") || "sourceids";
@@ -27,7 +27,7 @@ export default function NodeLinks({node, subgraph}:{node:GraphNode, subgraph:str
 
   useEffect(() => {
     async function getLinksTabs() {
-        let tabs = await getExposureLinksTabs(node, subgraph)
+        let tabs = await getExposureLinksTabs(node, graph)
         setLinksTabs(tabs)
     }
     getLinksTabs()
@@ -65,7 +65,7 @@ export default function NodeLinks({node, subgraph}:{node:GraphNode, subgraph:str
     {!linksTabs && <CircularProgress />}
     {linksTabs && linksTabs.filter(tab => tab.tabId === 'chemical_gene_interactions').length > 0 &&
     <TabPanel value={linksTab} index={"chemical_gene_interactions"}>
-        <GeneExposureLinks node={node} subgraph={subgraph} />
+        <GeneExposureLinks node={node} graph={graph} />
     </TabPanel>
     }
              </Grid>
@@ -73,7 +73,7 @@ export default function NodeLinks({node, subgraph}:{node:GraphNode, subgraph:str
 }
 
 
-function getDefaultSelector(subgraph:string) {
+function getDefaultSelector(graph:string) {
 
     return function DefaultSelector(row:any, key:string) {
     let vals = asArray(row[key]).map(PropVal.from);
@@ -85,22 +85,22 @@ function getDefaultSelector(subgraph:string) {
     }
 
     return <PropVals 
-     subgraph={subgraph} 
+     graph={graph} 
     refs={new Refs(row['_refs'])}
     values={vals} />
 }
 
 }
 
-function GeneExposureLinks({node, subgraph}:{node:GraphNode, subgraph:string}) {
+function GeneExposureLinks({node, graph}:{node:GraphNode, graph:string}) {
 
     let [affectedBy, setAffectedBy] = useState<Page<any>|null>(null)
 
     useEffect(() => {
 
         async function getAffectedBy() {
-            let res = await getPaginated<any>(`api/v1/subgraphs/${
-                    subgraph
+            let res = await getPaginated<any>(`api/v1/graphs/${
+                    graph
                 }/nodes/${encodeNodeId(node.getNodeId())}/incoming_edges`, {
                 'grebi:type': 'biolink:chemical_gene_interaction_association'
             });
@@ -125,7 +125,7 @@ let fixedCols = [
     {
         id: "from",
         name: "Chemical",
-        selector: (edge:GraphEdge, key:string) => <NodeRefLink subgraph={subgraph} nodeRef={new GraphNodeRef(edge['from'])} showTypeChip={false} />,
+        selector: (edge:GraphEdge, key:string) => <NodeRefLink graph={graph} nodeRef={new GraphNodeRef(edge['from'])} showTypeChip={false} />,
         sortable:true
     }
 ];
@@ -135,7 +135,7 @@ let fixedCols = [
                     addColumnsFromData={true}
                     columns={fixedCols}
                     maxRowHeight={"1.5em"}
-                    defaultSelector={getDefaultSelector(subgraph)}
+                    defaultSelector={getDefaultSelector(graph)}
                     hideColumns={[
                         "_refs",
                         "grebi:edgeId",

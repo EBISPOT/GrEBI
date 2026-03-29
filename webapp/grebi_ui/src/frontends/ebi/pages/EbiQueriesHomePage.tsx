@@ -12,7 +12,7 @@ export default function EbiTablesHomePage() {
 
   let params = useParams();
   let [searchParams, setSearchParams] = useSearchParams();
-  let subgraph:string|undefined = params.subgraph
+  let graph:string|undefined = params.graph
   let queryid:string|undefined = params.queryid
 
   const [topics, setTopics] = useState<QueryTopic[]|null>(null);
@@ -22,17 +22,17 @@ export default function EbiTablesHomePage() {
     get<QueryTopic[]>(`api/v1/topics`).then(r => setTopics(r));
   }, []);
 
-  if(!subgraph) {
-    throw new Error("Subgraph is required");
+  if(!graph) {
+    throw new Error("Graph is required");
   }
   
     return (
         <div>
         <EbiBreadcrumbsBar
-            subgraph={subgraph}
+            graph={graph}
             entries={[
               { url: `/graphs`, label: "Graphs" },
-              { url: `/graphs/${subgraph}/queries`, label: "Queries" }
+              { url: `/graphs/${graph}/queries`, label: "Queries" }
             ]}
         />
         <main className="container mx-auto px-4 h-fit pt-2">
@@ -49,7 +49,7 @@ export default function EbiTablesHomePage() {
                   onSelectionChange={setSelectedTopics}
                 />
               )}
-              <QueryTable subgraph={subgraph} selectedTopics={selectedTopics} />
+              <QueryTable graph={graph} selectedTopics={selectedTopics} />
             </Box>
         </div>
         </main>

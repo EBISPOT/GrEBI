@@ -33,10 +33,10 @@ public class CypherServiceClient {
     }
 
     /**
-     * GET / — list loaded subgraphs.
+     * GET / — list loaded graphs.
      */
     @SuppressWarnings("unchecked")
-    public Set<String> getSubgraphs() throws IOException {
+    public Set<String> getGraphs() throws IOException {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/"))
                 .GET()
@@ -50,33 +50,33 @@ public class CypherServiceClient {
             return new LinkedHashSet<>(list);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while listing subgraphs", e);
+            throw new IOException("Interrupted while listing graphs", e);
         }
     }
 
     /**
-     * POST /{subgraph} — execute a Cypher query and collect all records.
+     * POST /{graph} — execute a Cypher query and collect all records.
      * Each record is a Map whose keys are the Cypher RETURN column names.
      */
-    public List<Map<String, Object>> query(String subgraph, String cypher, Map<String, Object> params)
+    public List<Map<String, Object>> query(String graph, String cypher, Map<String, Object> params)
             throws IOException {
         List<Map<String, Object>> records = new ArrayList<>();
-        streamQuery(subgraph, cypher, params, records::add);
+        streamQuery(graph, cypher, params, records::add);
         return records;
     }
 
     /**
-     * POST /{subgraph} — execute a Cypher query and stream records one at a time
+     * POST /{graph} — execute a Cypher query and stream records one at a time
      * via a consumer.  The HTTP response is read as NDJSON line-by-line so
      * memory usage stays bounded regardless of result size.
      */
     @SuppressWarnings("unchecked")
-    public void streamQuery(String subgraph, String cypher, Map<String, Object> params,
+    public void streamQuery(String graph, String cypher, Map<String, Object> params,
                             Consumer<Map<String, Object>> consumer) throws IOException {
         String body = gson.toJson(Map.of("query", cypher, "params", params));
 
         HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "/" + subgraph))
+                .uri(URI.create(baseUrl + "/" + graph))
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .header("Content-Type", "application/json")
                 .build();
@@ -90,7 +90,7 @@ public class CypherServiceClient {
         }
 
         if (resp.statusCode() == 404) {
-            throw new IOException("Subgraph not found: " + subgraph);
+            throw new IOException("Graph not found: " + graph);
         }
 
         try (BufferedReader reader = new BufferedReader(

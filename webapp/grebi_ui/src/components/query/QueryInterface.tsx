@@ -16,11 +16,11 @@ import React from "react";
 
 
 export default function QueryInterface({
-    subgraph,
+    graph,
     queryTemplate,
     sidebar
 }:{
-    subgraph:string, queryTemplate:QueryTemplate, sidebar?:React.ReactNode
+    graph:string, queryTemplate:QueryTemplate, sidebar?:React.ReactNode
 }) {
 
     let params = queryTemplate.params
@@ -44,7 +44,7 @@ export default function QueryInterface({
                         let nodeId = queryParams.get(param.param_id);
                         if (nodeId) {
                             // Fetch the node details using the nodeId
-                            let nodeDetails = new GraphNodeRef( (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes`, { "grebi:sourceIds": nodeId, resolve: "false" })).elements[0]);
+                            let nodeDetails = new GraphNodeRef( (await getPaginated<any>(`api/v1/graphs/${graph}/nodes`, { "grebi:sourceIds": nodeId, resolve: "false" })).elements[0]);
                             initialValues[param.param_id] = nodeDetails
                         }
 
@@ -89,11 +89,11 @@ export default function QueryInterface({
     }
 
  let cypherSource = queryTemplate.cypher_match_fragment.trim() + "\n" + queryTemplate.cypher_return_fragment.trim();
- let codeSnippets = query2code(queryTemplate, paramValues)
+ let codeSnippets = query2code(queryTemplate, graph, paramValues)
 
  const sourceTabs = [
+   ...Object.keys(codeSnippets).map(srcLang => ({ title: srcLang, source: codeSnippets[srcLang], lang: srcLang })),
    { title: "Cypher Query", source: cypherSource, lang: "cypher" },
-   ...Object.keys(codeSnippets).map(srcLang => ({ title: srcLang, source: codeSnippets[srcLang], lang: srcLang }))
  ];
 
 return (
@@ -161,7 +161,7 @@ return (
                 )}
                 {param.param_type === "SourceId" && (
                   <NodeSelectorBox
-                    subgraph={subgraph}
+                    graph={graph}
                     selectedNode={paramValues[param.param_id]}
                     onNodeSelect={(node) =>
                       setParamValues({
@@ -189,7 +189,7 @@ return (
 
     {paramValuesSubmitted !== undefined && <Fragment>
       <Typography variant="h5" gutterBottom>Results</Typography>
-      <ResultsTable subgraph={subgraph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} />
+      <ResultsTable graph={graph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} />
     </Fragment>}
   </Fragment>
 );

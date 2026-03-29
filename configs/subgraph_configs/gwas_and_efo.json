@@ -1,7 +1,6 @@
 {
   "id": "EBI_MONARCH",
   "name": "EBI Resources and MONARCH Initiative KG",
-  "description": "A graph linking GWAS Catalog associations to EFO disease/trait ontology terms for exploring genotype-phenotype relationships from genome-wide association studies.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

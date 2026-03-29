@@ -1,7 +1,7 @@
 process create_postgres {
     cache "lenient"
     memory "32 GB"
-    time "23h"
+    time "48h"
     cpus "8"
 
     input:

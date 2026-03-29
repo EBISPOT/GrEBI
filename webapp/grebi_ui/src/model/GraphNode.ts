@@ -24,8 +24,8 @@ export default class GraphNode extends GraphNodeRef {
         return PropVal.arrFrom(this.getDescriptions())[0]?.value
     }
 
-    getLinkUrl(subgraph:string):string {
-        return `/graphs/${subgraph}/nodes/${encodeNodeId(this.getNodeId())}`;
+    getLinkUrl(graph:string):string {
+        return `/graphs/${graph}/nodes/${encodeNodeId(this.getNodeId())}`;
     }
 
     isBoldForQuery(q:string) {

@@ -1,6 +1,6 @@
 title: Search OpenTargets disease associations by mouse gene
 question: What [OpenTargets disease associations]{disease} exist for the human ortholog of {mouse_gene_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
   - impc_x_gwas
 topics:

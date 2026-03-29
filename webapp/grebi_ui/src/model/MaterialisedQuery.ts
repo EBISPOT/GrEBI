@@ -2,7 +2,7 @@
 
 export default interface MaterialisedQuery {
 
-    subgraph:string
+    graph:string
     id:string
 
 

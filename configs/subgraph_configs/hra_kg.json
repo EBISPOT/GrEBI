@@ -1,7 +1,6 @@
 {
   "id": "HRA_KG",
   "name": "Human Reference Atlas KG",
-  "description": "The Human Reference Atlas knowledge graph providing a comprehensive spatial and cell-type reference of the human body.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

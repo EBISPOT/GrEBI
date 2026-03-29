@@ -1,6 +1,6 @@
 title: Genes related to a disease
 question: What [genes]{gene} are related to {disease_id}?
-subgraphs:
+graphs:
   - hello_world
   - test_clique_merge
   - test_edge_linking

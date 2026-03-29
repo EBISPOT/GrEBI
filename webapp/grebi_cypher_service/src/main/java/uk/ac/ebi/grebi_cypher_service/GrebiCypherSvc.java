@@ -40,7 +40,7 @@ public class GrebiCypherSvc {
 
         if (!backends.isEmpty()) {
             ready = true;
-            System.out.println("Loaded subgraphs: " + backends.keySet());
+            System.out.println("Loaded graphs: " + backends.keySet());
         }
 
         // --- Start HTTP server -----------------------------------------------
@@ -65,13 +65,13 @@ public class GrebiCypherSvc {
             ctx.result(gson.toJson(backends.keySet()));
         });
 
-        app.post("/{subgraph}", ctx -> {
-            String subgraph = ctx.pathParam("subgraph");
-            CypherBackend backend = backends.get(subgraph);
+        app.post("/{graph}", ctx -> {
+            String graph = ctx.pathParam("graph");
+            CypherBackend backend = backends.get(graph);
             if (backend == null) {
                 ctx.status(404);
                 ctx.contentType("application/json");
-                ctx.result("{\"error\":\"Subgraph not found: " + subgraph + "\"}");
+                ctx.result("{\"error\":\"Graph not found: " + graph + "\"}");
                 return;
             }
 
@@ -135,9 +135,9 @@ public class GrebiCypherSvc {
             if (host.isEmpty()) continue;
             try {
                 BoltBackend backend = new BoltBackend(host);
-                String sg = backend.getSubgraph();
+                String sg = backend.getGraph();
                 if (backends.containsKey(sg)) {
-                    System.out.println("WARNING: subgraph '" + sg
+                    System.out.println("WARNING: graph '" + sg
                             + "' already loaded (embedded), skipping bolt host " + host);
                 } else {
                     backends.put(sg, backend);

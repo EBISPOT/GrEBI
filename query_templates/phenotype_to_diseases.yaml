@@ -1,6 +1,6 @@
 title: Diseases associated with a phenotype
 question: What [diseases]{disease} are associated with {phenotype_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
   - dismech
 topics:

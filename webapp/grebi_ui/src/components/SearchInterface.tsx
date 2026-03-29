@@ -10,9 +10,9 @@ import { DatasourceTags } from "./DatasourceTag";
 import LoadingOverlay from "./LoadingOverlay";
 import SearchBox from "./SearchBox";
 
-export default function SeachInterface(opts:{ subgraph:string }
+export default function SeachInterface(opts:{ graph:string }
 ) {
-    let { subgraph } = opts
+    let { graph } = opts
 
   const [searchParams] = useSearchParams();
   const search = searchParams.get("q") || "";
@@ -104,7 +104,7 @@ export default function SeachInterface(opts:{ subgraph:string }
       if (isSemanticSearch) {
         // Semantic search via embeddings with resolve for full data
         const semanticResults = await get<any[]>(
-          `api/v1/subgraphs/${subgraph}/semantic_search?${new URLSearchParams({
+          `api/v1/graphs/${graph}/semantic_search?${new URLSearchParams({
             q: search,
             model: model,
             n: ((page + 1) * rowsPerPage).toString(),
@@ -142,7 +142,7 @@ export default function SeachInterface(opts:{ subgraph:string }
         for (const t of typeFacetSelected) {
           filterParams.push(['grebi:type', t]);
         }
-        let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/search`, joinSearchParams(searchParams, new URLSearchParams(filterParams))))
+        let res = (await getPaginated<any>(`api/v1/graphs/${graph}/search`, joinSearchParams(searchParams, new URLSearchParams(filterParams))))
         
         let mapped = res.map(r => new GraphNode(r))
 
@@ -166,7 +166,7 @@ export default function SeachInterface(opts:{ subgraph:string }
     datasourceFacetselected,
     typeFacetSelected,
     searchParams,
-    subgraph,
+    graph,
     model
   ]);
   useEffect(() => {
@@ -175,7 +175,7 @@ export default function SeachInterface(opts:{ subgraph:string }
 
   return <Fragment>
         <div className="flex flex-nowrap gap-4 mb-6">
-          <SearchBox subgraph={subgraph} initialQuery={search} />
+          <SearchBox graph={graph} initialQuery={search} />
         </div>
         <div className={`grid grid-cols-1 ${isSemanticSearch ? '' : 'lg:grid-cols-4 lg:gap-8'}`}>
           {!isSemanticSearch && <div
@@ -342,7 +342,7 @@ export default function SeachInterface(opts:{ subgraph:string }
                   return (
                     <div className="my-5">
                       <div className="my-2 leading-loose truncate flex flex-row items-center">
-                        <Link to={graphNode.getLinkUrl(subgraph)}
+                        <Link to={graphNode.getLinkUrl(graph)}
                           className={`link-default text-xl mr-2 ${
                             graphNode.isBoldForQuery(search) ? "font-bold" : ""
                           } ${graphNode.isDeprecated() ? "line-through" : ""}`}

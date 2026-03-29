@@ -13,14 +13,14 @@ import LoadingOverlay from "../LoadingOverlay";
 interface EdgeMetadataDialogProps {
   open: boolean;
   onClose: () => void;
-  subgraph: string;
+  graph: string;
   edgeId: string | null;
 }
 
 export default function EdgeMetadataDialog({
   open,
   onClose,
-  subgraph,
+  graph,
   edgeId,
 }: EdgeMetadataDialogProps) {
   const [resolvedEdge, setResolvedEdge] = useState<any>(null);
@@ -40,7 +40,7 @@ export default function EdgeMetadataDialog({
       try {
         const encodedId = encodeNodeId(edgeId!);
         const edge = await get<any>(
-          `api/v1/subgraphs/${subgraph}/edges/${encodedId}`
+          `api/v1/graphs/${graph}/edges/${encodedId}`
         );
         setResolvedEdge(edge);
       } catch (e: any) {
@@ -52,7 +52,7 @@ export default function EdgeMetadataDialog({
     }
 
     fetchEdge();
-  }, [open, edgeId, subgraph]);
+  }, [open, edgeId, graph]);
 
   if (!open) return null;
 
@@ -105,7 +105,7 @@ export default function EdgeMetadataDialog({
                     <b>From:</b>{" "}
                     <Link
                       className="link-default"
-                      to={`/graphs/${subgraph}/nodes/${fromNode.getEncodedNodeId()}`}
+                      to={`/graphs/${graph}/nodes/${fromNode.getEncodedNodeId()}`}
                     >
                       {fromNode.getName()}
                     </Link>
@@ -124,7 +124,7 @@ export default function EdgeMetadataDialog({
                     <b>&rarr;</b>{" "}
                     <Link
                       className="link-default"
-                      to={`/graphs/${subgraph}/nodes/${toNode.getEncodedNodeId()}`}
+                      to={`/graphs/${graph}/nodes/${toNode.getEncodedNodeId()}`}
                     >
                       {toNode.getName()}
                     </Link>
@@ -132,7 +132,7 @@ export default function EdgeMetadataDialog({
                 )}
               </div>
             )}
-            <PropList subgraph={subgraph} refs={refs} props={propsMap} />
+            <PropList graph={graph} refs={refs} props={propsMap} />
           </div>
         )}
       </DialogContent>

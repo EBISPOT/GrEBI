@@ -10,27 +10,27 @@ import Breadcrumbs, { BreadcrumbsEntry } from "../../components/Breadcrumbs";
 
 export default function EbiHeader({
   section,
-  subgraph,
+  graph,
   showBreadcrumbsBar,
   breadcrumbs
 }: {
   section?: string,
-  subgraph?: string,
+  graph?: string,
   showBreadcrumbsBar?: boolean,
   breadcrumbs?: BreadcrumbsEntry[]
 }) {
   let loc = useLocation();
   let navigate = useNavigate();
 
-  // Persist last-selected subgraph so nav items work even on /graphs
-  if (subgraph) {
-    sessionStorage.setItem("grebi_last_subgraph", subgraph);
+  // Persist last-selected graph so nav items work even on /graphs
+  if (graph) {
+    sessionStorage.setItem("grebi_last_graph", graph);
   }
-  const effectiveSubgraph = subgraph || sessionStorage.getItem("grebi_last_subgraph") || undefined;
+  const effectiveGraph = graph || sessionStorage.getItem("grebi_last_graph") || undefined;
 
-function setSubgraph(subgraph: string) {
+function setGraph(graph: string) {
   const { pathname, search, hash } = loc; 
-  const newPath = pathname.replace(/graphs\/[^/]+/, `graphs/${subgraph}`);
+  const newPath = pathname.replace(/graphs\/[^/]+/, `graphs/${graph}`);
   const newUrl = `${newPath}${search}${hash}`;
   navigate(newUrl);
 }
@@ -98,7 +98,7 @@ function setSubgraph(subgraph: string) {
                 </Stack>
               </li>
             </Link>
-            <Link to={effectiveSubgraph ? `/graphs/${effectiveSubgraph}/queries` : `/graphs`}>
+            <Link to={effectiveGraph ? `/graphs/${effectiveGraph}/queries` : `/graphs`}>
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -113,7 +113,7 @@ function setSubgraph(subgraph: string) {
                 </Stack>
               </li>
             </Link>
-            <Link to={effectiveSubgraph ? `/graphs/${effectiveSubgraph}/tables` : `/graphs`}>
+            <Link to={effectiveGraph ? `/graphs/${effectiveGraph}/tables` : `/graphs`}>
               <li
                 role="menuitem"
                 className={`px-4 py-3 ${
@@ -128,7 +128,7 @@ function setSubgraph(subgraph: string) {
                 </Stack>
               </li>
             </Link>
-            <Link to={effectiveSubgraph ? `/graphs/${effectiveSubgraph}/downloads` : `/graphs`}>
+            <Link to={effectiveGraph ? `/graphs/${effectiveGraph}/downloads` : `/graphs`}>
               <li
                 role="menuitem"
                 className={`rounded-r-md px-4 py-3 ${
@@ -151,7 +151,7 @@ function setSubgraph(subgraph: string) {
     <div className="bg-stone-100 pt-1 pl-2 pr-2 pb-1 flex flex-row justify-between items-center">
       
     {breadcrumbs !== undefined 
-      ? <Breadcrumbs subgraph={subgraph} setSubgraph={setSubgraph} entries={breadcrumbs} /> 
+      ? <Breadcrumbs graph={graph} setGraph={setGraph} entries={breadcrumbs} /> 
       : <div />}
     </div>
   )

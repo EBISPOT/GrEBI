@@ -10,10 +10,10 @@ import QueryQuestion from "./QueryQuestion";
 import { useNavigate } from "react-router-dom";
 
 export default function QueryTable({
-    subgraph,
+    graph,
     selectedTopics
 }:{
-    subgraph?:string|undefined,
+    graph?:string|undefined,
     selectedTopics?: Set<string>
 }) {
 
@@ -22,8 +22,8 @@ export default function QueryTable({
   const navigate = useNavigate();
 
     useEffect(() => {
-        get<QueryTemplate[]>(`api/v1/subgraphs/${subgraph}/query_templates`).then(r => setQueries(r));
-    }, [subgraph])
+        get<QueryTemplate[]>(`api/v1/graphs/${graph}/query_templates`).then(r => setQueries(r));
+    }, [graph])
 
     useEffect(() => {
         get<QueryTopic[]>(`api/v1/topics`).then(r => setTopics(r));
@@ -62,9 +62,9 @@ export default function QueryTable({
                         const example = template.examples?.[0];
                         if (example) {
                             const qs = new URLSearchParams(example.params).toString();
-                            navigate(`/graphs/${subgraph}/queries/${template.id}?${qs}`);
+                            navigate(`/graphs/${graph}/queries/${template.id}?${qs}`);
                         } else {
-                            navigate(`/graphs/${subgraph}/queries/${template.id}`);
+                            navigate(`/graphs/${graph}/queries/${template.id}`);
                         }
                     }}
                 >
@@ -89,7 +89,7 @@ export default function QueryTable({
                     </td>
                     <td className="py-2 px-3 align-top">
                         <QueryQuestion
-                            subgraph={subgraph!}
+                            graph={graph!}
                             template={template}
                             exampleIndex={0}
                             fontSize="0.95rem"

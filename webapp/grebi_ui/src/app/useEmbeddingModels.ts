@@ -7,7 +7,7 @@ export interface EmbeddingModel {
   can_embed: boolean;
 }
 
-export function useEmbeddingModels(subgraph: string) {
+export function useEmbeddingModels(graph: string) {
   const [searchParams] = useSearchParams();
   const [availableModels, setAvailableModels] = useState<EmbeddingModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>(searchParams.get("model") || "");
@@ -15,7 +15,7 @@ export function useEmbeddingModels(subgraph: string) {
   useEffect(() => {
     async function fetchModels() {
       try {
-        const models = await get<EmbeddingModel[]>(`api/v1/subgraphs/${subgraph}/embedding_models`);
+        const models = await get<EmbeddingModel[]>(`api/v1/graphs/${graph}/embedding_models`);
         setAvailableModels(models || []);
         if (!searchParams.get("model") && models && models.length > 0) {
           const embeddable = models.filter(m => m.can_embed).sort((a, b) => a.model.localeCompare(b.model));
@@ -37,7 +37,7 @@ export function useEmbeddingModels(subgraph: string) {
       }
     }
     fetchModels();
-  }, [subgraph]);
+  }, [graph]);
 
   const hasEmbeddingModels = availableModels.length > 0;
 

@@ -118,10 +118,20 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
         output_nodes.write_all(r#"":"#.as_bytes()).unwrap();
 
         if v.is_array() {
-            output_nodes.write_all(v.to_string().as_bytes()).unwrap();
+            output_nodes.write_all(r#"["#.as_bytes()).unwrap();
+            let mut arr_is_first = true;
+            for el in v.as_array().unwrap() {
+                if arr_is_first {
+                    arr_is_first = false;
+                } else {
+                    output_nodes.write_all(r#","#.as_bytes()).unwrap();
+                }
+                write_value(el, output_nodes);
+            }
+            output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
         } else {
             output_nodes.write_all(r#"["#.as_bytes()).unwrap();
-            output_nodes.write_all(v.to_string().as_bytes()).unwrap();
+            write_value(v, output_nodes);
             output_nodes.write_all(r#"]"#.as_bytes()).unwrap();
         }
     }
@@ -364,7 +374,7 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
         let obj_types = obj.get("ols:type");
 
         if obj_types.is_some() {
-            if has_reification_type(obj_types.unwrap().as_array().unwrap()) {
+            if is_reification_type(obj_types.unwrap()) {
                 let reified_value = obj.get("ols:value").unwrap();
                 let axiom_sets = obj.get("ols:axioms").unwrap().as_array().unwrap();
                 for axiom_set in axiom_sets {
@@ -412,6 +422,9 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
                     //panic!("Unknown value: {:?}", serde_json::to_string(obj).unwrap());
                     let value = obj.get("ols:iri").unwrap();
                     write_value(&value, output_nodes);
+                } else {
+                    // Fallback: write the raw object as JSON
+                    output_nodes.write_all(serde_json::to_string(v).unwrap().as_bytes()).unwrap();
                 }
             }
             return;
@@ -437,11 +450,15 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
     output_nodes.write_all(v.to_string().as_bytes()).unwrap();
 }
 
-fn has_reification_type(v:&Vec<Value>) -> bool {
-    for el in v {
-        if el.as_str().unwrap() == "reification" {
-            return true;
+fn is_reification_type(v:&Value) -> bool {
+    if v.is_array() {
+        for el in v.as_array().unwrap() {
+            if el.is_string() && el.as_str().unwrap() == "reification" {
+                return true;
+            }
         }
+    } else if v.is_string() && v.as_str().unwrap() == "reification" {
+        return true;
     }
     return false;
 }

@@ -8,22 +8,22 @@ export interface LinksTab {
     count:number
 }
 
-export default async function getNodeLinksTabs(node:GraphNode, subgraph:string):Promise<LinksTab[]> {
+export default async function getNodeLinksTabs(node:GraphNode, graph:string):Promise<LinksTab[]> {
 
     let type = node.extractType()
     let metadata_promises:any = []
 
     if(type?.shortName === 'Gene') {
-        metadata_promises.push(getGeneLinksTabs(node, subgraph))
+        metadata_promises.push(getGeneLinksTabs(node, graph))
     }
 
     return await Promise.all(metadata_promises)
 }
 
-async function getGeneLinksTabs(node:GraphNode, subgraph:string) {
+async function getGeneLinksTabs(node:GraphNode, graph:string) {
 
-    let page = await (getPaginated<any>(`api/v1/subgraphs/${
-        subgraph
+    let page = await (getPaginated<any>(`api/v1/graphs/${
+        graph
     }/nodes/${encodeNodeId(node.getNodeId())}/incoming_edges`, {
             'size': "1",
             'grebi:type': 'biolink:chemical_gene_interaction_association'

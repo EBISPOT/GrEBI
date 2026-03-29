@@ -1,6 +1,6 @@
 title: Search MetaboLights by chemical or chemical classification
 question: What [MetaboLights studies]{study} involve {chemical_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
 topics:
   - chebi

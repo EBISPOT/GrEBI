@@ -1,6 +1,6 @@
 title: Search GWAS Catalog by Reactome pathway
 question: Which GWAS [SNPs]{snp} are linked to genes in {pathway_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
 topics:
   - gwas_catalog

@@ -42,10 +42,10 @@ def main():
     
     print()
     
-    passed, total = run_integration_tests(args.api_url)
+    passed, total = test_query_templates(args.api_url)
     
     if total == 0:
-        print_colored("No tests were run (none matched this subgraph)", Colors.YELLOW)
+        print_colored("No tests were run (none matched this graph)", Colors.YELLOW)
         sys.exit(0)
     elif passed == total:
         print_colored("All tests passed! 🎉", Colors.GREEN)
@@ -141,13 +141,13 @@ def wait_for_all_services(base_url: str = "http://localhost") -> bool:
     return all_ready
 
 
-def get_available_subgraphs(api_url: str) -> List[str]:
+def get_available_graphs(api_url: str) -> List[str]:
     try:
-        response = requests.get(f"{api_url}/api/v1/subgraphs", timeout=10)
+        response = requests.get(f"{api_url}/api/v1/graphs", timeout=10)
         response.raise_for_status()
         return response.json()
     except Exception as e:
-        print_colored(f"Warning: Could not get subgraphs from API: {e}", Colors.YELLOW)
+        print_colored(f"Warning: Could not get graphs from API: {e}", Colors.YELLOW)
         return []
 
 
@@ -174,9 +174,9 @@ def execute_query(
     api_url: str,
     query_id: str,
     params: Dict[str, Any],
-    subgraph: str
+    graph: str
 ) -> Optional[Dict[str, Any]]:
-    url = f"{api_url}/api/v1/subgraphs/{subgraph}/query/{query_id}"
+    url = f"{api_url}/api/v1/graphs/{graph}/query/{query_id}"
     
     query_params = {}
     for key, value in params.items():
@@ -193,7 +193,7 @@ def execute_query(
         return None
 
 
-def run_integration_tests(
+def test_query_templates(
     api_url: str = "http://localhost:8090"
 ) -> tuple[int, int]:
     templates_dir = Path(os.environ.get("GREBI_QUERY_TEMPLATES_PATH", "/opt/query_templates"))
@@ -202,12 +202,12 @@ def run_integration_tests(
     print_colored("GrEBI Integration Tests", Colors.BOLD)
     print_colored("="*80 + "\n", Colors.BOLD)
     
-    available_subgraphs = get_available_subgraphs(api_url)
-    if not available_subgraphs:
-        print_colored("No subgraphs available from backend!", Colors.RED)
+    available_graphs = get_available_graphs(api_url)
+    if not available_graphs:
+        print_colored("No graphs available from backend!", Colors.RED)
         return 0, 0
     
-    print_colored(f"Available subgraphs: {', '.join(available_subgraphs)}\n", Colors.BLUE)
+    print_colored(f"Available graphs: {', '.join(available_graphs)}\n", Colors.BLUE)
     
     templates = load_query_templates(templates_dir)
     
@@ -224,25 +224,25 @@ def run_integration_tests(
         query_id = template['_file'].replace('.yaml', '')
         title = template.get('title', query_id)
         examples = template.get('examples', [])
-        template_subgraphs = template.get('subgraphs', [])
+        template_graphs = template.get('graphs', [])
         
-        matching_subgraphs = [sg for sg in template_subgraphs if sg in available_subgraphs] if template_subgraphs else available_subgraphs
+        matching_graphs = [sg for sg in template_graphs if sg in available_graphs] if template_graphs else available_graphs
         
         print_colored(f"\n{Colors.BOLD}Testing: {title}{Colors.RESET}", Colors.BLUE)
         print(f"Query ID: {query_id}")
         print(f"File: {template['_file']}")
-        print(f"Matching subgraphs: {', '.join(matching_subgraphs)}")
+        print(f"Matching graphs: {', '.join(matching_graphs)}")
         
         if not examples:
             print_colored("  ⚠ No examples defined, skipping", Colors.YELLOW)
             continue
         
-        if not matching_subgraphs:
-            print_colored("  ⚠ No matching subgraphs available, skipping", Colors.YELLOW)
+        if not matching_graphs:
+            print_colored("  ⚠ No matching graphs available, skipping", Colors.YELLOW)
             continue
         
-        for subgraph in matching_subgraphs:
-            print_colored(f"\n  Testing on subgraph: {subgraph}", Colors.BLUE)
+        for graph in matching_graphs:
+            print_colored(f"\n  Testing on graph: {graph}", Colors.BLUE)
             
             for i, example in enumerate(examples, 1):
                 total += 1
@@ -252,7 +252,7 @@ def run_integration_tests(
                 print(f"\n    Example {i}/{len(examples)}: {example_title}")
                 print(f"    Parameters: {json.dumps(params, indent=4)}")
                 
-                result = execute_query(api_url, query_id, params, subgraph)
+                result = execute_query(api_url, query_id, params, graph)
             
                 if result is None:
                     print_colored(f"    ✗ FAILED: Query execution error", Colors.RED)

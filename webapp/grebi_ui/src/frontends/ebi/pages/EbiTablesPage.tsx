@@ -9,24 +9,24 @@ export default function EbiTablesPage() {
 
   let params = useParams();
   let [searchParams, setSearchParams] = useSearchParams();
-  let subgraph:string|undefined = params.subgraph
+  let graph:string|undefined = params.graph
   let queryid:string|undefined = params.queryid
 
-  if(!subgraph || !queryid) {
+  if(!graph || !queryid) {
     throw new Error("??");
   }
 
     return (
         <div>
-        <EbiBreadcrumbsBar subgraph={subgraph} entries={[
+        <EbiBreadcrumbsBar graph={graph} entries={[
           { url: `/graphs`, label: "Graphs" },
-          { url: `/graphs/${subgraph}/tables`, label: "Tables" },
-          { url: `/graphs/${subgraph}/tables/${queryid}`, label: <code>{queryid}</code> }
+          { url: `/graphs/${graph}/tables`, label: "Tables" },
+          { url: `/graphs/${graph}/tables/${queryid}`, label: <code>{queryid}</code> }
         ]} />
         <main className="container mx-auto px-4 h-fit pt-2">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
             <Typography variant="h4">{queryid}</Typography>
-            <ResultsTable subgraph={subgraph} queryid={queryid} />
+            <ResultsTable graph={graph} queryid={queryid} />
         </div>
         </main>
         </div>

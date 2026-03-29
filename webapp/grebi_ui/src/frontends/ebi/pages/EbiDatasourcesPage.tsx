@@ -11,7 +11,7 @@ interface DatasourceConfig {
   [key: string]: any;
 }
 
-interface SubgraphMeta {
+interface GraphMeta {
   subgraph_config?: {
     id?: string;
     name?: string;
@@ -23,23 +23,23 @@ interface SubgraphMeta {
 export default function EbiDatasourcesPage() {
   document.title = "Graphs - GrEBI";
 
-  let [subgraphs, setSubgraphs] = useState<string[] | null>(null);
-  let [metaBySubgraph, setMetaBySubgraph] = useState<Record<string, SubgraphMeta>>({});
+  let [graphs, setGraphs] = useState<string[] | null>(null);
+  let [metaByGraph, setMetaByGraph] = useState<Record<string, GraphMeta>>({});
   let [globalStats, setGlobalStats] = useState<any | null>(null);
 
   useEffect(() => {
     get<any>("api/v1/stats").then(setGlobalStats);
-    get<string[]>("api/v1/subgraphs").then((sgs) => {
-      setSubgraphs(sgs);
+    get<string[]>("api/v1/graphs").then((sgs) => {
+      setGraphs(sgs);
       sgs.forEach((sg) => {
-        get<SubgraphMeta>(`api/v1/subgraphs/${sg}`)
-          .then((meta) => setMetaBySubgraph((prev) => ({ ...prev, [sg]: meta })))
+        get<GraphMeta>(`api/v1/graphs/${sg}`)
+          .then((meta) => setMetaByGraph((prev) => ({ ...prev, [sg]: meta })))
           .catch(() => {});
       });
     });
   }, []);
 
-  if (!subgraphs) {
+  if (!graphs) {
     return (
       <Fragment>
         <EbiBreadcrumbsBar entries={[
@@ -61,8 +61,8 @@ export default function EbiDatasourcesPage() {
         <div className="text-2xl font-bold my-6">Graphs</div>
 
         <div className="grid gap-6">
-          {subgraphs.map((sg) => {
-            const meta = metaBySubgraph[sg];
+          {graphs.map((sg) => {
+            const meta = metaByGraph[sg];
             const sgName = meta?.subgraph_config?.name || sg;
             const sgDescription = meta?.subgraph_config?.description;
             const datasources = meta?.subgraph_config?.datasource_configs || [];

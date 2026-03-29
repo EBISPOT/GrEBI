@@ -12,11 +12,11 @@ type SimilarResult = {
 }
 
 export default function NodeSimilarList(params:{
-    subgraph:string,
+    graph:string,
     node:GraphNodeRef,
     model?:string
 }) {
-    let { subgraph, node, model } = params
+    let { graph, node, model } = params
     
   let [loading, setLoading] = useState(true)
   let [results, setResults] = useState<SimilarResult[]|null>(null)
@@ -26,7 +26,7 @@ export default function NodeSimilarList(params:{
             setLoading(true)
             const params: string[][] = [['n', '20']];
             if (model) params.push(['model', model]);
-            let res = await get(`api/v1/subgraphs/${subgraph}/nodes/${node.getEncodedNodeId()}/similar?${
+            let res = await get(`api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/similar?${
                 new URLSearchParams(params)
             }`)
             setLoading(false)
@@ -52,7 +52,7 @@ export default function NodeSimilarList(params:{
             setResults(r)
         })
 
-    }, [ subgraph, node, model ])
+    }, [ graph, node, model ])
 
     if(loading || !results) {
         return <div className="spinner-default w-7 h-7" />
@@ -73,7 +73,7 @@ export default function NodeSimilarList(params:{
         {results.map((row, i) => (
           <tr key={row.node.getNodeId()} className={`hover:bg-blue-50 cursor-pointer transition-colors ${i % 2 === 1 ? 'bg-gray-50' : ''}`}>
             <td className="py-2 px-3" colSpan={2}>
-              <Link to={`/graphs/${subgraph}/nodes/${encodeNodeId(row.node.getNodeId())}`} className="flex justify-between items-center no-underline text-inherit">
+              <Link to={`/graphs/${graph}/nodes/${encodeNodeId(row.node.getNodeId())}`} className="flex justify-between items-center no-underline text-inherit">
                 <span className="text-blue-600">{row.node.getName()}</span>
                 <span className="text-gray-500 tabular-nums">{row.score.toFixed(4)}</span>
               </Link>

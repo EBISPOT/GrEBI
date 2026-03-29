@@ -9,7 +9,7 @@ public class QueryTemplate {
     public String title;
     public String question;
     public String description;
-    public List<String> subgraphs;
+    public List<String> graphs;
     public List<String> topics;
     public String cypher_match_fragment;
     public String cypher_return_fragment;

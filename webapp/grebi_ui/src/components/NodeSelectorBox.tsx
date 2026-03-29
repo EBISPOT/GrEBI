@@ -11,7 +11,7 @@ import { DatasourceTags } from "./DatasourceTag";
 import NodeTypeChip from "./NodeTypeChip";
 
 interface NodeSelectorBoxProps {
-  subgraph: string;
+  graph: string;
   placeholder?: string;
   selectedNode?: GraphNodeRef;
   onNodeSelect: (node: GraphNodeRef) => void;
@@ -20,7 +20,7 @@ interface NodeSelectorBoxProps {
 }
 
 export default function NodeSelectorBox({
-  subgraph,
+  graph,
   placeholder,
   selectedNode,
   onNodeSelect,
@@ -70,7 +70,7 @@ export default function NodeSelectorBox({
 
       try {
         const nodes = await getPaginated<any>(
-          `api/v1/subgraphs/${subgraph}/search?${joinSearchParams(
+          `api/v1/graphs/${graph}/search?${joinSearchParams(
             new URLSearchParams({ q: query, resolve: "false", size: "5", lang: "en" }),
             additionalParams
           )}`
@@ -90,7 +90,7 @@ export default function NodeSelectorBox({
       cancelPromisesRef.current = true;
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, subgraph, additionalParams]);
+  }, [query, graph, additionalParams]);
 
   const handleSelectNode = (node: GraphNodeRef) => {
     setQuery("");

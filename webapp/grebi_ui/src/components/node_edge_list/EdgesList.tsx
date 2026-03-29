@@ -21,13 +21,13 @@ export interface EdgesState {
 };
 
 export default function EdgesList(params:{
-    subgraph:string,
+    graph:string,
     node:GraphNode,
     direction:'incoming'|'outgoing',
     onEdgesLoaded?:((edges:EdgesState) => void)|undefined,
     extraSearchParams?: string[][]|undefined
 }) {
-    let { direction, subgraph, node, onEdgesLoaded, extraSearchParams } = params
+    let { direction, graph, node, onEdgesLoaded, extraSearchParams } = params
 
   let [edgesState, setEdgesState] = useState<null|EdgesState>(null)
 
@@ -45,7 +45,7 @@ export default function EdgesList(params:{
             console.log('refreshing ', node.getNodeId(), JSON.stringify(dsEnabled), JSON.stringify(edgesState?.datasources))
             setLoading(true)
             let endpoint = direction === 'incoming' ? 'incoming_edges' : 'outgoing_edges'
-            let res = (await getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes/${node.getEncodedNodeId()}/${endpoint}?${
+            let res = (await getPaginated<any>(`api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/${endpoint}?${
                 new URLSearchParams([
                     ['page', page],
                     ['size', rowsPerPage],
@@ -101,7 +101,7 @@ export default function EdgesList(params:{
                     id: 'grebi:from',
                     name: 'From Node',
                     selector: (row:GraphEdge) => {
-                        return  <NodeRefLink subgraph={subgraph} nodeRef={row.getFrom()} />
+                        return  <NodeRefLink graph={graph} nodeRef={row.getFrom()} />
                     },
                     sortable: true,
                 } ,
@@ -126,7 +126,7 @@ export default function EdgesList(params:{
                     id: 'grebi:to',
                     name: 'To Node',
                     selector: (row:GraphEdge) => {
-                        return  <NodeRefLink subgraph={subgraph} nodeRef={row.getTo()} />
+                        return  <NodeRefLink graph={graph} nodeRef={row.getTo()} />
                     },
                     sortable: true,
                 }

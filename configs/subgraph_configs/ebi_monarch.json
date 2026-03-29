@@ -1,7 +1,6 @@
 {
   "id": "EBI_MONARCH",
   "name": "EBI Resources and MONARCH Initiative KG",
-  "description": "Combines EMBL-EBI databases (OLS ontologies, IMPC, GWAS Catalog, ChEMBL, Reactome, UniProt, Expression Atlas) with the MONARCH Initiative knowledge graph for integrative biomedical querying.",
   "bytes_per_merged_file": 1073741824,
   "identifier_props": [
     "id",

@@ -25,7 +25,7 @@ public class GrebiSolrRepo {
     }
 
 
-    public Set<String> getSubgraphs() {
+    public Set<String> getGraphs() {
 
         var cores = solrClient.listCores();
 
@@ -37,14 +37,14 @@ public class GrebiSolrRepo {
         var nodesCores = cores.stream().filter(core -> core.startsWith("grebi_nodes_")).map(core -> core.replace("grebi_nodes_", "")).collect(Collectors.toSet());
 
         if (!autocompleteCores.equals(nodesCores)) {
-            throw new RuntimeException("autocomplete and nodes cores must be present for all subgraphs. Found cores: " + String.join(",", cores));
+            throw new RuntimeException("autocomplete and nodes cores must be present for all graphs. Found cores: " + String.join(",", cores));
         }
 
         return autocompleteCores; // any will do they are identical
     }
 
-    public List<String> autocomplete(String subgraph, String q) {
-        return solrClient.autocomplete(subgraph, q);
+    public List<String> autocomplete(String graph, String q) {
+        return solrClient.autocomplete(graph, q);
     }
 
     public GrebiFacetedResultsPage<Map<String,Object>> mapSolrFields(GrebiFacetedResultsPage<SolrDocument> solrDocs) {
@@ -83,32 +83,32 @@ public class GrebiSolrRepo {
         });
     }
 
-    public GrebiFacetedResultsPage<Map<String, Object>> searchNodesPaginated(String subgraph, GrebiSolrQuery query, boolean resolve, Pageable pageable) {
-        var res = solrClient.searchSolrPaginated("grebi_nodes_" + subgraph, query, pageable);
-        return resolve ? resolveNodeIds(subgraph, res) : mapSolrFields(res);
+    public GrebiFacetedResultsPage<Map<String, Object>> searchNodesPaginated(String graph, GrebiSolrQuery query, boolean resolve, Pageable pageable) {
+        var res = solrClient.searchSolrPaginated("grebi_nodes_" + graph, query, pageable);
+        return resolve ? resolveNodeIds(graph, res) : mapSolrFields(res);
     }
 
-    public Map<String, Object> getFirstNode(String subgraph, GrebiSolrQuery query) {
-        return resolveNodeId(subgraph, solrClient.getFirst("grebi_nodes_" + subgraph, query));
+    public Map<String, Object> getFirstNode(String graph, GrebiSolrQuery query) {
+        return resolveNodeId(graph, solrClient.getFirst("grebi_nodes_" + graph, query));
     }
 
-    private GrebiFacetedResultsPage<Map<String, Object>> resolveNodeIds(String subgraph, GrebiFacetedResultsPage<SolrDocument> solrDocs) {
+    private GrebiFacetedResultsPage<Map<String, Object>> resolveNodeIds(String graph, GrebiFacetedResultsPage<SolrDocument> solrDocs) {
 
         List<String> ids = solrDocs.map(doc -> (String) doc.getFieldValues("str_grebi__nodeId").stream().iterator().next()).toList();
 
-        List<Map<String, Object>> vals = resolver.resolveToList(subgraph, ids);
+        List<Map<String, Object>> vals = resolver.resolveToList(graph, ids);
         assert (vals.size() == solrDocs.getSize());
 
         return new GrebiFacetedResultsPage<>(vals, solrDocs.facetFieldToCounts, solrDocs.getPageable(), solrDocs.getTotalElements());
     }
 
-    private Map<String, Object> resolveNodeId(String subgraph, SolrDocument solrDoc) {
-        return resolver.resolveToList(subgraph, List.of((String) solrDoc.getFieldValues("str_grebi__nodeId").stream().iterator().next())).iterator().next();
+    private Map<String, Object> resolveNodeId(String graph, SolrDocument solrDoc) {
+        return resolver.resolveToList(graph, List.of((String) solrDoc.getFieldValues("str_grebi__nodeId").stream().iterator().next())).iterator().next();
     }
 
     public GrebiFacetedResultsPage<Map<String, Object>> searchResultsPaginated(
-            String subgraph, String queryid, GrebiSolrQuery q, Pageable pageable) {
-        String core = "grebi_results__" + subgraph + "__" + queryid;
+            String graph, String queryid, GrebiSolrQuery q, Pageable pageable) {
+        String core = "grebi_results__" + graph + "__" + queryid;
         if(!solrClient.listCores().contains(core))
             throw new RuntimeException("results core " + core + " not found");
         var page = solrClient.searchSolrPaginated(core, q, pageable);
@@ -133,14 +133,14 @@ public class GrebiSolrRepo {
         public double score;
     }
 
-    public List<SimilarResult> getSimilar(String subgraph, String nodeId, int n, String modelId) {
+    public List<SimilarResult> getSimilar(String graph, String nodeId, int n, String modelId) {
         // First, get the embedding vector for the source node
         SolrQuery getNodeQuery = new SolrQuery();
         getNodeQuery.setQuery("grebi__nodeId:" + nodeId);
         getNodeQuery.setFields("embedding__" + modelId);
         getNodeQuery.setRows(1);
         
-        QueryResponse getNodeResponse = solrClient.runSolrQuery("grebi_nodes_" + subgraph, getNodeQuery, Pageable.ofSize(1));
+        QueryResponse getNodeResponse = solrClient.runSolrQuery("grebi_nodes_" + graph, getNodeQuery, Pageable.ofSize(1));
         
         if (getNodeResponse.getResults().isEmpty()) {
             throw new RuntimeException("Node not found: " + nodeId);
@@ -172,7 +172,7 @@ public class GrebiSolrRepo {
         knnQuery.setFields("grebi__nodeId", "str_grebi__name", "score");
         knnQuery.setRows(n);
         
-        QueryResponse knnResponse = solrClient.runSolrQuery("grebi_nodes_" + subgraph, knnQuery, Pageable.ofSize(n));
+        QueryResponse knnResponse = solrClient.runSolrQuery("grebi_nodes_" + graph, knnQuery, Pageable.ofSize(n));
         
         List<SimilarResult> results = new ArrayList<>();
         
@@ -182,7 +182,7 @@ public class GrebiSolrRepo {
             
             // Resolve the full node information
             String similarNodeId = (String) doc.getFieldValue("grebi__nodeId");
-            result.node = resolver.resolveToList(subgraph, List.of(similarNodeId)).get(0);
+            result.node = resolver.resolveToList(graph, List.of(similarNodeId)).get(0);
             
             results.add(result);
         }

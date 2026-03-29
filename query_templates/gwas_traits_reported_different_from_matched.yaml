@@ -1,6 +1,6 @@
 title: Search GWAS reported different from mapped
 question: Which [GWAS reported traits]{reported_trait} under {parent_id} differ from their mapped ontology term?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
 topics:
   - gwas_catalog

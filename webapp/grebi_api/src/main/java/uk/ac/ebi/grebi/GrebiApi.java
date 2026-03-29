@@ -46,32 +46,32 @@ public class GrebiApi {
         GrebiMetadataRepo metadata= null;
         GrebiQueryTemplatesRepo queryTemplates = new GrebiQueryTemplatesRepo();
 
-        Set<String> sqliteSubgraphs = null;
-        Set<String> solrSubgraphs = null;
-        Set<String> postgresSubgraphs = null;
-        Set<String> metadataServiceSubgraphs = null;
-        Set<String> cypherSubgraphs = null;
+        Set<String> sqliteGraphs = null;
+        Set<String> solrGraphs = null;
+        Set<String> postgresGraphs = null;
+        Set<String> metadataServiceGraphs = null;
+        Set<String> cypherGraphs = null;
 
         while(true) {
             try {
                 solr = new GrebiSolrRepo();
                 postgres = new GrebiPostgresRepo();
                 metadata = new GrebiMetadataRepo();
-                sqliteSubgraphs = (new ResolverClient()).getSubgraphs();
-                solrSubgraphs = solr.getSubgraphs();
-                postgresSubgraphs = postgres.getSubgraphs();
-                metadataServiceSubgraphs = metadata.getSubgraphs();
-                if(!sqliteSubgraphs.equals(solrSubgraphs) || !sqliteSubgraphs.equals(postgresSubgraphs) || !sqliteSubgraphs.equals(metadataServiceSubgraphs)) {
-                    throw new RuntimeException("SQLite/Solr/PostgreSQL/the metadata jsons do not seem to contain the same subgraphs. Found: "
-                            + String.join(",", sqliteSubgraphs) + " for SQLite (from resolver service) and "
-                            + String.join(",", solrSubgraphs) + " for Solr (from list of solr cores) and "
-                            + String.join(",", postgresSubgraphs) + " for PostgreSQL (from edge tables) and "
-                            + String.join(",", metadataServiceSubgraphs) + " for the summary jsons (from metadata server)"
+                sqliteGraphs = (new ResolverClient()).getGraphs();
+                solrGraphs = solr.getGraphs();
+                postgresGraphs = postgres.getGraphs();
+                metadataServiceGraphs = metadata.getGraphs();
+                if(!sqliteGraphs.equals(solrGraphs) || !sqliteGraphs.equals(postgresGraphs) || !sqliteGraphs.equals(metadataServiceGraphs)) {
+                    throw new RuntimeException("SQLite/Solr/PostgreSQL/the metadata jsons do not seem to contain the same graphs. Found: "
+                            + String.join(",", sqliteGraphs) + " for SQLite (from resolver service) and "
+                            + String.join(",", solrGraphs) + " for Solr (from list of solr cores) and "
+                            + String.join(",", postgresGraphs) + " for PostgreSQL (from edge tables) and "
+                            + String.join(",", metadataServiceGraphs) + " for the summary jsons (from metadata server)"
                     );
                 }
                 break;
             } catch(Throwable e) {
-                System.out.println("Could not get subgraphs from one of the services. Retrying in 10 seconds...");
+                System.out.println("Could not get graphs from one of the services. Retrying in 10 seconds...");
                 e.printStackTrace();
                 try {
                     Thread.sleep(10000);
@@ -84,19 +84,19 @@ public class GrebiApi {
         for(int i = 0; i < 5; ++ i) {
             try {
                 cypher = new GrebiCypherRepo();
-                cypherSubgraphs = cypher.getSubgraphs();
-                if(!sqliteSubgraphs.equals(cypherSubgraphs)) {
+                cypherGraphs = cypher.getGraphs();
+                if(!sqliteGraphs.equals(cypherGraphs)) {
                     cypher = null;
-                    throw new RuntimeException("SQLite/Solr/PostgreSQL/the summary jsons/cypher service do not seem to contain the same subgraphs. Found: "
-                            + String.join(",", sqliteSubgraphs) + " for SQLite (from resolver service) and "
-                            + String.join(",", solrSubgraphs) + " for Solr (from list of solr cores) and "
-                            + String.join(",", postgresSubgraphs) + " for PostgreSQL (from edge tables) and "
-                            + String.join(",", metadataServiceSubgraphs) + " for the summary jsons (from summary server) and "
-                            + String.join(",", cypherSubgraphs) + " for cypher service"
+                    throw new RuntimeException("SQLite/Solr/PostgreSQL/the summary jsons/cypher service do not seem to contain the same graphs. Found: "
+                            + String.join(",", sqliteGraphs) + " for SQLite (from resolver service) and "
+                            + String.join(",", solrGraphs) + " for Solr (from list of solr cores) and "
+                            + String.join(",", postgresGraphs) + " for PostgreSQL (from edge tables) and "
+                            + String.join(",", metadataServiceGraphs) + " for the summary jsons (from summary server) and "
+                            + String.join(",", cypherGraphs) + " for cypher service"
                     );
                 }
             } catch (Throwable e) {
-                System.out.println("Could not get subgraphs from cypher service. Retrying in 10 seconds ("+ (4-i) + " attempts left)");
+                System.out.println("Could not get graphs from cypher service. Retrying in 10 seconds ("+ (4-i) + " attempts left)");
                 e.printStackTrace();
                 try {
                     Thread.sleep(10000);
@@ -112,19 +112,19 @@ public class GrebiApi {
             System.out.println("Cypher service is available");
         }
 
-        System.out.println("Found subgraphs: " + String.join(",", solrSubgraphs));
+        System.out.println("Found graphs: " + String.join(",", solrGraphs));
 
-        // Initialize embedding service clients (one per subgraph with PCA models)
+        // Initialize embedding service clients (one per graph with PCA models)
         Map<String, EmbeddingServiceClient> embeddingClients = new LinkedHashMap<>();
-        for (String sg : solrSubgraphs) {
+        for (String sg : solrGraphs) {
             var meta = metadata.getMetadata(sg);
             if (meta != null && meta.containsKey("embedding_pca_models")) {
                 embeddingClients.put(sg, new EmbeddingServiceClient(meta));
-                System.out.println("Initialized embedding client for subgraph: " + sg);
+                System.out.println("Initialized embedding client for graph: " + sg);
             }
         }
 
-        run(cypher, solr, postgres, metadata, solrSubgraphs, queryTemplates, embeddingClients);
+        run(cypher, solr, postgres, metadata, solrGraphs, queryTemplates, embeddingClients);
     }
 
     static void run(
@@ -132,7 +132,7 @@ public class GrebiApi {
         final GrebiSolrRepo solr,
         final GrebiPostgresRepo postgres,
         final GrebiMetadataRepo metadata,
-        final Set<String> subgraphs,
+        final Set<String> graphs,
         final GrebiQueryTemplatesRepo queryTemplates,
         final Map<String, EmbeddingServiceClient> embeddingClients
     ) {
@@ -141,7 +141,7 @@ public class GrebiApi {
         Gson gson = new Gson();
 
         GrebiMcpServer mcpServer = new GrebiMcpServer(
-            cypher, solr, metadata, subgraphs, queryTemplates
+            cypher, solr, metadata, graphs, queryTemplates
         );
 
         Javalin.create(config -> {
@@ -181,18 +181,18 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(queryTemplates.getQueryTopics()));
                 })
-                .get("/api/v1/subgraphs", ctx -> {
+                .get("/api/v1/graphs", ctx -> {
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(subgraphs));
+                    ctx.result(gson.toJson(graphs));
                 })
-                .get("/api/v1/subgraphs/{subgraph}", ctx -> {
+                .get("/api/v1/graphs/{graph}", ctx -> {
                     ctx.contentType("application/json");
-                    var meta = new java.util.LinkedHashMap<>(metadata.getMetadata(ctx.pathParam("subgraph")));
+                    var meta = new java.util.LinkedHashMap<>(metadata.getMetadata(ctx.pathParam("graph")));
                     meta.remove("embedding_pca_models");
                     ctx.result(gson.toJson(meta));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/stats", ctx -> {
-                    var subgraph = ctx.pathParam("subgraph");
+                .get("/api/v1/graphs/{graph}/stats", ctx -> {
+                    var graph = ctx.pathParam("graph");
                     ctx.contentType("application/json");
 
                     // Node counts by datasource and type from Solr faceting
@@ -200,7 +200,7 @@ public class GrebiApi {
                     q.addFacetField("grebi:datasources");
                     q.addFacetField("grebi:type");
                     q.setFacetLimit(-1);
-                    var facetResult = solr.searchNodesPaginated(subgraph, q, false,
+                    var facetResult = solr.searchNodesPaginated(graph, q, false,
                             PageRequest.of(0, 1));
 
                     var nodeDsByDs = facetResult.facetFieldToCounts.getOrDefault("grebi:datasources", Map.of());
@@ -208,7 +208,7 @@ public class GrebiApi {
 
                     // Edge counts by type from metadata edges nested structure (srcType → edgeType → dstType → dsSig → count)
                     Map<String, Long> edgesByType = new LinkedHashMap<>();
-                    var meta = metadata.getMetadata(subgraph);
+                    var meta = metadata.getMetadata(graph);
                     var edgesEl = meta.get("edges");
                     if (edgesEl != null && edgesEl.isJsonObject()) {
                         for (var srcType : edgesEl.getAsJsonObject().entrySet()) {
@@ -256,17 +256,17 @@ public class GrebiApi {
                 })
                 .get("/api/v1/materialised_queries", ctx -> {
                     List<JsonElement> all_matqs = new ArrayList<>();
-                    for(String graph : metadata.getSubgraphs()) {
+                    for(String graph : metadata.getGraphs()) {
                         var matqs = metadata.getMetadata(graph).get("materialised_queries").getAsJsonArray().asList();
                         for(var mq : matqs) {
                             // temp hack for botched dataload
                             if(mq.isJsonArray()) {
                                 for(var qr : mq.getAsJsonArray()) {
-                                    qr.getAsJsonObject().addProperty("subgraph", graph);
+                                    qr.getAsJsonObject().addProperty("graph", graph);
                                     all_matqs.add(qr);
                                 }
                             } else {
-                                mq.getAsJsonObject().addProperty("subgraph", graph);
+                                mq.getAsJsonObject().addProperty("graph", graph);
                                 all_matqs.add(mq);
 
                             }
@@ -275,12 +275,12 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(all_matqs));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/materialised_queries", ctx -> {
-                    var md = metadata.getMetadata(ctx.pathParam("subgraph"));
+                .get("/api/v1/graphs/{graph}/materialised_queries", ctx -> {
+                    var md = metadata.getMetadata(ctx.pathParam("graph"));
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(md.get("materialised_queries")));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/materialised_queries/{queryid}", ctx -> {
+                .get("/api/v1/graphs/{graph}/materialised_queries/{queryid}", ctx -> {
                     var q = new GrebiSolrQuery();
                     q.setSearchText(ctx.queryParam("q"));
                     q.setExactMatch(false);
@@ -309,31 +309,31 @@ public class GrebiApi {
                         size = "10";
                     }
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
-                    var res = solr.searchResultsPaginated(ctx.pathParam("subgraph"), ctx.pathParam("queryid"), q, page);
+                    var res = solr.searchResultsPaginated(ctx.pathParam("graph"), ctx.pathParam("queryid"), q, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/query_templates", ctx -> {
-                    var subgraph = ctx.pathParam("subgraph");
+                .get("/api/v1/graphs/{graph}/query_templates", ctx -> {
+                    var graph = ctx.pathParam("graph");
                     ctx.contentType("application/json");
                     ctx.header("cache-control", "no-cache");
                     ctx.result(gson.toJson(queryTemplates.getQueryTemplates().stream()
-                            .filter(qt -> qt.subgraphs == null || qt.subgraphs.contains(subgraph))
+                            .filter(qt -> qt.graphs == null || qt.graphs.contains(graph))
                             .collect(Collectors.toList())));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/query_templates/{templateId}", ctx -> {
-                    var subgraph = ctx.pathParam("subgraph");
+                .get("/api/v1/graphs/{graph}/query_templates/{templateId}", ctx -> {
+                    var graph = ctx.pathParam("graph");
                     var templateId = ctx.pathParam("templateId");
                     var template = queryTemplates.getQueryTemplates().stream()
-                            .filter(qt -> qt.id.equals(templateId) && (qt.subgraphs == null || qt.subgraphs.contains(subgraph)))
+                            .filter(qt -> qt.id.equals(templateId) && (qt.graphs == null || qt.graphs.contains(graph)))
                             .findFirst()
-                            .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found for subgraph " + subgraph));
+                            .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found for graph " + graph));
                     ctx.contentType("application/json");
                     ctx.header("cache-control", "no-cache");
                     ctx.result(gson.toJson(template));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/query/{templateId}.csv", ctx -> {
-                    var subgraph = ctx.pathParam("subgraph");
+                .get("/api/v1/graphs/{graph}/query/{templateId}.csv", ctx -> {
+                    var graph = ctx.pathParam("graph");
                     var templateId = ctx.pathParam("templateId");
                     var template = queryTemplates.getQueryTemplates().stream()
                             .filter(qt -> qt.id.equals(templateId))
@@ -345,7 +345,7 @@ public class GrebiApi {
                     var params = new HashMap<String, List<String>>();
                     for (var param : ctx.queryParamMap().entrySet()) {
                         if (param.getKey().equals("page") || param.getKey().equals("size") ||
-                                param.getKey().equals("templateId") || param.getKey().equals("subgraph") ||
+                                param.getKey().equals("templateId") || param.getKey().equals("graph") ||
                                 param.getKey().equals("sortBy") || param.getKey().equals("sortDir") ||
                                 param.getKey().equals("resolve")) {
                             continue;
@@ -357,14 +357,14 @@ public class GrebiApi {
 
                     ctx.future(() -> {
                         try {
-                            return cypher.runQueryFromTemplateStreamed(subgraph, template, params, sort, ctx.res());
+                            return cypher.runQueryFromTemplateStreamed(graph, template, params, sort, ctx.res());
                         } catch (IOException e) {
                             throw new RuntimeException("Failed to write CSV response", e);
                         }
                     });
                 })
-                .get("/api/v1/subgraphs/{subgraph}/query/{templateId}", ctx -> {
-                    var subgraph = ctx.pathParam("subgraph");
+                .get("/api/v1/graphs/{graph}/query/{templateId}", ctx -> {
+                    var graph = ctx.pathParam("graph");
                     var templateId = ctx.pathParam("templateId");
                     var template = queryTemplates.getQueryTemplates().stream()
                             .filter(qt -> qt.id.equals(templateId))
@@ -382,7 +382,7 @@ public class GrebiApi {
                     var params = new HashMap<String, List<String>>();
                     for (var param : ctx.queryParamMap().entrySet()) {
                         if (param.getKey().equals("page") || param.getKey().equals("size") ||
-                                param.getKey().equals("templateId") || param.getKey().equals("subgraph") ||
+                                param.getKey().equals("templateId") || param.getKey().equals("graph") ||
                                 param.getKey().equals("sortBy") || param.getKey().equals("sortDir") ||
                                 param.getKey().equals("resolve")) {
                             continue;
@@ -392,7 +392,7 @@ public class GrebiApi {
 
                     var resolve = "true".equals(ctx.queryParam("resolve"));
 
-                    var res = cypher.runQueryFromTemplatePaginated(subgraph, template, params, resolve, page);
+                    var res = cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page);
 
                     ctx.result(
                         gson.toJson(
@@ -400,7 +400,7 @@ public class GrebiApi {
                         )
                     );
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes", ctx -> {
+                .get("/api/v1/graphs/{graph}/nodes", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result("{}");
 
@@ -421,7 +421,7 @@ public class GrebiApi {
                     }
 
                     var res = solr.searchNodesPaginated(
-                        ctx.pathParam("subgraph"),
+                        ctx.pathParam("graph"),
                         q,
                         ! "false".equals(ctx.queryParam("resolve")),
                         PageRequest.of(
@@ -435,7 +435,7 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.json(res);
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}", ctx -> {
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result("{}");
 
@@ -444,27 +444,27 @@ public class GrebiApi {
                     var q = new GrebiSolrQuery();
                     q.addFilter("grebi:nodeId", List.of(nodeId), SearchType.WHOLE_FIELD, false);
 
-                    var res = solr.getFirstNode(ctx.pathParam("subgraph"), q);
+                    var res = solr.getFirstNode(ctx.pathParam("graph"), q);
 
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/edge_counts", ctx -> {
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/edge_counts", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(postgres.getBothEdgeCounts(ctx.pathParam("subgraph"), nodeId)));
+                    ctx.result(gson.toJson(postgres.getBothEdgeCounts(ctx.pathParam("graph"), nodeId)));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/incoming_edge_counts", ctx -> {
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edge_counts", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(postgres.getIncomingEdgeCounts(ctx.pathParam("subgraph"), nodeId)));
+                    ctx.result(gson.toJson(postgres.getIncomingEdgeCounts(ctx.pathParam("graph"), nodeId)));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/outgoing_edge_counts", ctx -> {
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edge_counts", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(postgres.getOutgoingEdgeCounts(ctx.pathParam("subgraph"), nodeId)));
+                    ctx.result(gson.toJson(postgres.getOutgoingEdgeCounts(ctx.pathParam("graph"), nodeId)));
                 })
-                .post("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/resolve_single_edges", ctx -> {
+                .post("/api/v1/graphs/{graph}/nodes/{nodeId}/resolve_single_edges", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
                     if (cypher == null) {
@@ -477,10 +477,10 @@ public class GrebiApi {
                         ctx.result("{}");
                         return;
                     }
-                    var result = cypher.resolveSingleEdges(ctx.pathParam("subgraph"), nodeId, List.of(items));
+                    var result = cypher.resolveSingleEdges(ctx.pathParam("graph"), nodeId, List.of(items));
                     ctx.result(gson.toJson(result));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/incoming_edges", ctx -> {
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edges", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
                     var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
@@ -501,12 +501,12 @@ public class GrebiApi {
                         extraFilters.put(queryParamName, queryParam.getValue());
                     }
 
-                   var res = postgres.searchEdgesPaginated(ctx.pathParam("subgraph"),
+                   var res = postgres.searchEdgesPaginated(ctx.pathParam("graph"),
                            "grebi:toNodeId", nodeId, extraFilters, sortBy, sortDir, page);
                    ctx.contentType("application/json");
                    ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/outgoing_edges", ctx -> {
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edges", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
                     var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
@@ -527,12 +527,12 @@ public class GrebiApi {
                         extraFilters.put(queryParamName, queryParam.getValue());
                     }
 
-                    var res = postgres.searchEdgesPaginated(ctx.pathParam("subgraph"),
+                    var res = postgres.searchEdgesPaginated(ctx.pathParam("graph"),
                             "grebi:fromNodeId", nodeId, extraFilters, sortBy, sortDir, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/incoming_edge_refs", ctx -> {
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edge_refs", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
                     var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
@@ -553,12 +553,12 @@ public class GrebiApi {
                         extraFilters.put(queryParamName, queryParam.getValue());
                     }
 
-                    var res = postgres.searchEdgeRefsPaginated(ctx.pathParam("subgraph"),
+                    var res = postgres.searchEdgeRefsPaginated(ctx.pathParam("graph"),
                             "grebi:toNodeId", nodeId, extraFilters, sortBy, sortDir, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/outgoing_edge_refs", ctx -> {
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edge_refs", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
                     var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
@@ -579,14 +579,14 @@ public class GrebiApi {
                         extraFilters.put(queryParamName, queryParam.getValue());
                     }
 
-                    var res = postgres.searchEdgeRefsPaginated(ctx.pathParam("subgraph"),
+                    var res = postgres.searchEdgeRefsPaginated(ctx.pathParam("graph"),
                             "grebi:fromNodeId", nodeId, extraFilters, sortBy, sortDir, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/embedding_models", ctx -> {
-                    var subgraph = ctx.pathParam("subgraph");
-                    var client = embeddingClients.get(subgraph);
+                .get("/api/v1/graphs/{graph}/embedding_models", ctx -> {
+                    var graph = ctx.pathParam("graph");
+                    var client = embeddingClients.get(graph);
                     List<String> modelNames = (client != null) ? client.getAvailableModels() : List.of();
                     Set<String> embeddable = (client != null) ? client.getEmbeddableModels() : Set.of();
                     var result = new java.util.ArrayList<Map<String, Object>>();
@@ -596,8 +596,8 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(result));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/semantic_search", ctx -> {
-                    var subgraph = ctx.pathParam("subgraph");
+                .get("/api/v1/graphs/{graph}/semantic_search", ctx -> {
+                    var graph = ctx.pathParam("graph");
                     var q = ctx.queryParam("q");
                     var model = ctx.queryParam("model");
                     var n = Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("n"), "10"));
@@ -612,19 +612,19 @@ public class GrebiApi {
                         return;
                     }
 
-                    var client = embeddingClients.get(subgraph);
+                    var client = embeddingClients.get(graph);
                     if (client == null) {
-                        ctx.status(400).result("{\"error\":\"No embedding models available for this subgraph\"}");
+                        ctx.status(400).result("{\"error\":\"No embedding models available for this graph\"}");
                         return;
                     }
 
                     float[] queryVector = client.embedText(model, q);
-                    var vectorResults = postgres.searchByVector(subgraph, model, queryVector, n);
+                    var vectorResults = postgres.searchByVector(graph, model, queryVector, n);
 
                     if (resolve) {
                         var nodeIds = vectorResults.stream().map(r -> r.nodeId).toList();
                         var resolver = new ResolverClient();
-                        var resolvedMap = resolver.resolveToMap(subgraph, nodeIds);
+                        var resolvedMap = resolver.resolveToMap(graph, nodeIds);
                         var results = new java.util.ArrayList<Map<String, Object>>();
                         for (var vr : vectorResults) {
                             var resolved = resolvedMap.get(vr.nodeId);
@@ -643,8 +643,8 @@ public class GrebiApi {
                         ctx.result(gson.toJson(vectorResults));
                     }
                 })
-                .get("/api/v1/subgraphs/{subgraph}/nodes/{nodeId}/similar", ctx -> {
-                    var subgraph = ctx.pathParam("subgraph");
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/similar", ctx -> {
+                    var graph = ctx.pathParam("graph");
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     var n = Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("n"), "10"));
                     var modelParam = ctx.queryParam("model");
@@ -652,27 +652,27 @@ public class GrebiApi {
                     if (modelParam != null && !modelParam.isBlank()) {
                         model = modelParam;
                     } else {
-                        // Default to first available model for this subgraph
-                        var embClient = embeddingClients.get(subgraph);
+                        // Default to first available model for this graph
+                        var embClient = embeddingClients.get(graph);
                         var models = (embClient != null) ? embClient.getAvailableModels() : List.<String>of();
                         if (models.isEmpty()) {
-                            ctx.status(404).result("{\"error\":\"No embedding models available for this subgraph\"}");
+                            ctx.status(404).result("{\"error\":\"No embedding models available for this graph\"}");
                             return;
                         }
                         model = models.get(0);
                     }
 
-                    var nodeEmbedding = postgres.getNodeEmbedding(subgraph, nodeId, model);
+                    var nodeEmbedding = postgres.getNodeEmbedding(graph, nodeId, model);
                     if (nodeEmbedding == null) {
                         ctx.status(404).result("{\"error\":\"No embedding found for this node and model\"}");
                         return;
                     }
 
-                    var results = postgres.searchByVector(subgraph, model, nodeEmbedding, n);
+                    var results = postgres.searchByVector(graph, model, nodeEmbedding, n);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(results));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/edges", ctx -> {
+                .get("/api/v1/graphs/{graph}/edges", ctx -> {
                     var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
                     var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), "grebi:type");
@@ -691,18 +691,18 @@ public class GrebiApi {
                         filters.put(queryParamName, queryParam.getValue());
                     }
 
-                    var res = postgres.searchEdges(ctx.pathParam("subgraph"),
+                    var res = postgres.searchEdges(ctx.pathParam("graph"),
                             filters, sortBy, sortDir, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/edges/{edgeId}", ctx -> {
+                .get("/api/v1/graphs/{graph}/edges/{edgeId}", ctx -> {
                     var rawEdgeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("edgeId")));
-                    var subgraph = ctx.pathParam("subgraph");
-                    // Edge IDs from Neo4j are subgraph-prefixed, but the resolver stores them without
-                    var edgeId = rawEdgeId.startsWith(subgraph + ":") ? rawEdgeId.substring(subgraph.length() + 1) : rawEdgeId;
+                    var graph = ctx.pathParam("graph");
+                    // Edge IDs from Neo4j are graph-prefixed, but the resolver stores them without
+                    var edgeId = rawEdgeId.startsWith(graph + ":") ? rawEdgeId.substring(graph.length() + 1) : rawEdgeId;
                     var resolver = new ResolverClient();
-                    var resolved = resolver.resolveToMap(subgraph, List.of(edgeId));
+                    var resolved = resolver.resolveToMap(graph, List.of(edgeId));
                     var edge = resolved.get(edgeId);
                     if (edge == null) {
                         ctx.status(404).result("{\"error\":\"Edge not found\"}");
@@ -740,7 +740,7 @@ public class GrebiApi {
                     var res = prefixClient.reprefix(iris_or_curies);
                     ctx.result(gson.toJson(Map.of("curies", res)));
                 })
-                .get("/api/v1/subgraphs/{subgraph}/search", ctx -> {
+                .get("/api/v1/graphs/{graph}/search", ctx -> {
                     var q = new GrebiSolrQuery();
                     q.setSearchText(ctx.queryParam("q"));
                     q.setExactMatch(false);
@@ -787,12 +787,12 @@ public class GrebiApi {
                     }
                     var resolve = ! "false".equals(ctx.queryParam("resolve"));
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
-                    var res = solr.searchNodesPaginated(ctx.pathParam("subgraph"), q, resolve, page);
+                    var res = solr.searchNodesPaginated(ctx.pathParam("graph"), q, resolve, page);
                     ctx.contentType("application/json");
                     ctx.json(res);
                 })
-                .get("/api/v1/subgraphs/{subgraph}/suggest", ctx -> {
-                    var res = solr.autocomplete(ctx.pathParam("subgraph"), ctx.queryParam("q"));
+                .get("/api/v1/graphs/{graph}/suggest", ctx -> {
+                    var res = solr.autocomplete(ctx.pathParam("graph"), ctx.queryParam("q"));
                     ctx.contentType("application/json");
                     ctx.json(res);
                 })

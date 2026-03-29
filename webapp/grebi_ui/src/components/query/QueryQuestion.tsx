@@ -12,7 +12,7 @@ import { DatasourceTags } from "../DatasourceTag";
 import NodeTypeChip from "../NodeTypeChip";
 
 interface QueryQuestionProps {
-  subgraph: string;
+  graph: string;
   template: QueryTemplate;
   exampleIndex?: number;
   onAllParamsFilled?: (params: Record<string, string>) => void;
@@ -33,7 +33,7 @@ interface ParamState {
 }
 
 export default function QueryQuestion({
-  subgraph,
+  graph,
   template,
   exampleIndex,
   onAllParamsFilled,
@@ -170,7 +170,7 @@ export default function QueryQuestion({
       if (urlParams && autoNavigate) {
         setNavigatedViaAutocomplete(true);
         const qs = new URLSearchParams(urlParams).toString();
-        navigate(`/graphs/${subgraph}/queries/${template.id}?${qs}`);
+        navigate(`/graphs/${graph}/queries/${template.id}?${qs}`);
       }
       if (urlParams && onAllParamsFilled) {
         onAllParamsFilled(urlParams);
@@ -200,7 +200,7 @@ export default function QueryQuestion({
             ? new URLSearchParams(param.param_opts)
             : undefined;
           const nodes = await getPaginated<any>(
-            `api/v1/subgraphs/${subgraph}/search?${joinSearchParams(
+            `api/v1/graphs/${graph}/search?${joinSearchParams(
               new URLSearchParams({ q, resolve: "false", size: "5", lang: "en" }),
               additionalParams
             )}`
@@ -217,7 +217,7 @@ export default function QueryQuestion({
         }
       }, 300);
     },
-    [subgraph, updateParamState]
+    [graph, updateParamState]
   );
 
   const handleSelectNode = useCallback(
@@ -239,9 +239,9 @@ export default function QueryQuestion({
     const urlParams = buildUrlParams();
     if (urlParams) {
       const qs = new URLSearchParams(urlParams).toString();
-      navigate(`/graphs/${subgraph}/queries/${template.id}?${qs}`);
+      navigate(`/graphs/${graph}/queries/${template.id}?${qs}`);
     }
-  }, [buildUrlParams, navigate, subgraph, template.id]);
+  }, [buildUrlParams, navigate, graph, template.id]);
 
   const getPlaceholder = (paramId: string): string => {
     if (currentExample?.params?.[paramId]) {

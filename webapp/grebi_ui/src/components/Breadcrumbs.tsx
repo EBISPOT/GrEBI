@@ -2,14 +2,14 @@ import { Link } from "react-router-dom";
 import { Fragment } from "react/jsx-runtime";
 import MuiBreadcrumbs from '@mui/material/Breadcrumbs';
 import { Home, NavigateNext } from "@mui/icons-material";
-import SubgraphPicker from "./SubgraphPicker";
+import GraphPicker from "./GraphPicker";
 
 export interface BreadcrumbsEntry {
     url:string
     label:string|JSX.Element
 }
 
-export default function Breadcrumbs(props:{ subgraph?:string, setSubgraph?:(s:string)=>void, entries: BreadcrumbsEntry[] }) {
+export default function Breadcrumbs(props:{ graph?:string, setGraph?:(s:string)=>void, entries: BreadcrumbsEntry[] }) {
 
     let entries: BreadcrumbsEntry[] = props.entries;
 
@@ -31,8 +31,8 @@ export default function Breadcrumbs(props:{ subgraph?:string, setSubgraph?:(s:st
     </Link>
   )}
 
-  {props.subgraph && props.setSubgraph && (
-    <SubgraphPicker subgraph={props.subgraph} setSubgraph={props.setSubgraph} compact />
+  {props.graph && props.setGraph && (
+    <GraphPicker graph={props.graph} setGraph={props.setGraph} compact />
   )}
 
   {entries.slice(1).map((entry, index) => (

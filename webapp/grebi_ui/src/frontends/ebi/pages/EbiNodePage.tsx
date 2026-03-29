@@ -29,17 +29,17 @@ import { useEmbeddingModels } from "../../../app/useEmbeddingModels";
 export default function EbiNodePage() {
   const params = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const subgraph: string = params.subgraph as string;
+  const graph: string = params.graph as string;
   const nodeId: string = atob(params.nodeId as string);
   const lang = searchParams.get("lang") || "en";
 
   let [node, setNode] = useState<GraphNode|null>(null);
   const tab = searchParams.get("tab") || "graph";
-  const { availableModels, selectedModel, setSelectedModel, hasEmbeddingModels } = useEmbeddingModels(subgraph);
+  const { availableModels, selectedModel, setSelectedModel, hasEmbeddingModels } = useEmbeddingModels(graph);
 
   useEffect(() => {
     async function getNode() {
-      let graphNode = new GraphNode(await get<any>(`api/v1/subgraphs/${subgraph}/nodes/${encodeNodeId(nodeId)}?lang=${lang}`))
+      let graphNode = new GraphNode(await get<any>(`api/v1/graphs/${graph}/nodes/${encodeNodeId(nodeId)}?lang=${lang}`))
       setNode(graphNode)
     }
     getNode()
@@ -47,13 +47,13 @@ export default function EbiNodePage() {
 
   return (
     <div>
-      <EbiBreadcrumbsBar subgraph={subgraph} entries={[
+      <EbiBreadcrumbsBar graph={graph} entries={[
 
         { url: `/graphs`, label: "Graphs" },
-        { url: `/graphs/${subgraph}`, label: "Nodes" },
+        { url: `/graphs/${graph}`, label: "Nodes" },
 
         ...(node ? (
-          [{ url: `/graphs/${subgraph}/nodes/${encodeNodeId(nodeId)}`, label: node.getName() }]
+          [{ url: `/graphs/${graph}/nodes/${encodeNodeId(nodeId)}`, label: node.getName() }]
         ) : [])
 
       ]} />
@@ -65,7 +65,7 @@ export default function EbiNodePage() {
         { node == null && <LoadingOverlay message="Loading node..." /> }
         {node !== null &&
       <main className="container mx-auto px-4 pt-1">
-        <SearchBox subgraph={subgraph} availableModels={availableModels} selectedModel={selectedModel} onModelChange={setSelectedModel} />
+        <SearchBox graph={graph} availableModels={availableModels} selectedModel={selectedModel} onModelChange={setSelectedModel} />
         <div className="text-center pb-5">
         <Typography variant="h5">{node.getName()} {
           node.extractType()?.longName && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.longName}</span>}</Typography>
@@ -98,22 +98,22 @@ export default function EbiNodePage() {
           </Grid>
           <Grid item xs={10}>
         {/* <TabPanel value={tab} index={"links"}>
-          <NodeLinks node={node} subgraph={subgraph} />
+          <NodeLinks node={node} graph={graph} />
         </TabPanel> */}
         <TabPanel value={tab} index={"graph"}>
-         <GraphView subgraph={subgraph} node={node} />
+         <GraphView graph={graph} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"properties"}>
-          <PropTable lang={lang} subgraph={subgraph} node={node} />
+          <PropTable lang={lang} graph={graph} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"edges_in"}>
-          <EdgesList direction="incoming" subgraph={subgraph} node={node} />
+          <EdgesList direction="incoming" graph={graph} node={node} />
         </TabPanel>
         <TabPanel value={tab} index={"edges_out"}>
-          <EdgesList direction="outgoing" subgraph={subgraph} node={node} />
+          <EdgesList direction="outgoing" graph={graph} node={node} />
         </TabPanel>
         {hasEmbeddingModels && <TabPanel value={tab} index={"similar"}>
-         <NodeSimilarList subgraph={subgraph} node={node} model={selectedModel} />
+         <NodeSimilarList graph={graph} node={node} model={selectedModel} />
         </TabPanel>}
         </Grid>
         </Grid>

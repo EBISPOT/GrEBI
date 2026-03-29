@@ -132,7 +132,7 @@ COPY query_templates /opt/query_templates
 
 # Create supervisor configuration
 COPY webapp/combined_supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY webapp/integration_tests.py /opt/integration_tests.py
+COPY webapp/test_query_templates.py /opt/test_query_templates.py
 COPY tests/export_neo4j.py /opt/export_neo4j.py
 COPY tests/export_solr.py /opt/export_solr.py
 COPY tests/export_postgres.py /opt/export_postgres.py

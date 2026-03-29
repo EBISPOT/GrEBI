@@ -5,13 +5,13 @@ import { QueryTemplate } from "../../model/QueryTemplate";
 import QueryQuestion from "./QueryQuestion";
 
 interface CyclingQuestionsProps {
-  subgraph: string;
+  graph: string;
   autoPlay?: boolean;
   onExampleChange?: (firstParamValue: string | null, exampleTitle: string | null) => void;
   onAllSourceIds?: (sourceIds: string[]) => void;
 }
 
-export default function CyclingQuestions({ subgraph, autoPlay = true, onExampleChange, onAllSourceIds }: CyclingQuestionsProps) {
+export default function CyclingQuestions({ graph, autoPlay = true, onExampleChange, onAllSourceIds }: CyclingQuestionsProps) {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<QueryTemplate[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -24,7 +24,7 @@ export default function CyclingQuestions({ subgraph, autoPlay = true, onExampleC
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    get<QueryTemplate[]>(`api/v1/subgraphs/${subgraph}/query_templates`).then((r) => {
+    get<QueryTemplate[]>(`api/v1/graphs/${graph}/query_templates`).then((r) => {
       const withQuestions = r.filter((t) => t.question && t.question.trim() !== "");
       setTemplates(withQuestions);
       setExampleIndices(new Array(withQuestions.length).fill(0));
@@ -45,7 +45,7 @@ export default function CyclingQuestions({ subgraph, autoPlay = true, onExampleC
         onAllSourceIds(Array.from(ids));
       }
     });
-  }, [subgraph]);
+  }, [graph]);
 
   const cycleToNext = useCallback(() => {
     if (!templates || templates.length === 0) return;
@@ -75,7 +75,7 @@ export default function CyclingQuestions({ subgraph, autoPlay = true, onExampleC
     setAnimKey((k) => k + 1);
   }, []);
 
-  // Stop cycling when autoPlay becomes false
+  // Stop/resume cycling when autoPlay changes
   useEffect(() => {
     if (!autoPlay) {
       setIsCycling(false);
@@ -83,6 +83,8 @@ export default function CyclingQuestions({ subgraph, autoPlay = true, onExampleC
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+    } else {
+      setIsCycling(true);
     }
   }, [autoPlay]);
 
@@ -155,9 +157,9 @@ export default function CyclingQuestions({ subgraph, autoPlay = true, onExampleC
         const example = template.examples?.[exIdx];
         if (example) {
           const qs = new URLSearchParams(example.params).toString();
-          navigate(`/graphs/${subgraph}/queries/${template.id}?${qs}`);
+          navigate(`/graphs/${graph}/queries/${template.id}?${qs}`);
         } else {
-          navigate(`/graphs/${subgraph}/queries/${template.id}`);
+          navigate(`/graphs/${graph}/queries/${template.id}`);
         }
       }}
       onFocus={stopCycling}
@@ -183,7 +185,7 @@ export default function CyclingQuestions({ subgraph, autoPlay = true, onExampleC
           <svg className="inline-block mr-2" style={{ verticalAlign: "-0.15em", width: "1.8rem", height: "1.8rem" }} viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
           <QueryQuestion
             key={`${template.id}-${exIdx}`}
-            subgraph={subgraph}
+            graph={graph}
             template={template}
             exampleIndex={exIdx}
             fontSize="1.8rem"

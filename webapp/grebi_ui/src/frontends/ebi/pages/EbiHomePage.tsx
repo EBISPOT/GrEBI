@@ -5,7 +5,7 @@ import { List, ListItem, MenuItem, Select, IconButton } from "@mui/material";
 import { InfoOutlined } from "@mui/icons-material";
 import { get, getPaginated } from "../../../app/api";
 import SearchBox from "../../../components/SearchBox";
-import SubgraphPicker from "../../../components/SubgraphPicker";
+import GraphPicker from "../../../components/GraphPicker";
 import CyclingQuestions from "../../../components/query/CyclingQuestions";
 import urlJoin from "url-join";
 import SourceCodeSection from "../../../components/query/SourceCodeSection";
@@ -21,16 +21,17 @@ export default function EbiHomePage() {
   let navigate = useNavigate();
 
   let [stats, setStats] = useState<any|null>(null);
-  let [subgraphs, setSubgraphs] = useState<string[]|null>(null);
-  let [subgraphNames, setSubgraphNames] = useState<Record<string, string>>({});
-  let [subgraph, setSubgraph] = useState<string|null>(params.subgraph || null);
+  let [graphs, setGraphs] = useState<string[]|null>(null);
+  let [graphNames, setGraphNames] = useState<Record<string, string>>({});
+  let [graph, setGraph] = useState<string|null>(params.graph || null);
   let [graphNode, setGraphNode] = useState<GraphNode|null>(null);
   let [graphLocked, setGraphLocked] = useState(false);
+  let [graphHovered, setGraphHovered] = useState(false);
   let nodeCacheRef = useRef<Record<string, GraphNode>>({});
 
-function navigateToSubgraph(sg: string) {
+function navigateToGraph(sg: string) {
   let currentUrl = loc.pathname;
-    setSubgraph(sg);
+    setGraph(sg);
   if(currentUrl.indexOf("graphs/") !== -1) {
     let newUrl = currentUrl.replace(/graphs\/[^/]+/, `graphs/${sg}`);
     navigate(newUrl);
@@ -42,16 +43,16 @@ function navigateToSubgraph(sg: string) {
 
   useEffect(() => {
     get<Stats>("api/v1/stats").then(r => setStats(r));
-  }, [subgraph]);
+  }, [graph]);
 
   const onExampleChange = useCallback((sourceId: string | null, title: string | null) => {
-    if (!subgraph || !sourceId) return;
+    if (!graph || !sourceId) return;
     const cached = nodeCacheRef.current[sourceId];
     if (cached) {
       setGraphNode(cached);
       return;
     }
-    getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes`, { "grebi:sourceIds": sourceId, size: "1" })
+    getPaginated<any>(`api/v1/graphs/${graph}/nodes`, { "grebi:sourceIds": sourceId, size: "1" })
       .then(r => {
         if (r.elements.length > 0) {
           const node = new GraphNode(r.elements[0]);
@@ -60,13 +61,13 @@ function navigateToSubgraph(sg: string) {
         }
       })
       .catch(() => {});
-  }, [subgraph]);
+  }, [graph]);
 
   const onAllSourceIds = useCallback((sourceIds: string[]) => {
-    if (!subgraph) return;
+    if (!graph) return;
     for (const sid of sourceIds) {
       if (nodeCacheRef.current[sid]) continue;
-      getPaginated<any>(`api/v1/subgraphs/${subgraph}/nodes`, { "grebi:sourceIds": sid, size: "1" })
+      getPaginated<any>(`api/v1/graphs/${graph}/nodes`, { "grebi:sourceIds": sid, size: "1" })
         .then(r => {
           if (r.elements.length > 0) {
             nodeCacheRef.current[sid] = new GraphNode(r.elements[0]);
@@ -74,28 +75,28 @@ function navigateToSubgraph(sg: string) {
         })
         .catch(() => {});
     }
-  }, [subgraph]);
+  }, [graph]);
 
   const lockGraph = useCallback(() => {
     setGraphLocked(true);
   }, []);
 
   useEffect(() => {
-    get<string[]>("api/v1/subgraphs").then(r => {
-      setSubgraphs(r)
+    get<string[]>("api/v1/graphs").then(r => {
+      setGraphs(r)
 
-      if(!subgraph)
-        setSubgraph(r[0])
+      if(!graph)
+        setGraph(r[0])
 
-      Promise.all(r.map(sg => get<any>(`api/v1/subgraphs/${sg}`).then(meta => {
+      Promise.all(r.map(sg => get<any>(`api/v1/graphs/${sg}`).then(meta => {
         const name = meta.subgraph_config?.name || meta.subgraph_name || sg;
         return [sg, name] as [string, string];
       }).catch(() => [sg, sg] as [string, string])))
-        .then(pairs => setSubgraphNames(Object.fromEntries(pairs)));
+        .then(pairs => setGraphNames(Object.fromEntries(pairs)));
     });
   }, []);
 
-  if(!subgraph) {
+  if(!graph) {
     return <div className="spinner-default w-7 h-7" />
   }
 
@@ -110,9 +111,9 @@ function navigateToSubgraph(sg: string) {
                   Welcome to GrEBI (Graphs@EBI)
                 </div>
               </div>
-              {subgraphs && subgraph ?
+              {graphs && graph ?
                 <Fragment>
-                  <SearchBox subgraph={subgraph} placeholder={`Search ${subgraphNames[subgraph] || subgraph} for knowledge about...`} />
+                  <SearchBox graph={graph} placeholder={`Search ${graphNames[graph] || graph} for knowledge about...`} />
                   <div className="flex gap-6 items-start mb-4 mt-4">
                     <div className="flex-grow min-w-0">
                       <p>
@@ -122,7 +123,7 @@ function navigateToSubgraph(sg: string) {
                         MCP endpoint (Streamable HTTP): <code className="text-sm text-blue-600">https://wwwdev.ebi.ac.uk/kg/api/v1/mcp</code>
                       </p>
                     </div>
-                    {subgraphs.length > 0 && (
+                    {graphs.length > 0 && (
                     <div className="flex-shrink-0">
                       <div className="text-lg font-semibold text-gray-700 mb-2">Select a graph to search</div>
                     <table className="text-sm border border-gray-200 rounded-lg overflow-hidden">
@@ -136,23 +137,23 @@ function navigateToSubgraph(sg: string) {
                         </tr>
                       </thead>
                       <tbody>
-                        {subgraphs.map((sg, i) => (
+                        {graphs.map((sg, i) => (
                           <tr
                             key={sg}
-                            className={`hover:bg-blue-50 cursor-pointer transition-colors ${sg === subgraph ? 'bg-blue-50/50' : i % 2 === 1 ? 'bg-gray-50' : ''}`}
-                            onClick={() => navigateToSubgraph(sg)}
+                            className={`hover:bg-blue-50 cursor-pointer transition-colors ${sg === graph ? 'bg-blue-50/50' : i % 2 === 1 ? 'bg-gray-50' : ''}`}
+                            onClick={() => navigateToGraph(sg)}
                           >
                             <td className="py-2 px-3 font-mono text-gray-700 whitespace-nowrap">
                               <input
                                 type="radio"
-                                name="subgraph"
-                                checked={sg === subgraph}
-                                onChange={() => navigateToSubgraph(sg)}
+                                name="graph"
+                                checked={sg === graph}
+                                onChange={() => navigateToGraph(sg)}
                                 className="mr-2"
                               />
                               {sg}
                             </td>
-                            <td className="py-2 px-3 whitespace-nowrap">{subgraphNames[sg] || sg}</td>
+                            <td className="py-2 px-3 whitespace-nowrap">{graphNames[sg] || sg}</td>
                             <td className="py-2 px-3 text-right tabular-nums text-gray-600">
                               {stats && stats[sg] ? stats[sg].num_nodes.toLocaleString() : '—'}
                             </td>
@@ -161,7 +162,7 @@ function navigateToSubgraph(sg: string) {
                             </td>
                             <td className="py-2 px-3">
                               <Link to={`/graphs/${sg}`} onClick={(e) => e.stopPropagation()}>
-                                <IconButton size="small" title="Subgraph info">
+                                <IconButton size="small" title="Graph info">
                                   <InfoOutlined fontSize="small" />
                                 </IconButton>
                               </Link>
@@ -194,22 +195,24 @@ function navigateToSubgraph(sg: string) {
           </div>
           </div>
 
-          {subgraph && (
+          {graph && (
             <div className="mt-2 mb-8">
-              <CyclingQuestions subgraph={subgraph} autoPlay={!graphLocked} onExampleChange={onExampleChange} onAllSourceIds={onAllSourceIds} />
+              <CyclingQuestions graph={graph} autoPlay={!graphLocked && !graphHovered} onExampleChange={onExampleChange} onAllSourceIds={onAllSourceIds} />
             </div>
           )}
 
 
 
 
-{subgraph && graphNode && (
+{graph && graphNode && (
           <div className="mt-8">
             <div
               style={{ height: "600px", border: "1px solid #e0e0e0", borderRadius: "8px", overflow: "hidden", position: "relative" }}
               onMouseDown={lockGraph}
+              onMouseEnter={() => setGraphHovered(true)}
+              onMouseLeave={() => setGraphHovered(false)}
             >
-              <GraphView subgraph={subgraph} node={graphNode} />
+              <GraphView graph={graph} node={graphNode} />
             </div>
           </div>
         )}

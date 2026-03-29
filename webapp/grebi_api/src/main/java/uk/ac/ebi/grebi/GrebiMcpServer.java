@@ -47,7 +47,7 @@ public class GrebiMcpServer {
         final GrebiCypherRepo cypher,
         final GrebiSolrRepo solr,
         final GrebiMetadataRepo metadata,
-        final Set<String> subgraphs,
+        final Set<String> graphs,
         final GrebiQueryTemplatesRepo queryTemplates
     ) {
         var stats = cypher != null ? cypher.getStats() : null;
@@ -96,8 +96,8 @@ public class GrebiMcpServer {
                     }
             ),
             new McpServerFeatures.AsyncResourceSpecification( McpSchema.Resource.builder()
-                    .uri("grebi://subgraphs")
-                    .name("Subgraphs")
+                    .uri("grebi://graphs")
+                    .name("Graphs")
                     .mimeType("application/json")
                     .build(),
                     (exchange, request) -> {
@@ -105,7 +105,7 @@ public class GrebiMcpServer {
                             new McpSchema.TextResourceContents(
                                 request.uri(),
                                 "application/json",
-                                gson.toJson(subgraphs))
+                                gson.toJson(graphs))
                         );
                         return Mono.just(new McpSchema.ReadResourceResult(contents));
                     }
@@ -134,8 +134,8 @@ public class GrebiMcpServer {
 
             var paramProps = new LinkedHashMap<String, Object>();
 
-            paramProps.put("subgraph", Map.of(
-                "enum", qt.subgraphs.stream().toList()
+            paramProps.put("graph", Map.of(
+                "enum", qt.graphs.stream().toList()
             ));
 
             for (var param : qt.params) {
@@ -222,7 +222,7 @@ public class GrebiMcpServer {
                 null,
                 (exchange, request) -> {
 
-                    var subgraph = (String) request.arguments().get("subgraph");
+                    var graph = (String) request.arguments().get("graph");
                     var sortBy = (String) request.arguments().get("sortBy");
                     var sortDir = (String) request.arguments().get("sortDir");
                     var pageNum = (Integer) request.arguments().get("pageNum");
@@ -230,8 +230,8 @@ public class GrebiMcpServer {
 
                     var otherParams = new LinkedHashMap<String, Object>(request.arguments());
 
-                    if(!subgraphs.contains(subgraph)) {
-                        return Mono.error(new RuntimeException("Unknown subgraph " + subgraph));
+                    if(!graphs.contains(graph)) {
+                        return Mono.error(new RuntimeException("Unknown graph " + graph));
                     }
 
                     if(!List.of("asc", "desc").contains(sortDir)) {
@@ -247,13 +247,13 @@ public class GrebiMcpServer {
 
                     Map<String,List<String>> params = new LinkedHashMap<>();
                     for(var p : request.arguments().entrySet()) {
-                        if(List.of("subgraph", "sortBy", "sortDir", "pageNum", "pageSize").contains(p.getKey())) {
+                        if(List.of("graph", "sortBy", "sortDir", "pageNum", "pageSize").contains(p.getKey())) {
                             continue;
                         }
                         params.put(p.getKey(), List.of(p.getValue().toString()));
                     }
 
-                    Page<Map<String,Object>> res = cypher.runQueryFromTemplatePaginated(subgraph, qt, params, false, page);
+                    Page<Map<String,Object>> res = cypher.runQueryFromTemplatePaginated(graph, qt, params, false, page);
 
                     var edgeIdColumnIds = qt.result_columns.stream()
                         .filter(c -> c.column_type.equalsIgnoreCase("EdgeId"))

@@ -1,4 +1,4 @@
-process run_integration_tests {
+process test_query_templates {
     cache "lenient"
     memory "8 GB"
     time "2h"

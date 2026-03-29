@@ -19,7 +19,7 @@ export default function EdgeExpandDialog({
   open,
   onClose,
   onSelectNode,
-  subgraph,
+  graph,
   nodeId,
   encodedNodeId,
   direction,
@@ -29,7 +29,7 @@ export default function EdgeExpandDialog({
   open: boolean;
   onClose: () => void;
   onSelectNode: (node: GraphNodeRef) => void;
-  subgraph: string;
+  graph: string;
   nodeId: string;
   encodedNodeId: string;
   direction: "incoming" | "outgoing";
@@ -72,7 +72,7 @@ export default function EdgeExpandDialog({
 
         const res = (
           await getPaginated<any>(
-            `api/v1/subgraphs/${subgraph}/nodes/${encodedNodeId}/${endpoint}?${params}`
+            `api/v1/graphs/${graph}/nodes/${encodedNodeId}/${endpoint}?${params}`
           )
         ).map((e) => new GraphEdge(e));
 
@@ -98,7 +98,7 @@ export default function EdgeExpandDialog({
     direction,
     edgeType,
     encodedNodeId,
-    subgraph,
+    graph,
     page,
     rowsPerPage,
     filter,

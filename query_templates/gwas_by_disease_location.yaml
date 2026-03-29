@@ -1,6 +1,6 @@
 title: Search GWAS Catalog by disease location
 question: What [diseases]{disease} have GWAS associations located in {location_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
   - impc_x_gwas
 topics:

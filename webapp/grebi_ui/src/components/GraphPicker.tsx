@@ -2,33 +2,33 @@ import { Select, MenuItem, FormControl } from "@mui/material";
 import { Fragment, useEffect, useState } from "react";
 import { get } from "../app/api";
 
-export default function SubgraphPicker({
-  subgraph,
-  setSubgraph,
+export default function GraphPicker({
+  graph,
+  setGraph,
   compact,
 }: {
-  subgraph?: string | undefined;
-  setSubgraph: (subgraph: string) => void
+  graph?: string | undefined;
+  setGraph: (graph: string) => void
   compact?:boolean
 }) {
 
-    let [subgraphs, setSubgraphs] = useState<string[]>([]);
+    let [graphs, setGraphs] = useState<string[]>([]);
     let [stats, setStats] = useState<Record<string, { num_nodes: number; num_edges: number }> | null>(null);
 
     useEffect(() => {
-        get<string[]>(`api/v1/subgraphs`).then(r => setSubgraphs(r));
+        get<string[]>(`api/v1/graphs`).then(r => setGraphs(r));
         get<Record<string, { num_nodes: number; num_edges: number }>>("api/v1/stats").then(r => setStats(r));
     }, []);
 
     return (
     <FormControl variant="standard">
         <Select
-            value={subgraph}
-            onChange={(e) => setSubgraph(e.target.value)}
+            value={graph}
+            onChange={(e) => setGraph(e.target.value)}
             size={compact ? "small" : "medium"}
             disableUnderline={compact}
         >
-            {subgraphs.map((s) => (
+            {graphs.map((s) => (
                 <MenuItem key={s} value={s}>
                     {s}
                     {stats && stats[s] && (

@@ -78,7 +78,7 @@ function removeExpansionDescendants(map: Map<string, ExpandedNodeState>, nodeId:
   }
 }
 
-export default function useGraphViewState(subgraph: string) {
+export default function useGraphViewState(graph: string) {
   const [root, setRoot] = useState<GraphNodeRef | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +111,7 @@ export default function useGraphViewState(subgraph: string) {
 
       try {
         const bothCounts = await get<{ incoming: EdgeCountByTypeAndDs; outgoing: EdgeCountByTypeAndDs }>(
-          `api/v1/subgraphs/${subgraph}/nodes/${node.getEncodedNodeId()}/edge_counts`
+          `api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/edge_counts`
         );
 
         if (myLoadId !== loadIdRef.current) return;
@@ -152,7 +152,7 @@ export default function useGraphViewState(subgraph: string) {
         if (toResolveRoot.length > 0) {
           try {
             const resolved = await post<typeof toResolveRoot, { [key: string]: any }>(
-              `api/v1/subgraphs/${subgraph}/nodes/${node.getEncodedNodeId()}/resolve_single_edges`,
+              `api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/resolve_single_edges`,
               {},
               toResolveRoot,
             );
@@ -182,7 +182,7 @@ export default function useGraphViewState(subgraph: string) {
         }
       }
     },
-    [subgraph]
+    [graph]
   );
 
   const expandEdge = useCallback(
@@ -211,7 +211,7 @@ export default function useGraphViewState(subgraph: string) {
       // Load edge counts for the expanded node
       try {
         const bothCounts = await get<{ incoming: EdgeCountByTypeAndDs; outgoing: EdgeCountByTypeAndDs }>(
-          `api/v1/subgraphs/${subgraph}/nodes/${node.getEncodedNodeId()}/edge_counts`
+          `api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/edge_counts`
         );
 
         const incoming = bothCounts?.incoming || {};
@@ -255,7 +255,7 @@ export default function useGraphViewState(subgraph: string) {
         });
       }
     },
-    [subgraph]
+    [graph]
   );
 
   const collapseEdge = useCallback(
@@ -415,7 +415,7 @@ export default function useGraphViewState(subgraph: string) {
           edgeType: i.edgeType,
         }));
         const resolved = await post<typeof body, { [key: string]: any }>(
-          `api/v1/subgraphs/${subgraph}/nodes/${encodedNodeId}/resolve_single_edges`,
+          `api/v1/graphs/${graph}/nodes/${encodedNodeId}/resolve_single_edges`,
           {},
           body,
         );
@@ -452,7 +452,7 @@ export default function useGraphViewState(subgraph: string) {
   }, [
     root?.getNodeId(),
     loading,
-    subgraph,
+    graph,
     // Use JSON-serialized keys to detect changes in aggregated results
     incomingAggregated.map((a) => `${a.edgeType}:${a.totalCount}`).join(","),
     outgoingAggregated.map((a) => `${a.edgeType}:${a.totalCount}`).join(","),

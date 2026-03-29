@@ -38,9 +38,9 @@ public class GrebiResolverSvc {
         for (var dbfile : dbfiles) {
             Db db = new Db();
 
-            var subgraph = dbfile.getName().split("\\.")[0];
+            var graph = dbfile.getName().split("\\.")[0];
 
-            System.out.println("Loading SQLite DB for subgraph " + subgraph + " from " + dbfile.getAbsolutePath());
+            System.out.println("Loading SQLite DB for graph " + graph + " from " + dbfile.getAbsolutePath());
 
             try {
                 SQLiteConfig config = new SQLiteConfig();
@@ -52,8 +52,8 @@ public class GrebiResolverSvc {
                 return;
             }
 
-            sqliteDBs.put(subgraph, db);
-            System.out.println("Loaded SQLite DB for subgraph " + subgraph + " from " + dbfile.getAbsolutePath());
+            sqliteDBs.put(graph, db);
+            System.out.println("Loaded SQLite DB for graph " + graph + " from " + dbfile.getAbsolutePath());
         }
 
         int port = Integer.parseInt(System.getenv().getOrDefault("GREBI_RESOLVER_PORT", "8084"));
@@ -65,17 +65,17 @@ public class GrebiResolverSvc {
             ctx.result("{\"status\":\"ok\"}");
         });
 
-        app.get("/subgraphs", ctx -> {
+        app.get("/graphs", ctx -> {
             ctx.contentType("application/json");
             ctx.result(gson.toJson(sqliteDBs.keySet()));
         });
 
-        app.post("/{subgraph}/resolve", ctx -> {
+        app.post("/{graph}/resolve", ctx -> {
 
-            var subgraph = ctx.pathParam("subgraph");
-            var sqliteDb = sqliteDBs.get(subgraph);
+            var graph = ctx.pathParam("graph");
+            var sqliteDb = sqliteDBs.get(graph);
             if (sqliteDb == null) {
-                ctx.status(404).result("Subgraph not found");
+                ctx.status(404).result("Graph not found");
                 return;
             }
 

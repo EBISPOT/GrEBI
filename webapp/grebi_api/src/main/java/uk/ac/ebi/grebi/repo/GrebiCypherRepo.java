@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class GrebiCypherRepo {
 
     CypherServiceClient cypherClient;
-    Set<String> subgraphs;
+    Set<String> graphs;
 
     ResolverClient resolver = new ResolverClient();
     Gson gson = new Gson();
@@ -33,11 +33,11 @@ public class GrebiCypherRepo {
 
     public GrebiCypherRepo() throws IOException {
         cypherClient = new CypherServiceClient(CypherServiceClient.getCypherServiceUrl());
-        subgraphs = cypherClient.getSubgraphs();
+        graphs = cypherClient.getGraphs();
     }
 
-    public Set<String> getSubgraphs() {
-        return subgraphs;
+    public Set<String> getGraphs() {
+        return graphs;
     }
 
     final String STATS_QUERY = new String(GrebiApi.class.getResourceAsStream("/cypher/stats.cypher").readAllBytes(), StandardCharsets.UTF_8);
@@ -45,18 +45,18 @@ public class GrebiCypherRepo {
 
     @SuppressWarnings("unchecked")
     public Map<String, Map<String,Object>> getStats() {
-        Map<String, Map<String,Object>> subgraphToStats = new HashMap<>();
-        for(var subgraph : subgraphs) {
+        Map<String, Map<String,Object>> graphToStats = new HashMap<>();
+        for(var graph : graphs) {
             try {
-                var records = cypherClient.query(subgraph, STATS_QUERY, Map.of());
+                var records = cypherClient.query(graph, STATS_QUERY, Map.of());
                 if (!records.isEmpty()) {
-                    subgraphToStats.put(subgraph, (Map<String, Object>) records.get(0).values().iterator().next());
+                    graphToStats.put(graph, (Map<String, Object>) records.get(0).values().iterator().next());
                 }
             } catch (IOException e) {
-                throw new RuntimeException("Failed to get stats for subgraph " + subgraph, e);
+                throw new RuntimeException("Failed to get stats for graph " + graph, e);
             }
         }
-        return subgraphToStats;
+        return graphToStats;
     }
 
     public class EdgeAndNode {
@@ -67,11 +67,11 @@ public class GrebiCypherRepo {
         }
     }
 
-    public List<EdgeAndNode> getIncomingEdges(String subgraph, String nodeId, Pageable pageable) {
+    public List<EdgeAndNode> getIncomingEdges(String graph, String nodeId, Pageable pageable) {
         List<Map<String, Object>> records;
         try {
-            records = cypherClient.query(subgraph, INCOMING_EDGES_QUERY, Map.of(
-                    "nodeId", subgraph + ":" + nodeId,
+            records = cypherClient.query(graph, INCOMING_EDGES_QUERY, Map.of(
+                    "nodeId", graph + ":" + nodeId,
                     "offset", pageable.getOffset(),
                     "limit", pageable.getPageSize()
             ));
@@ -80,17 +80,17 @@ public class GrebiCypherRepo {
         }
 
         var resolved = resolver.resolveToMap(
-                subgraph,
+                graph,
                 records.stream().flatMap(record -> {
                     return List.of(
-                            removeSubgraphPrefix((String) record.get("otherId"), subgraph),
-                            removeSubgraphPrefix((String) record.get("edgeId"), subgraph)
+                            removeGraphPrefix((String) record.get("otherId"), graph),
+                            removeGraphPrefix((String) record.get("edgeId"), graph)
                     ).stream();
                 }).collect(Collectors.toSet()));
 
         return records.stream().map(record -> {
-            var otherId = removeSubgraphPrefix((String) record.get("otherId"), subgraph);
-            var edgeId = removeSubgraphPrefix((String) record.get("edgeId"), subgraph);
+            var otherId = removeGraphPrefix((String) record.get("otherId"), graph);
+            var edgeId = removeGraphPrefix((String) record.get("edgeId"), graph);
             return new EdgeAndNode(resolved.get(edgeId), resolved.get(otherId));
         }).collect(Collectors.toList());
     }
@@ -100,7 +100,7 @@ public class GrebiCypherRepo {
         public double score;
     }
 
-    public List<SimilarResult> getSimilar(String subgraph, String nodeId, int n) {
+    public List<SimilarResult> getSimilar(String graph, String nodeId, int n) {
 
 		String query = "MATCH (c:GraphNode {`grebi:nodeId`: $id}) "
 		+ "CALL db.index.vector.queryNodes('embeddings', $n, c.`embedding:text-embedding-3-small`) "
@@ -112,8 +112,8 @@ public class GrebiCypherRepo {
 
         List<Map<String, Object>> records;
         try {
-            records = cypherClient.query(subgraph, query, Map.of(
-                "id", subgraph + ":" + nodeId,
+            records = cypherClient.query(graph, query, Map.of(
+                "id", graph + ":" + nodeId,
                 "n", n
             ));
         } catch (IOException e) {
@@ -140,12 +140,12 @@ public class GrebiCypherRepo {
      * resolve the connected node. Uses a dynamically-constructed UNION ALL
      * Cypher query with literal relationship types for optimal planner performance.
      */
-    public Map<String, Map<String, Object>> resolveSingleEdges(String subgraph, String nodeId, List<DirectionAndEdgeType> items) {
+    public Map<String, Map<String, Object>> resolveSingleEdges(String graph, String nodeId, List<DirectionAndEdgeType> items) {
         if (items == null || items.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        String prefixedNodeId = subgraph + ":" + nodeId;
+        String prefixedNodeId = graph + ":" + nodeId;
 
         // Build a UNION ALL query with one branch per item, using the Cypher DSL
         // for safe relationship type escaping. Each branch matches exactly one
@@ -194,7 +194,7 @@ public class GrebiCypherRepo {
 
         List<Map<String, Object>> records;
         try {
-            records = cypherClient.query(subgraph, cypher, Map.of("nodeId", prefixedNodeId));
+            records = cypherClient.query(graph, cypher, Map.of("nodeId", prefixedNodeId));
         } catch (IOException e) {
             throw new RuntimeException("Failed to resolve single edges", e);
         }
@@ -208,7 +208,7 @@ public class GrebiCypherRepo {
             String dir = (String) r.get("dir");
             String et = (String) r.get("et");
             String rawId = (String) r.get("otherId");
-            String cleanId = removeSubgraphPrefix(rawId, subgraph);
+            String cleanId = removeGraphPrefix(rawId, graph);
 
             Map<String, Object> nodeData = new LinkedHashMap<>();
             nodeData.put("grebi:nodeId", cleanId);
@@ -223,11 +223,11 @@ public class GrebiCypherRepo {
         return resultMap;
     }
 
-    private String removeSubgraphPrefix(String id, String subgraph) {
-        if(!id.startsWith(subgraph + ":")) {
+    private String removeGraphPrefix(String id, String graph) {
+        if(!id.startsWith(graph + ":")) {
             throw new RuntimeException();
         }
-        return id.substring(subgraph.length() + 1);
+        return id.substring(graph.length() + 1);
     }
 
     class PreparedQuery {
@@ -237,14 +237,14 @@ public class GrebiCypherRepo {
     }
 
     PreparedQuery prepareQuery(
-        String subgraph, 
+        String graph, 
         QueryTemplate template,
         Map<String, List<String>> params,
         Sort sort
     ) {
 
-        if(!template.subgraphs.contains(subgraph)) {
-            throw new IllegalArgumentException("Query template " + template.id + " is not available for subgraph " + subgraph);
+        if(!template.graphs.contains(graph)) {
+            throw new IllegalArgumentException("Query template " + template.id + " is not available for graph " + graph);
         }
 
         for(var param : params.entrySet()) {
@@ -328,14 +328,14 @@ public class GrebiCypherRepo {
 
 
     public Page<Map<String,Object>> runQueryFromTemplatePaginated(
-        String subgraph, 
+        String graph, 
         QueryTemplate template,
         Map<String, List<String>> params,
         boolean resolve,
         Pageable pageable
         ) {
 
-        var preparedQuery = prepareQuery(subgraph, template, params, pageable.getSort());
+        var preparedQuery = prepareQuery(graph, template, params, pageable.getSort());
         var query = preparedQuery.query;
         var countQuery = preparedQuery.countQuery;
         var paramMap = preparedQuery.params;
@@ -348,8 +348,8 @@ public class GrebiCypherRepo {
         List<Map<String, Object>> records;
         List<Map<String, Object>> countRecords;
         try {
-            records = cypherClient.query(subgraph, query, paramMap);
-            countRecords = cypherClient.query(subgraph, countQuery, paramMap);
+            records = cypherClient.query(graph, query, paramMap);
+            countRecords = cypherClient.query(graph, countQuery, paramMap);
         } catch (IOException e) {
             throw new RuntimeException("Failed to run query template", e);
         }
@@ -368,7 +368,7 @@ public class GrebiCypherRepo {
         if(resolve) {
 
             var resolved = resolver.resolveToMap(
-                subgraph,
+                graph,
                 records.stream()
                     .flatMap(record -> columns.stream()
                         .filter(column -> column.column_type.equals("GraphNodeId"))
@@ -379,8 +379,8 @@ public class GrebiCypherRepo {
                             String nodeId = value.get("grebi:nodeId").toString();
 
                             // TODO ?? 
-                            if(nodeId.startsWith(subgraph + ":")) {
-                                nodeId = nodeId.substring(subgraph.length() + 1);
+                            if(nodeId.startsWith(graph + ":")) {
+                                nodeId = nodeId.substring(graph.length() + 1);
                             }
 
                             return nodeId;
@@ -400,8 +400,8 @@ public class GrebiCypherRepo {
                         String nodeId = value.get("grebi:nodeId").toString();
 
                         // TODO ??
-                        if(nodeId.startsWith(subgraph + ":")) {
-                            nodeId = nodeId.substring(subgraph.length() + 1);
+                        if(nodeId.startsWith(graph + ":")) {
+                            nodeId = nodeId.substring(graph.length() + 1);
                         }
 
                         row.put(columnId, resolved.get(nodeId));
@@ -434,8 +434,8 @@ public class GrebiCypherRepo {
                                 var valueCopy = new TreeMap<>(value);
 
                                 // TODO ??
-                                if(nodeId.startsWith(subgraph + ":")) {
-                                    nodeId = nodeId.substring(subgraph.length() + 1);
+                                if(nodeId.startsWith(graph + ":")) {
+                                    nodeId = nodeId.substring(graph.length() + 1);
                                 }
                                 valueCopy.put("grebi:nodeId", nodeId);
 
@@ -457,7 +457,7 @@ public class GrebiCypherRepo {
 
     @SuppressWarnings("unchecked")
     public CompletableFuture<Void> runQueryFromTemplateStreamed(
-            String subgraph,
+            String graph,
             QueryTemplate template,
             Map<String, List<String>> params,
             Sort sort,
@@ -484,11 +484,11 @@ public class GrebiCypherRepo {
         writer.write(String.join(",", csvColumns));
         writer.write("\n");
 
-        var preparedQuery = prepareQuery(subgraph, template, params, sort);
+        var preparedQuery = prepareQuery(graph, template, params, sort);
 
         return CompletableFuture.runAsync(() -> {
             try {
-                cypherClient.streamQuery(subgraph, preparedQuery.query, preparedQuery.params, record -> {
+                cypherClient.streamQuery(graph, preparedQuery.query, preparedQuery.params, record -> {
 
                     boolean first = true;
 
@@ -541,7 +541,7 @@ public class GrebiCypherRepo {
     }
 
     public CompletableFuture<Void> runQueryFromTemplateStreamed(
-            String subgraph,
+            String graph,
             QueryTemplate template,
             Map<String, List<String>> params,
             Sort sort,
@@ -555,7 +555,7 @@ public class GrebiCypherRepo {
 
         PrintWriter writer = res.getWriter();
 
-        return runQueryFromTemplateStreamed(subgraph, template, params, sort, writer);
+        return runQueryFromTemplateStreamed(graph, template, params, sort, writer);
     }
 
 

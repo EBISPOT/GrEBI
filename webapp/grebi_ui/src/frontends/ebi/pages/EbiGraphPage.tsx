@@ -13,7 +13,7 @@ interface DatasourceConfig {
   [key: string]: any;
 }
 
-interface SubgraphMeta {
+interface GraphMeta {
   subgraph_config?: {
     id?: string;
     name?: string;
@@ -30,38 +30,38 @@ interface DistributionStats {
   edge_counts_by_type: Record<string, number>;
 }
 
-export default function EbiSubgraphPage() {
+export default function EbiGraphPage() {
   let params = useParams();
-  let subgraph = params.subgraph!;
+  let graph = params.graph!;
 
   const navigate = useNavigate();
-  let [meta, setMeta] = useState<SubgraphMeta | null>(null);
+  let [meta, setMeta] = useState<GraphMeta | null>(null);
   let [stats, setStats] = useState<any | null>(null);
   let [distStats, setDistStats] = useState<DistributionStats | null>(null);
   let [activeTab, setActiveTab] = useState<"Datasources" | "Node Types" | "Edge Types">("Datasources");
 
   const navToSearch = useCallback((filterKey: string, filterValue: string) => {
-    navigate(`/graphs/${subgraph}/search?q=*&${encodeURIComponent(filterKey)}=${encodeURIComponent(filterValue)}`);
-  }, [navigate, subgraph]);
+    navigate(`/graphs/${graph}/search?q=*&${encodeURIComponent(filterKey)}=${encodeURIComponent(filterValue)}`);
+  }, [navigate, graph]);
 
   const navToEdgeSearch = useCallback((filterKey: string, filterValue: string) => {
-    navigate(`/graphs/${subgraph}/edges?${encodeURIComponent(filterKey)}=${encodeURIComponent(filterValue)}`);
-  }, [navigate, subgraph]);
+    navigate(`/graphs/${graph}/edges?${encodeURIComponent(filterKey)}=${encodeURIComponent(filterValue)}`);
+  }, [navigate, graph]);
 
-  document.title = `${subgraph} - GrEBI`;
+  document.title = `${graph} - GrEBI`;
 
   useEffect(() => {
-    get<SubgraphMeta>(`api/v1/subgraphs/${subgraph}`).then(setMeta);
+    get<GraphMeta>(`api/v1/graphs/${graph}`).then(setMeta);
     get<any>("api/v1/stats").then(setStats);
-    get<DistributionStats>(`api/v1/subgraphs/${subgraph}/stats`)
+    get<DistributionStats>(`api/v1/graphs/${graph}/stats`)
       .then(setDistStats)
       .catch(() => {});
-  }, [subgraph]);
+  }, [graph]);
 
   if (!meta) {
     return (
       <Fragment>
-        <EbiBreadcrumbsBar subgraph={subgraph} entries={[
+        <EbiBreadcrumbsBar graph={graph} entries={[
           { url: `/graphs`, label: "Graphs" }
         ]} />
         <main className="container mx-auto px-4 my-8">
@@ -72,19 +72,19 @@ export default function EbiSubgraphPage() {
   }
 
   const config = meta.subgraph_config;
-  const sgName = config?.name || subgraph;
+  const sgName = config?.name || graph;
   const datasources: DatasourceConfig[] = config?.datasource_configs || [];
-  const sgStats = stats && stats[subgraph];
+  const sgStats = stats && stats[graph];
 
   return (
     <Fragment>
-      <EbiBreadcrumbsBar subgraph={subgraph} entries={[
+      <EbiBreadcrumbsBar graph={graph} entries={[
         { url: `/graphs`, label: "Graphs" }
       ]} />
       <main className="container mx-auto px-4 my-8">
         <div className="text-2xl font-bold my-6">{sgName}</div>
         <div className="mb-6">
-          <SearchBox subgraph={subgraph} placeholder={`Search ${sgName}...`} showSuggestions={true} />
+          <SearchBox graph={graph} placeholder={`Search ${sgName}...`} showSuggestions={true} />
         </div>
 
         <div className="mb-6">
@@ -92,7 +92,7 @@ export default function EbiSubgraphPage() {
             <tbody>
               <tr>
                 <td className="pr-4 py-1 text-gray-500 font-medium">ID</td>
-                <td className="py-1 font-mono">{config?.id || subgraph}</td>
+                <td className="py-1 font-mono">{config?.id || graph}</td>
               </tr>
               {sgStats && (
                 <>

@@ -1,6 +1,6 @@
 title: Biological processes affected by a disease
 question: What [biological processes]{process} are affected by {disease_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
   - dismech
 topics:

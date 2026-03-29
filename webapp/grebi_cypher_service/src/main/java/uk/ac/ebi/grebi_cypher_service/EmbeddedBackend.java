@@ -12,7 +12,7 @@ class EmbeddedBackend implements CypherBackend {
 
     private final org.neo4j.dbms.api.DatabaseManagementService dbms;
     private final org.neo4j.graphdb.GraphDatabaseService db;
-    private final String subgraph;
+    private final String graph;
     private final Path cleanHome;
 
     EmbeddedBackend(Path homeDir, long pageCacheMb) {
@@ -41,19 +41,19 @@ class EmbeddedBackend implements CypherBackend {
         dbms = builder.build();
         db = dbms.database("neo4j");
 
-        // Discover which subgraph this database contains
+        // Discover which graph this database contains
         try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
             org.neo4j.graphdb.Result result =
-                    tx.execute("MATCH (n:GraphNode) RETURN n.`grebi:subgraph` AS subgraph LIMIT 1");
+                    tx.execute("MATCH (n:GraphNode) RETURN n.`grebi:subgraph` AS graph LIMIT 1");
             if (result.hasNext()) {
-                subgraph = (String) result.next().get("subgraph");
+                graph = (String) result.next().get("graph");
             } else {
-                throw new RuntimeException("No GraphNode found in " + homeDir + " — cannot determine subgraph");
+                throw new RuntimeException("No GraphNode found in " + homeDir + " — cannot determine graph");
             }
             tx.commit();
         }
 
-        System.out.println("Loaded embedded subgraph '" + subgraph + "' from " + homeDir);
+        System.out.println("Loaded embedded graph '" + graph + "' from " + homeDir);
     }
 
     long countNodes() {
@@ -66,8 +66,8 @@ class EmbeddedBackend implements CypherBackend {
     }
 
     @Override
-    public String getSubgraph() {
-        return subgraph;
+    public String getGraph() {
+        return graph;
     }
 
     @Override

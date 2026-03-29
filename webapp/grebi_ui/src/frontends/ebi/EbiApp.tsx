@@ -19,7 +19,7 @@ import EbiTablesHomePage from "./pages/EbiTablesHomePage";
 import EbiQueryPage from "./pages/EbiQueryPage";
 import EbiQueriesHomePage from "./pages/EbiQueriesHomePage";
 import EbiDatasourcesPage from "./pages/EbiDatasourcesPage";
-import EbiSubgraphPage from "./pages/EbiSubgraphPage";
+import EbiGraphPage from "./pages/EbiGraphPage";
 import EbiEdgeSearchPage from "./pages/EbiEdgeSearchPage";
 import EbiLayout from "./EbiLayout";
 
@@ -52,20 +52,20 @@ class EbiApp extends React.Component {
 
             <Route path={`/`} element={<EbiHomePage />} />
             <Route path={`/graphs`} element={<EbiDatasourcesPage />} />
-            <Route path={`/graphs/:subgraph`} element={<EbiSubgraphPage />} />
-            <Route path={`/graphs/:subgraph/search`} element={<EbiSearchPage />} />
-            <Route path={`/graphs/:subgraph/edges`} element={<EbiEdgeSearchPage />} />
-            <Route path={`/graphs/:subgraph/nodes/:nodeId`} element={<EbiNodePage />} />
+            <Route path={`/graphs/:graph`} element={<EbiGraphPage />} />
+            <Route path={`/graphs/:graph/search`} element={<EbiSearchPage />} />
+            <Route path={`/graphs/:graph/edges`} element={<EbiEdgeSearchPage />} />
+            <Route path={`/graphs/:graph/nodes/:nodeId`} element={<EbiNodePage />} />
 
             <Route path={`/tables`} element={<EbiTablesHomePage />} />
             {/* <Route path={`/results/:queryid`} element={<EbiResultsPage />} /> */}
-            <Route path={`/graphs/:subgraph/tables`} element={<EbiTablesHomePage />} />
-            <Route path={`/graphs/:subgraph/tables/:queryid`} element={<EbiTablesPage />} />
+            <Route path={`/graphs/:graph/tables`} element={<EbiTablesHomePage />} />
+            <Route path={`/graphs/:graph/tables/:queryid`} element={<EbiTablesPage />} />
 
-            <Route path={`/graphs/:subgraph/queries`} element={<EbiQueriesHomePage />} />
-            <Route path={`/graphs/:subgraph/queries/:queryid`} element={<EbiQueryPage />} />
+            <Route path={`/graphs/:graph/queries`} element={<EbiQueriesHomePage />} />
+            <Route path={`/graphs/:graph/queries/:queryid`} element={<EbiQueryPage />} />
 
-            <Route path={`/graphs/:subgraph/downloads`} element={<EbiDownloadsPage />} />
+            <Route path={`/graphs/:graph/downloads`} element={<EbiDownloadsPage />} />
           </Route>
         </Routes>
         {/* <EbiFooter /> */}

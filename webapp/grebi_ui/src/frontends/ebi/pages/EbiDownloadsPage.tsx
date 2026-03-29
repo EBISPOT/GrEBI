@@ -12,9 +12,9 @@ export default function EbiDownloadsPage() {
 
   return (
     <Fragment>
-      <EbiBreadcrumbsBar subgraph={params.subgraph} entries={[
+      <EbiBreadcrumbsBar graph={params.graph} entries={[
         { url: `/graphs`, label: "Graphs" },
-        { url: `/graphs/${params.subgraph}/downloads`, label: "Downloads" }
+        { url: `/graphs/${params.graph}/downloads`, label: "Downloads" }
       ]} />
       <main className="container mx-auto px-4 my-8">
         <div className="text-2xl font-bold my-6">

@@ -4,7 +4,16 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import prismjs from "prismjs";
 import "prismjs/components/prism-cypher";
 import "prismjs/components/prism-python";
+import "prismjs/components/prism-bash";
+import "prismjs/components/prism-r";
 import { copyToClipboard } from '../../app/util';
+
+const langMap: Record<string, string> = {
+  curl: "bash",
+  python: "python",
+  r: "r",
+  cypher: "cypher",
+};
 
 interface SourceTab {
   title: string;
@@ -16,9 +25,13 @@ export default function TabbedSourceView({ tabs }: { tabs: SourceTab[] }) {
   const [activeTab, setActiveTab] = useState(0);
 
   const highlighted = useMemo(() => {
-    return tabs.map(tab =>
-      prismjs.highlight(tab.source, prismjs.languages[tab.lang.toLowerCase()], tab.lang.toLowerCase())
-    );
+    return tabs.map(tab => {
+      const prismLang = langMap[tab.lang.toLowerCase()] || tab.lang.toLowerCase();
+      const grammar = prismjs.languages[prismLang];
+      return grammar
+        ? prismjs.highlight(tab.source, grammar, prismLang)
+        : tab.source;
+    });
   }, [tabs]);
 
   if (tabs.length === 0) return null;

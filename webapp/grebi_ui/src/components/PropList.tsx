@@ -16,11 +16,11 @@ const HIDDEN_KEYS = new Set([
 ]);
 
 export default function PropList(params: {
-  subgraph: string;
+  graph: string;
   refs: Refs;
   props: { [key: string]: PropVal[] };
 }) {
-  let { subgraph, refs, props } = params;
+  let { graph, refs, props } = params;
 
   let propKeys = Object.keys(props).filter((k) => !HIDDEN_KEYS.has(k));
 
@@ -38,7 +38,7 @@ export default function PropList(params: {
           </Grid>
           <Grid item xs={12} style={{ padding: "8px" }}>
             <div className="pl-2 mb-2">
-              <PropVals subgraph={subgraph} refs={refs} values={props[key]} />
+              <PropVals graph={graph} refs={refs} values={props[key]} />
             </div>
           </Grid>
         </Fragment>

@@ -20,7 +20,7 @@ interface SearchBoxEntry {
 
 
 export default function SearchBox({
-  subgraph,
+  graph,
   initialQuery,
   placeholder,
   collectionId,
@@ -31,7 +31,7 @@ export default function SearchBox({
   selectedModel: controlledSelectedModel,
   onModelChange: controlledOnModelChange,
 }: {
-  subgraph:string,
+  graph:string,
   initialQuery?: string;
   placeholder?: string;
   collectionId?: string;
@@ -76,7 +76,7 @@ export default function SearchBox({
     if (isControlled) return;
     async function fetchModels() {
       try {
-        const models = await get<{model: string, can_embed: boolean}[]>(`api/v1/subgraphs/${subgraph}/embedding_models`);
+        const models = await get<{model: string, can_embed: boolean}[]>(`api/v1/graphs/${graph}/embedding_models`);
         setInternalModels(models || []);
         if (!searchParams.get("model") && models && models.length > 0) {
           const embeddable = models.filter(m => m.can_embed).sort((a, b) => a.model.localeCompare(b.model));
@@ -96,7 +96,7 @@ export default function SearchBox({
       }
     }
     fetchModels();
-  }, [subgraph, isControlled]);
+  }, [graph, isControlled]);
 
   const isEmbeddingSearch = selectedModel && selectedModel !== "lexical";
 
@@ -148,7 +148,7 @@ export default function SearchBox({
       const [nodes, autocomplete] = await Promise.all([
         isEmbeddingSearch
           ? get<any[]>(
-              `api/v1/subgraphs/${subgraph}/semantic_search?${new URLSearchParams({
+              `api/v1/graphs/${graph}/semantic_search?${new URLSearchParams({
                 q: query,
                 model: selectedModel,
                 n: "5",
@@ -163,7 +163,7 @@ export default function SearchBox({
               }))
             } : null)
           : getPaginated<any>(
-          `api/v1/subgraphs/${subgraph}/search?${joinSearchParams(new URLSearchParams({
+          `api/v1/graphs/${graph}/search?${joinSearchParams(new URLSearchParams({
             q: query,
             size: "5",
             lang: "en",
@@ -176,7 +176,7 @@ export default function SearchBox({
         ),
         showSuggestions && !isEmbeddingSearch
           ? get<string[]>(
-              `api/v1/subgraphs/${subgraph}/suggest?${joinSearchParams(new URLSearchParams({
+              `api/v1/graphs/${graph}/suggest?${joinSearchParams(new URLSearchParams({
                 q: query,
                 exactMatch: exact.toString(),
                 includeObsoleteEntries: obsolete.toString(),
@@ -208,7 +208,7 @@ export default function SearchBox({
       searchParams.set("q", text);
       if (collectionId) searchParams.set("collection", collectionId);
 
-      var linkUrl = `/graphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
+      var linkUrl = `/graphs/${graph}/search?${new URLSearchParams(searchParams)}`;
 
       return {
         linkUrl,
@@ -235,7 +235,7 @@ export default function SearchBox({
           let name = entry.getName();
           let type = entry.extractType()
           return {
-            linkUrl: entry.getLinkUrl(subgraph),
+            linkUrl: entry.getLinkUrl(graph),
             li: (
               <li
                 key={randomString()}
@@ -250,7 +250,7 @@ export default function SearchBox({
                   onClick={() => {
                     setQuery("");
                   }}
-                  to={entry.getLinkUrl(subgraph)}
+                  to={entry.getLinkUrl(graph)}
                 >
                   <div className="flex justify-between">
                  
@@ -326,7 +326,7 @@ export default function SearchBox({
                       searchParams.delete("model");
                     }
 
-                    var linkUrl = `/graphs/${subgraph}/search?${new URLSearchParams(searchParams)}`;
+                    var linkUrl = `/graphs/${graph}/search?${new URLSearchParams(searchParams)}`;
                     navigate(linkUrl);
                   }
                 } else if (ev.key === "ArrowDown") {
@@ -388,7 +388,7 @@ export default function SearchBox({
                         params.delete("model");
                       }
 
-                      var linkUrl = `/graphs/${subgraph}/search?${new URLSearchParams(params)}`;
+                      var linkUrl = `/graphs/${graph}/search?${new URLSearchParams(params)}`;
 
                       navigate(linkUrl);
                     }
@@ -414,7 +414,7 @@ export default function SearchBox({
                     params.delete("model");
                   }
 
-                  var linkUrl = `/graphs/${subgraph}/search?${new URLSearchParams(params)}`;
+                  var linkUrl = `/graphs/${graph}/search?${new URLSearchParams(params)}`;
 
                   navigate(linkUrl);
                 }

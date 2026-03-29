@@ -1,6 +1,6 @@
 title: Anatomical locations and cell types involved in a disease
 question: What [anatomical locations]{entity} and [cell types]{entity} are involved in {disease_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
   - dismech
 topics:

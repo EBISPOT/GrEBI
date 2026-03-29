@@ -1,6 +1,6 @@
 title: Search for phenotypes associated with a disease
 question: What [phenotypes]{phenotype} are associated with {disease_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
   - dismech
 topics:

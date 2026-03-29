@@ -4,7 +4,7 @@ export interface QueryTemplate {
   title: string;
   question: string;
   description: string;
-  subgraphs: string[];
+  graphs: string[];
   topics: string[];
   cypher_match_fragment: string;
   cypher_return_fragment: string;

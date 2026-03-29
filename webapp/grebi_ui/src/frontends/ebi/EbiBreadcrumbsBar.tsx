@@ -2,16 +2,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Breadcrumbs, { BreadcrumbsEntry } from "../../components/Breadcrumbs";
 
 export default function EbiBreadcrumbsBar({
-  subgraph,
+  graph,
   entries,
 }: {
-  subgraph?: string;
+  graph?: string;
   entries: BreadcrumbsEntry[];
 }) {
   const loc = useLocation();
   const navigate = useNavigate();
 
-  function setSubgraph(sg: string) {
+  function setGraph(sg: string) {
     const { pathname, search, hash } = loc;
     const newPath = pathname.replace(/graphs\/[^/]+/, `graphs/${sg}`);
     navigate(`${newPath}${search}${hash}`);
@@ -20,8 +20,8 @@ export default function EbiBreadcrumbsBar({
   return (
     <div className="bg-stone-100 pt-1 pl-2 pr-2 pb-1 flex flex-row justify-between items-center">
       <Breadcrumbs
-        subgraph={subgraph}
-        setSubgraph={setSubgraph}
+        graph={graph}
+        setGraph={setGraph}
         entries={entries}
       />
     </div>

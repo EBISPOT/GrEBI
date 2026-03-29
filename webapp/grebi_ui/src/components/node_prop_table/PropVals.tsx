@@ -12,9 +12,9 @@ import { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } from "constants";
 let MAX_VALS_ONELINE = 10
 let MAX_VALS_MULTILINE = 5 
 
-export default function PropVals(params:{ subgraph:string,refs:Refs,values:PropVal[] }) {
+export default function PropVals(params:{ graph:string,refs:Refs,values:PropVal[] }) {
 
-    let { subgraph,refs, values } = params;
+    let { graph,refs, values } = params;
 
     if(!refs) {
         throw new Error("refs missing")
@@ -31,7 +31,7 @@ export default function PropVals(params:{ subgraph:string,refs:Refs,values:PropV
                 <span>
                 {
                     values.slice(0, MAX_VALS_ONELINE).map( (value,i) => <Fragment>
-                        <PropValue subgraph={subgraph} refs={refs} value={value} monospace={false} separator={i > 0 ? ";" : ""} />
+                        <PropValue graph={graph} refs={refs} value={value} monospace={false} separator={i > 0 ? ";" : ""} />
                         </Fragment>
                     )
                 }
@@ -48,7 +48,7 @@ export default function PropVals(params:{ subgraph:string,refs:Refs,values:PropV
             return <span>
                 {
                     values.map( (value,i) => <Fragment>
-                        <PropValue subgraph={subgraph} refs={refs} value={value} monospace={false} separator={i > 0 ? ";" : ""} />
+                        <PropValue graph={graph} refs={refs} value={value} monospace={false} separator={i > 0 ? ";" : ""} />
                         </Fragment>
                     )
                 }
@@ -68,7 +68,7 @@ export default function PropVals(params:{ subgraph:string,refs:Refs,values:PropV
                     {
                         values.slice(0, MAX_VALS_MULTILINE).map( (value,i) => 
                             <div className={i>0?"pt-1":""}>
-                            <PropValue subgraph={subgraph} refs={refs} value={value} monospace={false} separator="" />
+                            <PropValue graph={graph} refs={refs} value={value} monospace={false} separator="" />
                             </div>
                         )
                     }
@@ -79,7 +79,7 @@ export default function PropVals(params:{ subgraph:string,refs:Refs,values:PropV
                     {
                         values.map( (value,i) => 
                             <div className={i>0?"pt-1":""}>
-                            <PropValue subgraph={subgraph} refs={refs} value={value} monospace={false} separator="" />
+                            <PropValue graph={graph} refs={refs} value={value} monospace={false} separator="" />
                             </div>
                         )
                     }
@@ -90,13 +90,13 @@ export default function PropVals(params:{ subgraph:string,refs:Refs,values:PropV
 
 }
 
-function PropValue(params:{subgraph:string,refs:Refs,value:PropVal,monospace:boolean,separator:string}) {
+function PropValue(params:{graph:string,refs:Refs,value:PropVal,monospace:boolean,separator:string}) {
 
-    let { subgraph, refs, value, monospace, separator } = params;
+    let { graph, refs, value, monospace, separator } = params;
 
     if(typeof value.value === 'object') {
         if(value.value["rdf:type"] !== undefined) {
-            return <ClassExpression subgraph={subgraph} refs={refs} expr={value.value} />
+            return <ClassExpression graph={graph} refs={refs} expr={value.value} />
         } else {
             return <span>{JSON.stringify(value.value)}</span>
         }
@@ -106,7 +106,7 @@ function PropValue(params:{subgraph:string,refs:Refs,value:PropVal,monospace:boo
   
     // todo mapped value datasources
     if(mapped_value) {
-        var linkUrl =  "/graphs/" + subgraph + "/nodes/" + encodeNodeId(value.value);
+        var linkUrl =  "/graphs/" + graph + "/nodes/" + encodeNodeId(value.value);
       return (
         <span className="mr-0">
           {separator} <Link className="link-default" to={linkUrl}>{

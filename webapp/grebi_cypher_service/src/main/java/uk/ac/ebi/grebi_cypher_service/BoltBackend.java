@@ -8,7 +8,7 @@ import java.util.Map;
 class BoltBackend implements CypherBackend {
 
     private final org.neo4j.driver.Driver driver;
-    private final String subgraph;
+    private final String graph;
 
     BoltBackend(String boltUrl) {
         System.out.println("Connecting to Neo4j via bolt at " + boltUrl);
@@ -20,16 +20,16 @@ class BoltBackend implements CypherBackend {
                 .withDefaultAccessMode(org.neo4j.driver.AccessMode.READ)
                 .build())) {
             var result = session.run(
-                    "MATCH (n:GraphNode) RETURN n.`grebi:subgraph` AS subgraph LIMIT 1");
-            subgraph = result.single().get("subgraph").asString();
+                    "MATCH (n:GraphNode) RETURN n.`grebi:subgraph` AS graph LIMIT 1");
+            graph = result.single().get("graph").asString();
         }
 
-        System.out.println("Loaded bolt subgraph '" + subgraph + "' from " + boltUrl);
+        System.out.println("Loaded bolt graph '" + graph + "' from " + boltUrl);
     }
 
     @Override
-    public String getSubgraph() {
-        return subgraph;
+    public String getGraph() {
+        return graph;
     }
 
     @Override

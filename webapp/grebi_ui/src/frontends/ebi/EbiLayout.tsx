@@ -12,18 +12,18 @@ export default function EbiLayout() {
   const pathname = loc.pathname;
 
   const sgMatch = pathname.match(/^\/graphs\/([^/]+)(\/.*)?$/);
-  const subgraph = sgMatch?.[1];
+  const graph = sgMatch?.[1];
   const subpath = sgMatch?.[2] || "";
 
-  // Persist last-selected subgraph so nav items work even on /graphs
-  if (subgraph) {
-    sessionStorage.setItem("grebi_last_subgraph", subgraph);
+  // Persist last-selected graph so nav items work even on /graphs
+  if (graph) {
+    sessionStorage.setItem("grebi_last_graph", graph);
   }
-  const effectiveSubgraph =
-    subgraph || sessionStorage.getItem("grebi_last_subgraph") || undefined;
+  const effectiveGraph =
+    graph || sessionStorage.getItem("grebi_last_graph") || undefined;
 
   let activeNav = "explore";
-  if (pathname === "/graphs" || (subgraph && subpath === "")) {
+  if (pathname === "/graphs" || (graph && subpath === "")) {
     activeNav = "graphs";
   } else if (subpath.startsWith("/queries")) {
     activeNav = "queries";
@@ -97,8 +97,8 @@ export default function EbiLayout() {
               </Link>
               <Link
                 to={
-                  effectiveSubgraph
-                    ? `/graphs/${effectiveSubgraph}/queries`
+                  effectiveGraph
+                    ? `/graphs/${effectiveGraph}/queries`
                     : `/graphs`
                 }
               >
@@ -118,8 +118,8 @@ export default function EbiLayout() {
               </Link>
               <Link
                 to={
-                  effectiveSubgraph
-                    ? `/graphs/${effectiveSubgraph}/tables`
+                  effectiveGraph
+                    ? `/graphs/${effectiveGraph}/tables`
                     : `/graphs`
                 }
               >
@@ -139,8 +139,8 @@ export default function EbiLayout() {
               </Link>
               <Link
                 to={
-                  effectiveSubgraph
-                    ? `/graphs/${effectiveSubgraph}/downloads`
+                  effectiveGraph
+                    ? `/graphs/${effectiveGraph}/downloads`
                     : `/graphs`
                 }
               >

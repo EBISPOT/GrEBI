@@ -1,6 +1,6 @@
 title: Environmental risk factors for a disease
 question: What [environmental risk factors]{exposure} contribute to {disease_id}?
-subgraphs:
+graphs:
   - ebi_monarch_xspecies
   - dismech
 topics:
@@ -38,7 +38,7 @@ examples:
       disease_id: mondo:0004979
   - title: vitiligo
     params:
-      disease_id: mondo:0004237
+      disease_id: mondo:0008661
   - title: hepatocellular carcinoma
     params:
       disease_id: mondo:0007256

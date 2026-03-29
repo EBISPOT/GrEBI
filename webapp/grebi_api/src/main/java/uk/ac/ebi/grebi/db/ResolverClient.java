@@ -39,9 +39,9 @@ public class ResolverClient {
         return "http://localhost:8084/";
     }
 
-    public Set<String> getSubgraphs() {
+    public Set<String> getGraphs() {
         HttpClient client = HttpClientBuilder.create().build();
-        HttpGet request = new HttpGet(getResolverHost() + "/subgraphs");
+        HttpGet request = new HttpGet(getResolverHost() + "/graphs");
         HttpResponse response;
         try {
             response = client.execute(request);
@@ -54,7 +54,7 @@ public class ResolverClient {
         return null;
     }
 
-    public Map<String, Map<String,Object>> resolveToMap(String subgraph, Collection<String> ids) {
+    public Map<String, Map<String,Object>> resolveToMap(String graph, Collection<String> ids) {
 
         Stopwatch timer = Stopwatch.createStarted();
 
@@ -63,10 +63,10 @@ public class ResolverClient {
 
         String resolverHost = getResolverHost();
 
-        HttpPost request = new HttpPost(resolverHost + "/" + subgraph + "/resolve");
+        HttpPost request = new HttpPost(resolverHost + "/" + graph + "/resolve");
         request.setEntity(new StringEntity(gson.toJson(ids), ContentType.APPLICATION_JSON));
 
-    //    System.out.println("calling resolver at " + resolverHost + "/" + subgraph + "/resolve" + " with " + gson.toJson(ids));
+    //    System.out.println("calling resolver at " + resolverHost + "/" + graph + "/resolve" + " with " + gson.toJson(ids));
 
         try {
             HttpResponse response = client.execute(request);
@@ -90,16 +90,16 @@ public class ResolverClient {
         return null;
     }
 
-    public List<Map<String, Object>> resolveToList(String subgraph, Collection<String> ids) {
+    public List<Map<String, Object>> resolveToList(String graph, Collection<String> ids) {
 
-        var resolved = resolveToMap(subgraph, ids);
+        var resolved = resolveToMap(graph, ids);
 
         var ret = ids.stream().map(id -> resolved.get(id)).collect(Collectors.toList());
 
         // check for nulls
         for(int i = 0; i < ret.size(); i++) {
             if(ret.get(i) == null) {
-                System.err.println("Warning: could not resolve id " + ids.toArray(new String[0])[i] + " in subgraph " + subgraph);
+                System.err.println("Warning: could not resolve id " + ids.toArray(new String[0])[i] + " in graph " + graph);
             }
         }
 

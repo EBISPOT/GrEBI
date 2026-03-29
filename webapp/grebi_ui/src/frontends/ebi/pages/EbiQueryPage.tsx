@@ -16,29 +16,29 @@ export default function EbiQueriesPage() {
 
   let params = useParams();
   let [searchParams, setSearchParams] = useSearchParams();
-  let subgraph:string|undefined = params.subgraph
+  let graph:string|undefined = params.graph
   let queryid:string|undefined = params.queryid
 
   let [queryTemplate, setQueryTemplate] = useState<QueryTemplate|undefined>(undefined)
 
     useEffect(() => {
-        get<QueryTemplate>(`api/v1/subgraphs/${subgraph}/query_templates/${queryid}`)
+        get<QueryTemplate>(`api/v1/graphs/${graph}/query_templates/${queryid}`)
             .then(r => setQueryTemplate(r));
-    }, [subgraph, queryid]);
+    }, [graph, queryid]);
 
-  if(!subgraph || !queryid) {
+  if(!graph || !queryid) {
     throw new Error("??");
   }
 
   let breadcrumbs = [
     { url: `/graphs`, label: "Graphs" },
-    { url: `/graphs/${subgraph}/queries`, label: "Queries" },
-    { url: `/graphs/${subgraph}/queries/${queryid}`, label: <code>{queryid}</code> }
+    { url: `/graphs/${graph}/queries`, label: "Queries" },
+    { url: `/graphs/${graph}/queries/${queryid}`, label: <code>{queryid}</code> }
   ]
 
     return (
         <div>
-        <EbiBreadcrumbsBar subgraph={subgraph} entries={breadcrumbs} />
+        <EbiBreadcrumbsBar graph={graph} entries={breadcrumbs} />
         <main className="container mx-auto px-4 h-fit pt-2">
 
           { !queryTemplate && 
@@ -47,7 +47,7 @@ export default function EbiQueriesPage() {
 
           { queryTemplate &&
             <div>
-              <Typography variant="h4" sx={{ mt: 3 }}>{addLinksToText(queryTemplate.title, subgraph)}</Typography>
+              <Typography variant="h4" sx={{ mt: 3 }}>{addLinksToText(queryTemplate.title, graph)}</Typography>
               <p className="text-lg text-neutral-dark mt-6 mb-6">
                   {queryTemplate.question.split(/(\[[^\]]+\]\{[^}]+\}|\{[^}]+\})/).map((part, i) => {
                     let mRef = part.match(/^\[([^\]]+)\]\{(.+)\}$/);
@@ -61,7 +61,7 @@ export default function EbiQueriesPage() {
                     return part;
                   })}
               </p>
-              <QueryInterface subgraph={subgraph} queryTemplate={queryTemplate} sidebar={
+              <QueryInterface graph={graph} queryTemplate={queryTemplate} sidebar={
                 queryTemplate.examples && queryTemplate.examples.length > 0 ? (
                   <div>
                     <Typography variant="subtitle2" className="text-gray-500 mb-2">Examples</Typography>
@@ -75,7 +75,7 @@ export default function EbiQueriesPage() {
                             setSearchParams(qs);
                           }}
                         >
-                          <QueryQuestion subgraph={subgraph} template={queryTemplate} exampleIndex={idx} readOnly={true} fontSize="0.85rem" />
+                          <QueryQuestion graph={graph} template={queryTemplate} exampleIndex={idx} readOnly={true} fontSize="0.85rem" />
                         </div>
                       ))}
                     </div>

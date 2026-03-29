@@ -20,8 +20,8 @@ public class GrebiPostgresRepo {
         this.pgClient = new GrebiPostgresClient();
     }
 
-    public Set<String> getSubgraphs() {
-        return pgClient.getSubgraphs();
+    public Set<String> getGraphs() {
+        return pgClient.getGraphs();
     }
 
     /**
@@ -29,12 +29,12 @@ public class GrebiPostgresRepo {
      * node metadata for referenced IDs; extract from/to from it.
      */
     public GrebiFacetedResultsPage<Map<String, Object>> searchEdgesPaginated(
-            String subgraph, String filterField, String filterValue,
+            String graph, String filterField, String filterValue,
             Map<String, List<String>> extraFilters,
             String sortField, String sortDir,
             Pageable pageable) {
 
-        var result = pgClient.queryEdges(subgraph, filterField, filterValue,
+        var result = pgClient.queryEdges(graph, filterField, filterValue,
                 extraFilters, sortField, sortDir,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
@@ -55,12 +55,12 @@ public class GrebiPostgresRepo {
      * Search edge refs (lightweight: type, datasources, fromNodeId, toNodeId + refs from _refs JSONB).
      */
     public GrebiFacetedResultsPage<Map<String, Object>> searchEdgeRefsPaginated(
-            String subgraph, String filterField, String filterValue,
+            String graph, String filterField, String filterValue,
             Map<String, List<String>> extraFilters,
             String sortField, String sortDir,
             Pageable pageable) {
 
-        var result = pgClient.queryEdgeRefs(subgraph, filterField, filterValue,
+        var result = pgClient.queryEdgeRefs(graph, filterField, filterValue,
                 extraFilters, sortField, sortDir,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
@@ -77,22 +77,22 @@ public class GrebiPostgresRepo {
         );
     }
 
-    public Map<String, Map<String, Integer>> getIncomingEdgeCounts(String subgraph, String nodeId) {
-        return pgClient.getEdgeCounts(subgraph, "grebi:toNodeId", nodeId);
+    public Map<String, Map<String, Integer>> getIncomingEdgeCounts(String graph, String nodeId) {
+        return pgClient.getEdgeCounts(graph, "grebi:toNodeId", nodeId);
     }
 
-    public Map<String, Map<String, Integer>> getOutgoingEdgeCounts(String subgraph, String nodeId) {
-        return pgClient.getEdgeCounts(subgraph, "grebi:fromNodeId", nodeId);
+    public Map<String, Map<String, Integer>> getOutgoingEdgeCounts(String graph, String nodeId) {
+        return pgClient.getEdgeCounts(graph, "grebi:fromNodeId", nodeId);
     }
 
     /**
      * Fetch both incoming and outgoing edge counts in parallel.
      */
-    public Map<String, Map<String, Map<String, Integer>>> getBothEdgeCounts(String subgraph, String nodeId) {
+    public Map<String, Map<String, Map<String, Integer>>> getBothEdgeCounts(String graph, String nodeId) {
         CompletableFuture<Map<String, Map<String, Integer>>> inFuture =
-                CompletableFuture.supplyAsync(() -> getIncomingEdgeCounts(subgraph, nodeId));
+                CompletableFuture.supplyAsync(() -> getIncomingEdgeCounts(graph, nodeId));
         CompletableFuture<Map<String, Map<String, Integer>>> outFuture =
-                CompletableFuture.supplyAsync(() -> getOutgoingEdgeCounts(subgraph, nodeId));
+                CompletableFuture.supplyAsync(() -> getOutgoingEdgeCounts(graph, nodeId));
 
         Map<String, Map<String, Map<String, Integer>>> result = new LinkedHashMap<>();
         result.put("incoming", inFuture.join());
@@ -103,20 +103,20 @@ public class GrebiPostgresRepo {
     /**
      * Get a single edge by its ID.
      */
-    public Map<String, Object> getEdgeById(String subgraph, String edgeId) {
-        return pgClient.getEdgeById(subgraph, edgeId);
+    public Map<String, Object> getEdgeById(String graph, String edgeId) {
+        return pgClient.getEdgeById(graph, edgeId);
     }
 
     /**
      * Search edges with optional filters (no required node ID).
      */
     public GrebiFacetedResultsPage<Map<String, Object>> searchEdges(
-            String subgraph,
+            String graph,
             Map<String, List<String>> filters,
             String sortField, String sortDir,
             Pageable pageable) {
 
-        var result = pgClient.searchEdges(subgraph, filters, sortField, sortDir,
+        var result = pgClient.searchEdges(graph, filters, sortField, sortDir,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
         List<Map<String, Object>> enriched = new ArrayList<>();
@@ -164,14 +164,14 @@ public class GrebiPostgresRepo {
      * Search nodes by vector similarity using pgvector.
      */
     public List<GrebiPostgresClient.VectorSearchResult> searchByVector(
-            String subgraph, String embeddingModel, float[] queryVector, int limit) {
-        return pgClient.searchByVector(subgraph, embeddingModel, queryVector, limit);
+            String graph, String embeddingModel, float[] queryVector, int limit) {
+        return pgClient.searchByVector(graph, embeddingModel, queryVector, limit);
     }
 
     /**
      * Get a node's embedding vector for a given model.
      */
-    public float[] getNodeEmbedding(String subgraph, String nodeId, String embeddingModel) {
-        return pgClient.getNodeEmbedding(subgraph, nodeId, embeddingModel);
+    public float[] getNodeEmbedding(String graph, String nodeId, String embeddingModel) {
+        return pgClient.getNodeEmbedding(graph, nodeId, embeddingModel);
     }
 }
