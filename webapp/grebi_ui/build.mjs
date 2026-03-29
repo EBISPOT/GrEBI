@@ -22,18 +22,55 @@ const rootDocsDir = path.resolve("../../docs");
 if (fs.existsSync(rootDocsDir)) {
   docsDir = rootDocsDir;
 }
+// Extract the first # heading from markdown content as the page title
+function titleFromMarkdown(md) {
+  const m = md.match(/^#\s+(.+)$/m);
+  return m ? m[1].replace(/\\(.)/g, '$1').trim() : null;
+}
+// Normalize sidebar entries: bare strings become {path: "file.md"},
+// objects with "file" key become {path: "file.md", children: [...]}
+function normalizeSidebar(entries) {
+  return entries.map(entry => {
+    if (typeof entry === 'string') return { path: entry };
+    if (entry.file) {
+      const norm = { path: entry.file };
+      if (entry.children) norm.children = normalizeSidebar(entry.children);
+      return norm;
+    }
+    if (entry.children) entry.children = normalizeSidebar(entry.children);
+    return entry;
+  });
+}
+// Populate sidebar titles from the markdown page headings
+function resolveSidebarTitles(entries, pages) {
+  for (const entry of entries) {
+    if (!entry.title && entry.path) {
+      const slug = entry.path.replace(/\.md$/, "");
+      const md = pages[slug];
+      if (md) entry.title = titleFromMarkdown(md) || slug;
+    }
+    if (entry.children) resolveSidebarTitles(entry.children, pages);
+  }
+}
 let docsManifest = { sidebar: [], pages: {}, images: {} };
 if (fs.existsSync(docsDir)) {
   const sidebarPath = path.join(docsDir, "_sidebar.yaml");
   if (fs.existsSync(sidebarPath)) {
-    docsManifest.sidebar = yaml.load(fs.readFileSync(sidebarPath, "utf8"));
+    docsManifest.sidebar = normalizeSidebar(yaml.load(fs.readFileSync(sidebarPath, "utf8")));
   }
-  for (const file of fs.readdirSync(docsDir)) {
-    if (file.endsWith(".md")) {
-      const slug = file.replace(/\.md$/, "");
-      docsManifest.pages[slug] = fs.readFileSync(path.join(docsDir, file), "utf8");
+  // Recursively read all .md files, keyed by their path relative to docsDir (without .md)
+  function readMdFiles(dir, prefix) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory() && entry.name !== "images") {
+        readMdFiles(path.join(dir, entry.name), prefix ? prefix + "/" + entry.name : entry.name);
+      } else if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "_sidebar.yaml") {
+        const slug = (prefix ? prefix + "/" : "") + entry.name.replace(/\.md$/, "");
+        docsManifest.pages[slug] = fs.readFileSync(path.join(dir, entry.name), "utf8");
+      }
     }
   }
+  readMdFiles(docsDir, "");
+  resolveSidebarTitles(docsManifest.sidebar, docsManifest.pages);
   const imagesDir = path.join(docsDir, "images");
   if (fs.existsSync(imagesDir)) {
     for (const img of fs.readdirSync(imagesDir)) {

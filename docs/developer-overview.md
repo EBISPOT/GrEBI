@@ -3,7 +3,7 @@
 
 The GrEBI dataload is implemented as a [Nextflow](https://www.nextflow.io/) pipeline. It takes about 15 minutes on an M3 MacBook Air to build the `dismech` graph with ~80k nodes and ~3 million edges, or a day on the EBI HPC to build the `ebi_monarch_xspecies` graph with >50 million nodes and >1 billion edges.
 
-The dataload produces four databases used to run the GrEBI stack: Neo4j, PostgreSQL, Solr, and SQLite. Each database has a different purpose:
+The dataload produces four databases used to run the GrEBI stack: Neo4j, PostgreSQL, Solr, and SQLite. Each database stores different views over the same data (simple JSON objects for nodes and edges), with different purposes:
 
 * Postgres is used by the backend to drive most of the API endpoints used by the website. It stores nodes and edges with minimal metadata, and embedding vectors with pgvector.
 * Neo4j is used by the `grebi_cypher_service` to drive Cypher queries. It stores nodes and edges with minimal metadata.

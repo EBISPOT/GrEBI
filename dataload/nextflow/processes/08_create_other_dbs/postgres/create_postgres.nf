@@ -113,9 +113,9 @@ EOF
     \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_edgeId\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:edgeId\\");" &
     \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_fromNodeId\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:fromNodeId\\");" &
     \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_toNodeId\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:toNodeId\\");" &
-    \$PSQL -c "CREATE INDEX \"idx_edges_${subgraph}_type_hash\" ON \"edges_${subgraph}\" USING hash (\"grebi:type\");" &
-    \$PSQL -c "CREATE INDEX \"idx_edges_${subgraph}_type_btree\" ON \"edges_${subgraph}\" USING btree (\"grebi:type\");" &
-    \$PSQL -c "CREATE INDEX \"idx_edges_${subgraph}_datasources_gin\" ON \"edges_${subgraph}\" USING gin (\"grebi:datasources\");" &
+    \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_type_hash\\" ON \\"edges_${subgraph}\\" USING hash (\\"grebi:type\\");" &
+    \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_type_btree\\" ON \\"edges_${subgraph}\\" USING btree (\\"grebi:type\\");" &
+    \$PSQL -c "CREATE INDEX \\"idx_edges_${subgraph}_datasources_gin\\" ON \\"edges_${subgraph}\\" USING gin (\\"grebi:datasources\\");" &
     wait
 
     \$PSQL -c "ANALYZE \\"edges_${subgraph}\\";"

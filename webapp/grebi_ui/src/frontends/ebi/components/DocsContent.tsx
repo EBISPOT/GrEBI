@@ -54,8 +54,8 @@ export default function DocsContent({
   const resolveDocLink = useCallback(
     (href: string): { isDoc: boolean; slug: string } | null => {
       if (!href) return null;
-      // Match ./foo.md or foo.md (relative doc links)
-      const m = href.match(/^(?:\.\/)?([a-z0-9_-]+)\.md$/i);
+      // Match ./foo.md, foo.md, or subdir/foo.md (relative doc links)
+      const m = href.match(/^(?:\.\/)?([a-z0-9_\-\/]+)\.md$/i);
       if (m) return { isDoc: true, slug: m[1] };
       return null;
     },
@@ -86,7 +86,7 @@ export default function DocsContent({
         if (inline) {
           return (
             <code
-              className="bg-gray-100 text-pink-700 rounded px-1.5 py-0.5 text-sm font-mono"
+              className="bg-gray-100 text-pink-700 rounded px-1.5 py-0.5 font-mono"
               {...props}
             >
               {children}

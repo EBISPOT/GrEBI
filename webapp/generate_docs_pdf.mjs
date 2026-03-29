@@ -49,6 +49,18 @@ function parseArgs() {
 }
 
 // ── Sidebar helpers ──────────────────────────────────────────────────
+function normalizeSidebar(entries) {
+  return entries.map(entry => {
+    if (typeof entry === 'string') return { path: entry };
+    if (entry.file) {
+      const norm = { path: entry.file };
+      if (entry.children) norm.children = normalizeSidebar(entry.children);
+      return norm;
+    }
+    if (entry.children) entry.children = normalizeSidebar(entry.children);
+    return entry;
+  });
+}
 function collectPages(sidebar) {
   const pages = [];
   for (const entry of sidebar) {
@@ -232,7 +244,7 @@ async function main() {
     process.exit(1);
   }
 
-  const sidebar = yaml.load(fs.readFileSync(sidebarPath, "utf8"));
+  const sidebar = normalizeSidebar(yaml.load(fs.readFileSync(sidebarPath, "utf8")));
   const orderedPages = collectPages(sidebar);
 
   const apiAvailable = await checkApi(opts.apiUrl);

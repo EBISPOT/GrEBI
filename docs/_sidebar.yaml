@@ -1,26 +1,29 @@
 # Documentation sidebar navigation tree.
-# Each entry has a title, a path (relative .md file), and optional children.
-# The path is also used as the URL slug (without the .md extension).
+# Each entry is a .md filename, optionally with children for nesting.
+# Titles are extracted from the first # heading in each .md file.
+# The filename (without .md) is used as the URL slug.
 
-- title: What is GrEBI?
-  path: index.md
-- title: Getting Started
-  path: getting-started.md
-- title: Developer Overview
-  path: developer-overview.md
+- index.md
+- file: developer-overview.md
   children:
-    - title: GrEBI Dataload
-      path: dataload.md
+    - file: dataload.md
       children:
-        - title: Downloads & Ingests
-          path: downloads-and-ingests.md
-    - title: Identifiers & CURIEs
-      path: identifiers.md
-- title: Using GrEBI
+        - downloads-and-ingests.md
+        - datamodel.md
+        - file: ingest_tools/index.md
+          children:
+            - ingest_tools/grebi_transform_jsonl.md
+            - ingest_tools/grebi_rdf2jsonl.md
+            - ingest_tools/grebi_tsv2jsonl.md
+            - ingest_tools/grebi_parquet2jsonl.md
+            - ingest_tools/grebi_ingest_ols.md
+            - ingest_tools/grebi_ingest_kgx_edges.md
+            - ingest_tools/grebi_ingest_sssom.md
+            - ingest_tools/grebi_nodes2edges.md
+            - ingest_tools/grebi_unwind.md
+    - identifiers.md
+- file: using-grebi.md
   children:
-    - title: Query Templates
-      path: query-templates.md
-    - title: API Reference
-      path: api-reference.md
-    - title: Graph Queries
-      path: queries.md
+    - query-templates.md
+    - api-reference.md
+    - queries.md
