@@ -4,13 +4,11 @@ process prepare_postgres_edges {
     time "1h"
 
     input:
-    path(edges_jsonl)
-    path(graph_metadata_json)
-    val(subgraph)
+    tuple val(subgraph), path(edges_jsonl), path(graph_metadata_json)
 
     output:
-    path("postgres_edges_${subgraph}_${task.index}.tsv.gz"), emit: edges_tsv
-    path("postgres_edges_columns_${subgraph}_${task.index}.txt"), emit: columns
+    tuple val(subgraph), path("postgres_edges_${subgraph}_${task.index}.tsv.gz"), emit: edges_tsv
+    tuple val(subgraph), path("postgres_edges_columns_${subgraph}_${task.index}.txt"), emit: columns
 
     script:
     """

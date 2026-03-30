@@ -5,12 +5,10 @@ process link_results {
     cpus "4"
 
     input:
-    path(results_jsonl)
-    path(entity_metadata_jsonl)
-    path(groups_txt)
+    tuple val(subgraph), path(results_jsonl), path(entity_metadata_jsonl), path(groups_txt)
 
     output:
-    path("${results_jsonl.simpleName}.linked_results.jsonl")
+    tuple val(subgraph), path("${results_jsonl.simpleName}.linked_results.jsonl")
 
     script:
     """

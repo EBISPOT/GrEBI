@@ -5,13 +5,13 @@ process construct_release {
     cpus "4"
 
     input:
-    path(neo_db)
+    path(neo_dbs)
     path(solr_dir)
     path(postgres_db)
-    path(sqlite)
-    path(metadata_json)
+    path(sqlite_dbs)
+    path(metadata_jsons)
     path(query_templates)
-    val(subgraph)
+    val(subgraphs)
     val(out_dir)
     val(docker_image)
     val(dataload_home)
@@ -19,27 +19,33 @@ process construct_release {
     publishDir "${out_dir}", overwrite: true, mode: 'copy'
 
     output:
-    path("${subgraph}")
+    path("release")
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
 
-    RELEASE_DIR="${subgraph}"
+    RELEASE_DIR="release"
     mkdir -p "\$RELEASE_DIR"
 
-    # Symlink database artefacts into the release directory
-    ln -s \$(readlink -f ${neo_db}) "\$RELEASE_DIR/"
+    # Symlink all database artefacts into the release directory
+    for neo in ${neo_dbs}; do
+        ln -s \$(readlink -f "\$neo") "\$RELEASE_DIR/"
+    done
     ln -s \$(readlink -f ${solr_dir}) "\$RELEASE_DIR/"
     ln -s \$(readlink -f ${postgres_db}) "\$RELEASE_DIR/"
-    ln -s \$(readlink -f ${sqlite}) "\$RELEASE_DIR/"
-    cp ${metadata_json} "\$RELEASE_DIR/"
+    for sqlite in ${sqlite_dbs}; do
+        ln -s \$(readlink -f "\$sqlite") "\$RELEASE_DIR/"
+    done
+    for meta in ${metadata_jsons}; do
+        cp "\$meta" "\$RELEASE_DIR/"
+    done
     cp -r ${query_templates} "\$RELEASE_DIR/query_templates"
 
     # Generate the run script
     python3 ${dataload_home}/scripts/generate_run_script.py \
-        --subgraph ${subgraph} \
+        --subgraphs ${subgraphs} \
         --image ${docker_image} \
         -o "\$RELEASE_DIR/grebi.sh"
     """

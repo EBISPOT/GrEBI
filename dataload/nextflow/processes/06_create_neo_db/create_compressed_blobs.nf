@@ -4,11 +4,10 @@ process create_compressed_blobs {
     time "1h"
 
     input:
-    path(mat_jsonl)
-    val(subgraph)
+    tuple val(subgraph), path(mat_jsonl)
 
     output:
-    path("${subgraph}_${task.index}_compressed.blob"), emit: compressed_blob
+    tuple val(subgraph), path("${subgraph}_${task.index}_compressed.blob"), emit: compressed_blob
 
     script:
     """

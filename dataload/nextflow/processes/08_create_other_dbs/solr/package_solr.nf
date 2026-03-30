@@ -6,18 +6,17 @@ process package_solr {
 
     input: 
     path(solr_dir)
-    val(subgraph)
     val(out_dir)
 
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("${subgraph}_solr.tgz")
+    path("solr.tgz")
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    tar -chf ${subgraph}_solr.tgz --use-compress-program="pigz --fast" ${solr_dir}
+    tar -chf solr.tgz --use-compress-program="pigz --fast" ${solr_dir}
     """
 }

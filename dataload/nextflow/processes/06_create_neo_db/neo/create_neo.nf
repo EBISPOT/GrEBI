@@ -5,12 +5,11 @@ process create_neo {
     cpus "4"
 
     input:
-    path(neo_inputs)
-    val(subgraph)
+    tuple val(subgraph), path(neo_inputs)
     val(neo_mem)
 
     output:
-    path("${subgraph}_neo4j")
+    tuple val(subgraph), path("${subgraph}_neo4j")
 
     script:
     """

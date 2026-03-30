@@ -5,13 +5,13 @@ process results_to_csv {
     cpus "4"
 
     input:
-    path(results_jsonl)
+    tuple val(subgraph), path(results_jsonl)
     val(out_dir)
 
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("query_results/${results_jsonl.simpleName}.results.csv.gz")
+    tuple val(subgraph), path("query_results/${results_jsonl.simpleName}.results.csv.gz")
 
     script:
     """

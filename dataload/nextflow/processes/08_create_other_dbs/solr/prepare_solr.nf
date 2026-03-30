@@ -4,11 +4,10 @@ process prepare_solr {
     time "1h"
 
     input:
-    path(nodes_jsonl)
-    val(subgraph)
+    tuple val(subgraph), path(nodes_jsonl)
 
     output:
-    path("solr_nodes_${subgraph}_${task.index}.jsonl"), emit: nodes
+    tuple val(subgraph), path("solr_nodes_${subgraph}_${task.index}.jsonl"), emit: nodes
 
     script:
     """

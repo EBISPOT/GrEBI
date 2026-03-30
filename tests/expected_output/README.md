@@ -41,7 +41,7 @@ with snapshot export and copying the new output:
 
 ```bash
 # Run pipeline for a test subgraph with snapshot export
-export GREBI_SUBGRAPH=test_clique_merge
+export GREBI_SUBGRAPHS=test_clique_merge
 export GREBI_NF_EXTRA_ARGS="--export_snapshots true"
 ./dataload/scripts/dataload_local.sh
 

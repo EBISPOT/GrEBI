@@ -4,12 +4,10 @@ process merge_graph_metadata_jsons {
     time "1h"
 
     input:
-    path(graph_metadata_jsons)
-    val(subgraph)
-    val(downloads_path)
+    tuple val(subgraph), path(graph_metadata_jsons), val(downloads_path)
 
     output:
-    path("${subgraph}_metadata_merged.json")
+    tuple val(subgraph), path("${subgraph}_metadata_merged.json")
 
     script:
     """

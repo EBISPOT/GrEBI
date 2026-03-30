@@ -107,14 +107,14 @@ Requires Docker. The helper scripts run Nextflow inside `ghcr.io/ebispot/grebi_n
 1) Download input files
 
 ```bash
-export GREBI_SUBGRAPH=disease_ontologies
+export GREBI_SUBGRAPHS=disease_ontologies
 ./dataload/scripts/download_local.sh
 ```
 
 2) Run the dataload pipeline
 
 ```bash
-export GREBI_SUBGRAPH=disease_ontologies
+export GREBI_SUBGRAPHS=disease_ontologies
 ./dataload/scripts/dataload_local.sh
 ```
 
@@ -228,7 +228,7 @@ To run only one test subgraph:
 
 When your changes intentionally alter the pipeline output, you need to update the expected snapshots. Run the pipeline for the affected test subgraph, inspect the changes, and commit them:
 
-    export GREBI_SUBGRAPH=test_clique_merge
+    export GREBI_SUBGRAPHS=test_clique_merge
     export GREBI_NF_EXTRA_ARGS="--export_snapshots true"
     bash dataload/scripts/dataload_local.sh
 

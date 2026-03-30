@@ -12,14 +12,10 @@ process merge_ingests {
     time "8h"
 
     input:
-    val(assigned)
-    val(exclude_props)
-    val(prioritise_datasources)
-    val(bytes_per_merged_file)
-    val(subgraph)
+    tuple val(subgraph), val(assigned), val(exclude_props), val(prioritise_datasources), val(bytes_per_merged_file)
 
     output:
-    path('merged.jsonl.*')
+    tuple val(subgraph), path('merged.jsonl.*')
 
     script:
     """

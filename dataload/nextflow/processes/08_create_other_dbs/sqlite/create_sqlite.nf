@@ -7,14 +7,13 @@ process create_sqlite {
     maxRetries 10
 
     input:
-    val(compressed_blobs)
-    val(subgraph)
+    tuple val(subgraph), val(compressed_blobs)
     val(out_dir)
 
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("${subgraph}.sqlite3")
+    tuple val(subgraph), path("${subgraph}.sqlite3")
 
     script:
     """

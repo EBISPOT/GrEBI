@@ -5,14 +5,11 @@ process create_solr_nodes_core {
     cpus "4"
 
     input:
-    path(solr_inputs)
-    path(names_txt)
-    path(graph_metadata_json)
-    val(subgraph)
+    tuple val(subgraph), path(solr_inputs), path(names_txt), path(graph_metadata_json)
     val(solr_mem)
 
     output:
-    path("solr/data/grebi_nodes_${subgraph}")
+    tuple val(subgraph), path("solr/data/grebi_nodes_${subgraph}")
 
     script:
     """

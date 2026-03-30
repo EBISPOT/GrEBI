@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ -z "$GREBI_SUBGRAPH" ]; then
-  echo "Set GREBI_SUBGRAPH to run this script"
+if [ -z "$GREBI_SUBGRAPHS" ]; then
+  echo "Set GREBI_SUBGRAPHS (comma-separated) to run this script"
   exit 1
 fi
 
@@ -19,8 +19,11 @@ SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 #
 GREBI_HOME=$(dirname $(dirname $SCRIPT_PATH))
 
-TMP_DIR=$GREBI_HOME/tmp/$GREBI_SUBGRAPH
-OUT_DIR=$GREBI_HOME/out/$GREBI_SUBGRAPH
+# Use a combined directory name from all subgraphs (replace commas with underscores)
+GREBI_DIR_NAME=$(echo "$GREBI_SUBGRAPHS" | tr ',' '_')
+
+TMP_DIR=$GREBI_HOME/tmp/$GREBI_DIR_NAME
+OUT_DIR=$GREBI_HOME/out/$GREBI_DIR_NAME
 GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-$GREBI_HOME/downloads}
 
 REPORTS_DIR=$OUT_DIR/reports
@@ -51,7 +54,7 @@ docker run \
   -e GREBI_OUT_DIR=$OUT_DIR \
   -e GREBI_QUERY_YAMLS_PATH=$GREBI_HOME/materialised_queries \
   -e GREBI_DATALOAD_HOME=$GREBI_HOME/dataload \
-  -e GREBI_SUBGRAPH=$GREBI_SUBGRAPH \
+  -e GREBI_SUBGRAPHS=$GREBI_SUBGRAPHS \
   -e GREBI_DOWNLOADS_PATH=$GREBI_DOWNLOADS_PATH \
   -e NXF_USRMAP=${HOST_UID} \
   -e HOST_UID=${HOST_UID} \

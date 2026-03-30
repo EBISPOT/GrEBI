@@ -8,7 +8,7 @@ process test_query_templates {
 
     input:
     path(release_tgz)
-    val(subgraph)
+    val(subgraphs)
     val(out_dir)
     val(export_snapshots)
     val(make_docs)
@@ -25,11 +25,7 @@ process test_query_templates {
     output:
     path("integration_test_results.txt"), optional: true
     path("grebi-docs.pdf"), optional: true
-    path("${subgraph}_snapshot_neo4j_nodes.jsonl"), optional: true
-    path("${subgraph}_snapshot_neo4j_edges.jsonl"), optional: true
-    path("${subgraph}_snapshot_solr_nodes.jsonl"), optional: true
-    path("${subgraph}_snapshot_postgres_edges.jsonl"), optional: true
-    path("${subgraph}_snapshot_postgres_nodes.jsonl"), optional: true
+    path("*_snapshot_*.jsonl"), optional: true
     stdout
 
     script:
@@ -39,18 +35,22 @@ process test_query_templates {
     
     echo "Extracting release tarball..."
     cat ${release_tgz} | pigz -d | tar -xf -
-    cd ${subgraph}
+    cd release
 
     # Configure environment for the entrypoint
-    export GREBI_POSTGRES_DATA=\$PWD/postgres_data_${subgraph}
-    export NEO4J_server_directories_data=\$PWD/${subgraph}_neo4j/data
-    export NEO4J_server_directories_logs=\$PWD
+    export GREBI_SUBGRAPHS=${subgraphs}
+    export GREBI_POSTGRES_DATA=\$PWD/postgres_data
     export SOLR_HOME=\$PWD/solr
     export SOLR_LOGS_DIR=\$PWD
     export GREBI_METADATA_JSON_SEARCH_PATH=\$PWD
     export GREBI_SQLITE_SEARCH_PATH=\$PWD
     export GREBI_QUERY_TEMPLATES_PATH=\$PWD/query_templates
     export PUBLIC_URL=/
+
+    # Configure Neo4j for the first subgraph (entrypoint discovers others)
+    FIRST_SG=\$(echo "${subgraphs}" | cut -d',' -f1)
+    export NEO4J_server_directories_data=\$PWD/\${FIRST_SG}_neo4j/data
+    export NEO4J_server_directories_logs=\$PWD
 
     # Database memory from Nextflow params
     export GREBI_NEO_HEAP=${neo_mem}
@@ -63,7 +63,7 @@ process test_query_templates {
     # Snapshot export/comparison (only when requested)
     if [ "${export_snapshots}" = "true" ]; then
         export GREBI_EXPORT_SNAPSHOTS=true
-        EXPECTED_DIR="${grebi_home}/tests/expected_output/${subgraph}"
+        EXPECTED_DIR="${grebi_home}/tests/expected_output"
         if [ -d "\$EXPECTED_DIR" ]; then
             export GREBI_EXPECTED_DIR="\$EXPECTED_DIR"
         fi
@@ -74,15 +74,14 @@ process test_query_templates {
         export GREBI_MAKE_DOCS=true
     fi
 
-    # Run the entrypoint in test mode — it handles supervisord, integration
-    # tests, snapshot export, comparison, and cleanup.
+    # Run the entrypoint in test mode
     set +e
     /opt/entrypoint.sh test 2>&1 | tee ../integration_test_results.txt
     EXIT_CODE=\${PIPESTATUS[0]}
     set -e
 
     # Copy snapshot files to parent dir for Nextflow publishDir
-    cp -f ${subgraph}_snapshot_*.jsonl ../ 2>/dev/null || true
+    cp -f *_snapshot_*.jsonl ../ 2>/dev/null || true
     cp -f grebi-docs.pdf ../ 2>/dev/null || true
 
     exit \$EXIT_CODE

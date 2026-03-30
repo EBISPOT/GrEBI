@@ -4,15 +4,13 @@ process index {
     time "8h"
 
     input:
-    val(merged_filenames)
-    val(subgraph)
-    val(subgraph_config_json_path)
+    tuple val(subgraph), val(merged_filenames), val(subgraph_config_json_path)
 
     output:
-    path("entity_metadata.jsonl"), emit: entity_metadata_jsonl
-    path("graph_metadata.json"), emit: graph_metadata_json
-    path("names.txt"), emit: names_txt
-    path("ids_${subgraph}.txt"), emit: ids_txt
+    tuple val(subgraph), path("entity_metadata.jsonl"), emit: entity_metadata_jsonl
+    tuple val(subgraph), path("graph_metadata.json"), emit: graph_metadata_json
+    tuple val(subgraph), path("names.txt"), emit: names_txt
+    tuple val(subgraph), path("ids_${subgraph}.txt"), emit: ids_txt
 
     script:
     """
