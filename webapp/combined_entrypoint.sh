@@ -65,10 +65,17 @@ if [ -n "${GREBI_SERVICES:-}" ]; then
 fi
 
 # Configure cypher_service mode based on whether neo4j is running
-if [ "$has_neo4j" -eq 1 ]; then
-    # Bolt mode: tell cypher_service to connect to the local Neo4j server
-    # Remove the embedded path and add bolt host
+# Neo4j Community only supports a single database, so if there are multiple
+# neo4j directories we use embedded mode (cypher_service opens each one).
+NEO4J_DIR_COUNT=$(ls -d *_neo4j 2>/dev/null | wc -l)
+
+if [ "$has_neo4j" -eq 1 ] && [ "$NEO4J_DIR_COUNT" -le 1 ]; then
+    # Single graph: bolt mode — cypher_service connects to the local Neo4j server
     sed -i '/^\[program:cypher_service\]$/,/^\[/ s/^environment=.*/environment=GREBI_NEO4J_HOSTS="bolt:\/\/localhost:7687",GREBI_CYPHER_PORT="8085"/' "$SUPERVISORD_CONF"
+elif [ "$NEO4J_DIR_COUNT" -gt 1 ]; then
+    # Multi-graph: disable neo4j server, use embedded mode in cypher_service
+    echo "Multiple Neo4j databases detected ($NEO4J_DIR_COUNT), using embedded mode"
+    sed -i "/^\[program:neo4j\]$/,/^\[/ s/^autostart=true/autostart=false/" "$SUPERVISORD_CONF"
 fi
 # Otherwise cypher_service keeps its default embedded config (GREBI_NEO4J_DATA_SEARCH_PATH)
 
