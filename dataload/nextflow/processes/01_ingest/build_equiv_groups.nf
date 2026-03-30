@@ -10,11 +10,10 @@ process build_equiv_groups {
     time '23h'
 
     input:
-    path(identifiers_tsv)
-    val(additional_equivalence_groups)
+    tuple val(subgraph), path(identifiers_tsv), val(additional_equivalence_groups)
 
     output:
-    path "groups.txt"
+    tuple val(subgraph), path("groups.txt")
 
     script:
     """

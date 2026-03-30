@@ -107,14 +107,14 @@ Requires Docker. The helper scripts run Nextflow inside `ghcr.io/ebispot/grebi_n
 1) Download input files
 
 ```bash
-export GREBI_SUBGRAPH=disease_ontologies
+export GREBI_SUBGRAPHS=disease_ontologies
 ./dataload/scripts/download_local.sh
 ```
 
 2) Run the dataload pipeline
 
 ```bash
-export GREBI_SUBGRAPH=disease_ontologies
+export GREBI_SUBGRAPHS=disease_ontologies
 ./dataload/scripts/dataload_local.sh
 ```
 
@@ -228,7 +228,7 @@ To run only one test subgraph:
 
 When your changes intentionally alter the pipeline output, you need to update the expected snapshots. Run the pipeline for the affected test subgraph, inspect the changes, and commit them:
 
-    export GREBI_SUBGRAPH=test_clique_merge
+    export GREBI_SUBGRAPHS=test_clique_merge
     export GREBI_NF_EXTRA_ARGS="--export_snapshots true"
     bash dataload/scripts/dataload_local.sh
 
@@ -241,6 +241,44 @@ Now inspect the changes with `git diff` and make sure they are intentional. When
 
     git add -A tests/expected_output/
     git commit -m "Update expected test output"
+
+## Documentation
+
+User-facing documentation lives in `docs/` as Markdown files. The sidebar ordering is defined in `docs/_sidebar.yaml`. The same content is served in the web UI (via the **Docs** tab) and can be exported as a PDF.
+
+### Editing docs
+
+Edit or add `.md` files in `docs/`. Use standard Markdown plus two custom tags for interactive examples:
+
+- `<api-example method="GET" url="/api/v1/..." params='{"key":"value"}' />` — generic REST endpoint
+- `<query-template id="query_id" graph="graph_name" params='{"param":"value"}' />` — query template (uses the same pandas/CSV code snippets shown on the query pages)
+
+After editing, copy the updated files to the UI bundle:
+
+```bash
+cp -r docs/* webapp/grebi_ui/docs/
+```
+
+### Generating the PDF locally
+
+The PDF generator requires a running API stack and uses Node (with puppeteer + marked + prismjs).
+
+```bash
+# 1. Start the stack (if not already running)
+cd out/dismech/dismech && ./grebi.sh -api -ui &
+
+# 2. Install dependencies (first time only)
+cd webapp/grebi_ui && npm install && cd ..
+
+# 3. Generate the PDF
+cd webapp
+node generate_docs_pdf.mjs \
+  --api-url http://localhost:8090 \
+  --docs-dir ../docs \
+  --output ../tmp/grebi_docs.pdf
+```
+
+The generator fetches live API responses for all `<api-example>` and `<query-template>` tags. If the API is not running, code snippets are still included but response sections show a placeholder.
 
 ## Implementation
 

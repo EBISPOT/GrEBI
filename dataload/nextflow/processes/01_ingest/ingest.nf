@@ -6,13 +6,11 @@ process ingest {
     maxRetries 5
     
     input:
-    val(file_listing)
-    val(identifier_props)
-    val(bytes_per_merged_file)
+    tuple val(subgraph), val(file_listing), val(identifier_props), val(bytes_per_merged_file)
 
     output:
-    tuple val(file_listing.datasource.id), path("nodes_${task.index}.jsonl.*"), emit: nodes
-    path("identifiers_${task.index}.tsv"), emit: identifiers
+    tuple val(subgraph), val(file_listing.datasource.id), path("nodes_${task.index}.jsonl.*"), emit: nodes
+    tuple val(subgraph), path("identifiers_${task.index}.tsv"), emit: identifiers
 
     script:
     """

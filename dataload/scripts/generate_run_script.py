@@ -15,13 +15,13 @@ import stat
 import textwrap
 
 
-def generate_run_script(subgraph: str, image: str) -> str:
+def generate_run_script(subgraphs: str, image: str) -> str:
     return textwrap.dedent(f"""\
         #!/usr/bin/env bash
         set -euo pipefail
 
         # -------------------------------------------------------------------
-        # grebi.sh — start the GrEBI stack for the "{subgraph}" subgraph
+        # grebi.sh — start the GrEBI stack for subgraphs: {subgraphs}
         #
         # Extract the release tarball and run this script from the extracted
         # directory.  All databases are expected to be in the same directory
@@ -62,7 +62,7 @@ def generate_run_script(subgraph: str, image: str) -> str:
         # -------------------------------------------------------------------
 
         IMAGE="{image}"
-        SUBGRAPH="{subgraph}"
+        SUBGRAPHS="{subgraphs}"
         SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
         DATA_DIR="${{GREBI_DATA_DIR:-$SCRIPT_DIR}}"
 
@@ -147,17 +147,26 @@ def generate_run_script(subgraph: str, image: str) -> str:
 
         # Validate that the required files/directories exist
         missing=0
-        for d in "solr" "postgres_data_${{SUBGRAPH}}"; do
+        for d in "solr" "postgres_data"; do
             if [ ! -d "$DATA_DIR/$d" ]; then
                 echo "ERROR: missing directory $DATA_DIR/$d"
                 missing=1
             fi
         done
-        for f in "${{SUBGRAPH}}.sqlite3" "${{SUBGRAPH}}_metadata.json"; do
-            if [ ! -f "$DATA_DIR/$f" ]; then
-                echo "ERROR: missing $DATA_DIR/$f"
-                missing=1
-            fi
+        IFS=',' read -ra SG_ARRAY <<< "$SUBGRAPHS"
+        for sg in "${{SG_ARRAY[@]}}"; do
+            for d in "${{sg}}_neo4j"; do
+                if [ ! -d "$DATA_DIR/$d" ]; then
+                    echo "ERROR: missing directory $DATA_DIR/$d"
+                    missing=1
+                fi
+            done
+            for f in "${{sg}}.sqlite3" "${{sg}}_metadata.json"; do
+                if [ ! -f "$DATA_DIR/$f" ]; then
+                    echo "ERROR: missing $DATA_DIR/$f"
+                    missing=1
+                fi
+            done
         done
         if [ ! -d "$DATA_DIR/query_templates" ]; then
             echo "ERROR: missing $DATA_DIR/query_templates/"
@@ -169,7 +178,7 @@ def generate_run_script(subgraph: str, image: str) -> str:
             exit 1
         fi
 
-        echo "Starting GrEBI ($SUBGRAPH) ..."
+        echo "Starting GrEBI ($SUBGRAPHS) ..."
         if [ -n "$GREBI_SERVICES_VAL" ]; then
             echo "Services: $GREBI_SERVICES_VAL"
         else
@@ -267,7 +276,7 @@ def generate_run_script(subgraph: str, image: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a GrEBI run script")
-    parser.add_argument("--subgraph", required=True, help="Subgraph name")
+    parser.add_argument("--subgraphs", required=True, help="Comma-separated subgraph names")
     parser.add_argument(
         "--image",
         default="ghcr.io/ebispot/grebi_combined:dev",
@@ -276,7 +285,7 @@ def main():
     parser.add_argument("-o", "--output", required=True, help="Output script path")
     args = parser.parse_args()
 
-    script = generate_run_script(args.subgraph, args.image)
+    script = generate_run_script(args.subgraphs, args.image)
 
     with open(args.output, "w") as f:
         f.write(script)

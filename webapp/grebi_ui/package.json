@@ -30,6 +30,7 @@
     "graphology-types": "^0.24.8",
     "history": "^5.0.0",
     "immutable": "^4.1.0",
+    "js-yaml": "^4.1.1",
     "jwt-decode": "^3.1.2",
     "material-react-table": "^2.13.1",
     "moment": "^2.29.4",
@@ -40,8 +41,13 @@
     "react-codemirror2": "^8.0.0",
     "react-dom": "^17.0.1",
     "react-helmet": "^6.1.0",
+    "react-markdown": "^8.0.7",
     "react-router-dom": "^6.8.0",
     "recharts": "^3.8.1",
+    "rehype-highlight": "^6.0.0",
+    "rehype-raw": "^6.1.1",
+    "rehype-slug": "^5.1.0",
+    "remark-gfm": "^3.0.1",
     "sigma": "^3.0.2",
     "styled-components": "^5.2.1",
     "typescript": "^4.1.2",
@@ -50,7 +56,7 @@
   },
   "scripts": {
     "build": "dotenv -e .env.$REACT_APP_ENV -e .env -- node build.mjs",
-    "watch": "dotenv -e .env.$REACT_APP_ENV -e .env -- nodemon -e 'ts,tsx,js,jsx,css' -w src -w index.html.in --exec 'npm run build'",
+    "watch": "dotenv -e .env.$REACT_APP_ENV -e .env -- nodemon -e 'ts,tsx,js,jsx,css,md,yaml' -w src -w index.html.in -w ../../docs --exec 'npm run build'",
     "start": "dotenv -e .env.$REACT_APP_ENV -e .env -- concurrently -n 'Build,Serve' 'npm run watch' 'node dev_server.mjs'",
     "build:ebi": "REACT_APP_ENV=ebi npm run build",
     "watch:ebi": "REACT_APP_ENV=ebi npm run watch",
@@ -75,13 +81,18 @@
     ]
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "connect-livereload": "^0.6.1",
     "dotenv-cli": "^7.2.1",
     "esbuild": "^0.18.11",
     "express": "^4.18.2",
     "express-http-proxy": "^1.6.3",
+    "livereload": "^0.10.3",
+    "marked": "^17.0.5",
     "nocache": "^4.0.0",
     "node-fetch": "^3.3.1",
     "nodemon": "^2.0.22",
+    "puppeteer": "^24.40.0",
     "tailwindcss": "^3.1.8"
   }
 }

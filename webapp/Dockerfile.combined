@@ -30,6 +30,15 @@ RUN pip3 install \
     pandas \
     tabulate
 
+# Install Chromium for Puppeteer PDF generation
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    chromium \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    && rm -rf /var/lib/apt/lists/*
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
 # Install Java 21 (Amazon Corretto)
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
@@ -117,6 +126,7 @@ RUN mvn clean package assembly:single -DskipTests && \
     cp target/grebi_resolver_service-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_resolver_service.jar
 
 # Build grebi_ui
+COPY docs /opt/grebi_ui/docs
 COPY webapp/grebi_ui /opt/grebi_ui
 WORKDIR /opt/grebi_ui
 
@@ -133,6 +143,12 @@ COPY query_templates /opt/query_templates
 # Create supervisor configuration
 COPY webapp/combined_supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY webapp/test_query_templates.py /opt/test_query_templates.py
+COPY webapp/test_queries_and_make_docs.py /opt/test_queries_and_make_docs.py
+COPY webapp/generate_docs_pdf.mjs /opt/generate_docs_pdf.mjs
+COPY webapp/api2code.mjs /opt/api2code.mjs
+COPY webapp/query2code.mjs /opt/query2code.mjs
+RUN cd /opt && npm install js-yaml marked puppeteer
+COPY docs /opt/docs
 COPY tests/export_neo4j.py /opt/export_neo4j.py
 COPY tests/export_solr.py /opt/export_solr.py
 COPY tests/export_postgres.py /opt/export_postgres.py

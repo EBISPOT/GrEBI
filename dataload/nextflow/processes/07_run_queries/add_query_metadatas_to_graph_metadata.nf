@@ -5,15 +5,13 @@ process add_query_metadatas_to_graph_metadata {
     cpus "4"
 
     input:
-    path(metadata_jsons)
-    path(graph_metadata_json)
-    val(subgraph)
+    tuple val(subgraph), path(metadata_jsons), path(graph_metadata_json)
     val(out_dir)
 
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("${subgraph}_metadata.json")
+    tuple val(subgraph), path("${subgraph}_metadata.json")
 
     script:
     """

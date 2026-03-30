@@ -6,13 +6,10 @@ process assign_ids {
     maxRetries 5
 
     input:
-    tuple(val(datasource_name), path(nodes_jsonl))
-    path groups_txt
-    val(identifier_props)
-    val(type_superclasses)
+    tuple val(subgraph), val(datasource_name), path(nodes_jsonl), path(groups_txt), val(identifier_props), val(type_superclasses)
 
     output:
-    tuple(val(datasource_name), path("nodes_with_ids.sorted.jsonl.gz"))
+    tuple val(subgraph), val(datasource_name), path("nodes_with_ids.sorted.jsonl.gz")
 
     script:
     """

@@ -4,15 +4,12 @@ process prepare_neo {
     time "1h"
 
     input:
-    path(graph_metadata_json)
-    path(nodes_jsonl)
-    path(edges_jsonl)
-    val(subgraph)
+    tuple val(subgraph), path(graph_metadata_json), path(nodes_jsonl), path(edges_jsonl)
 
     output:
-    path("neo_nodes_${subgraph}_${task.index}.csv"), emit: nodes
-    path("neo_edges_${subgraph}_${task.index}.csv"), emit: edges
-    path("neo_edges_ids_${subgraph}_${task.index}.csv"), emit: id_edges
+    tuple val(subgraph), path("neo_nodes_${subgraph}_${task.index}.csv"), emit: nodes
+    tuple val(subgraph), path("neo_edges_${subgraph}_${task.index}.csv"), emit: edges
+    tuple val(subgraph), path("neo_edges_ids_${subgraph}_${task.index}.csv"), emit: id_edges
 
     script:
     """

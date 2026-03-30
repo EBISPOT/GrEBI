@@ -25,7 +25,7 @@ echo "=============================================="
 echo "GREBI_HOME: ${GREBI_HOME}"
 echo ""
 
-export GREBI_SUBGRAPH="${SUBGRAPH}"
+export GREBI_SUBGRAPHS="${SUBGRAPH}"
 export GREBI_NF_CONFIG="${GREBI_NF_CONFIG:-dataload/nextflow/local_4g_nextflow.config}"
 export GREBI_NF_DOWNLOAD_CONFIG="${GREBI_NF_DOWNLOAD_CONFIG:-dataload/nextflow/download_local.config}"
 export GREBI_NF_EXTRA_ARGS="${GREBI_NF_EXTRA_ARGS:---export_snapshots true}"

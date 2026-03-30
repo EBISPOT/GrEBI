@@ -6,18 +6,17 @@ process package_release {
 
     input:
     path(release_dir)
-    val(subgraph)
     val(out_dir)
 
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("${subgraph}.tgz")
+    path("release.tgz")
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    tar -chf ${subgraph}.tgz --use-compress-program="pigz --fast" ${release_dir}
+    tar -chf release.tgz --use-compress-program="pigz --fast" ${release_dir}
     """
 }

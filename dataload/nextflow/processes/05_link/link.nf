@@ -4,17 +4,12 @@ process link {
     time "8h"
 
     input:
-    path(merged_filename)
-    path(entity_metadata_jsonl)
-    path(index_graph_metadata_json)
-    val(exclude)
-    val(exclude_self_referential)
-    path(groups_txt)
+    tuple val(subgraph), path(merged_filename), path(entity_metadata_jsonl), path(index_graph_metadata_json), val(exclude), val(exclude_self_referential), path(groups_txt)
 
     output:
-    path("linked_nodes_${task.index}.jsonl"), emit: nodes
-    path("linked_edges_${task.index}.jsonl"), emit: edges
-    path("linked_graph_metadata_${task.index}.json"), emit: linked_summary
+    tuple val(subgraph), path("linked_nodes_${task.index}.jsonl"), emit: nodes
+    tuple val(subgraph), path("linked_edges_${task.index}.jsonl"), emit: edges
+    tuple val(subgraph), path("linked_graph_metadata_${task.index}.json"), emit: linked_summary
 
     script:
     """

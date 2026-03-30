@@ -6,18 +6,16 @@ process run_materialised_queries {
     stageInMode "copy"
 
     input:
-    path(neo_db)
-    path(query_yamls_path)
-    val(subgraph)
+    tuple val(subgraph), path(neo_db), path(query_yamls_path)
     val(neo_query_mem)
     val(out_dir)
 
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("query_results/queries.json"), emit: metadata
-    path("query_results/*.results.jsonl"), emit: results
-    path("query_results/*.json"), emit: metadatas
+    tuple val(subgraph), path("query_results/queries.json"), emit: metadata
+    tuple val(subgraph), path("query_results/*.results.jsonl"), emit: results
+    tuple val(subgraph), path("query_results/*.json"), emit: metadatas
 
     script:
     """

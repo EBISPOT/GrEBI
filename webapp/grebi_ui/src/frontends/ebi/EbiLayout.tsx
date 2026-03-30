@@ -5,7 +5,8 @@ import { Stack } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import TravelExplore from "@mui/icons-material/TravelExplore";
 import Apps from "@mui/icons-material/Apps";
-import { ManageSearch, TableChart } from "@mui/icons-material";
+import { ManageSearch, TableChart, MenuBook } from "@mui/icons-material";
+import GitHubIcon from "@mui/icons-material/GitHub";
 
 export default function EbiLayout() {
   const loc = useLocation();
@@ -32,6 +33,9 @@ export default function EbiLayout() {
   } else if (subpath.startsWith("/downloads")) {
     activeNav = "downloads";
   }
+  if (pathname.startsWith("/docs")) {
+    activeNav = "docs";
+  }
 
   const navTitles: Record<string, string> = {
     explore: "Explore",
@@ -39,6 +43,7 @@ export default function EbiLayout() {
     queries: "Queries",
     tables: "Tables",
     downloads: "Downloads",
+    docs: "Docs",
   };
 
   return (
@@ -59,7 +64,7 @@ export default function EbiLayout() {
               />
             </a>
           </div>
-          <nav className="self-center">
+          <nav className="self-center flex-1 flex items-center justify-between">
             <ul
               className="bg-transparent text-white flex flex-wrap divide-white divide-x"
               data-description="navigational"
@@ -158,6 +163,41 @@ export default function EbiLayout() {
                   </Stack>
                 </li>
               </Link>
+            </ul>
+            <ul
+              className="bg-transparent text-white flex flex-wrap divide-white divide-x"
+              role="menubar"
+            >
+              <Link to={`/docs`}>
+                <li
+                  role="menuitem"
+                  className={`rounded-l-md px-4 py-3 ${
+                    activeNav === "docs"
+                      ? "bg-opacity-30 bg-neutral-500"
+                      : "hover:bg-opacity-50 hover:bg-neutral-500"
+                  }`}
+                >
+                  <Stack alignItems="center" direction="row" gap={1}>
+                    <MenuBook />
+                    Docs
+                  </Stack>
+                </li>
+              </Link>
+              <a
+                href="https://github.com/EBISPOT/GrEBI"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <li
+                  role="menuitem"
+                  className="rounded-r-md px-4 py-3 hover:bg-opacity-50 hover:bg-neutral-500"
+                >
+                  <Stack alignItems="center" direction="row" gap={1}>
+                    <GitHubIcon />
+                    GitHub
+                  </Stack>
+                </li>
+              </a>
             </ul>
           </nav>
         </div>

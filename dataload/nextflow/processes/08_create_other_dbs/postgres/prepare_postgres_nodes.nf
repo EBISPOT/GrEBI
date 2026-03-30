@@ -4,13 +4,11 @@ process prepare_postgres_nodes {
     time "1h"
 
     input:
-    path(nodes_jsonl)
-    path(graph_metadata_json)
-    val(subgraph)
+    tuple val(subgraph), path(nodes_jsonl), path(graph_metadata_json)
 
     output:
-    path("postgres_nodes_${subgraph}_${task.index}.tsv.gz"), emit: nodes_tsv
-    path("postgres_nodes_columns_${subgraph}_${task.index}.txt"), emit: columns
+    tuple val(subgraph), path("postgres_nodes_${subgraph}_${task.index}.tsv.gz"), emit: nodes_tsv
+    tuple val(subgraph), path("postgres_nodes_columns_${subgraph}_${task.index}.txt"), emit: columns
 
     script:
     """

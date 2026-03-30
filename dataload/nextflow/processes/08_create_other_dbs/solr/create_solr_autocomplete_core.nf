@@ -5,12 +5,11 @@ process create_solr_autocomplete_core {
     cpus "4"
 
     input:
-    path(names_txt)
-    val(subgraph)
+    tuple val(subgraph), path(names_txt)
     val(solr_mem)
 
     output:
-    path("solr/data/grebi_autocomplete_${subgraph}")
+    tuple val(subgraph), path("solr/data/grebi_autocomplete_${subgraph}")
 
     script:
     """

@@ -21,6 +21,7 @@ import EbiQueriesHomePage from "./pages/EbiQueriesHomePage";
 import EbiDatasourcesPage from "./pages/EbiDatasourcesPage";
 import EbiGraphPage from "./pages/EbiGraphPage";
 import EbiEdgeSearchPage from "./pages/EbiEdgeSearchPage";
+import DocsPage from "./pages/DocsPage";
 import EbiLayout from "./EbiLayout";
 
 const theme = createTheme({
@@ -66,6 +67,9 @@ class EbiApp extends React.Component {
             <Route path={`/graphs/:graph/queries/:queryid`} element={<EbiQueryPage />} />
 
             <Route path={`/graphs/:graph/downloads`} element={<EbiDownloadsPage />} />
+
+            <Route path={`/docs`} element={<DocsPage />} />
+            <Route path={`/docs/*`} element={<DocsPage />} />
           </Route>
         </Routes>
         {/* <EbiFooter /> */}

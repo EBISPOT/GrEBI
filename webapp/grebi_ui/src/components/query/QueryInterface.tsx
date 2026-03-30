@@ -92,7 +92,7 @@ export default function QueryInterface({
  let codeSnippets = query2code(queryTemplate, graph, paramValues)
 
  const sourceTabs = [
-   ...Object.keys(codeSnippets).map(srcLang => ({ title: srcLang, source: codeSnippets[srcLang], lang: srcLang })),
+   ...Object.keys(codeSnippets).map(key => ({ title: key, source: codeSnippets[key].source, lang: codeSnippets[key].lang })),
    { title: "Cypher Query", source: cypherSource, lang: "cypher" },
  ];
 

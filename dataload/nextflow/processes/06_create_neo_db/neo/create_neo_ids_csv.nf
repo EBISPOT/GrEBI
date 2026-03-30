@@ -5,11 +5,10 @@ process create_neo_ids_csv {
     cpus "4"
 
     input:
-    path(ids_txt)
-    val(subgraph)
+    tuple val(subgraph), path(ids_txt)
 
     output:
-    path("neo_nodes_ids_${subgraph}.csv")
+    tuple val(subgraph), path("neo_nodes_ids_${subgraph}.csv")
 
     script:
     """

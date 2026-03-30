@@ -5,12 +5,11 @@ process create_solr_results_cores {
     cpus "4"
 
     input:
-    path(results_jsonl)
-    val(subgraph)
+    tuple val(subgraph), path(results_jsonl)
     val(solr_mem)
 
     output:
-    path("solr/data/grebi_results__${subgraph}__${results_jsonl.simpleName}")
+    tuple val(subgraph), path("solr/data/grebi_results__${subgraph}__${results_jsonl.simpleName}")
 
     script:
     """

@@ -65,10 +65,18 @@ if [ -n "${GREBI_SERVICES:-}" ]; then
 fi
 
 # Configure cypher_service mode based on whether neo4j is running
-if [ "$has_neo4j" -eq 1 ]; then
-    # Bolt mode: tell cypher_service to connect to the local Neo4j server
-    # Remove the embedded path and add bolt host
+# Neo4j Community only supports a single database, so if there are multiple
+# neo4j directories we use embedded mode (cypher_service opens each one).
+NEO4J_DIR_COUNT=$(ls -d *_neo4j 2>/dev/null | wc -l)
+
+if [ "$has_neo4j" -eq 1 ] && [ "$NEO4J_DIR_COUNT" -le 1 ]; then
+    # Single graph: bolt mode — cypher_service connects to the local Neo4j server
     sed -i '/^\[program:cypher_service\]$/,/^\[/ s/^environment=.*/environment=GREBI_NEO4J_HOSTS="bolt:\/\/localhost:7687",GREBI_CYPHER_PORT="8085"/' "$SUPERVISORD_CONF"
+elif [ "$NEO4J_DIR_COUNT" -gt 1 ]; then
+    # Multi-graph: disable neo4j server, use embedded mode in cypher_service
+    echo "Multiple Neo4j databases detected ($NEO4J_DIR_COUNT), using embedded mode"
+    sed -i "/^\[program:neo4j\]$/,/^\[/ s/^autostart=true/autostart=false/" "$SUPERVISORD_CONF"
+    export GREBI_NEO4J_EMBEDDED=true
 fi
 # Otherwise cypher_service keeps its default embedded config (GREBI_NEO4J_DATA_SEARCH_PATH)
 
@@ -148,10 +156,15 @@ case "$MODE" in
         echo ""
         
         # ---------------------------------------------------------------
-        # Phase 1: Integration tests (query template validation)
+        # Phase 1: Integration tests (and optional doc generation)
         # ---------------------------------------------------------------
+        MAKE_DOCS_ARG=""
+        if [ "${GREBI_MAKE_DOCS:-}" = "true" ]; then
+            MAKE_DOCS_ARG="--make-docs --docs-dir /opt/docs --output grebi-docs.pdf"
+        fi
+
         set +e
-        python3 -u /opt/test_query_templates.py --api-url http://localhost:8090
+        python3 -u /opt/test_queries_and_make_docs.py --api-url http://localhost:8090 $MAKE_DOCS_ARG
         TEST_EXIT_CODE=$?
         set -e
         echo ""
