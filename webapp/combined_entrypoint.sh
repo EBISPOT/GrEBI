@@ -76,6 +76,7 @@ elif [ "$NEO4J_DIR_COUNT" -gt 1 ]; then
     # Multi-graph: disable neo4j server, use embedded mode in cypher_service
     echo "Multiple Neo4j databases detected ($NEO4J_DIR_COUNT), using embedded mode"
     sed -i "/^\[program:neo4j\]$/,/^\[/ s/^autostart=true/autostart=false/" "$SUPERVISORD_CONF"
+    export GREBI_NEO4J_EMBEDDED=true
 fi
 # Otherwise cypher_service keeps its default embedded config (GREBI_NEO4J_DATA_SEARCH_PATH)
 

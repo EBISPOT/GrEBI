@@ -122,13 +122,16 @@ def dump_service_logs():
 
 def wait_for_all_services(base_url: str = "http://localhost") -> bool:
     services = [
-        (f"{base_url}:7474", "Neo4j Browser"),
         (f"{base_url}:8983/solr", "Solr"),
         (f"{base_url}:8082/health", "Prefix Service"),
         (f"{base_url}:8084/health", "Resolver Service"),
         (f"{base_url}:8081/health", "Metadata Service"),
         (f"{base_url}:8090/api/health", "GrEBI API"),
     ]
+
+    # Only check Neo4j Browser when Neo4j server is running (not embedded mode)
+    if not os.environ.get("GREBI_NEO4J_EMBEDDED"):
+        services.insert(0, (f"{base_url}:7474", "Neo4j Browser"))
     
     all_ready = True
     for url, name in services:
