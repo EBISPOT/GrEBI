@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -12,6 +12,9 @@ import "prismjs/components/prism-json";
 import "prismjs/components/prism-yaml";
 import ApiExample from "./ApiExample";
 import QueryTemplateExample from "./QueryTemplateExample";
+import PubmedCitation from "./PubmedCitation";
+import PubmedReferences from "./PubmedReferences";
+import { resetPubmedRefs } from "./pubmedRegistry";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -33,11 +36,13 @@ function CopyButton({ text }: { text: string }) {
 export default function DocsContent({
   markdown,
   images,
+  seeAlso,
   onNavigate,
 }: {
   markdown: string;
   images: Record<string, string>;
-  onNavigate: (slug: string) => void;
+  seeAlso?: Array<{ title: string; anchor: string }>;
+  onNavigate?: (anchor: string) => void;
 }) {
   // Pre-process: resolve image paths to data URIs
   const processed = useMemo(() => {
@@ -50,17 +55,6 @@ export default function DocsContent({
       }
     );
   }, [markdown, images]);
-
-  const resolveDocLink = useCallback(
-    (href: string): { isDoc: boolean; slug: string } | null => {
-      if (!href) return null;
-      // Match ./foo.md, foo.md, or subdir/foo.md (relative doc links)
-      const m = href.match(/^(?:\.\/)?([a-z0-9_\-\/]+)\.md$/i);
-      if (m) return { isDoc: true, slug: m[1] };
-      return null;
-    },
-    []
-  );
 
   const components = useMemo(
     () => ({
@@ -113,30 +107,14 @@ export default function DocsContent({
           </code>
         );
       },
-      // Links — resolve internal doc links to SPA navigation
+      // Links
       a({ href, children, ...props }: any) {
-        const docLink = resolveDocLink(href);
-        if (docLink) {
-          return (
-            <a
-              href={`/docs/${docLink.slug === "index" ? "" : docLink.slug}`}
-              className="text-blue-600 hover:underline cursor-pointer"
-              onClick={(e) => {
-                e.preventDefault();
-                onNavigate(docLink.slug);
-              }}
-              {...props}
-            >
-              {children}
-            </a>
-          );
-        }
         return (
           <a
             href={href}
             className="text-blue-600 hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
+            target={href && href.startsWith("#") ? undefined : "_blank"}
+            rel={href && href.startsWith("#") ? undefined : "noopener noreferrer"}
             {...props}
           >
             {children}
@@ -250,9 +228,13 @@ export default function DocsContent({
       // Custom HTML elements for interactive examples
       "api-example": (props: any) => <ApiExample {...props} />,
       "query-template": (props: any) => <QueryTemplateExample {...props} />,
+      "pubmed": (props: any) => <PubmedCitation {...props} />,
     }),
-    [resolveDocLink, onNavigate]
+    []
   );
+
+  // Reset pubmed ref numbering when markdown changes
+  useMemo(() => resetPubmedRefs(), [markdown]);
 
   return (
     <article className="max-w-4xl">
@@ -263,6 +245,28 @@ export default function DocsContent({
       >
         {processed}
       </ReactMarkdown>
+      <PubmedReferences />
+      {seeAlso && seeAlso.length > 0 && (
+        <nav className="mt-10 pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">See also</h3>
+          <ul className="list-none p-0 m-0 space-y-1">
+            {seeAlso.map(({ title, anchor }) => (
+              <li key={anchor}>
+                <a
+                  href={`#${anchor}`}
+                  className="text-blue-600 hover:underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onNavigate?.(anchor);
+                  }}
+                >
+                  {title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </article>
   );
 }

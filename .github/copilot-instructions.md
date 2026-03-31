@@ -9,20 +9,26 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 - **dataload/**: Rust-based HPC pipeline for data processing
   - Data ingestion, ID assignment, merging, indexing, linking
   - Neo4j database creation
-  - Solr and SQLite exports
+  - Solr, SQLite, and PostgreSQL exports
 - **webapp/**: Web application stack
   - `grebi_api/`: Java Spring Boot REST API
   - `grebi_ui/`: TypeScript/React frontend
   - `grebi_metadata_service/`: Java Spring Boot metadata service
   - `grebi_resolver_service/`: Java Spring Boot resolver service
+  - `grebi_cypher_service/`: Java Spring Boot Cypher query service
+  - `grebi_prefix_service/`: Java Spring Boot prefix mapping service
+  - `k8chart/`: Kubernetes Helm chart for deployment
 - **query_templates/**: YAML query templates for common queries
 - **materialised_queries/**: Cypher queries that are periodically executed
 - **configs/**: YAML configuration files for datasources and subgraphs
+- **docker_envs/**: Custom Dockerfiles for Neo4j, Solr, and Nextflow images
+- **docs/**: Project documentation
+- **notebooks/**: Jupyter notebooks
+- **tests/**: End-to-end integration tests
 
 ## Technology Stack
 
 ### Rust (dataload pipeline)
-- **Version**: 1.90.0
 - **Build**: `cargo build --release`
 - **Style**: Follow standard Rust conventions (rustfmt)
 - **Dependencies**: Managed via Cargo.toml
@@ -48,7 +54,7 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 ### Python (configuration scripts)
 - **Version**: Python 3.11
 - **Style**: PEP 8
-- **Usage**: Primarily for generating YAML configurations
+- **Usage**: Primarily for generating YAML configurations and test utilities
 
 ## Code Style Guidelines
 
@@ -90,7 +96,15 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 6. **05_link/**: Create edges from property values that reference other entities
 7. **06_create_neo_db/**: Generate Neo4j CSV files and create Neo4j database
 8. **07_run_queries/**: Execute materialised queries on the Neo4j database
-9. **08_create_other_dbs/**: Export to Solr, SQLite, and other formats
+9. **08_create_other_dbs/**: Export to Solr, SQLite, PostgreSQL, and other formats
+10. **09_integration_tests/**: Run integration tests against the built databases
+11. **10_package_release/**: Package outputs for release
+
+### Nextflow Orchestration
+- `dataload/nextflow/main.nf` — main pipeline entry point
+- `dataload/nextflow/download.nf` — download-only pipeline
+- Configs: `codon_nextflow.config` (HPC), `local_64g_nextflow.config`, `local_4g_nextflow.config`
+- Process modules live under `dataload/nextflow/processes/`
 
 ### Data Format
 - Internal representation: JSONL (newline-delimited JSON)
@@ -107,10 +121,12 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 ## Docker and Containerization
 
 - Custom Docker images: `ghcr.io/ebispot/grebi_*`
+- Custom base images built from `docker_envs/`: Neo4j with extras, Solr with extras, Nextflow
 - Neo4j version: 2025.03.0-community
 - Solr version: 9.8.1
 - Python version: 3.11
-- Rust version: 1.90.0
+- Kubernetes deployment via Helm chart in `webapp/k8chart/`
+- Local development via `webapp/docker-compose.yml`
 
 ## Query Templates
 
@@ -119,7 +135,7 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 - Topics defined in `_topics.yaml`
 - Loaded via `GrebiQueryTemplatesRepo` in the API
 
-## Testing and Building
+## Testing
 
 ### Rust
 ```bash
@@ -138,6 +154,11 @@ mvn clean install
 npm test
 npm run build
 ```
+
+### End-to-End
+- Integration tests in `tests/` using Python scripts
+- `tests/run_e2e.sh` / `tests/run_all_e2e.sh` — run tests against a live stack
+- Tests export Neo4j, Solr, SQLite, and PostgreSQL snapshots and compare against `tests/expected_output/`
 
 ## Common Tasks
 
@@ -187,7 +208,7 @@ npm run build
 - Cross-species phenotype matching uses special mapping predicates
 - Nodes in GrEBI represent cliques of equivalent entities from multiple sources
 
-## Debugging EBI deployment
+## Debugging EBI deployment
 
 - ssh spotbot@codon-slurm-login
 - Runs from /nfs/production/parkinso/spot/grebi/ in /hps/nobackup/parkinso/spot/grebi

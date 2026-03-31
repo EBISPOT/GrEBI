@@ -32,6 +32,23 @@ const require = createRequire(
 );
 const yaml = require("js-yaml");
 
+// ── Include resolution ───────────────────────────────────────────────
+
+// Resolve <include src="path/to/file.md" /> tags recursively.
+function resolveIncludes(md, baseDir, seen = new Set()) {
+  return md.replace(/^<include\s+src=["']([^"']+)["']\s*\/>$/gm, (_match, relPath) => {
+    const absPath = path.resolve(baseDir, relPath);
+    if (seen.has(absPath)) return '';
+    if (!fs.existsSync(absPath)) {
+      console.warn(`  Warning: included file not found: ${relPath}`);
+      return '';
+    }
+    seen.add(absPath);
+    const content = fs.readFileSync(absPath, 'utf8');
+    return resolveIncludes(content, path.dirname(absPath), seen);
+  });
+}
+
 // ── CLI args ─────────────────────────────────────────────────────────
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -112,6 +129,16 @@ function extractAttr(tag, attr) {
   return m ? m[1] : null;
 }
 
+function extractAllAttrs(tag) {
+  const attrs = {};
+  const re = /(\w+)=["']([^"']*)["']/g;
+  let m;
+  while ((m = re.exec(tag)) !== null) {
+    attrs[m[1]] = m[2];
+  }
+  return attrs;
+}
+
 function parseParams(paramsStr) {
   if (!paramsStr) return {};
   try {
@@ -123,24 +150,31 @@ function parseParams(paramsStr) {
 
 // ── Markdown processors ──────────────────────────────────────────────
 
-function codeSnippetsToMarkdown(method, apiUrl, urlPath, params) {
-  const snippets = api2code(method, apiUrl, urlPath, params);
-  const blocks = [];
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function snippetsToHtmlTable(snippets) {
+  const rows = [];
   for (const [title, { source, lang }] of Object.entries(snippets)) {
     const prismLang = lang === "curl" ? "bash" : lang;
-    blocks.push(`**${title}:**\n\n\`\`\`${prismLang}\n${source}\n\`\`\``);
+    rows.push(
+      `<tr><td class="snippet-lang">${escapeHtml(title)}</td>` +
+      `<td class="snippet-code"><pre><code class="language-${prismLang}">${escapeHtml(source)}</code></pre></td></tr>`
+    );
   }
-  return blocks.join("\n\n");
+  return `<table class="snippet-table"><tbody>${rows.join("")}</tbody></table>`;
+}
+
+function codeSnippetsToMarkdown(method, apiUrl, urlPath, params) {
+  const snippets = api2code(method, apiUrl, urlPath, params);
+  return snippetsToHtmlTable(snippets);
 }
 
 function querySnippetsToMarkdown(apiUrl, graph, queryId, params) {
   const paramIds = Object.keys(params);
   const snippets = query2code(apiUrl, graph, queryId, paramIds, params);
-  const blocks = [];
-  for (const [title, { source, lang }] of Object.entries(snippets)) {
-    blocks.push(`**${title}:**\n\n\`\`\`${lang}\n${source}\n\`\`\``);
-  }
-  return blocks.join("\n\n");
+  return snippetsToHtmlTable(snippets);
 }
 
 async function processApiExamples(content, apiUrl, apiAvailable) {
@@ -148,9 +182,13 @@ async function processApiExamples(content, apiUrl, apiAvailable) {
   const matches = [...content.matchAll(regex)];
   for (const match of matches) {
     const tag = match[0];
-    const method = extractAttr(tag, "method") || "GET";
-    const url = extractAttr(tag, "url") || "";
-    const params = parseParams(extractAttr(tag, "params"));
+    const attrs = extractAllAttrs(tag);
+    const method = attrs.method || "GET";
+    const url = attrs.url || "";
+    const params = {};
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k !== "method" && k !== "url") params[k] = v;
+    }
 
     const codeBlock = codeSnippetsToMarkdown(method, apiUrl, url, params);
 
@@ -179,9 +217,13 @@ async function processQueryTemplateExamples(
   const matches = [...content.matchAll(regex)];
   for (const match of matches) {
     const tag = match[0];
-    const queryId = extractAttr(tag, "id") || "";
-    const graph = extractAttr(tag, "graph") || "";
-    const params = parseParams(extractAttr(tag, "params"));
+    const attrs = extractAllAttrs(tag);
+    const queryId = attrs.id || "";
+    const graph = attrs.graph || "";
+    const params = {};
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k !== "id" && k !== "graph") params[k] = v;
+    }
 
     const codeBlock = querySnippetsToMarkdown(apiUrl, graph, queryId, params);
 
@@ -229,6 +271,85 @@ function resolveImages(content, docsDir) {
   );
 }
 
+// ── PubMed reference tags ─────────────────────────────────────────────
+function formatCitation(entry) {
+  let cite = "";
+  if (entry.authors) cite += `${entry.authors}. `;
+  if (entry.title) cite += `${entry.title} `;
+  if (entry.journal) cite += `<em>${entry.journal}</em>`;
+  if (entry.year) cite += ` (${entry.year})`;
+  if (entry.volume) {
+    cite += ` ${entry.volume}`;
+    if (entry.issue) cite += `(${entry.issue})`;
+  }
+  if (entry.pages) cite += `: ${entry.pages}`;
+  cite += ".";
+  if (entry.doi) cite += ` doi: ${entry.doi}`;
+  return cite;
+}
+
+// Phase 1 (markdown): replace <pubmed> tags with placeholders that survive marked.parse()
+function processPubmedInline(content, docsDir) {
+  const cachePath = path.join(docsDir, "pubmed_cache.json");
+  let cache = {};
+  if (fs.existsSync(cachePath)) {
+    cache = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+  }
+  const transformed = content.replace(
+    /<pubmed\s+id="(\d+)"\s*\/>/g,
+    (_, pmid) => `<span class="pm-ref" data-pmid="${pmid}"></span>`
+  );
+  return { content: transformed, cache };
+}
+
+// Phase 2 (HTML): single pass — number pubmed placeholders and external links in document order
+function convertReferences(html, pubmedCache) {
+  const refList = [];       // ordered list of { type, key, num }
+  const keyToNum = new Map();
+  let counter = 0;
+
+  // Match both pubmed placeholders and external links in document order
+  const combined = /<span class="pm-ref" data-pmid="(\d+)"><\/span>|<a\s+href="(https?:\/\/[^"]+)"[^>]*>(.*?)<\/a>/gi;
+  const transformed = html.replace(combined, (match, pmid, url, linkText) => {
+    if (pmid !== undefined) {
+      // pubmed placeholder
+      const key = `pm:${pmid}`;
+      if (!keyToNum.has(key)) {
+        const n = ++counter;
+        keyToNum.set(key, n);
+        refList.push({ type: "pubmed", pmid, num: n });
+      }
+      const n = keyToNum.get(key);
+      return `<a href="#ref-${n}" class="fn-ref"><sup>[${n}]</sup></a>`;
+    } else {
+      // external link
+      const key = `url:${url}`;
+      if (!keyToNum.has(key)) {
+        const n = ++counter;
+        keyToNum.set(key, n);
+        refList.push({ type: "link", url, num: n });
+      }
+      const n = keyToNum.get(key);
+      return `${linkText}<a href="#ref-${n}" class="fn-ref"><sup>[${n}]</sup></a>`;
+    }
+  });
+
+  if (refList.length === 0) return html;
+
+  const items = refList.map(r => {
+    if (r.type === "pubmed") {
+      const entry = pubmedCache[r.pmid];
+      const text = entry ? formatCitation(entry) : `PMID: ${r.pmid}`;
+      return `<li id="ref-${r.num}"><span class="fn-num">[${r.num}]</span> <a href="https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/" style="color:inherit;text-decoration:none;">${text}</a></li>`;
+    } else {
+      return `<li id="ref-${r.num}"><span class="fn-num">[${r.num}]</span> <a href="${r.url}">${r.url}</a></li>`;
+    }
+  }).join("\n");
+
+  const section = `<section class="footnotes"><h2>References</h2><ol>${items}</ol></section>`;
+  return transformed.replace(/<\/body>/, `${section}</body>`);
+}
+
 // ── Main ─────────────────────────────────────────────────────────────
 async function main() {
   const opts = parseArgs();
@@ -238,14 +359,11 @@ async function main() {
     process.exit(1);
   }
 
-  const sidebarPath = path.join(opts.docsDir, "_sidebar.yaml");
-  if (!fs.existsSync(sidebarPath)) {
-    console.error(`ERROR: _sidebar.yaml not found in ${opts.docsDir}`);
+  const indexPath = path.join(opts.docsDir, "index.md");
+  if (!fs.existsSync(indexPath)) {
+    console.error(`ERROR: index.md not found in ${opts.docsDir}`);
     process.exit(1);
   }
-
-  const sidebar = normalizeSidebar(yaml.load(fs.readFileSync(sidebarPath, "utf8")));
-  const orderedPages = collectPages(sidebar);
 
   const apiAvailable = await checkApi(opts.apiUrl);
   let availableGraphs = [];
@@ -259,28 +377,21 @@ async function main() {
     );
   }
 
-  const sections = [];
-  for (const pagePath of orderedPages) {
-    const mdFile = path.join(opts.docsDir, pagePath);
-    if (!fs.existsSync(mdFile)) {
-      console.log(`  Warning: ${pagePath} not found, skipping`);
-      continue;
-    }
-    console.log(`  Processing: ${pagePath}`);
-    let content = fs.readFileSync(mdFile, "utf8");
-    content = await processApiExamples(content, opts.apiUrl, apiAvailable);
-    content = await processQueryTemplateExamples(
-      content,
-      opts.apiUrl,
-      apiAvailable,
-      availableGraphs
-    );
-    content = processLinks(content);
-    content = resolveImages(content, opts.docsDir);
-    sections.push(content);
-  }
+  console.log(`  Processing: index.md`);
+  let content = resolveIncludes(fs.readFileSync(indexPath, "utf8"), opts.docsDir);
+  content = await processApiExamples(content, opts.apiUrl, apiAvailable);
+  content = await processQueryTemplateExamples(
+    content,
+    opts.apiUrl,
+    apiAvailable,
+    availableGraphs
+  );
+  const pubmed = processPubmedInline(content, opts.docsDir);
+  content = pubmed.content;
+  content = processLinks(content);
+  content = resolveImages(content, opts.docsDir);
 
-  const fullMd = sections.join("\n\n---\n\n");
+  const fullMd = content;
   console.log(`\nGenerating PDF: ${opts.output}`);
 
   const { marked } = await import(require.resolve("marked"));
@@ -292,7 +403,7 @@ async function main() {
   loadLanguages(["python", "bash", "r", "cypher", "json", "yaml"]);
 
   const prismThemeCss = fs.readFileSync(
-    require.resolve("prismjs/themes/prism-tomorrow.css"), "utf8"
+    require.resolve("prismjs/themes/prism.css"), "utf8"
   );
 
   // Highlight code blocks after marked renders them
@@ -350,7 +461,7 @@ async function main() {
 
   const tocHtml = tocEntries.length > 0
     ? `<nav class="toc"><h2>Contents</h2><ul>${tocEntries.map(e =>
-        `<li class="toc-h${e.level}"><a href="#${e.id}"><span class="toc-num">${e.number}</span>${e.text}</a></li>`
+        `<li class="toc-h${e.level}"><a href="#${e.id}"><span class="toc-num">${e.number}</span> ${e.text}</a></li>`
       ).join("")}</ul></nav>`
     : "";
 
@@ -367,24 +478,32 @@ async function main() {
 <head>
 <meta charset="utf-8">
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300..900;1,8..60,300..900&display=swap');
   ${prismThemeCss}
   @page { margin: 0.75in; size: A4; }
-  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-         font-size: 9pt; line-height: 1.5; color: #1a1a1a; max-width: 100%; }
+  body { font-family: "Source Serif 4", Palatino, Georgia, serif;
+         font-size: 11pt; line-height: 1.5; color: #1a1a1a; max-width: 100%; }
   h1 { font-size: 16pt; border-bottom: 2px solid #734595; padding-bottom: 4px; margin-top: 1.5em; page-break-after: avoid; }
   h2 { font-size: 13pt; border-bottom: 1px solid #734595; padding-bottom: 3px; margin-top: 1.2em; page-break-after: avoid; }
   h3 { font-size: 11pt; margin-top: 1em; page-break-after: avoid; }
   code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
          background: #f3f4f6; padding: 1px 3px; border-radius: 2px; font-size: 0.85em; }
-  pre { background: #1e293b; color: #e2e8f0; padding: 10px 14px; border-radius: 5px;
-        overflow-x: auto; font-size: 6.5pt !important; line-height: 1.4; page-break-inside: avoid; }
-  pre code { background: none; color: inherit; padding: 0; font-size: 6.5pt !important; }
-  pre[class*="language-"] { font-size: 6.5pt !important; }
-  code[class*="language-"] { font-size: 6.5pt !important; }
+  pre { background: #f8f9fa; color: #1a1a1a; padding: 10px 14px; border-radius: 5px; border: 1px solid #d1d5db;
+        overflow-x: auto; font-size: 8pt !important; line-height: 1.4; page-break-inside: avoid; }
+  pre code { background: none; color: inherit; padding: 0; font-size: 8pt !important; }
+  pre[class*="language-"] { font-size: 8pt !important; background: #f8f9fa; }
+  code[class*="language-"] { font-size: 8pt !important; }
   hr { border: none; border-top: 1px solid #d1d5db; margin: 2em 0; }
   table { border-collapse: collapse; width: 100%; margin: 1em 0; page-break-inside: avoid; }
   th, td { border: 1px solid #d1d5db; padding: 4px 8px; text-align: left; font-size: 8pt; }
   th { background: #f9fafb; font-weight: 600; }
+  .snippet-table { border: 1px solid #d1d5db; border-radius: 5px; overflow: hidden; }
+  .snippet-table td { border: none; border-bottom: 1px solid #d1d5db; padding: 0; vertical-align: top; }
+  .snippet-table tr:last-child td { border-bottom: none; }
+  .snippet-table .snippet-lang { background: #e5e7eb; color: #1a1a1a; font-size: 7.5pt; font-weight: 600;
+    padding: 6px 10px; width: 4em; white-space: nowrap; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .snippet-table .snippet-code { padding: 0; }
+  .snippet-table pre { margin: 0; border-radius: 0; }
   blockquote { border-left: 4px solid #734595; margin: 1em 0; padding: 0.5em 1em;
                background: #f5f0f8; color: #4a2d63; }
   a { color: #734595; }
@@ -405,6 +524,14 @@ async function main() {
   .toc a { text-decoration: none; color: #1a1a1a; flex: 1; }
   .toc a:hover { color: #2563eb; }
   .toc .toc-num { display: inline-block; min-width: 2em; color: #6b7280; }
+  .fn-ref { font-size: 0.75em; color: #734595; text-decoration: none; }
+  .fn-ref:hover { text-decoration: underline; }
+  .footnotes { margin-top: 2em; border-top: 2px solid #734595; padding-top: 1em; page-break-before: always; }
+  .footnotes h2 { font-size: 13pt; border-bottom: 1px solid #734595; padding-bottom: 3px; }
+  .footnotes ol { list-style: none; padding: 0; margin: 0; }
+  .footnotes li { font-size: 7.5pt; padding: 2px 0; word-break: break-all; }
+  .footnotes .fn-num { display: inline-block; min-width: 2em; font-weight: 600; color: #4b5563; }
+  .footnotes a { color: #734595; text-decoration: none; }
 </style>
 </head>
 <body>
@@ -420,11 +547,13 @@ async function main() {
 </body>
 </html>`;
 
+  const finalHtml = convertReferences(html, pubmed.cache);
+
   const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 794, height: 1123 });  // A4 at 96dpi
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(finalHtml, { waitUntil: "networkidle0" });
     await page.pdf({
       path: opts.output,
       format: "A4",

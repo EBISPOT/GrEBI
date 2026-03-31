@@ -2,10 +2,6 @@ import { useState, useCallback, useRef } from "react";
 import { ChevronRight, ExpandMore } from "@mui/icons-material";
 import type { SidebarEntry } from "../pages/DocsPage";
 
-function slugFromPath(path: string): string {
-  return path.replace(/\.md$/, "");
-}
-
 /** Render a title string, turning `backtick` segments into <code> spans. */
 function renderTitle(title: string) {
   const parts = title.split(/(`[^`]+`)/);
@@ -28,24 +24,23 @@ function SidebarItem({
   entry,
   depth,
   isLast,
-  activeSlug,
+  activeAnchor,
   onNavigate,
 }: {
   entry: SidebarEntry;
   depth: number;
   isLast: boolean;
-  activeSlug: string;
-  onNavigate: (slug: string) => void;
+  activeAnchor: string;
+  onNavigate: (anchor: string) => void;
 }) {
-  const slug = entry.path ? slugFromPath(entry.path) : undefined;
-  const isActive = slug === activeSlug;
+  const isActive = entry.anchor === activeAnchor;
 
   const branchContainsActive = useCallback(
     (e: SidebarEntry): boolean => {
-      if (e.path && slugFromPath(e.path) === activeSlug) return true;
+      if (e.anchor === activeAnchor) return true;
       return (e.children || []).some(branchContainsActive);
     },
-    [activeSlug]
+    [activeAnchor]
   );
 
   const [expanded, setExpanded] = useState(() => branchContainsActive(entry));
@@ -90,8 +85,8 @@ function SidebarItem({
         }`}
         style={{ height: ROW_HEIGHT, fontSize: 16 }}
         onClick={() => {
-          if (slug) {
-            onNavigate(slug);
+          if (entry.anchor) {
+            onNavigate(entry.anchor);
             if (hasChildren) setExpanded(true);
           } else if (hasChildren) {
             setExpanded((prev) => !prev);
@@ -121,11 +116,11 @@ function SidebarItem({
         <ul>
           {entry.children!.map((child, i) => (
             <SidebarItem
-              key={child.path || i}
+              key={child.anchor || i}
               entry={child}
               depth={depth + 1}
               isLast={i === entry.children!.length - 1}
-              activeSlug={activeSlug}
+              activeAnchor={activeAnchor}
               onNavigate={onNavigate}
             />
           ))}
@@ -140,12 +135,12 @@ const MAX_WIDTH = 600;
 
 export default function DocsSidebar({
   sidebar,
-  activeSlug,
+  activeAnchor,
   onNavigate,
 }: {
   sidebar: SidebarEntry[];
-  activeSlug: string;
-  onNavigate: (slug: string) => void;
+  activeAnchor: string;
+  onNavigate: (anchor: string) => void;
 }) {
   const [width, setWidth] = useState(320);
   const dragging = useRef(false);
@@ -180,11 +175,11 @@ export default function DocsSidebar({
         <ul>
           {sidebar.map((entry, i) => (
             <SidebarItem
-              key={entry.path || i}
+              key={entry.anchor || i}
               entry={entry}
               depth={0}
               isLast={i === sidebar.length - 1}
-              activeSlug={activeSlug}
+              activeAnchor={activeAnchor}
               onNavigate={onNavigate}
             />
           ))}
