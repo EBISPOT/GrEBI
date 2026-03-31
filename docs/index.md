@@ -34,7 +34,7 @@ The dataload produces four databases used to run the GrEBI stack: Neo4j, Postgre
 * Solr drives the free text lexical search. It stores nodes with minimal metadata and also has an autocomplete list derived from all of the names in the graph.
 * SQLite is used as a key value store to back the `grebi_resolver_service`. The resolver service maps node and edge IDs to compressed binary blobs containing their complete set of properties stored as JSON.
 
-> **Why do we duplicate the data with `grebi_resolver_service`?** All of the information GrEBI has about a node can be multiple MB, which adds up quickly. The website therefore shows minimal metadata in search results, which it can retrieve from Postgres, Neo, or Solr. Then it uses the resolved object for the full page (e.g. viewing an individual node with all of its properties). 
+> **Why do we duplicate the data with `grebi_resolver_service`?** All of the information GrEBI has about a node can be multiple MB, which adds up quickly for hundreds of millions of nodes. The website therefore shows minimal metadata in search results, which it can retrieve from Postgres, Neo, or Solr. Then it uses the resolved object for the full page (e.g. viewing an individual node with all of its properties). 
 
 ## GrEBI Dataload
 

@@ -83,7 +83,11 @@ export default function DocsPage() {
       }
       requestAnimationFrame(() => {
         const el = document.getElementById(hash);
-        if (el) el.scrollIntoView({ behavior: "smooth" });
+        if (el && contentRef.current) {
+          const containerTop = contentRef.current.getBoundingClientRect().top;
+          const elTop = el.getBoundingClientRect().top;
+          contentRef.current.scrollTop += elTop - containerTop;
+        }
       });
     }
   }, [manifest, location.hash]);
@@ -117,26 +121,44 @@ export default function DocsPage() {
     return () => observer.disconnect();
   }, [manifest]);
 
+  const scrollToAnchor = useCallback((anchor: string) => {
+    const el = document.getElementById(anchor);
+    if (el && contentRef.current) {
+      const containerTop = contentRef.current.getBoundingClientRect().top;
+      const elTop = el.getBoundingClientRect().top;
+      contentRef.current.scrollTo({
+        top: contentRef.current.scrollTop + elTop - containerTop,
+        behavior: "smooth",
+      });
+    }
+  }, []);
+
   const onNavigate = useCallback((anchor: string) => {
     if (!manifest) return;
     const targetPage = findPageForAnchor(manifest, anchor);
+    const isPageAnchor = manifest.pages.some(p => p.anchor === anchor);
     if (targetPage && targetPage !== activePage) {
       setActivePage(targetPage);
-      // After page switch, scroll to the anchor once content renders
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          const el = document.getElementById(anchor);
-          if (el) el.scrollIntoView({ behavior: "smooth" });
-          else if (contentRef.current) contentRef.current.scrollTop = 0;
+          if (contentRef.current) contentRef.current.scrollTop = 0;
+          if (!isPageAnchor) scrollToAnchor(anchor);
         });
       });
+    } else if (isPageAnchor) {
+      if (contentRef.current) contentRef.current.scrollTop = 0;
     } else {
-      const el = document.getElementById(anchor);
-      if (el) el.scrollIntoView({ behavior: "smooth" });
+      scrollToAnchor(anchor);
     }
     setActiveAnchor(anchor);
     window.history.replaceState(null, "", `#${anchor}`);
-  }, [manifest, activePage]);
+  }, [manifest, activePage, scrollToAnchor]);
+
+  const sectionNumber = useMemo(() => {
+    if (!manifest || !currentPage) return undefined;
+    const idx = manifest.pages.findIndex(p => p.anchor === currentPage.anchor);
+    return idx >= 0 ? idx + 1 : undefined;
+  }, [manifest, currentPage]);
 
   const seeAlso = useMemo(() => {
     if (!manifest || !currentPage) return [];
@@ -162,7 +184,7 @@ export default function DocsPage() {
   }
 
   return (
-    <div className="flex" style={{ minHeight: "calc(100vh - 120px)" }}>
+    <div className="flex overflow-hidden h-full">
       {/* Sidebar */}
       <DocsSidebar
         sidebar={manifest.sidebar}
@@ -170,13 +192,14 @@ export default function DocsPage() {
         onNavigate={onNavigate}
       />
       {/* Content */}
-      <main ref={contentRef} className="flex-1 min-w-0 px-8 py-6 overflow-auto">
+      <main ref={contentRef} className="flex-1 min-w-0 px-8 py-6 overflow-y-auto h-full">
         {currentPage ? (
           <DocsContent
             markdown={currentPage.content}
             images={manifest.images}
             seeAlso={seeAlso}
             onNavigate={onNavigate}
+            sectionNumber={sectionNumber}
           />
         ) : (
           <p className="text-gray-500">No content found.</p>

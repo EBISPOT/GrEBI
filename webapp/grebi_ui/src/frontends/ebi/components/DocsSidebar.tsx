@@ -26,12 +26,14 @@ function SidebarItem({
   isLast,
   activeAnchor,
   onNavigate,
+  numberPrefix,
 }: {
   entry: SidebarEntry;
   depth: number;
   isLast: boolean;
   activeAnchor: string;
   onNavigate: (anchor: string) => void;
+  numberPrefix?: string;
 }) {
   const isActive = entry.anchor === activeAnchor;
 
@@ -110,7 +112,12 @@ function SidebarItem({
           </span>
         )}
         {!hasChildren && <span className="mr-1 inline-block flex-shrink-0" style={{ width: ICON_SIZE }} />}
-        <span className="truncate">{entry.title ? renderTitle(entry.title) : null}</span>
+        <span className="truncate">
+          {numberPrefix && (
+            <span className="text-embl-purple-default font-semibold mr-2 flex-shrink-0">{numberPrefix}</span>
+          )}
+          {entry.title ? renderTitle(entry.title) : null}
+        </span>
       </div>
       {hasChildren && expanded && (
         <ul>
@@ -122,6 +129,7 @@ function SidebarItem({
               isLast={i === entry.children!.length - 1}
               activeAnchor={activeAnchor}
               onNavigate={onNavigate}
+              numberPrefix={numberPrefix ? `${numberPrefix}.${i + 1}` : undefined}
             />
           ))}
         </ul>
@@ -168,7 +176,7 @@ export default function DocsSidebar({
   }, []);
 
   return (
-    <div className="relative flex-shrink-0" style={{ width }}>
+    <div className="relative flex-shrink-0 h-full" style={{ width }}>
       <nav
         className="border-r border-gray-200 bg-gray-50 overflow-y-auto py-4 px-3 h-full"
       >
@@ -178,6 +186,7 @@ export default function DocsSidebar({
               key={entry.anchor || i}
               entry={entry}
               depth={0}
+              numberPrefix={String(i + 1)}
               isLast={i === sidebar.length - 1}
               activeAnchor={activeAnchor}
               onNavigate={onNavigate}

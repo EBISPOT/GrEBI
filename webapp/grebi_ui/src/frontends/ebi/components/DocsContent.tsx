@@ -38,13 +38,40 @@ export default function DocsContent({
   images,
   seeAlso,
   onNavigate,
+  sectionNumber,
 }: {
   markdown: string;
   images: Record<string, string>;
   seeAlso?: Array<{ title: string; anchor: string }>;
   onNavigate?: (anchor: string) => void;
+  sectionNumber?: number;
 }) {
-  // Pre-process: resolve image paths to data URIs
+  // Build a map of slug -> number prefix by scanning headings in order.
+  // This keeps rehype-slug IDs clean (matching sidebar anchors) while letting
+  // heading components look up their number via props.id.
+  const numberBySlug = useMemo(() => {
+    const map = new Map<string, string>();
+    if (sectionNumber == null) return map;
+    let h2 = 0, h3 = 0, h4 = 0;
+    let inFence = false;
+    for (const line of markdown.split('\n')) {
+      if (/^```/.test(line)) { inFence = !inFence; continue; }
+      if (inFence) continue;
+      const m = line.match(/^(#{1,4}) (.+)$/);
+      if (!m) continue;
+      const level = m[1].length;
+      const title = m[2];
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (level === 1) { h2 = 0; h3 = 0; h4 = 0; map.set(slug, `${sectionNumber}`); }
+      else if (level === 2) { h2++; h3 = 0; h4 = 0; map.set(slug, `${sectionNumber}.${h2}`); }
+      else if (level === 3) { h3++; h4 = 0; map.set(slug, `${sectionNumber}.${h2}.${h3}`); }
+      else if (level === 4) { h4++; map.set(slug, `${sectionNumber}.${h2}.${h3}.${h4}`); }
+    }
+    return map;
+  }, [markdown, sectionNumber]);
+
+  // Pre-process: resolve image paths to data URIs only (numbers are rendered
+  // in heading components so rehype-slug IDs stay clean and match sidebar anchors)
   const processed = useMemo(() => {
     return markdown.replace(
       /!\[([^\]]*)\]\(\.\/images\/([^)]+)\)/g,
@@ -170,24 +197,27 @@ export default function DocsContent({
         );
       },
       // Headings
-      h1({ children, ...props }: any) {
+      h1({ children, id, ...props }: any) {
+        const num = id ? numberBySlug.get(id) : undefined;
         return (
-          <h1 className="text-3xl font-bold mt-8 mb-4 pb-2 border-b border-gray-200" {...props}>
-            {children}
+          <h1 id={id} className="text-3xl font-bold mt-8 mb-4 pb-2 border-b-[3px] border-embl-purple-default text-embl-purple-default" {...props}>
+            {num && <span className="mr-3">{num}</span>}{children}
           </h1>
         );
       },
-      h2({ children, ...props }: any) {
+      h2({ children, id, ...props }: any) {
+        const num = id ? numberBySlug.get(id) : undefined;
         return (
-          <h2 className="text-2xl font-semibold mt-6 mb-3" {...props}>
-            {children}
+          <h2 id={id} className="text-2xl font-semibold mt-6 mb-3 pb-2 border-b-2 border-embl-purple-default text-embl-purple-default" {...props}>
+            {num && <span className="mr-3">{num}</span>}{children}
           </h2>
         );
       },
-      h3({ children, ...props }: any) {
+      h3({ children, id, ...props }: any) {
+        const num = id ? numberBySlug.get(id) : undefined;
         return (
-          <h3 className="text-xl font-semibold mt-5 mb-2" {...props}>
-            {children}
+          <h3 id={id} className="text-xl font-semibold mt-5 mb-2 text-embl-purple-default" {...props}>
+            {num && <span className="mr-2">{num}</span>}{children}
           </h3>
         );
       },
@@ -230,7 +260,7 @@ export default function DocsContent({
       "query-template": (props: any) => <QueryTemplateExample {...props} />,
       "pubmed": (props: any) => <PubmedCitation {...props} />,
     }),
-    []
+    [numberBySlug]
   );
 
   // Reset pubmed ref numbering when markdown changes
