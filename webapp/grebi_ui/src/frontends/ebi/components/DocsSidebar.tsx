@@ -114,7 +114,7 @@ function SidebarItem({
         {!hasChildren && <span className="mr-1 inline-block flex-shrink-0" style={{ width: ICON_SIZE }} />}
         <span className="truncate">
           {numberPrefix && (
-            <span className="text-embl-purple-default font-semibold mr-2 flex-shrink-0">{numberPrefix}</span>
+            <span className="text-black font-semibold mr-2 flex-shrink-0">{numberPrefix}</span>
           )}
           {entry.title ? renderTitle(entry.title) : null}
         </span>

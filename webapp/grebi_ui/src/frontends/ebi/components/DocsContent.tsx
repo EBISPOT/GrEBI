@@ -52,20 +52,19 @@ export default function DocsContent({
   const numberBySlug = useMemo(() => {
     const map = new Map<string, string>();
     if (sectionNumber == null) return map;
-    let h2 = 0, h3 = 0, h4 = 0;
+    let h2 = 0, h3 = 0;
     let inFence = false;
     for (const line of markdown.split('\n')) {
       if (/^```/.test(line)) { inFence = !inFence; continue; }
       if (inFence) continue;
-      const m = line.match(/^(#{1,4}) (.+)$/);
+      const m = line.match(/^(#{1,3}) (.+)$/);
       if (!m) continue;
       const level = m[1].length;
       const title = m[2];
       const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      if (level === 1) { h2 = 0; h3 = 0; h4 = 0; map.set(slug, `${sectionNumber}`); }
-      else if (level === 2) { h2++; h3 = 0; h4 = 0; map.set(slug, `${sectionNumber}.${h2}`); }
-      else if (level === 3) { h3++; h4 = 0; map.set(slug, `${sectionNumber}.${h2}.${h3}`); }
-      else if (level === 4) { h4++; map.set(slug, `${sectionNumber}.${h2}.${h3}.${h4}`); }
+      if (level === 1) { h2 = 0; h3 = 0; map.set(slug, `${sectionNumber}`); }
+      else if (level === 2) { h2++; h3 = 0; map.set(slug, `${sectionNumber}.${h2}`); }
+      else if (level === 3) { h3++; map.set(slug, `${sectionNumber}.${h2}.${h3}`); }
     }
     return map;
   }, [markdown, sectionNumber]);
@@ -219,6 +218,13 @@ export default function DocsContent({
           <h3 id={id} className="text-xl font-semibold mt-5 mb-2 text-embl-purple-default" {...props}>
             {num && <span className="mr-2">{num}</span>}{children}
           </h3>
+        );
+      },
+      h4({ children, id, ...props }: any) {
+        return (
+          <h4 id={id} className="text-lg font-semibold mt-4 mb-1 text-embl-purple-default" {...props}>
+            {children}
+          </h4>
         );
       },
       // Block quotes

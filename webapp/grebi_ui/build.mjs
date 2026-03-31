@@ -22,10 +22,11 @@ const rootDocsDir = path.resolve("../../docs");
 if (fs.existsSync(rootDocsDir)) {
   docsDir = rootDocsDir;
 }
-// Build sidebar tree from markdown headings (h1–h4).
+// Build sidebar tree from markdown headings (h1–h3).
+// h4 headings are rendered as headings in the content but excluded from the sidebar.
 // Each heading becomes an anchor slug; nesting follows heading depth.
 function sidebarFromHeadings(md) {
-  const headingRe = /^(#{1,4})\s+(.+)$/gm;
+  const headingRe = /^(#{1,3})\s+(.+)$/gm;
   const flat = [];
   let m;
   while ((m = headingRe.exec(md)) !== null) {
