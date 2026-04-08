@@ -24,9 +24,6 @@ ENV PATH="$PATH:/opt/java/bin"
 RUN mkdir /opt/neo4j && \
     curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2025.03.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j
 
-RUN mkdir /opt/solr && \
-    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/solr-9.8.1.tgz | tar -xz --strip-components=1 -C /opt/solr
-
 RUN echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
         echo "dbms.usage_report.enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
         echo "db.recovery.fail_on_missing_files=false" >> /opt/neo4j/conf/neo4j.conf 
@@ -35,7 +32,7 @@ RUN echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
 RUN sed -i '/^server\.directories\.logs=/d' /opt/neo4j/conf/neo4j.conf
 
 
-ENV PATH="$PATH:/opt/neo4j/bin:/opt/solr/bin"
+ENV PATH="$PATH:/opt/neo4j/bin"
 
 # RUN echo "server.jvm.additional=-Dorg.neo4j.kernel.impl.index.schema.GenericNativeIndexPopulator.blockBasedPopulation=true" >> /opt/neo4j/conf/neo4j.conf
 
