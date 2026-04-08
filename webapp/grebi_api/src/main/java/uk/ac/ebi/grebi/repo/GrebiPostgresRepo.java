@@ -9,8 +9,7 @@ import uk.ac.ebi.grebi.GrebiFacetedResultsPage;
 import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 
 /**
- * Repository for querying edges from PostgreSQL.
- * Replaces the edge-related methods that were previously in GrebiSolrRepo.
+ * Repository for querying edges, nodes, autocomplete, and materialised queries from PostgreSQL.
  */
 public class GrebiPostgresRepo {
 
@@ -173,5 +172,52 @@ public class GrebiPostgresRepo {
      */
     public float[] getNodeEmbedding(String graph, String nodeId, String embeddingModel) {
         return pgClient.getNodeEmbedding(graph, nodeId, embeddingModel);
+    }
+
+    /**
+     * Autocomplete node labels using pg_trgm.
+     */
+    public List<String> autocomplete(String graph, String q) {
+        return pgClient.autocomplete(graph, q);
+    }
+
+    /**
+     * Search nodes by text (ILIKE on name) and optional filters.
+     * When resolve=true, fetches full node blobs from the blobs table.
+     */
+    public GrebiFacetedResultsPage<Map<String, Object>> searchNodesPaginated(
+            String graph, String q, Map<String, List<String>> filters,
+            boolean resolve, Pageable pageable) {
+
+        var result = pgClient.searchNodes(graph, q, filters,
+                (int) pageable.getOffset(), pageable.getPageSize());
+
+        List<Map<String, Object>> content;
+        if (resolve && !result.results.isEmpty()) {
+            var nodeIds = result.results.stream()
+                    .map(r -> (String) r.get("grebi:nodeId"))
+                    .toList();
+            content = pgClient.resolveToList(graph, nodeIds);
+        } else {
+            content = result.results;
+        }
+
+        return new GrebiFacetedResultsPage<>(
+                content, result.facets, pageable, result.totalCount);
+    }
+
+    /**
+     * Search materialised query results with optional text search, filters, and facets.
+     */
+    public GrebiFacetedResultsPage<Map<String, Object>> searchMaterialisedQueryResultsPaginated(
+            String graph, String queryId, String searchText,
+            Map<String, List<String>> filters, List<String> facetFields,
+            Pageable pageable) {
+
+        var result = pgClient.searchMaterialisedQueryResults(graph, queryId, searchText,
+                filters, facetFields, (int) pageable.getOffset(), pageable.getPageSize());
+
+        return new GrebiFacetedResultsPage<>(
+                result.results, result.facets, pageable, result.totalCount);
     }
 }

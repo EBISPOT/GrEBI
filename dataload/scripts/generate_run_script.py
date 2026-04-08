@@ -31,7 +31,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         #
         # Usage:
         #   ./grebi.sh                              # start all services
-        #   ./grebi.sh api postgres solr             # start only named services
+        #   ./grebi.sh api postgres                 # start only named services
         #   ./grebi.sh -api -ui                      # start all except api and ui
         #   ./grebi.sh api -ui                       # start only api (-ui ignored)
         #   ./grebi.sh bash                          # open an interactive shell
@@ -41,7 +41,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         #
         # Valid service names:
         #   api  cypher_service  neo4j  metadata_service  postgres
-        #   prefix_service  resolver_service  solr  ui
+        #   prefix_service  ui
         #
         # By default neo4j runs as a standalone server and cypher_service
         # connects to it via bolt.  If you explicitly list cypher_service
@@ -57,7 +57,6 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         #   8080  — GrEBI UI
         #   8085  — Cypher Service
         #   8090  — GrEBI API
-        #   8983  — Solr Admin
         #   5432  — PostgreSQL
         # -------------------------------------------------------------------
 
@@ -66,7 +65,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
         DATA_DIR="${{GREBI_DATA_DIR:-$SCRIPT_DIR}}"
 
-        ALL_SERVICES="api cypher_service neo4j metadata_service postgres prefix_service resolver_service solr ui"
+        ALL_SERVICES="api cypher_service neo4j metadata_service postgres prefix_service ui"
 
         # Parse arguments: "bash" and "test" are modes; anything else is a service name.
         # A leading dash (e.g. -api) marks a service for exclusion.
@@ -147,12 +146,6 @@ def generate_run_script(subgraphs: str, image: str) -> str:
 
         # Validate that the required files/directories exist
         missing=0
-        for d in "solr" "postgres_data"; do
-            if [ ! -d "$DATA_DIR/$d" ]; then
-                echo "ERROR: missing directory $DATA_DIR/$d"
-                missing=1
-            fi
-        done
         IFS=',' read -ra SG_ARRAY <<< "$SUBGRAPHS"
         for sg in "${{SG_ARRAY[@]}}"; do
             for d in "${{sg}}_neo4j"; do
@@ -161,7 +154,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
                     missing=1
                 fi
             done
-            for f in "${{sg}}.sqlite3" "${{sg}}_metadata.json"; do
+            for f in "${{sg}}_metadata.json"; do
                 if [ ! -f "$DATA_DIR/$f" ]; then
                     echo "ERROR: missing $DATA_DIR/$f"
                     missing=1
@@ -209,18 +202,13 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         svc_enabled ui               && echo "  UI:             http://localhost:8080"
         svc_enabled api              && echo "  API:            http://localhost:8090"
         svc_enabled cypher_service   && echo "  Cypher Service: http://localhost:8085"
-        svc_enabled neo4j            && echo "  Neo4j Browser:  http://localhost:7474"
-        svc_enabled neo4j            && echo "  Neo4j Bolt:     bolt://localhost:7687"
-        svc_enabled solr             && echo "  Solr Admin:     http://localhost:8983"
         svc_enabled postgres         && echo "  PostgreSQL:     localhost:5432"
         svc_enabled metadata_service && echo "  Metadata:       http://localhost:8081"
         svc_enabled prefix_service   && echo "  Prefix:         http://localhost:8082"
-        svc_enabled resolver_service && echo "  Resolver:       http://localhost:8084"
         echo ""
 
         ENV_VARS=(
             GREBI_METADATA_JSON_SEARCH_PATH=/data
-            GREBI_SQLITE_SEARCH_PATH=/data
             GREBI_QUERY_TEMPLATES_PATH=/data/query_templates
             PUBLIC_URL=/
         )
@@ -244,9 +232,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
                 -p 8085:8085 \\
                 -p 8081:8081 \\
                 -p 8082:8082 \\
-                -p 8084:8084 \\
                 -p 8090:8090 \\
-                -p 8983:8983 \\
                 -p 5432:5432 \\
                 $(printf -- '-e %s ' "${{ENV_VARS[@]}}") \\
                 -w /data \\

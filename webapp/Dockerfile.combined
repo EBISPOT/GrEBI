@@ -71,20 +71,11 @@ RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --de
     apt-get update && apt-get install -y caddy && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Solr 9.8.1
-RUN mkdir /opt/solr && \
-    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/solr-9.8.1.tgz | tar -xz --strip-components=1 -C /opt/solr && \
-    mkdir -p /opt/solr/server/logs && chmod 777 /opt/solr/server/logs
-
-ENV PATH="$PATH:/opt/solr/bin"
-
 # Allow arbitrary UIDs to register themselves in /etc/passwd at runtime
 RUN chmod a+w /etc/passwd /etc/group
 
 # Create working directories
 RUN mkdir -p /opt/grebi/data/neo4j \
-             /opt/grebi/data/solr \
-             /opt/grebi/data/sqlite \
              /opt/grebi/data/postgres \
              /opt/grebi/data/metadata \
              /opt/grebi/data/prefix_maps \
@@ -119,12 +110,6 @@ WORKDIR /opt/grebi_metadata_service
 RUN mvn clean package assembly:single -DskipTests && \
     cp target/grebi_metadata_service-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_metadata_service.jar
 
-# Build grebi_resolver_service
-COPY webapp/grebi_resolver_service /opt/grebi_resolver_service
-WORKDIR /opt/grebi_resolver_service
-RUN mvn clean package assembly:single -DskipTests && \
-    cp target/grebi_resolver_service-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_resolver_service.jar
-
 # Build grebi_ui
 COPY docs /opt/grebi_ui/docs
 COPY webapp/grebi_ui /opt/grebi_ui
@@ -150,7 +135,6 @@ COPY webapp/query2code.mjs /opt/query2code.mjs
 RUN cd /opt && npm install js-yaml marked puppeteer
 COPY docs /opt/docs
 COPY tests/export_neo4j.py /opt/export_neo4j.py
-COPY tests/export_solr.py /opt/export_solr.py
 COPY tests/export_postgres.py /opt/export_postgres.py
 COPY tests/compare_snapshots.py /opt/compare_snapshots.py
 COPY tests/test_api_snapshots.py /opt/test_api_snapshots.py
@@ -165,13 +149,11 @@ WORKDIR /opt
 # 7474 - Neo4j Browser
 # 7687 - Neo4j Bolt
 # 8085 - Cypher service
-# 8983 - Solr
 # 8080 - UI (Caddy)
 # 8081 - Metadata service
 # 8082 - Prefix service
-# 8084 - Resolver service
 # 8090 - API
-EXPOSE 5432 7474 7687 8085 8983 8080 8081 8082 8084 8090
+EXPOSE 5432 7474 7687 8085 8080 8081 8082 8090
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
 CMD ["run"]

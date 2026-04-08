@@ -22,7 +22,7 @@ export default function EbiDownloadsPage() {
         </div>
         <div>
           <p className="px-1 mb-2 text-justify">
-            Neo4j and Solr databases exports of the KG can be downloaded from&thinsp;
+            Neo4j and PostgreSQL database exports of the KG can be downloaded from&thinsp;
             <a
               className="link-default"
               href="https://ftp.ebi.ac.uk/pub/databases/spot/kg/"
@@ -77,14 +77,6 @@ const data: any[] = [
     downloadLink:
       "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi/latest/ebi_full_monarch_neo4j.tgz",
     format: "Neo4j database",
-  },
-  {
-    description:
-      "Solr database indexing all properties of all nodes and edges (~300 GB uncompressed)",
-    downloadLabel: "solr.tgz",
-    downloadLink:
-      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/latest/solr.tgz",
-    format: "Solr database",
   },
   {
     description:

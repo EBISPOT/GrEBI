@@ -17,7 +17,7 @@ MODE="${1:-run}"
 #   - Explicit services with cypher_service but NOT neo4j: cypher_service
 #     uses embedded mode (GREBI_NEO4J_DATA_SEARCH_PATH).
 # ---------------------------------------------------------------------------
-ALL_SERVICES="api cypher_service neo4j metadata_service postgres prefix_service resolver_service solr ui"
+ALL_SERVICES="api cypher_service neo4j metadata_service postgres prefix_service ui"
 SUPERVISORD_CONF="/etc/supervisor/conf.d/supervisord.conf"
 
 # Determine which services are enabled
@@ -190,7 +190,6 @@ case "$MODE" in
                 echo "=== Exporting DB snapshots for '$SUBGRAPH' ==="
                 set +e
                 python3 /opt/export_neo4j.py "$SUBGRAPH"
-                python3 /opt/export_solr.py "$SUBGRAPH"
                 python3 /opt/export_postgres.py "$SUBGRAPH"
                 set -e
                 
@@ -237,7 +236,7 @@ case "$MODE" in
         supervisorctl stop all 2>/dev/null || true
         kill $SUPERVISOR_PID 2>/dev/null || true
         sleep 1
-        killall -9 java neo4j solr caddy python3 postgres 2>/dev/null || true
+        killall -9 java neo4j caddy python3 postgres 2>/dev/null || true
         pkill -9 -P $$ 2>/dev/null || true
         pkill -9 -P $SUPERVISOR_PID 2>/dev/null || true
         
@@ -258,13 +257,11 @@ case "$MODE" in
             case "$sel" in
                 cypher_service)   echo "  Cypher Service:     http://localhost:8085" ;;
                 neo4j)            echo "  Neo4j Browser:      http://localhost:7474" ;;
-                solr)             echo "  Solr Admin:         http://localhost:8983" ;;
                 postgres)         echo "  PostgreSQL:         localhost:5432" ;;
                 api)              echo "  GrEBI API:          http://localhost:8090" ;;
                 ui)               echo "  GrEBI UI:           http://localhost:8080" ;;
                 metadata_service) echo "  Metadata Service:   http://localhost:8081" ;;
                 prefix_service)   echo "  Prefix Service:     http://localhost:8082" ;;
-                resolver_service) echo "  Resolver Service:   http://localhost:8084" ;;
             esac
         done
         echo ""

@@ -6,9 +6,7 @@ process construct_release {
 
     input:
     path(neo_dbs)
-    path(solr_dir)
     path(postgres_db)
-    path(sqlite_dbs)
     path(metadata_jsons)
     path(query_templates)
     val(subgraphs)
@@ -33,11 +31,7 @@ process construct_release {
     for neo in ${neo_dbs}; do
         ln -s \$(readlink -f "\$neo") "\$RELEASE_DIR/"
     done
-    ln -s \$(readlink -f ${solr_dir}) "\$RELEASE_DIR/"
     ln -s \$(readlink -f ${postgres_db}) "\$RELEASE_DIR/"
-    for sqlite in ${sqlite_dbs}; do
-        ln -s \$(readlink -f "\$sqlite") "\$RELEASE_DIR/"
-    done
     for meta in ${metadata_jsons}; do
         cp "\$meta" "\$RELEASE_DIR/"
     done

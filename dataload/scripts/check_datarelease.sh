@@ -29,10 +29,6 @@ for SUBGRAPH in "${SUBGRAPHS[@]}"; do
     fi
   done
 done
-if [ ! -f "$DATARELEASE_PATH/solr.tgz" ]; then
-  echo "solr.tgz not found in $DATARELEASE_PATH"
-  exit 1
-fi
 if [ ! -f "$DATARELEASE_PATH/postgres.tgz" ]; then
   echo "postgres.tgz not found in $DATARELEASE_PATH"
   exit 1

@@ -29,13 +29,11 @@ echo "Deploying release to staging (subgraphs: ${SUBGRAPHS[*]})"
 echo Removing old files from staging
 
 rm -rf $STAGING_PATH/neo4j
-rm -rf $STAGING_PATH/solr
 rm -rf $STAGING_PATH/metadata
 rm -rf $STAGING_PATH/sqlite
 rm -rf $STAGING_PATH/postgres
 
 mkdir -p $STAGING_PATH/neo4j
-mkdir -p $STAGING_PATH/solr
 mkdir -p $STAGING_PATH/metadata
 mkdir -p $STAGING_PATH/sqlite
 mkdir -p $STAGING_PATH/postgres
@@ -47,7 +45,6 @@ for SUBGRAPH in "${SUBGRAPHS[@]}"; do
   cp -f $DATARELEASE_PATH/${SUBGRAPH}_metadata.json $STAGING_PATH/metadata/
   cp -f $DATARELEASE_PATH/${SUBGRAPH}.sqlite3 $STAGING_PATH/sqlite/
 done
-tar --use-compress-program=pigz -xf $DATARELEASE_PATH/solr.tgz -C $STAGING_PATH/solr
 tar --use-compress-program=pigz -xf $DATARELEASE_PATH/postgres.tgz -C $STAGING_PATH/postgres
 
 

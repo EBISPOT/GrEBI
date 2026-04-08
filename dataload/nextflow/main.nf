@@ -13,21 +13,18 @@ include { index } from './processes/04_index/index'
 include { link } from './processes/05_link/link'
 include { merge_graph_metadata_jsons } from './processes/05_link/merge_graph_metadata_jsons'
 include { create_compressed_blobs } from './processes/06_create_neo_db/create_compressed_blobs'
-include { create_sqlite } from './processes/08_create_other_dbs/sqlite/create_sqlite'
+include { prepare_postgres_blobs } from './processes/08_create_postgres/prepare_postgres_blobs'
 include { prepare_neo } from './processes/06_create_neo_db/neo/prepare_neo'
 include { create_neo_ids_csv } from './processes/06_create_neo_db/neo/create_neo_ids_csv'
 include { create_neo } from './processes/06_create_neo_db/neo/create_neo'
 include { package_neo } from './processes/06_create_neo_db/neo/package_neo'
-include { prepare_solr } from './processes/08_create_other_dbs/solr/prepare_solr'
-include { create_solr_nodes_core } from './processes/08_create_other_dbs/solr/create_solr_nodes_core'
-include { create_solr_autocomplete_core } from './processes/08_create_other_dbs/solr/create_solr_autocomplete_core'
-include { create_solr_results_cores } from './processes/08_create_other_dbs/solr/create_solr_results_cores'
-include { construct_solr } from './processes/08_create_other_dbs/solr/construct_solr'
-include { package_solr } from './processes/08_create_other_dbs/solr/package_solr'
-include { prepare_postgres_edges } from './processes/08_create_other_dbs/postgres/prepare_postgres_edges'
-include { prepare_postgres_nodes } from './processes/08_create_other_dbs/postgres/prepare_postgres_nodes'
-include { create_postgres } from './processes/08_create_other_dbs/postgres/create_postgres'
-include { package_postgres } from './processes/08_create_other_dbs/postgres/package_postgres'
+include { prepare_postgres_edges } from './processes/08_create_postgres/prepare_postgres_edges'
+include { prepare_postgres_autocomplete } from './processes/08_create_postgres/prepare_postgres_autocomplete'
+include { prepare_postgres_mat_queries } from './processes/08_create_postgres/prepare_postgres_mat_queries'
+include { prepare_postgres_nodes } from './processes/08_create_postgres/prepare_postgres_nodes'
+include { create_postgres } from './processes/08_create_postgres/create_postgres'
+include { populate_external_postgres } from './processes/08_create_postgres/populate_external_postgres'
+include { package_postgres } from './processes/08_create_postgres/package_postgres'
 include { run_materialised_queries } from './processes/07_run_queries/run_materialised_queries'
 include { results_to_csv } from './processes/07_run_queries/results_to_csv'
 include { link_results } from './processes/07_run_queries/link_results'
@@ -40,7 +37,6 @@ include { package_release } from './processes/10_package_release/package_release
 params.out = "$GREBI_OUT_DIR"
 params.subgraphs = "$GREBI_SUBGRAPHS"
 params.query_yamls_path = "$GREBI_QUERY_YAMLS_PATH"
-params.solr_mem = "140g"
 params.neo_mem = "140g"
 params.neo_query_mem = "140g"
 params.pg_shared_buffers = "2GB"
@@ -53,7 +49,6 @@ params.pg_build_maintenance_work_mem = "1GB"
 params.pg_build_max_wal_size = "4GB"
 params.pg_build_effective_cache_size = "4GB"
 params.integration_neo_heap = "512m"
-params.integration_solr_heap = "512m"
 params.integration_pg_shared_buffers = "128MB"
 params.integration_pg_work_mem = "64MB"
 params.integration_pg_maintenance_work_mem = "256MB"
@@ -62,6 +57,7 @@ params.docker_image = "ghcr.io/ebispot/grebi_combined:dev"
 params.dataload_home = "$GREBI_DATALOAD_HOME"
 params.grebi_home = "$GREBI_HOME"
 params.downloads_path = "$GREBI_DOWNLOADS_PATH"
+params.external_postgres = false
 params.export_snapshots = false
 params.make_docs = false
 
@@ -217,17 +213,14 @@ workflow {
 
     // === STEP 6: CREATE DATABASES ===
 
-    // SQLite (per-subgraph)
+    // Compressed blobs (per-shard, then converted to PG COPY BINARY)
     compressed_blobs = create_compressed_blobs(
         link.out.nodes.mix(link.out.edges)
     )
     // compressed_blobs: [sg, blob_file]
 
-    blobs_grouped = compressed_blobs.groupTuple(by: 0)
-    // → [sg, [blob1, blob2, ...]]
-
-    sqlite = create_sqlite(blobs_grouped, Channel.value(params.out))
-    // sqlite: [sg, subgraph.sqlite3]
+    postgres_blobs = prepare_postgres_blobs(compressed_blobs)
+    // postgres_blobs.blobs_pgbin: [sg, pgbin_file]
 
     // Neo4j (per-subgraph)
     // Pair nodes+edges from same link invocation using positional merge
@@ -297,38 +290,12 @@ workflow {
     )
     // → [sg, sg_metadata.json]
 
-    // === STEP 8: CREATE SOLR CORES (per-subgraph, then cross-subgraph gather) ===
-    prepare_solr(link.out.nodes)
+    // === STEP 8: PREPARE AUTOCOMPLETE + MATERIALISED QUERY DATA FOR POSTGRES ===
+    prepare_postgres_autocomplete(indexed.names_txt)
+    // autocomplete_tsv: [sg, autocomplete_tsv]
 
-    solr_nodes_input = prepare_solr.out.nodes
-        .groupTuple(by: 0)
-        .combine(indexed.names_txt, by: 0)
-        .combine(merge_graph_metadata_jsons.out, by: 0)
-    // → [sg, [solr_nodes_files], names.txt, merged_meta.json]
-
-    solr_nodes_core = create_solr_nodes_core(
-        solr_nodes_input,
-        Channel.value(params.solr_mem)
-    )
-
-    solr_autocomplete_core = create_solr_autocomplete_core(
-        indexed.names_txt,
-        Channel.value(params.solr_mem)
-    )
-
-    solr_results_cores = create_solr_results_cores(
-        linked_results,
-        Channel.value(params.solr_mem)
-    )
-
-    // Strip subgraph tags and collect ALL cores for cross-subgraph solr
-    all_solr_cores = solr_nodes_core
-        .map { sg, core -> core }
-        .mix(solr_autocomplete_core.map { sg, core -> core })
-        .mix(solr_results_cores.map { sg, core -> core })
-        .collect()
-
-    solr_dir = construct_solr(all_solr_cores)
+    prepare_postgres_mat_queries(linked_results)
+    // mat_queries_tsv: [sg, mat_queries_tsv]
 
     // === STEP 8b: CREATE POSTGRESQL (cross-subgraph) ===
     // Pair edges with graph metadata for prepare_postgres_edges
@@ -346,24 +313,40 @@ workflow {
     prepare_postgres_nodes(pg_nodes_input)
 
     // Strip subgraph tags and collect ALL files for cross-subgraph postgres
-    postgres_db = create_postgres(
-        prepare_postgres_edges.out.edges_tsv.map { sg, f -> f }.collect(),
-        prepare_postgres_edges.out.columns.map { sg, f -> f }.collect(),
-        prepare_postgres_nodes.out.nodes_tsv.map { sg, f -> f }.collect(),
-        prepare_postgres_nodes.out.columns.map { sg, f -> f }.collect()
-    )
+    all_edges_tsvs = prepare_postgres_edges.out.edges_tsv.map { sg, f -> f }.collect()
+    all_edges_cols = prepare_postgres_edges.out.columns.map { sg, f -> f }.collect()
+    all_nodes_tsvs = prepare_postgres_nodes.out.nodes_tsv.map { sg, f -> f }.collect()
+    all_nodes_cols = prepare_postgres_nodes.out.columns.map { sg, f -> f }.collect()
+    all_blobs_pgbins = postgres_blobs.blobs_pgbin.map { sg, f -> f }.collect()
+    all_autocomplete_tsvs = prepare_postgres_autocomplete.out.autocomplete_tsv.map { sg, f -> f }.collect()
+    all_mat_queries_tsvs = prepare_postgres_mat_queries.out.mat_queries_tsv.map { sg, f -> f }.collect()
+
+    if (params.external_postgres) {
+        postgres_db = populate_external_postgres(
+            all_edges_tsvs, all_edges_cols,
+            all_nodes_tsvs, all_nodes_cols,
+            all_blobs_pgbins,
+            all_autocomplete_tsvs, all_mat_queries_tsvs
+        )
+    } else {
+        postgres_db = create_postgres(
+            all_edges_tsvs, all_edges_cols,
+            all_nodes_tsvs, all_nodes_cols,
+            all_blobs_pgbins,
+            all_autocomplete_tsvs, all_mat_queries_tsvs
+        )
+    }
 
     // === PACKAGE OUTPUTS ===
-    solr_tgz = package_solr(solr_dir, Channel.value(params.out))
     neo_tgz = package_neo(neo_db, Channel.value(params.out))
-    postgres_tgz = package_postgres(postgres_db, Channel.value(params.out))
+    if (!params.external_postgres) {
+        postgres_tgz = package_postgres(postgres_db, Channel.value(params.out))
+    }
 
     // === CONSTRUCT & PACKAGE RELEASE ===
     release_dir = construct_release(
         neo_db.map { sg, neo -> neo }.collect(),
-        solr_dir,
         postgres_db,
-        sqlite.map { sg, s -> s }.collect(),
         add_query_metadatas_to_graph_metadata.out.map { sg, meta -> meta }.collect(),
         Channel.fromPath("${params.grebi_home}/query_templates"),
         Channel.value(params.subgraphs),
@@ -386,7 +369,6 @@ workflow {
         Channel.value(params.make_docs),
         Channel.value(params.grebi_home),
         Channel.value(params.integration_neo_heap),
-        Channel.value(params.integration_solr_heap),
         Channel.value(params.integration_pg_shared_buffers),
         Channel.value(params.integration_pg_work_mem),
         Channel.value(params.integration_pg_maintenance_work_mem),

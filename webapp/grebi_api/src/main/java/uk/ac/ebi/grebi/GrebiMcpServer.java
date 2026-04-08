@@ -6,8 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.solr.common.util.JsonSchemaCreator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -27,7 +25,6 @@ import reactor.core.publisher.Mono;
 import uk.ac.ebi.grebi.repo.GrebiMetadataRepo;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
-import uk.ac.ebi.grebi.repo.GrebiSolrRepo;
 
 public class GrebiMcpServer {
 
@@ -38,14 +35,13 @@ public class GrebiMcpServer {
     public static final String INSTRUCTIONS = """
     This is an instance of GrEBI, a server for large, read-only, ontology-mediated, integrated knowledge graphs
     which can be accessed using the Model Context Protocol (MCP). You cannot directly run queries against GrEBI's
-    Neo4j and Solr databases. However GrEBI provides query templates which can be accessed via the MCP, and you
+    Neo4j and PostgreSQL databases. However GrEBI provides query templates which can be accessed via the MCP, and you
     can provide your own parameters to those templates to query the graph. You can also query for specific nodes
     and edges using the MCP to traverse your own way through the graph.
     """;
 
     public GrebiMcpServer(
         final GrebiCypherRepo cypher,
-        final GrebiSolrRepo solr,
         final GrebiMetadataRepo metadata,
         final Set<String> graphs,
         final GrebiQueryTemplatesRepo queryTemplates

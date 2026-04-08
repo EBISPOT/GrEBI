@@ -14,7 +14,6 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
   - `grebi_api/`: Java Spring Boot REST API
   - `grebi_ui/`: TypeScript/React frontend
   - `grebi_metadata_service/`: Java Spring Boot metadata service
-  - `grebi_resolver_service/`: Java Spring Boot resolver service
   - `grebi_cypher_service/`: Java Spring Boot Cypher query service
   - `grebi_prefix_service/`: Java Spring Boot prefix mapping service
   - `k8chart/`: Kubernetes Helm chart for deployment
@@ -96,7 +95,7 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 6. **05_link/**: Create edges from property values that reference other entities
 7. **06_create_neo_db/**: Generate Neo4j CSV files and create Neo4j database
 8. **07_run_queries/**: Execute materialised queries on the Neo4j database
-9. **08_create_other_dbs/**: Export to Solr, SQLite, PostgreSQL, and other formats
+9. **08_create_postgres/**: Export to PostgreSQL
 10. **09_integration_tests/**: Run integration tests against the built databases
 11. **10_package_release/**: Package outputs for release
 

@@ -1,0 +1,76 @@
+name: Build Docs PDF
+
+on:
+  push:
+    branches: [ "dev", "stable" ]
+    paths:
+      - 'docs/**'
+      - 'webapp/generate_docs_pdf.py'
+      - 'webapp/test_queries_and_make_docs.py'
+      - 'query_templates/**'
+      - '.github/workflows/docs_pdf.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build-docs-pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          docker system prune -af
+
+      - name: Build dataload image
+        run: docker build -t ghcr.io/ebispot/grebi_dataload:dev -f dataload/Dockerfile dataload
+
+      - name: Build nextflow image
+        run: docker build -t ghcr.io/ebispot/grebi_nextflow:latest -f docker_envs/Dockerfile.nextflow docker_envs
+
+      - name: Build combined image
+        run: docker build -t ghcr.io/ebispot/grebi_combined:dev -f webapp/Dockerfile.combined .
+
+      - name: Download dismech data
+        run: |
+          export GREBI_SUBGRAPHS=dismech
+          export GREBI_NF_DOWNLOAD_CONFIG=dataload/nextflow/download_local.config
+          bash dataload/scripts/download_local.sh
+
+      - name: Run pipeline with docs generation
+        run: |
+          export GREBI_SUBGRAPHS=dismech
+          export GREBI_NF_CONFIG=dataload/nextflow/local_4g_nextflow.config
+          export GREBI_NF_EXTRA_ARGS="--make_docs true"
+          bash dataload/scripts/dataload_local.sh
+
+      - name: Locate PDF
+        id: find-pdf
+        run: |
+          PDF_PATH=$(find out/dismech -name 'grebi-docs.pdf' -type f | head -1)
+          if [ -z "$PDF_PATH" ]; then
+            echo "ERROR: grebi-docs.pdf not found in output"
+            find out/dismech -type f -name '*.pdf' || true
+            exit 1
+          fi
+          echo "pdf_path=$PDF_PATH" >> "$GITHUB_OUTPUT"
+          echo "Found PDF: $PDF_PATH"
+
+      - name: Upload PDF as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grebi-docs
+          path: ${{ steps.find-pdf.outputs.pdf_path }}
+
+      - name: Upload PDF to GitHub Release
+        if: github.ref == 'refs/heads/stable' || github.ref == 'refs/heads/dev'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: docs-${{ github.sha }}
+          name: "Documentation ($(date -u +%Y-%m-%d))"
+          files: ${{ steps.find-pdf.outputs.pdf_path }}
+          draft: false
+          prerelease: ${{ github.ref != 'refs/heads/stable' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

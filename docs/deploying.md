@@ -419,12 +419,11 @@ curl "http://localhost:8082/curie_to_iri?curie=hgnc:1100"
 
 ## Deploying the GrEBI stack
 
-The dataload produces four databases used to run the GrEBI stack: Neo4j, PostgreSQL, Solr, and SQLite. Each database stores different views over the same data (simple JSON objects for nodes and edges), with different purposes:
+The dataload produces three databases used to run the GrEBI stack: Neo4j, PostgreSQL, and Solr. Each database stores different views over the same data (simple JSON objects for nodes and edges), with different purposes:
 
-* Postgres is used by the backend to drive most of the API endpoints used by the website. It stores nodes and edges with minimal metadata, and embedding vectors with pgvector.
+* Postgres is used by the backend to drive most of the API endpoints used by the website. It stores nodes and edges with minimal metadata, embedding vectors with pgvector, and compressed binary blobs mapping node/edge IDs to their complete set of properties (used for full-page resolution).
 * Neo4j is used by the `grebi_cypher_service` to drive Cypher queries. It stores nodes and edges with minimal metadata.
 * Solr drives the free text lexical search. It stores nodes with minimal metadata and also has an autocomplete list derived from all of the names in the graph.
-* SQLite is used as a key value store to back the `grebi_resolver_service`. The resolver service maps node and edge IDs to compressed binary blobs containing their complete set of properties stored as JSON.
 
-> **Why do we duplicate the data with `grebi_resolver_service`?** All of the information GrEBI has about a node can be multiple MB, which adds up quickly for hundreds of millions of nodes. The website therefore shows minimal metadata in search results, which it can retrieve from Postgres, Neo, or Solr. Then it uses the resolved object for the full page (e.g. viewing an individual node with all of its properties). 
+> **Why are blobs stored separately from the edge/node tables?** All of the information GrEBI has about a node can be multiple MB, which adds up quickly for hundreds of millions of nodes. The website therefore shows minimal metadata in search results, which it can retrieve from the Postgres edge/node tables, Neo4j, or Solr. Then it uses the resolved blob for the full page (e.g. viewing an individual node with all of its properties). 
 

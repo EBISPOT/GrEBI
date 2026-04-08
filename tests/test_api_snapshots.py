@@ -2,7 +2,7 @@
 """
 GrEBI E2E API Tests
 
-Starts the full stack from packaged Neo4j + Solr tarballs, then tests API
+Starts the full stack from packaged Neo4j + PostgreSQL tarballs, then tests API
 endpoints and compares responses against expected output committed in git.
 
 Can also be used to capture expected output for the first time.

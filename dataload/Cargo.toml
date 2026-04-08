@@ -25,12 +25,10 @@ members = [
 	"05_link/grebi_link",
 	"06_create_neo_db/grebi_make_neo_csv",
 	"06_create_neo_db/grebi_make_neo_ids_csv",
-	"08_create_other_dbs/solr/grebi_make_solr",
-	"08_create_other_dbs/solr/grebi_link_results",
-	"08_create_other_dbs/sqlite/grebi_make_compressed_blob",
-	"08_create_other_dbs/sqlite/grebi_make_sqlite",
-	"08_create_other_dbs/postgres/grebi_make_postgres_edges",
-	"08_create_other_dbs/postgres/grebi_make_postgres_nodes",
+	"07_run_queries/grebi_link_results",
+	"08_create_postgres/grebi_make_postgres_edges",
+	"08_create_postgres/grebi_make_postgres_nodes",
+	"08_create_postgres/grebi_make_postgres_blobs",
 	"grebi_shared"
 ]
 

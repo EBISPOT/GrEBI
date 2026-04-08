@@ -14,7 +14,6 @@ process test_query_templates {
     val(make_docs)
     val(grebi_home)
     val(neo_mem)
-    val(solr_mem)
     val(pg_shared_buffers)
     val(pg_work_mem)
     val(pg_maintenance_work_mem)
@@ -40,8 +39,6 @@ process test_query_templates {
     # Configure environment for the entrypoint
     export GREBI_SUBGRAPHS=${subgraphs}
     export GREBI_POSTGRES_DATA=\$PWD/postgres_data
-    export SOLR_HOME=\$PWD/solr
-    export SOLR_LOGS_DIR=\$PWD
     export GREBI_METADATA_JSON_SEARCH_PATH=\$PWD
     export GREBI_SQLITE_SEARCH_PATH=\$PWD
     export GREBI_QUERY_TEMPLATES_PATH=\$PWD/query_templates
@@ -54,7 +51,6 @@ process test_query_templates {
 
     # Database memory from Nextflow params
     export GREBI_NEO_HEAP=${neo_mem}
-    export GREBI_SOLR_HEAP=${solr_mem}
     export GREBI_PG_SHARED_BUFFERS=${pg_shared_buffers}
     export GREBI_PG_WORK_MEM=${pg_work_mem}
     export GREBI_PG_MAINTENANCE_WORK_MEM=${pg_maintenance_work_mem}

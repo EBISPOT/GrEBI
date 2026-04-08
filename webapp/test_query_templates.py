@@ -87,14 +87,10 @@ def dump_service_logs():
         ("api_err.log", "GrEBI API stderr"),
         ("neo4j.log", "Neo4j stdout"),
         ("neo4j_err.log", "Neo4j stderr"),
-        ("solr.log", "Solr stdout"),
-        ("solr_err.log", "Solr stderr"),
         ("postgres.log", "PostgreSQL stdout"),
         ("postgres_err.log", "PostgreSQL stderr"),
         ("metadata_service.log", "Metadata Service stdout"),
         ("metadata_service_err.log", "Metadata Service stderr"),
-        ("resolver_service.log", "Resolver Service stdout"),
-        ("resolver_service_err.log", "Resolver Service stderr"),
         ("prefix_service.log", "Prefix Service stdout"),
         ("prefix_service_err.log", "Prefix Service stderr"),
         ("supervisord.log", "Supervisord"),
@@ -122,9 +118,7 @@ def dump_service_logs():
 
 def wait_for_all_services(base_url: str = "http://localhost") -> bool:
     services = [
-        (f"{base_url}:8983/solr", "Solr"),
         (f"{base_url}:8082/health", "Prefix Service"),
-        (f"{base_url}:8084/health", "Resolver Service"),
         (f"{base_url}:8081/health", "Metadata Service"),
         (f"{base_url}:8090/api/health", "GrEBI API"),
     ]
