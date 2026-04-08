@@ -208,7 +208,6 @@ public class GrebiApi {
 
                     // Edge counts by type from metadata edges nested structure (srcType → edgeType → dstType → dsSig → count)
                     Map<String, Long> edgesByType = new LinkedHashMap<>();
-                    var meta = metadata.getMetadata(graph);
                     var edgesEl = meta.get("edges");
                     if (edgesEl != null && edgesEl.isJsonObject()) {
                         for (var srcType : edgesEl.getAsJsonObject().entrySet()) {
