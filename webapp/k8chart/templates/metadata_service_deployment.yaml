@@ -28,16 +28,16 @@ spec:
               readOnly: true
           resources:
             requests:
-              memory: 3Gi
+              memory: 6Gi
               cpu: 0.5
             limits:
-              memory: 3Gi
+              memory: 6Gi
               cpu: 0.5
           env:
             - name: GREBI_METADATA_JSON_SEARCH_PATH
               value: /data_import/metadata
             - name: JAVA_TOOL_OPTIONS
-              value: -Xmx2048m
+              value: -Xmx5120m
           ports:
             - containerPort: 8081
 

@@ -27,27 +27,25 @@ spec:
         - name: {{ .Release.Name }}-import
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-import-pvc
-        - name: {{ .Release.Name }}-postgres
-          persistentVolumeClaim:
-            claimName: worker-{{.Values.postgres_worker_n}}-local-pvc
+      securityContext:
+        runAsUser: 5533
+        runAsGroup: 1279
+        fsGroup: 1279
       containers:
         - name: postgres
-          image: postgres:18
+          image: pgvector/pgvector:0.8.2-pg18
           volumeMounts:
             - mountPath: "/data_import"
               name: {{ .Release.Name }}-import
-              readOnly: true
-            - mountPath: "/data"
-              name: {{ .Release.Name }}-postgres
           command: ["/bin/bash", "-c"]
-          args: ["echo Synchronizing data... && rm -rf /data/pgdata && cp -r /data_import/postgres/* /data/ && chown -R postgres:postgres /data/pgdata_* && PGDATA=$(ls -d /data/postgres_data_* | head -1) && exec su -c \"postgres -D $PGDATA -p 5432\" postgres"]
+          args: ["chmod 700 /data_import/postgres/postgres_data && exec postgres -D /data_import/postgres/postgres_data -p 5432 -c shared_buffers=4GB -c work_mem=256MB -c maintenance_work_mem=512MB -c effective_cache_size=12GB -c jit=off -c plan_cache_mode=force_generic_plan -c random_page_cost=4"]
           resources:
             requests:
-              memory: 8Gi
-              cpu: 2
+              memory: 16Gi
+              cpu: 4
             limits:
-              memory: 8Gi
-              cpu: 2
+              memory: 16Gi
+              cpu: 4
           env:
             - name: POSTGRES_HOST_AUTH_METHOD
               value: trust

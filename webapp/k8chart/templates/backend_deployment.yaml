@@ -60,4 +60,6 @@ spec:
               value: "-XX:InitialRAMPercentage=60.0 -XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=80.0"
             - name: GREBI_QUERY_TEMPLATES_PATH
               value: /data_import/query_templates
+            - name: GREBI_EMBEDDING_SERVICE_URL
+              value: http://spot-embedding-service:5000
               

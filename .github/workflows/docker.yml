@@ -42,6 +42,10 @@ jobs:
             image: ghcr.io/ebispot/grebi_ui
             context: .
             file: webapp/grebi_ui/Dockerfile
+          - name: cypher
+            image: ghcr.io/ebispot/grebi_cypher_service
+            context: webapp/grebi_cypher_service
+            file: webapp/grebi_cypher_service/Dockerfile
           - name: combined
             image: ghcr.io/ebispot/grebi_combined
             context: .

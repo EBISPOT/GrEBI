@@ -127,13 +127,38 @@ fs.writeFileSync(
 /// Build bundle.js (esbuild)
 ///
 console.log("### Building bundle.js");
+
+// Resolve imports that use relative paths escaping the source tree.
+// In the repo, webapp/grebi_ui/ is nested under webapp/ which is under the root.
+// In Docker, /opt/grebi_ui/ has docs/ as a child and ../query2code.mjs etc as siblings.
+// We resolve known imports to their actual locations.
+const resolveMap = {
+  'pubmed_cache.json': path.resolve(docsDir, 'pubmed_cache.json'),
+  'query2code.mjs': path.resolve('..', 'query2code.mjs'),
+  'api2code.mjs': path.resolve('..', 'api2code.mjs'),
+};
+
+const resolveExternalPlugin = {
+  name: 'resolve-external',
+  setup(build) {
+    for (const [filename, resolvedPath] of Object.entries(resolveMap)) {
+      const re = new RegExp(filename.replace('.', '\\.') + '$');
+      build.onResolve({ filter: re }, (args) => {
+        if (args.path.includes('..')) {
+          return { path: resolvedPath };
+        }
+      });
+    }
+  },
+};
+
 build({
   entryPoints: [`src/index_${process.env.GREBI_FRONTEND}.tsx`],
   bundle: true,
   platform: "browser",
   outfile: "dist/bundle.js",
   define,
-  plugins: [],
+  plugins: [resolveExternalPlugin],
   logLevel: "info",
   sourcemap: "linked",
 
