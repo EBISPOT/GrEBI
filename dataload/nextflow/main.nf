@@ -338,10 +338,10 @@ workflow {
 
     prepare_postgres_edges(pg_edges_input)
 
-    // Pair nodes with linked_summary for prepare_postgres_nodes
-    pg_nodes_input = link.out.nodes.merge(link.out.linked_summary)
-        .map { sg1, nodes, sg2, summary -> [sg1, nodes, summary] }
-    // → [sg, nodes_file, linked_summary]
+    // Pair nodes with merged graph metadata (has all embedding models)
+    pg_nodes_input = link.out.nodes
+        .combine(merge_graph_metadata_jsons.out, by: 0)
+    // → [sg, nodes_file, merged_graph_metadata]
 
     prepare_postgres_nodes(pg_nodes_input)
 

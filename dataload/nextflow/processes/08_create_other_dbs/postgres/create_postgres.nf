@@ -108,7 +108,7 @@ EOF
         EDGES_COLS=\$(paste -sd',' < "\$EDGES_COLS_FILE")
 
         \$PSQL -c "
-            CREATE UNLOGGED TABLE \\"edges_\${SG}\\" (
+            CREATE TABLE \\"edges_\${SG}\\" (
                 \$EDGES_COLS
             ) WITH (fillfactor=100);
         "
@@ -119,11 +119,10 @@ EOF
             xargs -0 -P \$EDGE_WORKERS -n1 bash -c "set -e; _pg_import \\"edges_\${SG}\\" \\"\\\$1\\"" _
 
         echo "Creating edge indexes for \$SG (parallel)..."
-        \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_edgeId\\" ON \\"edges_\${SG}\\" USING hash (\\"grebi:edgeId\\");" &
-        \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_fromNodeId\\" ON \\"edges_\${SG}\\" USING hash (\\"grebi:fromNodeId\\");" &
-        \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_toNodeId\\" ON \\"edges_\${SG}\\" USING hash (\\"grebi:toNodeId\\");" &
-        \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_type_hash\\" ON \\"edges_\${SG}\\" USING hash (\\"grebi:type\\");" &
-        \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_type_btree\\" ON \\"edges_\${SG}\\" USING btree (\\"grebi:type\\");" &
+        \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_edgeId\\" ON \\"edges_\${SG}\\" USING btree (\\"grebi:edgeId\\");" &
+        \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_fromNodeId\\" ON \\"edges_\${SG}\\" USING btree (\\"grebi:fromNodeId\\");" &
+        \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_toNodeId\\" ON \\"edges_\${SG}\\" USING btree (\\"grebi:toNodeId\\");" &
+        \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_type\\" ON \\"edges_\${SG}\\" USING btree (\\"grebi:type\\");" &
         \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_datasources_gin\\" ON \\"edges_\${SG}\\" USING gin (\\"grebi:datasources\\");" &
         wait
 
@@ -135,7 +134,7 @@ EOF
         NODES_COLS=\$(paste -sd',' < "\$NODES_COLS_FILE")
 
         \$PSQL -c "
-            CREATE UNLOGGED TABLE \\"nodes_\${SG}\\" (
+            CREATE TABLE \\"nodes_\${SG}\\" (
                 \$NODES_COLS
             ) WITH (fillfactor=100);
         "
@@ -145,7 +144,7 @@ EOF
             xargs -0 -P \$NPROC -n1 bash -c "set -e; _pg_import \\"nodes_\${SG}\\" \\"\\\$1\\"" _
 
         echo "Creating node indexes for \$SG in parallel..."
-        \$PSQL -c "CREATE INDEX \\"idx_nodes_\${SG}_name\\" ON \\"nodes_\${SG}\\" USING hash (\\"grebi:name\\");" &
+        \$PSQL -c "CREATE INDEX \\"idx_nodes_\${SG}_name\\" ON \\"nodes_\${SG}\\" USING btree (\\"grebi:name\\");" &
         for COL_NAME in \$(grep '^"embedding:' "\$NODES_COLS_FILE" | sed 's/^"\\([^"]*\\)".*/\\1/'); do
             SAFE_MODEL=\$(echo "\$COL_NAME" | sed 's/embedding://' | tr -- '-.' '__')
             \$PSQL -c "CREATE INDEX \\"idx_nodes_\${SG}_embedding_\${SAFE_MODEL}\\" ON \\"nodes_\${SG}\\" USING hnsw (\\"\${COL_NAME}\\" vector_cosine_ops);" &
@@ -153,13 +152,6 @@ EOF
         wait
 
         \$PSQL -c "ANALYZE \\"nodes_\${SG}\\";"
-    done
-
-    # Convert ALL UNLOGGED tables back to LOGGED for production durability
-    echo "Converting all tables to LOGGED..."
-    for SG in "\${SUBGRAPHS[@]}"; do
-        \$PSQL -c "ALTER TABLE \\"edges_\${SG}\\" SET LOGGED;"
-        \$PSQL -c "ALTER TABLE \\"nodes_\${SG}\\" SET LOGGED;"
     done
 
     # Stop PostgreSQL cleanly

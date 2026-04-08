@@ -47,8 +47,8 @@ export default function EbiLayout() {
   };
 
   return (
-    <>
-      <header className="bg-black bg-right bg-cover">
+    <div className="flex flex-col h-screen overflow-hidden">
+      <header className="bg-black bg-right bg-cover flex-shrink-0">
         <Helmet>
           <meta charSet="utf-8" />
           <title>{navTitles[activeNav] || "GrEBI"} - GrEBI</title>
@@ -202,7 +202,9 @@ export default function EbiLayout() {
           </nav>
         </div>
       </header>
-      <Outlet />
-    </>
+      <div className="flex-1 min-h-0 overflow-auto">
+        <Outlet />
+      </div>
+    </div>
   );
 }

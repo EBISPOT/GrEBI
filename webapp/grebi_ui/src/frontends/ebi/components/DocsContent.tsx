@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -12,6 +12,9 @@ import "prismjs/components/prism-json";
 import "prismjs/components/prism-yaml";
 import ApiExample from "./ApiExample";
 import QueryTemplateExample from "./QueryTemplateExample";
+import PubmedCitation from "./PubmedCitation";
+import PubmedReferences from "./PubmedReferences";
+import { resetPubmedRefs } from "./pubmedRegistry";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -33,13 +36,41 @@ function CopyButton({ text }: { text: string }) {
 export default function DocsContent({
   markdown,
   images,
+  seeAlso,
   onNavigate,
+  sectionNumber,
 }: {
   markdown: string;
   images: Record<string, string>;
-  onNavigate: (slug: string) => void;
+  seeAlso?: Array<{ title: string; anchor: string }>;
+  onNavigate?: (anchor: string) => void;
+  sectionNumber?: number;
 }) {
-  // Pre-process: resolve image paths to data URIs
+  // Build a map of slug -> number prefix by scanning headings in order.
+  // This keeps rehype-slug IDs clean (matching sidebar anchors) while letting
+  // heading components look up their number via props.id.
+  const numberBySlug = useMemo(() => {
+    const map = new Map<string, string>();
+    if (sectionNumber == null) return map;
+    let h2 = 0, h3 = 0;
+    let inFence = false;
+    for (const line of markdown.split('\n')) {
+      if (/^```/.test(line)) { inFence = !inFence; continue; }
+      if (inFence) continue;
+      const m = line.match(/^(#{1,3}) (.+)$/);
+      if (!m) continue;
+      const level = m[1].length;
+      const title = m[2];
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (level === 1) { h2 = 0; h3 = 0; map.set(slug, `${sectionNumber}`); }
+      else if (level === 2) { h2++; h3 = 0; map.set(slug, `${sectionNumber}.${h2}`); }
+      else if (level === 3) { h3++; map.set(slug, `${sectionNumber}.${h2}.${h3}`); }
+    }
+    return map;
+  }, [markdown, sectionNumber]);
+
+  // Pre-process: resolve image paths to data URIs only (numbers are rendered
+  // in heading components so rehype-slug IDs stay clean and match sidebar anchors)
   const processed = useMemo(() => {
     return markdown.replace(
       /!\[([^\]]*)\]\(\.\/images\/([^)]+)\)/g,
@@ -50,17 +81,6 @@ export default function DocsContent({
       }
     );
   }, [markdown, images]);
-
-  const resolveDocLink = useCallback(
-    (href: string): { isDoc: boolean; slug: string } | null => {
-      if (!href) return null;
-      // Match ./foo.md, foo.md, or subdir/foo.md (relative doc links)
-      const m = href.match(/^(?:\.\/)?([a-z0-9_\-\/]+)\.md$/i);
-      if (m) return { isDoc: true, slug: m[1] };
-      return null;
-    },
-    []
-  );
 
   const components = useMemo(
     () => ({
@@ -113,30 +133,14 @@ export default function DocsContent({
           </code>
         );
       },
-      // Links — resolve internal doc links to SPA navigation
+      // Links
       a({ href, children, ...props }: any) {
-        const docLink = resolveDocLink(href);
-        if (docLink) {
-          return (
-            <a
-              href={`/docs/${docLink.slug === "index" ? "" : docLink.slug}`}
-              className="text-blue-600 hover:underline cursor-pointer"
-              onClick={(e) => {
-                e.preventDefault();
-                onNavigate(docLink.slug);
-              }}
-              {...props}
-            >
-              {children}
-            </a>
-          );
-        }
         return (
           <a
             href={href}
             className="text-blue-600 hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
+            target={href && href.startsWith("#") ? undefined : "_blank"}
+            rel={href && href.startsWith("#") ? undefined : "noopener noreferrer"}
             {...props}
           >
             {children}
@@ -192,25 +196,35 @@ export default function DocsContent({
         );
       },
       // Headings
-      h1({ children, ...props }: any) {
+      h1({ children, id, ...props }: any) {
+        const num = id ? numberBySlug.get(id) : undefined;
         return (
-          <h1 className="text-3xl font-bold mt-8 mb-4 pb-2 border-b border-gray-200" {...props}>
-            {children}
+          <h1 id={id} className="text-3xl font-bold mt-8 mb-4 pb-2 border-b-[3px] border-embl-purple-default text-embl-purple-default" {...props}>
+            {num && <span className="mr-3">{num}</span>}{children}
           </h1>
         );
       },
-      h2({ children, ...props }: any) {
+      h2({ children, id, ...props }: any) {
+        const num = id ? numberBySlug.get(id) : undefined;
         return (
-          <h2 className="text-2xl font-semibold mt-6 mb-3" {...props}>
-            {children}
+          <h2 id={id} className="text-2xl font-semibold mt-6 mb-3 pb-2 border-b-2 border-embl-purple-default text-embl-purple-default" {...props}>
+            {num && <span className="mr-3">{num}</span>}{children}
           </h2>
         );
       },
-      h3({ children, ...props }: any) {
+      h3({ children, id, ...props }: any) {
+        const num = id ? numberBySlug.get(id) : undefined;
         return (
-          <h3 className="text-xl font-semibold mt-5 mb-2" {...props}>
-            {children}
+          <h3 id={id} className="text-xl font-semibold mt-5 mb-2 text-embl-purple-default" {...props}>
+            {num && <span className="mr-2">{num}</span>}{children}
           </h3>
+        );
+      },
+      h4({ children, id, ...props }: any) {
+        return (
+          <h4 id={id} className="text-lg font-semibold mt-4 mb-1 text-embl-purple-default" {...props}>
+            {children}
+          </h4>
         );
       },
       // Block quotes
@@ -250,9 +264,19 @@ export default function DocsContent({
       // Custom HTML elements for interactive examples
       "api-example": (props: any) => <ApiExample {...props} />,
       "query-template": (props: any) => <QueryTemplateExample {...props} />,
+      "pubmed": (props: any) => <PubmedCitation {...props} />,
+      "todo": ({ children, ...props }: any) => (
+        <div className="flex items-start gap-2 my-4 px-4 py-3 rounded-md bg-yellow-50 border border-yellow-300 text-yellow-900" {...props}>
+          <span className="font-bold shrink-0">TODO:</span>
+          <span>{children}</span>
+        </div>
+      ),
     }),
-    [resolveDocLink, onNavigate]
+    [numberBySlug]
   );
+
+  // Reset pubmed ref numbering when markdown changes
+  useMemo(() => resetPubmedRefs(), [markdown]);
 
   return (
     <article className="max-w-4xl">
@@ -263,6 +287,28 @@ export default function DocsContent({
       >
         {processed}
       </ReactMarkdown>
+      <PubmedReferences />
+      {seeAlso && seeAlso.length > 0 && (
+        <nav className="mt-10 pt-4 border-t border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">See also</h3>
+          <ul className="list-none p-0 m-0 space-y-1">
+            {seeAlso.map(({ title, anchor }) => (
+              <li key={anchor}>
+                <a
+                  href={`#${anchor}`}
+                  className="text-blue-600 hover:underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onNavigate?.(anchor);
+                  }}
+                >
+                  {title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </article>
   );
 }

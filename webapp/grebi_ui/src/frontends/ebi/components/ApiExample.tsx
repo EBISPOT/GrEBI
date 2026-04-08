@@ -3,22 +3,17 @@ import { PlayArrow } from "@mui/icons-material";
 import TabbedSourceView from "../../../components/query/TabbedSourceView";
 import api2code from "../../../../../api2code.mjs";
 
-export default function ApiExample(props: {
-  method?: string;
-  url?: string;
-  params?: string;
-}) {
+export default function ApiExample(props: Record<string, string> & { children?: any }) {
   const method = props.method || "GET";
   const baseUrl = props.url || "";
 
   const initialParams: Record<string, string> = useMemo(() => {
-    if (!props.params) return {};
-    try {
-      return JSON.parse(props.params);
-    } catch {
-      return {};
+    const p: Record<string, string> = {};
+    for (const [k, v] of Object.entries(props)) {
+      if (k !== "method" && k !== "url" && typeof v === "string") p[k] = v;
     }
-  }, [props.params]);
+    return p;
+  }, [props]);
 
   const [params, setParams] = useState<Record<string, string>>(initialParams);
   const [response, setResponse] = useState<string | null>(null);
@@ -56,6 +51,7 @@ export default function ApiExample(props: {
   };
 
   return (
+    <>
     <div className="my-4 border border-gray-300 rounded-lg overflow-hidden">
       {/* Header */}
       <div className="bg-gray-100 px-4 py-2 flex items-center gap-2 border-b border-gray-300">
@@ -109,5 +105,7 @@ export default function ApiExample(props: {
         </div>
       )}
     </div>
+    {props.children}
+    </>
   );
 }

@@ -3,22 +3,17 @@ import { PlayArrow, WarningAmber } from "@mui/icons-material";
 import TabbedSourceView from "../../../components/query/TabbedSourceView";
 import query2code from "../../../../../query2code.mjs";
 
-export default function QueryTemplateExample(props: {
-  id?: string;
-  graph?: string;
-  params?: string;
-}) {
+export default function QueryTemplateExample(props: Record<string, string> & { children?: any }) {
   const queryId = props.id || "";
   const graph = props.graph || "";
 
   const initialParams: Record<string, string> = useMemo(() => {
-    if (!props.params) return {};
-    try {
-      return JSON.parse(props.params);
-    } catch {
-      return {};
+    const p: Record<string, string> = {};
+    for (const [k, v] of Object.entries(props)) {
+      if (k !== "id" && k !== "graph" && typeof v === "string") p[k] = v;
     }
-  }, [props.params]);
+    return p;
+  }, [props]);
 
   const [params, setParams] = useState<Record<string, string>>(initialParams);
   const [response, setResponse] = useState<string | null>(null);
@@ -73,6 +68,7 @@ export default function QueryTemplateExample(props: {
   };
 
   return (
+    <>
     <div className="my-4 border border-gray-300 rounded-lg overflow-hidden">
       {/* Header */}
       <div className="bg-gray-100 px-4 py-2 flex items-center gap-2 border-b border-gray-300">
@@ -133,5 +129,7 @@ export default function QueryTemplateExample(props: {
         </div>
       )}
     </div>
+    {props.children}
+    </>
   );
 }

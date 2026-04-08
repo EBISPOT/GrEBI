@@ -1,37 +1,43 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ]; then
-  echo "Usage: $0 <subgraph> <datarelease_path>"
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 <datarelease_path>"
   exit 1
 fi
 
-SUBGRAPH=$1
-DATARELEASE_PATH=$2
+DATARELEASE_PATH=$1
 
 if [ ! -d "$DATARELEASE_PATH" ]; then
   echo "Data release path $DATARELEASE_PATH does not exist"
   exit 1
 fi
 
-echo "Checking the data release for subgraph $SUBGRAPH at $DATARELEASE_PATH looks sane"
+# Discover subgraphs from neo4j archives
+SUBGRAPHS=($(ls "$DATARELEASE_PATH"/*_neo4j.tgz 2>/dev/null | sed 's|.*/||; s|_neo4j.tgz||'))
+if [ ${#SUBGRAPHS[@]} -eq 0 ]; then
+  echo "No neo4j archives (*_neo4j.tgz) found in $DATARELEASE_PATH"
+  exit 1
+fi
 
-if [ ! -f "$DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz" ]; then
-  echo "neo4j archive $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz not found"
+echo "Checking data release at $DATARELEASE_PATH (subgraphs: ${SUBGRAPHS[*]})"
+
+for SUBGRAPH in "${SUBGRAPHS[@]}"; do
+  for f in "${SUBGRAPH}_neo4j.tgz" "${SUBGRAPH}.sqlite3" "${SUBGRAPH}_metadata.json"; do
+    if [ ! -f "$DATARELEASE_PATH/$f" ]; then
+      echo "$f not found in $DATARELEASE_PATH"
+      exit 1
+    fi
+  done
+done
+if [ ! -f "$DATARELEASE_PATH/solr.tgz" ]; then
+  echo "solr.tgz not found in $DATARELEASE_PATH"
   exit 1
 fi
-if [ ! -f "$DATARELEASE_PATH/${SUBGRAPH}_solr.tgz" ]; then
-  echo "solr archive $DATARELEASE_PATH/${SUBGRAPH}_solr.tgz not found"
-  exit 1
-fi
-if [ ! -f "$DATARELEASE_PATH/${SUBGRAPH}.sqlite3" ]; then
-  echo "sqlite3 database $DATARELEASE_PATH/${SUBGRAPH}.sqlite3 not found"
-  exit 1
-fi
-if [ ! -f "$DATARELEASE_PATH/${SUBGRAPH}_metadata.json" ]; then
-  echo "summary json $DATARELEASE_PATH/${SUBGRAPH}_metadata.json not found"
+if [ ! -f "$DATARELEASE_PATH/postgres.tgz" ]; then
+  echo "postgres.tgz not found in $DATARELEASE_PATH"
   exit 1
 fi
 if [ ! -d "$DATARELEASE_PATH/query_results" ]; then
-  echo "query_results folder $DATARELEASE_PATH/query_results not found"
+  echo "query_results/ not found in $DATARELEASE_PATH"
   exit 1
 fi

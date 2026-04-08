@@ -22,55 +22,73 @@ const rootDocsDir = path.resolve("../../docs");
 if (fs.existsSync(rootDocsDir)) {
   docsDir = rootDocsDir;
 }
-// Extract the first # heading from markdown content as the page title
-function titleFromMarkdown(md) {
-  const m = md.match(/^#\s+(.+)$/m);
-  return m ? m[1].replace(/\\(.)/g, '$1').trim() : null;
-}
-// Normalize sidebar entries: bare strings become {path: "file.md"},
-// objects with "file" key become {path: "file.md", children: [...]}
-function normalizeSidebar(entries) {
-  return entries.map(entry => {
-    if (typeof entry === 'string') return { path: entry };
-    if (entry.file) {
-      const norm = { path: entry.file };
-      if (entry.children) norm.children = normalizeSidebar(entry.children);
-      return norm;
+// Build sidebar tree from markdown headings (h1–h3).
+// h4 headings are rendered as headings in the content but excluded from the sidebar.
+// Each heading becomes an anchor slug; nesting follows heading depth.
+function sidebarFromHeadings(md) {
+  const headingRe = /^(#{1,3})\s+(.+)$/gm;
+  const flat = [];
+  let m;
+  while ((m = headingRe.exec(md)) !== null) {
+    const level = m[1].length;               // 1–4
+    const title = m[2].replace(/\\(.)/g, '$1').trim();
+    const anchor = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    flat.push({ level, title, anchor });
+  }
+  // Build nested tree: children go under the nearest preceding lower-level heading
+  const root = [];
+  const stack = [{ children: root, level: 0 }];
+  for (const h of flat) {
+    const entry = { title: h.title, anchor: h.anchor };
+    while (stack.length > 1 && stack[stack.length - 1].level >= h.level) stack.pop();
+    stack[stack.length - 1].children.push(entry);
+    stack.push({ children: (entry.children = []), level: h.level });
+  }
+  // Strip empty children arrays
+  function prune(entries) {
+    for (const e of entries) {
+      if (e.children && e.children.length) prune(e.children);
+      else delete e.children;
     }
-    if (entry.children) entry.children = normalizeSidebar(entry.children);
-    return entry;
+  }
+  prune(root);
+  return root;
+}
+// Resolve <include src="path/to/file.md" /> tags recursively.
+// Paths are relative to the directory of the file containing the tag.
+function resolveIncludes(md, baseDir, seen = new Set()) {
+  return md.replace(/^<include\s+src=["']([^"']+)["']\s*\/>$/gm, (_match, relPath) => {
+    const absPath = path.resolve(baseDir, relPath);
+    if (seen.has(absPath)) {
+      console.warn(`  Warning: circular include detected for ${relPath}, skipping`);
+      return '';
+    }
+    if (!fs.existsSync(absPath)) {
+      console.warn(`  Warning: included file not found: ${relPath}`);
+      return '';
+    }
+    seen.add(absPath);
+    const content = fs.readFileSync(absPath, 'utf8');
+    return resolveIncludes(content, path.dirname(absPath), seen);
   });
 }
-// Populate sidebar titles from the markdown page headings
-function resolveSidebarTitles(entries, pages) {
-  for (const entry of entries) {
-    if (!entry.title && entry.path) {
-      const slug = entry.path.replace(/\.md$/, "");
-      const md = pages[slug];
-      if (md) entry.title = titleFromMarkdown(md) || slug;
-    }
-    if (entry.children) resolveSidebarTitles(entry.children, pages);
-  }
-}
-let docsManifest = { sidebar: [], pages: {}, images: {} };
+let docsManifest = { sidebar: [], pages: [], images: {} };
 if (fs.existsSync(docsDir)) {
-  const sidebarPath = path.join(docsDir, "_sidebar.yaml");
-  if (fs.existsSync(sidebarPath)) {
-    docsManifest.sidebar = normalizeSidebar(yaml.load(fs.readFileSync(sidebarPath, "utf8")));
+  const indexPath = path.join(docsDir, "index.md");
+  if (fs.existsSync(indexPath)) {
+    const raw = fs.readFileSync(indexPath, "utf8");
+    const fullContent = resolveIncludes(raw, docsDir);
+    docsManifest.sidebar = sidebarFromHeadings(fullContent);
+    // Split content into pages by h1 headings
+    const h1Re = /^(?=# [^#])/gm;
+    const parts = fullContent.split(h1Re).filter(p => p.trim());
+    docsManifest.pages = parts.map(part => {
+      const titleMatch = part.match(/^# (.+)$/m);
+      const title = titleMatch ? titleMatch[1].trim() : "Untitled";
+      const anchor = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      return { title, anchor, content: part };
+    });
   }
-  // Recursively read all .md files, keyed by their path relative to docsDir (without .md)
-  function readMdFiles(dir, prefix) {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.isDirectory() && entry.name !== "images") {
-        readMdFiles(path.join(dir, entry.name), prefix ? prefix + "/" + entry.name : entry.name);
-      } else if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "_sidebar.yaml") {
-        const slug = (prefix ? prefix + "/" : "") + entry.name.replace(/\.md$/, "");
-        docsManifest.pages[slug] = fs.readFileSync(path.join(dir, entry.name), "utf8");
-      }
-    }
-  }
-  readMdFiles(docsDir, "");
-  resolveSidebarTitles(docsManifest.sidebar, docsManifest.pages);
   const imagesDir = path.join(docsDir, "images");
   if (fs.existsSync(imagesDir)) {
     for (const img of fs.readdirSync(imagesDir)) {
@@ -83,7 +101,7 @@ if (fs.existsSync(docsDir)) {
       }
     }
   }
-  console.log(`  Found ${Object.keys(docsManifest.pages).length} doc pages, ${Object.keys(docsManifest.images).length} images`);
+  console.log(`  Found ${docsManifest.pages.length} pages, ${Object.keys(docsManifest.images).length} images, ${docsManifest.sidebar.length} top-level sections`);
 } else {
   console.log("  No docs/ directory found — docs manifest will be empty");
 }
