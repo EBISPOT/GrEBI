@@ -5,21 +5,19 @@ if [ -z "$GREBI_SUBGRAPHS" ]; then
   exit 1
 fi
 
-# Use a combined directory name from all subgraphs (replace commas with underscores)
-GREBI_DIR_NAME=$(echo "$GREBI_SUBGRAPHS" | tr ',' '_')
-
 export GREBI_HOME=/nfs/production/parkinso/spot/grebi
 export GREBI_DATALOAD_HOME=$GREBI_HOME/dataload
 export GREBI_QUERY_YAMLS_PATH=$GREBI_HOME/materialised_queries
-export GREBI_OUT_DIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_DIR_NAME/out
-export GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-/hps/nobackup/parkinso/spot/grebi/$GREBI_DIR_NAME/downloads}
+export GREBI_NOBACKUP=/hps/nobackup/parkinso/spot/grebi
+export GREBI_OUT_DIR=$GREBI_NOBACKUP/out
+export GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-$GREBI_NOBACKUP/downloads}
 export GREBI_IS_EBI=true
 export GREBI_NEXTFLOW_CONFIG=$GREBI_DATALOAD_HOME/nextflow/codon_nextflow.config
-export NXF_WORK=/hps/nobackup/parkinso/spot/grebi/$GREBI_DIR_NAME/NXF_WORK
-export NXF_HOME=/hps/nobackup/parkinso/spot/grebi/$GREBI_DIR_NAME/NXF_HOME
-export NXF_TEMP=/hps/nobackup/parkinso/spot/grebi/$GREBI_DIR_NAME/NXF_TEMP
-export NXF_CACHE_DIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_DIR_NAME/NXF_CACHE_DIR
-export NXF_SINGULARITY_CACHEDIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_DIR_NAME/NXF_SINGULARITY_CACHEDIR
+export NXF_WORK=$GREBI_NOBACKUP/NXF_WORK
+export NXF_HOME=$GREBI_NOBACKUP/NXF_HOME
+export NXF_TEMP=$GREBI_NOBACKUP/NXF_TEMP
+export NXF_CACHE_DIR=$GREBI_NOBACKUP/NXF_CACHE_DIR
+export NXF_SINGULARITY_CACHEDIR=$GREBI_NOBACKUP/NXF_SINGULARITY_CACHEDIR
 module load nextflow/24.10.3
 
 

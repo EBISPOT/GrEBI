@@ -5,13 +5,11 @@ if [ -z "$GREBI_SUBGRAPHS" ]; then
   exit 1
 fi
 
-GREBI_DIR_NAME=$(echo "$GREBI_SUBGRAPHS" | tr ',' '_')
-
 export GREBI_HOME=/nfs/production/parkinso/spot/grebi
 export GREBI_NEXTFLOW_CONFIG=$GREBI_HOME/dataload/nextflow/download_codon.config
 module load nextflow/24.10.3
 
-BASE_DIR=/hps/nobackup/parkinso/spot/grebi/$GREBI_DIR_NAME
+BASE_DIR=/hps/nobackup/parkinso/spot/grebi
 
 IFS=',' read -ra SUBGRAPH_ARRAY <<< "$GREBI_SUBGRAPHS"
 for sg in "${SUBGRAPH_ARRAY[@]}"; do

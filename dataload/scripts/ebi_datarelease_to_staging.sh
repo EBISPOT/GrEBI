@@ -5,15 +5,14 @@ if [ "$SLURM_JOB_PARTITION" != "datamover" ]; then
   exit 1
 fi
 
-if [ "$#" -ne 2 ]; then
-  echo "Usage: $0 <subgraph> <datarelease_path>"
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 <datarelease_path>"
   exit 1
 fi
 
-SUBGRAPH=$1
-DATARELEASE_PATH=$2
+DATARELEASE_PATH=$1
 
-./check_datarelease.sh $SUBGRAPH $DATARELEASE_PATH
+./check_datarelease.sh $DATARELEASE_PATH
 
 STAGING_PATH=/nfs/public/rw/ontoapps/grebi/staging
 
@@ -22,28 +21,33 @@ if [ ! -d "$STAGING_PATH" ]; then
   exit 1
 fi
 
+# Discover subgraphs from neo4j archives
+SUBGRAPHS=($(ls "$DATARELEASE_PATH"/*_neo4j.tgz | sed 's|.*/||; s|_neo4j.tgz||'))
+
+echo "Deploying release to staging (subgraphs: ${SUBGRAPHS[*]})"
+
+echo Removing old files from staging
+
+rm -rf $STAGING_PATH/neo4j
+rm -rf $STAGING_PATH/solr
+rm -rf $STAGING_PATH/metadata
+rm -rf $STAGING_PATH/sqlite
+rm -rf $STAGING_PATH/postgres
+
 mkdir -p $STAGING_PATH/neo4j
 mkdir -p $STAGING_PATH/solr
 mkdir -p $STAGING_PATH/metadata
 mkdir -p $STAGING_PATH/sqlite
 mkdir -p $STAGING_PATH/postgres
 
-echo Removing old files from staging
-
-rm -rf $STAGING_PATH/neo4j/${SUBGRAPH}_neo4j
-rm -rf $STAGING_PATH/solr/grebi_nodes_${SUBGRAPH}
-rm -rf $STAGING_PATH/solr/grebi_autocomplete_${SUBGRAPH}
-rm -rf $STAGING_PATH/solr/grebi_results__${SUBGRAPH}__*
-rm -rf $STAGING_PATH/metadata/${SUBGRAPH}_metadata.json
-rm -rf $STAGING_PATH/sqlite/${SUBGRAPH}.sqlite3
-rm -rf $STAGING_PATH/postgres/postgres_data
-
 echo Extracting new data release
 
-tar --use-compress-program=pigz -xf $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz -C $STAGING_PATH/neo4j
-tar --use-compress-program=pigz -xf $DATARELEASE_PATH/${SUBGRAPH}_solr.tgz -C $STAGING_PATH
-cp -f $DATARELEASE_PATH/${SUBGRAPH}_metadata.json $STAGING_PATH/metadata/
-cp -f $DATARELEASE_PATH/${SUBGRAPH}.sqlite3 $STAGING_PATH/sqlite/
+for SUBGRAPH in "${SUBGRAPHS[@]}"; do
+  tar --use-compress-program=pigz -xf $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz -C $STAGING_PATH/neo4j
+  cp -f $DATARELEASE_PATH/${SUBGRAPH}_metadata.json $STAGING_PATH/metadata/
+  cp -f $DATARELEASE_PATH/${SUBGRAPH}.sqlite3 $STAGING_PATH/sqlite/
+done
+tar --use-compress-program=pigz -xf $DATARELEASE_PATH/solr.tgz -C $STAGING_PATH/solr
 tar --use-compress-program=pigz -xf $DATARELEASE_PATH/postgres.tgz -C $STAGING_PATH/postgres
 
 

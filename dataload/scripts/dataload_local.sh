@@ -19,11 +19,8 @@ SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 #
 GREBI_HOME=$(dirname $(dirname $SCRIPT_PATH))
 
-# Use a combined directory name from all subgraphs (replace commas with underscores)
-GREBI_DIR_NAME=$(echo "$GREBI_SUBGRAPHS" | tr ',' '_')
-
-TMP_DIR=$GREBI_HOME/tmp/$GREBI_DIR_NAME
-OUT_DIR=$GREBI_HOME/out/$GREBI_DIR_NAME
+TMP_DIR=$GREBI_HOME/tmp
+OUT_DIR=$GREBI_HOME/out
 GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-$GREBI_HOME/downloads}
 
 REPORTS_DIR=$OUT_DIR/reports
