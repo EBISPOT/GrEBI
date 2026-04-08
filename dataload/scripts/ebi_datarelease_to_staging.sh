@@ -26,6 +26,7 @@ mkdir -p $STAGING_PATH/neo4j
 mkdir -p $STAGING_PATH/solr
 mkdir -p $STAGING_PATH/metadata
 mkdir -p $STAGING_PATH/sqlite
+mkdir -p $STAGING_PATH/postgres
 
 echo Removing old files from staging
 
@@ -35,6 +36,7 @@ rm -rf $STAGING_PATH/solr/grebi_autocomplete_${SUBGRAPH}
 rm -rf $STAGING_PATH/solr/grebi_results__${SUBGRAPH}__*
 rm -rf $STAGING_PATH/metadata/${SUBGRAPH}_metadata.json
 rm -rf $STAGING_PATH/sqlite/${SUBGRAPH}.sqlite3
+rm -rf $STAGING_PATH/postgres/postgres_data
 
 echo Extracting new data release
 
@@ -42,6 +44,7 @@ tar --use-compress-program=pigz -xf $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz -C $
 tar --use-compress-program=pigz -xf $DATARELEASE_PATH/${SUBGRAPH}_solr.tgz -C $STAGING_PATH
 cp -f $DATARELEASE_PATH/${SUBGRAPH}_metadata.json $STAGING_PATH/metadata/
 cp -f $DATARELEASE_PATH/${SUBGRAPH}.sqlite3 $STAGING_PATH/sqlite/
+tar --use-compress-program=pigz -xf $DATARELEASE_PATH/postgres.tgz -C $STAGING_PATH/postgres
 
 
 

@@ -265,6 +265,12 @@ export default function DocsContent({
       "api-example": (props: any) => <ApiExample {...props} />,
       "query-template": (props: any) => <QueryTemplateExample {...props} />,
       "pubmed": (props: any) => <PubmedCitation {...props} />,
+      "todo": ({ children, ...props }: any) => (
+        <div className="flex items-start gap-2 my-4 px-4 py-3 rounded-md bg-yellow-50 border border-yellow-300 text-yellow-900" {...props}>
+          <span className="font-bold shrink-0">TODO:</span>
+          <span>{children}</span>
+        </div>
+      ),
     }),
     [numberBySlug]
   );

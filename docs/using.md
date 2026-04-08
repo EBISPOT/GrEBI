@@ -1,37 +1,13 @@
 
 # Using GrEBI
 
+There are four main ways to use GrEBI. First, you can visually [navigate the graph](#navigating-the-graph) and [perform queries](#running-queries) using the GrEBI user interface. Secondly, GrEBI provides a [REST API](#using-the-grebi-api) for use from scripts (we have tested Python and R, but any language with a HTTP client will work). Thirdly, GrEBI can be used as an [MCP server](#using-the-grebi-mcp-server) to enable LLM agents e.g. Claude, OpenAI to perform queries on your behalf. Finally, we provide [materialised tables](#materialised-tables) of a selection of large and expensive graph queries as CSV exports on the EBI FTP, so that the results can be interpreted using simple tabular tools.
+
 ## Navigating the graph
 
-Each node in GrEBI represents a **clique**: a group of identifiers that have
-been determined to refer to the same real-world entity. For example, the gene
-*BRCA1* may appear as `hgnc:1100`, `ncbigene:672`, and `ensembl:ENSG00000012048`.
-GrEBI merges these into a single node with one **canonical ID** and links to all
-source IDs.
+GrEBI is designed for graphs which have very large numbers of edges (> 1 billion). In order to accomplish this without crashing your computer, GrEBI provides a controlled interactive interface in which you can _path through_ the graph without pulling in all of the nodes and edges at once. Starting at a given node (for example, a disease, drug, or phenotype you are interested in), GrEBI allows you to follow edges - in either direction - and leave a trail of virtual breadcrumbs each time you traverse to the next node, creating a path. 
 
-Edges connect two clique nodes. Each edge carries:
-
-| Property | Description |
-|----------|-------------|
-| `edge_id` | Unique identifier for this edge |
-| Type label | A Biolink predicate, e.g. `biolink:related_to` |
-| Provenance | The datasource(s) that asserted the relationship |
-
-Nodes are labelled with one or more **Biolink types** such as
-`biolink:Gene`, `biolink:Disease`, or `biolink:PhenotypicFeature`.
-The type hierarchy is configured per subgraph in a `type_superclasses` map.
-
-Every identifier is normalised to a **CURIE** using the Bioregistry.
-See the Identifiers & CURIEs section for details.
-
-```json
-{
-  "grebi:nodeId": "hgnc:1100",
-  "grebi:type": ["biolink:Gene"],
-  "grebi:name": "BRCA1",
-  "sourceIds": ["hgnc:1100", "ncbigene:672", "ensembl:ENSG00000012048"]
-}
-```
+<todo>Add example pathing through the graph</code>
 
 ## Running queries
 

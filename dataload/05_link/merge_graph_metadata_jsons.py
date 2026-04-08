@@ -5,11 +5,14 @@ import os
 import glob
 from collections import defaultdict
 
-def merge(dict1, dict2):
+def merge(dict1, dict2, path=""):
     for key, value in dict2.items():
+        current_path = f"{path}.{key}" if path else key
         if key in dict1:
-            if isinstance(dict1[key], dict) and isinstance(value, dict):
-                merge(dict1[key], value)
+            if current_path.startswith("embedding_models2dims.") and isinstance(dict1[key], numbers.Number) and isinstance(value, numbers.Number):
+                assert dict1[key] == value, f"embedding_models2dims mismatch for {key}: {dict1[key]} != {value}"
+            elif isinstance(dict1[key], dict) and isinstance(value, dict):
+                merge(dict1[key], value, current_path)
             elif isinstance(dict1[key], list) and isinstance(value, list):
                 for val in value:
                     if val not in dict1[key]:

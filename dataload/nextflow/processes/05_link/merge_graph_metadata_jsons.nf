@@ -17,6 +17,6 @@ process merge_graph_metadata_jsons {
     if [ -d "${downloads_path}" ]; then
         DOWNLOADS_FLAG="--downloads-dir ${downloads_path}"
     fi
-    python3 /opt/grebi_dataload/05_link/merge_graph_metadata_jsons.py ${graph_metadata_jsons} \$DOWNLOADS_FLAG > ${subgraph}_metadata_merged.json
+    python3 /nfs/production/parkinso/spot/grebi/dataload/05_link/merge_graph_metadata_jsons.py ${graph_metadata_jsons} \$DOWNLOADS_FLAG > ${subgraph}_metadata_merged.json
     """
 }

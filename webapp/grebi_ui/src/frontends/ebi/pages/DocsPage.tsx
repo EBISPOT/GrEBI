@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import DocsSidebar from "../components/DocsSidebar";
 import DocsContent from "../components/DocsContent";
 
@@ -193,6 +193,10 @@ export default function DocsPage() {
       />
       {/* Content */}
       <main ref={contentRef} className="flex-1 min-w-0 px-8 py-6 overflow-y-auto h-full">
+        <div className="flex items-start gap-2 mb-6 px-4 py-3 rounded-md bg-yellow-50 border border-yellow-300 text-yellow-900">
+          <span className="font-bold shrink-0">Note:</span>
+          <span>GrEBI is still in beta testing and its docs are a work in progress. Check back later for more progress, or follow our <Link className="link-default" to="https://github.com/EBISPOT/GrEBI/issues">GitHub issue tracker</Link> for updates.</span>
+        </div>
         {currentPage ? (
           <DocsContent
             markdown={currentPage.content}

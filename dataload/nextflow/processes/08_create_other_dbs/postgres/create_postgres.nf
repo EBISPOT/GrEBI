@@ -108,7 +108,7 @@ EOF
         EDGES_COLS=\$(paste -sd',' < "\$EDGES_COLS_FILE")
 
         \$PSQL -c "
-            CREATE UNLOGGED TABLE \\"edges_\${SG}\\" (
+            CREATE TABLE \\"edges_\${SG}\\" (
                 \$EDGES_COLS
             ) WITH (fillfactor=100);
         "
@@ -134,7 +134,7 @@ EOF
         NODES_COLS=\$(paste -sd',' < "\$NODES_COLS_FILE")
 
         \$PSQL -c "
-            CREATE UNLOGGED TABLE \\"nodes_\${SG}\\" (
+            CREATE TABLE \\"nodes_\${SG}\\" (
                 \$NODES_COLS
             ) WITH (fillfactor=100);
         "
@@ -152,13 +152,6 @@ EOF
         wait
 
         \$PSQL -c "ANALYZE \\"nodes_\${SG}\\";"
-    done
-
-    # Convert ALL UNLOGGED tables back to LOGGED for production durability
-    echo "Converting all tables to LOGGED..."
-    for SG in "\${SUBGRAPHS[@]}"; do
-        \$PSQL -c "ALTER TABLE \\"edges_\${SG}\\" SET LOGGED;"
-        \$PSQL -c "ALTER TABLE \\"nodes_\${SG}\\" SET LOGGED;"
     done
 
     # Stop PostgreSQL cleanly
