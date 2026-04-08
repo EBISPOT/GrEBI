@@ -29,6 +29,7 @@ members = [
 	"08_create_postgres/grebi_make_postgres_edges",
 	"08_create_postgres/grebi_make_postgres_nodes",
 	"08_create_postgres/grebi_make_postgres_blobs",
+	"08_create_postgres/grebi_make_compressed_blob",
 	"grebi_shared"
 ]
 

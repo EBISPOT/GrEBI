@@ -102,6 +102,17 @@ EOF
     }
     export -f _pg_import
 
+    # Helper for parallel COPY from binary pgbin files
+    _pg_import_binary() {
+        local TABLE=\$1
+        local BIN_FILE=\$2
+        local ABSFILE
+        ABSFILE=\$(readlink -f "\$BIN_FILE")
+        echo "Importing binary \$BIN_FILE into \$TABLE ..."
+        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "COPY \\"\$TABLE\\" FROM '\$ABSFILE' WITH (FORMAT binary)"
+    }
+    export -f _pg_import_binary
+
     # === Process each subgraph ===
     for SG in "\${SUBGRAPHS[@]}"; do
         echo "=== Processing subgraph: \$SG ==="
@@ -173,7 +184,7 @@ EOF
             BLOB_WORKERS=\$((NPROC < 8 ? NPROC : 8))
             echo "Importing \${#BLOBS_FILES[@]} blob files for \$SG with \$BLOB_WORKERS parallel workers..."
             printf '%s\\0' postgres_blobs_\${SG}_*.pgbin | \\
-                xargs -0 -P \$BLOB_WORKERS -n1 bash -c "set -e; echo \"Importing blobs \\\$1 ...\"; psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c \"COPY \\\\\"blobs_\${SG}\\\\\" FROM '\$(readlink -f \\\"\\\$1\\\")' WITH (FORMAT binary)\"" _
+                xargs -0 -P \$BLOB_WORKERS -n1 bash -c "set -e; _pg_import_binary \\"blobs_\${SG}\\" \\"\\\$1\\"" _
         fi
 
         echo "Creating blobs primary key for \$SG ..."

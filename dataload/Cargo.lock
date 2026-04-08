@@ -933,16 +933,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "grebi_make_solr"
-version = "0.1.0"
-dependencies = [
- "clap",
- "grebi_shared",
- "jemallocator",
- "serde_json",
-]
-
-[[package]]
 name = "grebi_merge"
 version = "0.1.0"
 dependencies = [

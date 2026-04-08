@@ -115,7 +115,7 @@ else
     fi
     # Postgres will run as the current user (supervisord user= is ignored
     # when supervisord itself is not root)
-    GREBI_PG_USER=""
+    GREBI_PG_USER="grebi"
 fi
 
 export GREBI_PG_USER
@@ -124,7 +124,7 @@ mkdir -p /var/run/postgresql 2>/dev/null || true
 chmod 777 /var/run/postgresql 2>/dev/null || true
 
 # PostgreSQL requires the data directory to be 0700 or 0750
-for pgdir in /data/postgres_data_*; do
+for pgdir in /data/postgres_data*; do
     if [ -d "$pgdir" ]; then
         chmod 0700 "$pgdir"
     fi
