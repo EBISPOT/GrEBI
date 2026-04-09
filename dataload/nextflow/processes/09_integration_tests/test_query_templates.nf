@@ -3,8 +3,6 @@ process test_query_templates {
     memory "8 GB"
     time "2h"
     cpus "4"
-    
-    container "ghcr.io/ebispot/grebi_combined:dev"
 
     input:
     path(release_tgz)

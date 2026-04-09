@@ -496,6 +496,19 @@ public class GrebiPostgresClient {
             for (Object o : arr) list.add(String.valueOf(o));
             return list;
         }
+        if (raw instanceof java.sql.Array sqlArr) {
+            try {
+                Object unwrapped = sqlArr.getArray();
+                if (unwrapped instanceof String[] sArr) return Arrays.asList(sArr);
+                if (unwrapped instanceof Object[] oArr) {
+                    List<String> list = new ArrayList<>(oArr.length);
+                    for (Object o : oArr) list.add(String.valueOf(o));
+                    return list;
+                }
+            } catch (java.sql.SQLException e) {
+                logger.warn("Failed to unwrap SQL array", e);
+            }
+        }
         return List.of();
     }
 
@@ -806,10 +819,12 @@ public class GrebiPostgresClient {
             var ctx = dsl();
             var tbl = autocompleteTable(graph);
             var labelField = field(name("label"), String.class);
-            return ctx.selectDistinct(labelField)
+            var sim = field("similarity({0}, {1})", Double.class, labelField, val(q));
+            return ctx.select(labelField)
                     .from(tbl)
                     .where(labelField.likeIgnoreCase("%" + escapeLike(q) + "%"))
-                    .orderBy(field("similarity({0}, {1})", Double.class, labelField, val(q)).desc())
+                    .groupBy(labelField)
+                    .orderBy(sim.desc())
                     .limit(10)
                     .fetch(labelField);
         } catch (SQLException e) {

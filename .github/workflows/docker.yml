@@ -18,10 +18,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: dataload
-            image: ghcr.io/ebispot/grebi_dataload
-            context: dataload
-            file: dataload/Dockerfile
           - name: api
             image: ghcr.io/ebispot/grebi_api
             context: webapp/grebi_api
@@ -41,7 +37,7 @@ jobs:
           - name: combined
             image: ghcr.io/ebispot/grebi_combined
             context: .
-            file: webapp/Dockerfile.combined
+            file: Dockerfile
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

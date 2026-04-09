@@ -233,7 +233,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
                 -p 5432:5432 \\
                 $(printf -- '-e %s ' "${{ENV_VARS[@]}}") \\
                 -w /data \\
-                "$IMAGE" "$MODE"
+                "$IMAGE" /opt/entrypoint.sh "$MODE"
         else
             # Singularity / Apptainer
             SIF="${{GREBI_SIF:-docker://$IMAGE}}"

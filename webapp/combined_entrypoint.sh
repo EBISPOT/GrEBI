@@ -276,13 +276,18 @@ case "$MODE" in
         ;;
         
     bash)
-        echo "Starting interactive bash shell"
-        echo ""
-        echo "Services are NOT started automatically."
-        echo "To start services manually, run:"
-        echo "  /usr/bin/supervisord -c $SUPERVISORD_CONF &"
-        echo ""
-        exec /bin/bash
+        if [ $# -eq 1 ]; then
+            echo "Starting interactive bash shell"
+            echo ""
+            echo "Services are NOT started automatically."
+            echo "To start services manually, run:"
+            echo "  /usr/bin/supervisord -c $SUPERVISORD_CONF &"
+            echo ""
+            exec /bin/bash
+        else
+            # bash with arguments (e.g. bash -c "...") — execute directly
+            exec "$@"
+        fi
         ;;
         
     *)

@@ -1,4 +1,4 @@
-
+# syntax=docker/dockerfile:1
 FROM rust:1.90.0-bullseye
 
 RUN apt-get update -y && apt-get install -y \
@@ -7,6 +7,7 @@ RUN apt-get update -y && apt-get install -y \
     cmake \
     clang \
     pigz \
+    jq \
     python3-pip \
     supervisor \
     procps \
@@ -28,7 +29,9 @@ RUN pip3 install \
     requests \
     pyyaml \
     pandas \
-    tabulate
+    tabulate \
+    openpyxl \
+    py2neo
 
 # Install Chromium for Puppeteer PDF generation
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
@@ -48,10 +51,10 @@ RUN ARCH=$(uname -m) && \
     else \
         echo "Unsupported architecture: $ARCH" && exit 1; \
     fi && \
-    curl -L https://corretto.aws/downloads/resources/21.0.5.11.1/amazon-corretto-21.0.5.11.1-linux-${JAVA_ARCH}.tar.gz | tar -C /opt -xzf - && \
-    echo "export JAVA_HOME=/opt/amazon-corretto-21.0.5.11.1-linux-${JAVA_ARCH}" >> ~/.bashrc && \
+    curl -L https://corretto.aws/downloads/resources/21.0.6.7.1/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH}.tar.gz | tar -C /opt -xzf - && \
+    echo "export JAVA_HOME=/opt/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH}" >> ~/.bashrc && \
     echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc && \
-    ln -s /opt/amazon-corretto-21.0.5.11.1-linux-${JAVA_ARCH} /opt/java
+    ln -s /opt/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH} /opt/java
 ENV JAVA_HOME="/opt/java"
 ENV PATH="$PATH:/opt/java/bin"
 
@@ -59,6 +62,19 @@ ENV PATH="$PATH:/opt/java/bin"
 RUN mkdir -p /opt/maven && \
     curl https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz | tar -xz --strip-components=1 -C /opt/maven
 ENV PATH="$PATH:/opt/maven/bin"
+
+# Install Neo4j 2025.03.0
+RUN mkdir /opt/neo4j && \
+    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2025.03.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j
+
+RUN echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
+    echo "dbms.usage_report.enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
+    echo "db.recovery.fail_on_missing_files=false" >> /opt/neo4j/conf/neo4j.conf
+
+# we set this in nextflow with an env var so don't want it to be overridden by the config file
+RUN sed -i '/^server\.directories\.logs=/d' /opt/neo4j/conf/neo4j.conf
+
+ENV PATH="$PATH:/opt/neo4j/bin"
 
 # Install Node.js 18
 RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
@@ -71,7 +87,25 @@ RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --de
     apt-get update && apt-get install -y caddy && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Docker CLI (for Nextflow Docker executor)
+RUN install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    chmod a+r /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli=5:29.1.3-1~debian.11~bullseye && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Nextflow
+ENV NEXTFLOW_VERSION=24.10.5
+ENV NXF_VER=${NEXTFLOW_VERSION}
+RUN curl -fsSL https://get.nextflow.io | bash && \
+    mv nextflow /usr/local/bin/ && \
+    chmod +x /usr/local/bin/nextflow
+
 # Allow arbitrary UIDs to register themselves in /etc/passwd at runtime
+# (needed by initdb when Nextflow runs containers with --user UID:GID)
 RUN chmod a+w /etc/passwd /etc/group
 
 # Create working directories
@@ -81,26 +115,40 @@ RUN mkdir -p /opt/grebi/data/neo4j \
              /var/run/postgresql && \
     chmod 777 /var/run/postgresql
 
-# Copy files maintaining relative path structure for Rust builds
-COPY dataload/grebi_shared /dataload/grebi_shared
+# Build Rust dataload pipeline
+COPY dataload /opt/grebi_dataload
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/opt/grebi_dataload/target \
+    cd /opt/grebi_dataload && cargo build --release && \
+    cp target/release/grebi_* /usr/local/bin/ 2>/dev/null || true
+ENV PATH="$PATH:/usr/local/bin"
+
+# Copy prefix maps
 COPY dataload/prefix_maps /opt/grebi/data/prefix_maps
-COPY webapp/grebi_prefix_service /webapp/grebi_prefix_service
 
 # Build and install grebi_prefix_service
+COPY dataload/grebi_shared /dataload/grebi_shared
+COPY webapp/grebi_prefix_service /webapp/grebi_prefix_service
 WORKDIR /webapp/grebi_prefix_service
-RUN cargo build --release && \
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/webapp/grebi_prefix_service/target \
+    cargo build --release && \
     cp target/release/grebi_prefix_service /usr/local/bin/
 
 # Build grebi_api
 COPY webapp/grebi_api /opt/grebi_api
 WORKDIR /opt/grebi_api
-RUN mvn clean package assembly:single -DskipTests && \
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package assembly:single -DskipTests && \
     cp target/grebi-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_api.jar
 
 # Build grebi_cypher_service
 COPY webapp/grebi_cypher_service /opt/grebi_cypher_service
 WORKDIR /opt/grebi_cypher_service
-RUN mvn clean package -DskipTests && \
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -DskipTests && \
     cp target/grebi_cypher_service-1.0-SNAPSHOT.jar /opt/grebi_cypher_service.jar
 
 # Build grebi_ui
@@ -111,7 +159,8 @@ WORKDIR /opt/grebi_ui
 # Create .env.ebi if missing (gitignored so not included in COPY)
 RUN test -f .env.ebi || printf 'PUBLIC_URL=/\nGREBI_FRONTEND=ebi\n' > .env.ebi
 
-RUN npm install && \
+RUN --mount=type=cache,target=/root/.npm \
+    npm install && \
     mkdir -p dist && \
     chmod -R 777 dist
 
@@ -125,7 +174,8 @@ COPY webapp/test_queries_and_make_docs.py /opt/test_queries_and_make_docs.py
 COPY webapp/generate_docs_pdf.mjs /opt/generate_docs_pdf.mjs
 COPY webapp/api2code.mjs /opt/api2code.mjs
 COPY webapp/query2code.mjs /opt/query2code.mjs
-RUN cd /opt && npm install js-yaml marked puppeteer
+RUN --mount=type=cache,target=/root/.npm \
+    cd /opt && npm install js-yaml marked puppeteer
 COPY docs /opt/docs
 COPY tests/export_neo4j.py /opt/export_neo4j.py
 COPY tests/export_postgres.py /opt/export_postgres.py
@@ -136,16 +186,3 @@ COPY webapp/combined_entrypoint.sh /opt/entrypoint.sh
 RUN chmod +x /opt/entrypoint.sh
 
 WORKDIR /opt
-
-# Expose all service ports
-# 5432 - PostgreSQL
-# 7474 - Neo4j Browser
-# 7687 - Neo4j Bolt
-# 8085 - Cypher service
-# 8080 - UI (Caddy)
-# 8082 - Prefix service
-# 8090 - API
-EXPOSE 5432 7474 7687 8085 8080 8082 8090
-
-ENTRYPOINT ["/opt/entrypoint.sh"]
-CMD ["run"]
