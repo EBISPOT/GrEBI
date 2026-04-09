@@ -12,7 +12,7 @@ import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.GrebiApi;
 import uk.ac.ebi.grebi.db.CypherServiceClient;
 import uk.ac.ebi.grebi.db.PrefixClient;
-import uk.ac.ebi.grebi.db.ResolverClient;
+import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 import uk.ac.ebi.grebi.repo.QueryTemplate;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ public class GrebiCypherRepo {
     CypherServiceClient cypherClient;
     Set<String> graphs;
 
-    ResolverClient resolver = new ResolverClient();
+    GrebiPostgresClient pgClient = new GrebiPostgresClient();
     Gson gson = new Gson();
     PrefixClient prefixClient = new PrefixClient();
 
@@ -79,7 +79,7 @@ public class GrebiCypherRepo {
             throw new RuntimeException("Failed to get incoming edges", e);
         }
 
-        var resolved = resolver.resolveToMap(
+        var resolved = pgClient.resolveToMap(
                 graph,
                 records.stream().flatMap(record -> {
                     return List.of(
@@ -185,12 +185,16 @@ public class GrebiCypherRepo {
             branches.add(branch);
         }
 
-        // Combine with UNION ALL
-        org.neo4j.cypherdsl.core.Statement combined = org.neo4j.cypherdsl.core.Cypher.unionAll(
-                branches.toArray(new org.neo4j.cypherdsl.core.Statement[0])
-        );
-
-        String cypher = combined.getCypher();
+        // Combine with UNION ALL (requires at least 2 statements)
+        String cypher;
+        if (branches.size() == 1) {
+            cypher = branches.get(0).getCypher();
+        } else {
+            org.neo4j.cypherdsl.core.Statement combined = org.neo4j.cypherdsl.core.Cypher.unionAll(
+                    branches.toArray(new org.neo4j.cypherdsl.core.Statement[0])
+            );
+            cypher = combined.getCypher();
+        }
 
         List<Map<String, Object>> records;
         try {
@@ -367,7 +371,7 @@ public class GrebiCypherRepo {
 
         if(resolve) {
 
-            var resolved = resolver.resolveToMap(
+            var resolved = pgClient.resolveToMap(
                 graph,
                 records.stream()
                     .flatMap(record -> columns.stream()

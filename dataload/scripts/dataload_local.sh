@@ -19,9 +19,10 @@ SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 #
 GREBI_HOME=$(dirname $(dirname $SCRIPT_PATH))
 
-TMP_DIR=$GREBI_HOME/tmp
-OUT_DIR=$GREBI_HOME/out
+TMP_DIR=$(readlink -f $GREBI_HOME/tmp 2>/dev/null || echo $GREBI_HOME/tmp)
+OUT_DIR=$(readlink -f $GREBI_HOME/out 2>/dev/null || echo $GREBI_HOME/out)
 GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-$GREBI_HOME/downloads}
+GREBI_DOWNLOADS_PATH=$(readlink -f $GREBI_DOWNLOADS_PATH 2>/dev/null || echo $GREBI_DOWNLOADS_PATH)
 
 REPORTS_DIR=$OUT_DIR/reports
 mkdir -p $TMP_DIR/NXF_WORK $TMP_DIR/NXF_HOME $TMP_DIR/NXF_TEMP $TMP_DIR/NXF_CACHE_DIR $REPORTS_DIR
@@ -42,11 +43,17 @@ if [ "$(uname)" != "Darwin" ]; then
   USER_OPT="--user $HOST_UID:$HOST_GID --group-add $(stat -c %g /var/run/docker.sock)"
 fi
 
+# Build extra volume mounts for paths that live outside GREBI_HOME (e.g. symlinks to /data/)
+EXTRA_VOLS=""
+case "$TMP_DIR" in "$GREBI_HOME"*) ;; *) EXTRA_VOLS="$EXTRA_VOLS -v $TMP_DIR:$TMP_DIR" ;; esac
+case "$OUT_DIR" in "$GREBI_HOME"*) ;; *) EXTRA_VOLS="$EXTRA_VOLS -v $OUT_DIR:$OUT_DIR" ;; esac
+
 docker run \
   $USER_OPT \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v $GREBI_HOME:$GREBI_HOME \
   -v $GREBI_DOWNLOADS_PATH:$GREBI_DOWNLOADS_PATH \
+  $EXTRA_VOLS \
   -e GREBI_HOME=$GREBI_HOME \
   -e GREBI_OUT_DIR=$OUT_DIR \
   -e GREBI_QUERY_YAMLS_PATH=$GREBI_HOME/materialised_queries \
@@ -60,7 +67,7 @@ docker run \
   -e NXF_HOME=$TMP_DIR/NXF_HOME\
   -e NXF_TEMP=$TMP_DIR/NXF_TEMP \
   -e NXF_CACHE_DIR=$TMP_DIR/NXF_CACHE_DIR \
-  ghcr.io/ebispot/grebi_nextflow:latest \
+  ghcr.io/ebispot/grebi_combined:dev \
   bash -c "cd $GREBI_HOME && nextflow dataload/nextflow/main.nf \
     -c $GREBI_NF_CONFIG -resume \
     -with-report $REPORTS_DIR/report.html \

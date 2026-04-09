@@ -5,17 +5,14 @@ import java.util.Set;
 
 import com.google.gson.JsonElement;
 
-import uk.ac.ebi.grebi.db.MetadataClient;
+import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 
 public class GrebiMetadataRepo {
 
     Map<String,JsonElement> graph2metadata;
     
-    public GrebiMetadataRepo() {
-
-        MetadataClient MetadataClient = new MetadataClient();
-        graph2metadata = MetadataClient.getMetadatas();
-
+    public GrebiMetadataRepo(GrebiPostgresClient pgClient) {
+        graph2metadata = pgClient.getGraphMetadata();
     }
 
     public Set<String> getGraphs() {

@@ -18,22 +18,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: dataload
-            image: ghcr.io/ebispot/grebi_dataload
-            context: dataload
-            file: dataload/Dockerfile
           - name: api
             image: ghcr.io/ebispot/grebi_api
             context: webapp/grebi_api
             file: webapp/grebi_api/Dockerfile
-          - name: resolver
-            image: ghcr.io/ebispot/grebi_resolver_service
-            context: webapp/grebi_resolver_service
-            file: webapp/grebi_resolver_service/Dockerfile
-          - name: metadata
-            image: ghcr.io/ebispot/grebi_metadata_service
-            context: webapp/grebi_metadata_service
-            file: webapp/grebi_metadata_service/Dockerfile
           - name: prefix
             image: ghcr.io/ebispot/grebi_prefix_service
             context: .
@@ -49,7 +37,7 @@ jobs:
           - name: combined
             image: ghcr.io/ebispot/grebi_combined
             context: .
-            file: webapp/Dockerfile.combined
+            file: Dockerfile
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

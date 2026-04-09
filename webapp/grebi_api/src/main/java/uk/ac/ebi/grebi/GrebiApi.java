@@ -20,18 +20,14 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 
-import org.apache.solr.client.solrj.SolrQuery;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
-import uk.ac.ebi.grebi.db.GrebiSolrQuery;
-import uk.ac.ebi.grebi.db.ResolverClient;
-import uk.ac.ebi.grebi.db.MetadataClient;
+import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 import uk.ac.ebi.grebi.db.PrefixClient;
 import uk.ac.ebi.grebi.db.EmbeddingServiceClient;
-import uk.ac.ebi.grebi.repo.GrebiSolrRepo;
 import uk.ac.ebi.grebi.repo.GrebiPostgresRepo;
 import uk.ac.ebi.grebi.repo.GrebiMetadataRepo;
 
@@ -41,34 +37,18 @@ public class GrebiApi {
     public static void main(String[] args) throws ParseException, org.apache.commons.cli.ParseException, IOException {
 
         GrebiCypherRepo cypher = null;
-        GrebiSolrRepo solr = null;
         GrebiPostgresRepo postgres = null;
         GrebiMetadataRepo metadata= null;
         GrebiQueryTemplatesRepo queryTemplates = new GrebiQueryTemplatesRepo();
 
-        Set<String> sqliteGraphs = null;
-        Set<String> solrGraphs = null;
         Set<String> postgresGraphs = null;
-        Set<String> metadataServiceGraphs = null;
         Set<String> cypherGraphs = null;
 
         while(true) {
             try {
-                solr = new GrebiSolrRepo();
                 postgres = new GrebiPostgresRepo();
-                metadata = new GrebiMetadataRepo();
-                sqliteGraphs = (new ResolverClient()).getGraphs();
-                solrGraphs = solr.getGraphs();
                 postgresGraphs = postgres.getGraphs();
-                metadataServiceGraphs = metadata.getGraphs();
-                if(!sqliteGraphs.equals(solrGraphs) || !sqliteGraphs.equals(postgresGraphs) || !sqliteGraphs.equals(metadataServiceGraphs)) {
-                    throw new RuntimeException("SQLite/Solr/PostgreSQL/the metadata jsons do not seem to contain the same graphs. Found: "
-                            + String.join(",", sqliteGraphs) + " for SQLite (from resolver service) and "
-                            + String.join(",", solrGraphs) + " for Solr (from list of solr cores) and "
-                            + String.join(",", postgresGraphs) + " for PostgreSQL (from edge tables) and "
-                            + String.join(",", metadataServiceGraphs) + " for the summary jsons (from metadata server)"
-                    );
-                }
+                metadata = new GrebiMetadataRepo(postgres.getPgClient());
                 break;
             } catch(Throwable e) {
                 System.out.println("Could not get graphs from one of the services. Retrying in 10 seconds...");
@@ -85,13 +65,10 @@ public class GrebiApi {
             try {
                 cypher = new GrebiCypherRepo();
                 cypherGraphs = cypher.getGraphs();
-                if(!sqliteGraphs.equals(cypherGraphs)) {
+                if(!postgresGraphs.equals(cypherGraphs)) {
                     cypher = null;
-                    throw new RuntimeException("SQLite/Solr/PostgreSQL/the summary jsons/cypher service do not seem to contain the same graphs. Found: "
-                            + String.join(",", sqliteGraphs) + " for SQLite (from resolver service) and "
-                            + String.join(",", solrGraphs) + " for Solr (from list of solr cores) and "
-                            + String.join(",", postgresGraphs) + " for PostgreSQL (from edge tables) and "
-                            + String.join(",", metadataServiceGraphs) + " for the summary jsons (from summary server) and "
+                    throw new RuntimeException("PostgreSQL/cypher service do not seem to contain the same graphs. Found: "
+                            + String.join(",", postgresGraphs) + " for PostgreSQL and "
                             + String.join(",", cypherGraphs) + " for cypher service"
                     );
                 }
@@ -112,11 +89,11 @@ public class GrebiApi {
             System.out.println("Cypher service is available");
         }
 
-        System.out.println("Found graphs: " + String.join(",", solrGraphs));
+        System.out.println("Found graphs: " + String.join(",", postgresGraphs));
 
         // Initialize embedding service clients (one per graph with PCA models)
         Map<String, EmbeddingServiceClient> embeddingClients = new LinkedHashMap<>();
-        for (String sg : solrGraphs) {
+        for (String sg : postgresGraphs) {
             var meta = metadata.getMetadata(sg);
             if (meta != null && meta.containsKey("embedding_pca_models")) {
                 embeddingClients.put(sg, new EmbeddingServiceClient(meta));
@@ -124,12 +101,11 @@ public class GrebiApi {
             }
         }
 
-        run(cypher, solr, postgres, metadata, solrGraphs, queryTemplates, embeddingClients);
+        run(cypher, postgres, metadata, postgresGraphs, queryTemplates, embeddingClients);
     }
 
     static void run(
         final GrebiCypherRepo cypher,
-        final GrebiSolrRepo solr,
         final GrebiPostgresRepo postgres,
         final GrebiMetadataRepo metadata,
         final Set<String> graphs,
@@ -141,7 +117,7 @@ public class GrebiApi {
         Gson gson = new Gson();
 
         GrebiMcpServer mcpServer = new GrebiMcpServer(
-            cypher, solr, metadata, graphs, queryTemplates
+            cypher, metadata, graphs, queryTemplates
         );
 
         Javalin.create(config -> {
@@ -195,20 +171,33 @@ public class GrebiApi {
                     var graph = ctx.pathParam("graph");
                     ctx.contentType("application/json");
 
-                    // Node counts by datasource and type from Solr faceting
-                    var q = new GrebiSolrQuery();
-                    q.addFacetField("grebi:datasources");
-                    q.addFacetField("grebi:type");
-                    q.setFacetLimit(-1);
-                    var facetResult = solr.searchNodesPaginated(graph, q, false,
-                            PageRequest.of(0, 1));
+                    var meta = metadata.getMetadata(graph);
 
-                    var nodeDsByDs = facetResult.facetFieldToCounts.getOrDefault("grebi:datasources", Map.of());
-                    var nodesByType = facetResult.facetFieldToCounts.getOrDefault("grebi:type", Map.of());
+                    // Node counts by type from precomputed metadata
+                    Map<String, Long> nodesByType = new LinkedHashMap<>();
+                    var typesEl = meta.get("types");
+                    if (typesEl != null && typesEl.isJsonObject()) {
+                        for (var entry : typesEl.getAsJsonObject().entrySet()) {
+                            if (entry.getValue().isJsonObject()) {
+                                var countEl = entry.getValue().getAsJsonObject().get("count");
+                                if (countEl != null) {
+                                    nodesByType.put(entry.getKey(), countEl.getAsLong());
+                                }
+                            }
+                        }
+                    }
+
+                    // Node counts by datasource from precomputed metadata
+                    Map<String, Long> nodeDsByDs = new LinkedHashMap<>();
+                    var nodeDsEl = meta.get("node_counts_by_datasource");
+                    if (nodeDsEl != null && nodeDsEl.isJsonObject()) {
+                        for (var entry : nodeDsEl.getAsJsonObject().entrySet()) {
+                            nodeDsByDs.put(entry.getKey(), entry.getValue().getAsLong());
+                        }
+                    }
 
                     // Edge counts by type from metadata edges nested structure (srcType → edgeType → dstType → dsSig → count)
                     Map<String, Long> edgesByType = new LinkedHashMap<>();
-                    var meta = metadata.getMetadata(graph);
                     var edgesEl = meta.get("edges");
                     if (edgesEl != null && edgesEl.isJsonObject()) {
                         for (var srcType : edgesEl.getAsJsonObject().entrySet()) {
@@ -281,9 +270,10 @@ public class GrebiApi {
                     ctx.result(gson.toJson(md.get("materialised_queries")));
                 })
                 .get("/api/v1/graphs/{graph}/materialised_queries/{queryid}", ctx -> {
-                    var q = new GrebiSolrQuery();
-                    q.setSearchText(ctx.queryParam("q"));
-                    q.setExactMatch(false);
+                    var searchText = ctx.queryParam("q");
+
+                    Map<String, List<String>> filters = new LinkedHashMap<>();
+                    List<String> facetFields = new ArrayList<>();
                     for(var param : ctx.queryParamMap().entrySet()) {
                         if(param.getKey().equals("q") ||
                                 param.getKey().equals("page") ||
@@ -295,10 +285,10 @@ public class GrebiApi {
                         ) {
                             continue;
                         }
-                        q.addFilter(param.getKey(), param.getValue(), SearchType.WHOLE_FIELD, false);
+                        filters.put(param.getKey(), param.getValue());
                     }
                     for(var facetField : ctx.queryParams("facet")) {
-                        q.addFacetField(facetField);
+                        facetFields.add(facetField);
                     }
                     var page_num = ctx.queryParam("page");
                     if(page_num == null) {
@@ -309,7 +299,9 @@ public class GrebiApi {
                         size = "10";
                     }
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
-                    var res = solr.searchResultsPaginated(ctx.pathParam("graph"), ctx.pathParam("queryid"), q, page);
+                    var res = postgres.searchMaterialisedQueryResultsPaginated(
+                            ctx.pathParam("graph"), ctx.pathParam("queryid"),
+                            searchText, filters, facetFields, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
@@ -402,9 +394,8 @@ public class GrebiApi {
                 })
                 .get("/api/v1/graphs/{graph}/nodes", ctx -> {
                     ctx.contentType("application/json");
-                    ctx.result("{}");
 
-                    var q = new GrebiSolrQuery();
+                    Map<String, List<String>> filters = new LinkedHashMap<>();
                     for(var param : ctx.queryParamMap().entrySet()) {
                         if(param.getKey().equals("q") ||
                                 param.getKey().equals("page") ||
@@ -417,36 +408,36 @@ public class GrebiApi {
                         ) {
                             continue;
                         }
-                        q.addFilter(param.getKey(), param.getValue(), SearchType.WHOLE_FIELD, false);
+                        filters.put(param.getKey(), param.getValue());
                     }
 
-                    var res = solr.searchNodesPaginated(
+                    var resolve = ! "false".equals(ctx.queryParam("resolve"));
+                    var res = postgres.searchNodesPaginated(
                         ctx.pathParam("graph"),
-                        q,
-                        ! "false".equals(ctx.queryParam("resolve")),
+                        null,
+                        filters,
+                        resolve,
                         PageRequest.of(
                             Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("page"), "0")),
                             Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("size"), "10"))
                         )
                     );
 
-                    System.out.println("solr response: " + res.toString());
-
-                    ctx.contentType("application/json");
                     ctx.json(res);
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");
-                    ctx.result("{}");
 
                     String nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
 
-                    var q = new GrebiSolrQuery();
-                    q.addFilter("grebi:nodeId", List.of(nodeId), SearchType.WHOLE_FIELD, false);
+                    var pgClient = new GrebiPostgresClient();
+                    var resolved = pgClient.resolveToList(ctx.pathParam("graph"), List.of(nodeId));
+                    var res = resolved.isEmpty() ? null : resolved.get(0);
 
-                    var res = solr.getFirstNode(ctx.pathParam("graph"), q);
-
-                    ctx.contentType("application/json");
+                    if (res == null) {
+                        ctx.status(404).result("{\"error\":\"Node not found\"}");
+                        return;
+                    }
                     ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/edge_counts", ctx -> {
@@ -623,8 +614,8 @@ public class GrebiApi {
 
                     if (resolve) {
                         var nodeIds = vectorResults.stream().map(r -> r.nodeId).toList();
-                        var resolver = new ResolverClient();
-                        var resolvedMap = resolver.resolveToMap(graph, nodeIds);
+                        var pgClient = new GrebiPostgresClient();
+                        var resolvedMap = pgClient.resolveToMap(graph, nodeIds);
                         var results = new java.util.ArrayList<Map<String, Object>>();
                         for (var vr : vectorResults) {
                             var resolved = resolvedMap.get(vr.nodeId);
@@ -701,8 +692,8 @@ public class GrebiApi {
                     var graph = ctx.pathParam("graph");
                     // Edge IDs from Neo4j are graph-prefixed, but the resolver stores them without
                     var edgeId = rawEdgeId.startsWith(graph + ":") ? rawEdgeId.substring(graph.length() + 1) : rawEdgeId;
-                    var resolver = new ResolverClient();
-                    var resolved = resolver.resolveToMap(graph, List.of(edgeId));
+                    var pgClient = new GrebiPostgresClient();
+                    var resolved = pgClient.resolveToMap(graph, List.of(edgeId));
                     var edge = resolved.get(edgeId);
                     if (edge == null) {
                         ctx.status(404).result("{\"error\":\"Edge not found\"}");
@@ -741,19 +732,9 @@ public class GrebiApi {
                     ctx.result(gson.toJson(Map.of("curies", res)));
                 })
                 .get("/api/v1/graphs/{graph}/search", ctx -> {
-                    var q = new GrebiSolrQuery();
-                    q.setSearchText(ctx.queryParam("q"));
-                    q.setExactMatch(false);
-                    q.addSearchField("id", 1000, SearchType.WHOLE_FIELD);
-                    q.addSearchField("grebi:name", 900, SearchType.WHOLE_FIELD);
-                    q.addSearchField("grebi:synonym", 800, SearchType.WHOLE_FIELD);
-                    q.addSearchField("id", 500, SearchType.CASE_INSENSITIVE_TOKENS);
-                    q.addSearchField("grebi:name", 450, SearchType.CASE_INSENSITIVE_TOKENS);
-                    q.addSearchField("grebi:synonym", 420, SearchType.CASE_INSENSITIVE_TOKENS);
-                    q.addSearchField("grebi:description", 400, SearchType.WHOLE_FIELD);
-                    q.addSearchField("grebi:description", 250, SearchType.CASE_INSENSITIVE_TOKENS);
-                    q.addSearchField("_text_", 1, SearchType.CASE_INSENSITIVE_TOKENS);
-                    q.addFilter("ols:isObsolete", Set.of("true"), SearchType.WHOLE_FIELD, true);
+                    var searchText = ctx.queryParam("q");
+
+                    Map<String, List<String>> filters = new LinkedHashMap<>();
                     for(var param : ctx.queryParamMap().entrySet()) {
                         if(param.getKey().equals("q") ||
                                 param.getKey().equals("page") ||
@@ -766,16 +747,7 @@ public class GrebiApi {
                         ) {
                             continue;
                         }
-                        q.addFilter(param.getKey(), param.getValue(), SearchType.WHOLE_FIELD, false);
-                    }
-                    q.addReturnField("grebi:nodeId");
-                    q.addReturnField("ols:curie");
-                    q.addReturnField("grebi:datasources");
-                    q.addReturnField("grebi:name");
-                    q.addReturnField("grebi:type");
-                    q.addReturnField("grebi:sourceIds");
-                    for(var facetField : ctx.queryParams("facet")) {
-                        q.addFacetField(facetField);
+                        filters.put(param.getKey(), param.getValue());
                     }
                     var page_num = ctx.queryParam("page");
                     if(page_num == null) {
@@ -787,12 +759,12 @@ public class GrebiApi {
                     }
                     var resolve = ! "false".equals(ctx.queryParam("resolve"));
                     var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
-                    var res = solr.searchNodesPaginated(ctx.pathParam("graph"), q, resolve, page);
+                    var res = postgres.searchNodesPaginated(ctx.pathParam("graph"), searchText, filters, resolve, page);
                     ctx.contentType("application/json");
                     ctx.json(res);
                 })
                 .get("/api/v1/graphs/{graph}/suggest", ctx -> {
-                    var res = solr.autocomplete(ctx.pathParam("graph"), ctx.queryParam("q"));
+                    var res = postgres.autocomplete(ctx.pathParam("graph"), ctx.queryParam("q"));
                     ctx.contentType("application/json");
                     ctx.json(res);
                 })

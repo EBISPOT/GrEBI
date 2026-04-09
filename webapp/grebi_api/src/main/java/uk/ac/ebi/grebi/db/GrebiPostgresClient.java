@@ -2,6 +2,9 @@ package uk.ac.ebi.grebi.db;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 import com.google.gson.reflect.TypeToken;
 import org.jooq.*;
 import org.jooq.conf.ParamType;
@@ -9,9 +12,13 @@ import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStreamReader;
+import java.io.ByteArrayInputStream;
 import java.sql.*;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.zip.InflaterInputStream;
 
 import static org.jooq.impl.DSL.*;
 
@@ -37,6 +44,16 @@ public class GrebiPostgresClient {
     );
 
     private static final List<String> EDGE_FACET_FIELDS = List.of("grebi:datasources");
+
+    private static final Set<String> ALLOWED_NODE_COLUMNS = Set.of(
+            "grebi:nodeId", "grebi:name", "ols:curie"
+    );
+
+    private static final Set<String> ALLOWED_NODE_ARRAY_COLUMNS = Set.of(
+            "grebi:type", "grebi:datasources", "grebi:sourceIds"
+    );
+
+    private static final List<String> NODE_FACET_FIELDS = List.of("grebi:type", "grebi:datasources");
 
     private static final Field<String> GREBI_TYPE = field(name("grebi:type"), String.class);
     private static final Field<String> GREBI_FROM_NODE_ID = field(name("grebi:fromNodeId"), String.class);
@@ -81,6 +98,29 @@ public class GrebiPostgresClient {
 
     private DSLContext dsl() throws SQLException {
         return DSL.using(getConnection(), SQLDialect.POSTGRES);
+    }
+
+    /**
+     * Load all graph metadata from the graph_metadata table.
+     * Returns a map of graph name → metadata JSON.
+     */
+    public Map<String, JsonElement> getGraphMetadata() {
+        Map<String, JsonElement> result = new LinkedHashMap<>();
+        try {
+            Connection conn = getConnection();
+            try (java.sql.Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT graph, metadata FROM graph_metadata")) {
+                while (rs.next()) {
+                    String graph = rs.getString("graph");
+                    String json = rs.getString("metadata");
+                    result.put(graph, JsonParser.parseString(json));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to load graph metadata from PostgreSQL", e);
+            throw new RuntimeException(e);
+        }
+        return result;
     }
 
     /**
@@ -456,6 +496,19 @@ public class GrebiPostgresClient {
             for (Object o : arr) list.add(String.valueOf(o));
             return list;
         }
+        if (raw instanceof java.sql.Array sqlArr) {
+            try {
+                Object unwrapped = sqlArr.getArray();
+                if (unwrapped instanceof String[] sArr) return Arrays.asList(sArr);
+                if (unwrapped instanceof Object[] oArr) {
+                    List<String> list = new ArrayList<>(oArr.length);
+                    for (Object o : oArr) list.add(String.valueOf(o));
+                    return list;
+                }
+            } catch (java.sql.SQLException e) {
+                logger.warn("Failed to unwrap SQL array", e);
+            }
+        }
         return List.of();
     }
 
@@ -465,11 +518,18 @@ public class GrebiPostgresClient {
     private Map<String, Map<String, Long>> computeFacets(DSLContext ctx, Table<?> tbl,
                                                           List<Condition> conditions,
                                                           List<String> facetFields) {
+        return computeFacets(ctx, tbl, conditions, facetFields, ALLOWED_ARRAY_COLUMNS);
+    }
+
+    private Map<String, Map<String, Long>> computeFacets(DSLContext ctx, Table<?> tbl,
+                                                          List<Condition> conditions,
+                                                          List<String> facetFields,
+                                                          Set<String> allowedArrayCols) {
         Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
         if (facetFields == null || facetFields.isEmpty()) return facets;
 
         for (String facetField : facetFields) {
-            if (!ALLOWED_ARRAY_COLUMNS.contains(facetField)) continue;
+            if (!allowedArrayCols.contains(facetField)) continue;
 
             var valField = field(name("_facet_val"), String.class);
             var cnt = count().as("cnt");
@@ -635,5 +695,395 @@ public class GrebiPostgresClient {
             this.sourceIds = sourceIds;
             this.distance = distance;
         }
+    }
+
+    /**
+     * List all blob tables (tables named blobs_*).
+     */
+    public Set<String> listBlobTables() {
+        Set<String> tables = new LinkedHashSet<>();
+        try {
+            Connection conn = getConnection();
+            DatabaseMetaData meta = conn.getMetaData();
+            try (ResultSet rs = meta.getTables(null, "public", "blobs_%", new String[]{"TABLE"})) {
+                while (rs.next()) {
+                    tables.add(rs.getString("TABLE_NAME"));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to list blob tables", e);
+            throw new RuntimeException(e);
+        }
+        return tables;
+    }
+
+    /**
+     * Get graph names from blob table names (blobs_{graph} -> graph).
+     */
+    public Set<String> getBlobGraphs() {
+        Set<String> graphs = new LinkedHashSet<>();
+        for (String table : listBlobTables()) {
+            if (table.startsWith("blobs_")) {
+                graphs.add(table.substring("blobs_".length()));
+            }
+        }
+        return graphs;
+    }
+
+    /**
+     * Resolve IDs to their decompressed JSON blobs from the blobs table.
+     * Returns a map of id -> parsed JSON object.
+     */
+    public Map<String, Map<String, Object>> resolveToMap(String graph, Collection<String> ids) {
+        if (ids == null || ids.isEmpty()) return Map.of();
+
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
+        }
+
+        Map<String, Map<String, Object>> result = new LinkedHashMap<>();
+        String sql = "SELECT id, json FROM \"blobs_" + graph + "\" WHERE id = ANY(?)";
+
+        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+            String[] idArray = ids.toArray(new String[0]);
+            byte[][] byteIds = new byte[idArray.length][];
+            for (int i = 0; i < idArray.length; i++) {
+                byteIds[i] = idArray[i].getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            }
+            ps.setArray(1, getConnection().createArrayOf("bytea", byteIds));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    byte[] idBytes = rs.getBytes("id");
+                    byte[] jsonBytes = rs.getBytes("json");
+                    String id = new String(idBytes, java.nio.charset.StandardCharsets.UTF_8);
+                    try (var is = new InflaterInputStream(new ByteArrayInputStream(jsonBytes));
+                         var reader = new InputStreamReader(is, java.nio.charset.StandardCharsets.UTF_8)) {
+                        Map<String, Object> parsed = gson.fromJson(reader,
+                                new TypeToken<Map<String, Object>>() {}.getType());
+                        result.put(id, parsed);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Blob resolve failed for graph {}", graph, e);
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+    /**
+     * Resolve IDs to their decompressed JSON blobs, returned as a list in the same order as the input.
+     */
+    public List<Map<String, Object>> resolveToList(String graph, Collection<String> ids) {
+        var resolved = resolveToMap(graph, ids);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (String id : ids) {
+            var val = resolved.get(id);
+            if (val == null) {
+                logger.warn("Could not resolve id {} in graph {}", id, graph);
+            }
+            result.add(val);
+        }
+        return result;
+    }
+
+    // --- Autocomplete ---
+
+    private Table<?> autocompleteTable(String graph) {
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
+        }
+        return table(name("autocomplete_" + graph));
+    }
+
+    public Set<String> listAutocompleteTables() {
+        Set<String> tables = new LinkedHashSet<>();
+        try {
+            Connection conn = getConnection();
+            DatabaseMetaData meta = conn.getMetaData();
+            try (ResultSet rs = meta.getTables(null, "public", "autocomplete_%", new String[]{"TABLE"})) {
+                while (rs.next()) {
+                    tables.add(rs.getString("TABLE_NAME"));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to list autocomplete tables", e);
+            throw new RuntimeException(e);
+        }
+        return tables;
+    }
+
+    public List<String> autocomplete(String graph, String q) {
+        if (q == null || q.isBlank()) return List.of();
+        try {
+            var ctx = dsl();
+            var tbl = autocompleteTable(graph);
+            var labelField = field(name("label"), String.class);
+            var sim = field("similarity({0}, {1})", Double.class, labelField, val(q));
+            return ctx.select(labelField)
+                    .from(tbl)
+                    .where(labelField.likeIgnoreCase("%" + escapeLike(q) + "%"))
+                    .groupBy(labelField)
+                    .orderBy(sim.desc())
+                    .limit(10)
+                    .fetch(labelField);
+        } catch (SQLException e) {
+            logger.error("Autocomplete failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    // --- Node search ---
+
+    private List<Condition> buildNodeConditions(Map<String, List<String>> filters) {
+        var conditions = new ArrayList<Condition>();
+        if (filters != null) {
+            for (var entry : filters.entrySet()) {
+                String key = entry.getKey();
+                var values = entry.getValue();
+                if (values == null || values.isEmpty()) continue;
+
+                if (key.startsWith("-")) {
+                    String arrayCol = key.substring(1);
+                    if (!ALLOWED_NODE_ARRAY_COLUMNS.contains(arrayCol)) continue;
+                    for (String val : values) {
+                        conditions.add(
+                            condition("NOT ({0} @> ARRAY[{1}]::text[])",
+                                field(name(arrayCol)), inline(val))
+                        );
+                    }
+                } else if (ALLOWED_NODE_ARRAY_COLUMNS.contains(key)) {
+                    for (String val : values) {
+                        conditions.add(
+                            condition("{0} @> ARRAY[{1}]::text[]",
+                                field(name(key)), inline(val))
+                        );
+                    }
+                } else if (ALLOWED_NODE_COLUMNS.contains(key)) {
+                    conditions.add(field(name(key), String.class).eq(values.get(0)));
+                }
+            }
+        }
+        return conditions;
+    }
+
+    public NodeQueryResult searchNodes(String graph, String q,
+                                        Map<String, List<String>> filters,
+                                        int offset, int limit) {
+        try {
+            var ctx = dsl();
+            var tbl = nodesTable(graph);
+            var conditions = buildNodeConditions(filters);
+            var nameField = field(name("grebi:name"), String.class);
+
+            if (q != null && !q.isBlank()) {
+                conditions.add(nameField.likeIgnoreCase("%" + escapeLike(q) + "%"));
+            }
+
+            boolean unfiltered = conditions.isEmpty();
+            long totalCount;
+            if (unfiltered) {
+                totalCount = ctx.select(field("reltuples::bigint", Long.class))
+                        .from(table("pg_class"))
+                        .where(field("relname").eq("nodes_" + graph))
+                        .fetchOptional()
+                        .map(r -> r.value1())
+                        .orElse(0L);
+            } else {
+                try {
+                    var countQuery = ctx.selectOne().from(tbl).where(conditions);
+                    String sql = countQuery.getSQL(ParamType.INLINED);
+                    var result = ctx.fetchOne("EXPLAIN (FORMAT JSON) " + sql);
+                    String json = result.get(0, String.class);
+                    var arr = gson.fromJson(json, JsonArray.class);
+                    totalCount = arr.get(0).getAsJsonObject()
+                            .getAsJsonObject("Plan")
+                            .get("Plan Rows").getAsLong();
+                } catch (Exception e) {
+                    logger.warn("EXPLAIN estimate failed for nodes, falling back to COUNT", e);
+                    totalCount = ctx.select(count()).from(tbl).where(conditions).fetchSingle().value1();
+                }
+            }
+
+            var nodeIdField = field(name("grebi:nodeId"), String.class);
+            var typeField = field(name("grebi:type"));
+            var dsField = field(name("grebi:datasources"));
+            var srcField = field(name("grebi:sourceIds"));
+            var curieField = field(name("ols:curie"), String.class);
+
+            var select = ctx.select(nodeIdField, nameField, typeField, dsField, srcField, curieField)
+                    .from(tbl)
+                    .where(conditions);
+
+            List<OrderField<?>> orderBy;
+            if (q != null && !q.isBlank()) {
+                orderBy = List.of(
+                    field("similarity({0}, {1})", Double.class, nameField, val(q)).desc()
+                );
+            } else {
+                orderBy = List.of(nameField.asc());
+            }
+
+            List<Map<String, Object>> results = new ArrayList<>();
+            for (var record : select.orderBy(orderBy).limit(limit).offset(offset).fetch()) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("grebi:nodeId", record.get(nodeIdField));
+                row.put("grebi:name", record.get(nameField));
+                row.put("grebi:type", toDatasourceList(record.get(typeField)));
+                row.put("grebi:datasources", toDatasourceList(record.get(dsField)));
+                row.put("grebi:sourceIds", toDatasourceList(record.get(srcField)));
+                row.put("ols:curie", record.get(curieField));
+                results.add(row);
+            }
+
+            Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
+            boolean cheapFacets = totalCount < 100_000;
+            if (cheapFacets && !unfiltered) {
+                facets = computeFacets(ctx, tbl, conditions, NODE_FACET_FIELDS, ALLOWED_NODE_ARRAY_COLUMNS);
+            }
+
+            return new NodeQueryResult(results, totalCount, facets);
+        } catch (SQLException e) {
+            logger.error("Node search failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static class NodeQueryResult {
+        public final List<Map<String, Object>> results;
+        public final long totalCount;
+        public final Map<String, Map<String, Long>> facets;
+
+        public NodeQueryResult(List<Map<String, Object>> results, long totalCount,
+                               Map<String, Map<String, Long>> facets) {
+            this.results = results;
+            this.totalCount = totalCount;
+            this.facets = facets;
+        }
+    }
+
+    // --- Materialised queries ---
+
+    private Table<?> matQueryTable(String graph) {
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
+        }
+        return table(name("materialised_queries_" + graph));
+    }
+
+    public Set<String> listMatQueryTables() {
+        Set<String> tables = new LinkedHashSet<>();
+        try {
+            Connection conn = getConnection();
+            DatabaseMetaData meta = conn.getMetaData();
+            try (ResultSet rs = meta.getTables(null, "public", "materialised_queries_%", new String[]{"TABLE"})) {
+                while (rs.next()) {
+                    tables.add(rs.getString("TABLE_NAME"));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to list materialised query tables", e);
+            throw new RuntimeException(e);
+        }
+        return tables;
+    }
+
+    public MatQueryResult searchMaterialisedQueryResults(
+            String graph, String queryId, String searchText,
+            Map<String, List<String>> filters, List<String> facetFields,
+            int offset, int limit) {
+        try {
+            var ctx = dsl();
+            var tbl = matQueryTable(graph);
+            var queryIdField = field(name("query_id"), String.class);
+            var rowNumField = field(name("row_number"), Integer.class);
+            var dataField = field(name("data"), String.class);
+
+            var conditions = new ArrayList<Condition>();
+            conditions.add(queryIdField.eq(queryId));
+
+            if (searchText != null && !searchText.isBlank()) {
+                conditions.add(
+                    condition("({0})::text ILIKE {1}",
+                        field(name("data")), val("%" + escapeLike(searchText) + "%"))
+                );
+            }
+
+            if (filters != null) {
+                for (var entry : filters.entrySet()) {
+                    String key = entry.getKey();
+                    var values = entry.getValue();
+                    if (values == null || values.isEmpty()) continue;
+                    for (String v : values) {
+                        conditions.add(
+                            condition("{0} ->> {1} = {2}",
+                                field(name("data")), val(key), val(v))
+                        );
+                    }
+                }
+            }
+
+            long totalCount = ctx.select(count())
+                    .from(tbl)
+                    .where(conditions)
+                    .fetchSingle()
+                    .value1();
+
+            List<Map<String, Object>> results = new ArrayList<>();
+            for (var record : ctx.select(dataField)
+                    .from(tbl)
+                    .where(conditions)
+                    .orderBy(rowNumField.asc())
+                    .limit(limit)
+                    .offset(offset)
+                    .fetch()) {
+                results.add(gson.fromJson(record.value1(),
+                        new TypeToken<Map<String, Object>>() {}.getType()));
+            }
+
+            Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
+            if (facetFields != null && !facetFields.isEmpty() && totalCount < 100_000) {
+                for (String facetField : facetFields) {
+                    var extracted = field("{0} ->> {1}", String.class,
+                            field(name("data")), val(facetField));
+                    var cnt = count().as("cnt");
+                    Map<String, Long> counts = new LinkedHashMap<>();
+                    for (var record : ctx.select(extracted, cnt)
+                            .from(tbl)
+                            .where(conditions)
+                            .groupBy(extracted)
+                            .orderBy(cnt.desc())
+                            .fetch()) {
+                        String fval = record.get(extracted);
+                        if (fval != null) {
+                            counts.put(fval, record.get(cnt).longValue());
+                        }
+                    }
+                    facets.put(facetField, counts);
+                }
+            }
+
+            return new MatQueryResult(results, totalCount, facets);
+        } catch (SQLException e) {
+            logger.error("Materialised query search failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static class MatQueryResult {
+        public final List<Map<String, Object>> results;
+        public final long totalCount;
+        public final Map<String, Map<String, Long>> facets;
+
+        public MatQueryResult(List<Map<String, Object>> results, long totalCount,
+                              Map<String, Map<String, Long>> facets) {
+            this.results = results;
+            this.totalCount = totalCount;
+            this.facets = facets;
+        }
+    }
+
+    private static String escapeLike(String s) {
+        return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }

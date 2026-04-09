@@ -58,9 +58,10 @@ export default function EdgesList(params:{
                 ])
             }`)).map(e => new GraphEdge(e))
             let facets = res.facetFieldsToCounts || {};
+            let facetDatasources = Object.keys(facets['grebi:datasources'] || {});
             let newEdgesState = {
                 total: res.totalElements,
-                datasources: Object.keys(facets['grebi:datasources'] || {}),
+                datasources: edgesState ? [...new Set([...edgesState.datasources, ...facetDatasources])] : facetDatasources,
                 edges: res.elements,
                 facetFieldToCounts: facets,
                 propertyColumns:

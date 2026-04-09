@@ -102,7 +102,7 @@ Now you should be able to connect to Neo4j at the host shown earlier by `hostnam
 
 ## Running the pipeline locally
 
-Requires Docker. The helper scripts run Nextflow inside `ghcr.io/ebispot/grebi_nextflow:latest` and mount the repo and downloads folder.
+Requires Docker. The helper scripts run Nextflow inside `ghcr.io/ebispot/grebi_combined:dev` and mount the repo and downloads folder.
 
 1) Download input files
 
@@ -205,10 +205,9 @@ There are four test subgraphs, each exercising a different aspect of the pipelin
 
 ### Prerequisites
 
-You need Docker with the `docker compose` plugin and enough disk space to build two images. Build them locally before running the tests:
+You need Docker with the `docker compose` plugin and enough disk space to build the image. Build it locally before running the tests:
 
-    docker build -t ghcr.io/ebispot/grebi_dataload:dev -f dataload/Dockerfile dataload
-    docker build -t ghcr.io/ebispot/grebi_combined:dev -f webapp/Dockerfile.combined .
+    docker build -t ghcr.io/ebispot/grebi_combined:dev .
 
 ### Running all tests
 

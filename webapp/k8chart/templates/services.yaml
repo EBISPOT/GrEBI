@@ -44,36 +44,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-resolver
-  labels:
-    app: {{ .Release.Name }}-resolver
-spec:
-  ports:
-      - port: 8084
-        targetPort: 8084
-        name: http
-        protocol: TCP
-  selector:
-    app: {{ .Release.Name }}-resolver
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Release.Name }}-solr
-  labels:
-    app: {{ .Release.Name }}-solr
-spec:
-  ports:
-      - port: 8983
-        targetPort: 8983
-        name: http
-        protocol: TCP
-  selector:
-    app: {{ .Release.Name }}-solr
----
-apiVersion: v1
-kind: Service
-metadata:
   name: {{ .Release.Name }}-postgres
   labels:
     app: {{ .Release.Name }}-postgres
@@ -85,21 +55,6 @@ spec:
         protocol: TCP
   selector:
     app: {{ .Release.Name }}-postgres
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Release.Name }}-metadata-service
-  labels:
-    app: {{ .Release.Name }}-metadata-service
-spec:
-  ports:
-      - port: 8081
-        targetPort: 8081
-        name: http
-        protocol: TCP
-  selector:
-    app: {{ .Release.Name }}-metadata-service
 ---
 apiVersion: v1
 kind: Service

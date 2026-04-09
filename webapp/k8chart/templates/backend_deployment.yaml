@@ -36,8 +36,6 @@ spec:
               memory: 8Gi
               cpu: 0.5
           env:
-            - name: GREBI_SOLR_HOST
-              value: http://{{ .Release.Name }}-solr:8983
             - name: GREBI_POSTGRES_HOST
               value: {{ .Release.Name }}-postgres
             - name: GREBI_POSTGRES_PORT
@@ -48,10 +46,6 @@ spec:
               value: grebi
             - name: GREBI_CYPHER_HOST
               value: http://{{ .Release.Name }}-cypher-service:8085
-            - name: GREBI_RESOLVER_HOST
-              value: http://{{ .Release.Name }}-resolver:8084
-            - name: GREBI_METADATA_HOST
-              value: http://{{ .Release.Name }}-metadata-service:8081
             - name: GREBI_PREFIX_HOST
               value: http://{{ .Release.Name }}-prefix-service:8082
             - name: GREBI_CONTEXT_PATH

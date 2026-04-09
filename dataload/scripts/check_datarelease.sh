@@ -37,6 +37,10 @@ if [ ! -f "$DATARELEASE_PATH/postgres.tgz" ]; then
   echo "postgres.tgz not found in $DATARELEASE_PATH"
   exit 1
 fi
+if [ ! -f "$DATARELEASE_PATH/postgres.tgz" ]; then
+  echo "postgres archive $DATARELEASE_PATH/postgres.tgz not found"
+  exit 1
+fi
 if [ ! -d "$DATARELEASE_PATH/query_results" ]; then
   echo "query_results/ not found in $DATARELEASE_PATH"
   exit 1

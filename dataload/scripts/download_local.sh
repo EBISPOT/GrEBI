@@ -46,7 +46,7 @@ for sg in "${SUBGRAPH_ARRAY[@]}"; do
     -e NXF_HOME=$TMP_DIR/NXF_HOME \
     -e NXF_TEMP=$TMP_DIR/NXF_TEMP \
     -e NXF_CACHE_DIR=$TMP_DIR/NXF_CACHE_DIR \
-    ghcr.io/ebispot/grebi_nextflow:latest \
+    ghcr.io/ebispot/grebi_combined:dev \
     bash -c "cd $GREBI_HOME && nextflow dataload/nextflow/download.nf \
       -c $GREBI_NF_DOWNLOAD_CONFIG -resume \
       -with-report $REPORTS_DIR/report.html \

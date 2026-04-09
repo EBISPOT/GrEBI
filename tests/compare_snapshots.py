@@ -108,7 +108,6 @@ def main():
     snapshot_files = [
         f"{subgraph}_snapshot_neo4j_nodes.jsonl",
         f"{subgraph}_snapshot_neo4j_edges.jsonl",
-        f"{subgraph}_snapshot_solr_nodes.jsonl",
         f"{subgraph}_snapshot_postgres_edges.jsonl",
     ]
 

@@ -13,27 +13,18 @@ services:
         - 8090:8090
       depends_on:
         - grebi-cypher-service
-        - grebi-solr
         - grebi-postgres
-        - grebi-resolver-service
-        - grebi-metadata-service
         - grebi-prefix-service
       links:
         - grebi-cypher-service
-        - grebi-solr
         - grebi-postgres
-        - grebi-resolver-service
-        - grebi-metadata-service
         - grebi-prefix-service
       environment:
         - GREBI_CYPHER_HOST=http://grebi-cypher-service:8085
-        - GREBI_SOLR_HOST=http://grebi-solr:8983/
         - GREBI_POSTGRES_HOST=grebi-postgres
         - GREBI_POSTGRES_PORT=5432
         - GREBI_POSTGRES_USER=grebi
         - GREBI_POSTGRES_DB=grebi
-        - GREBI_RESOLVER_HOST=http://grebi-resolver-service:8084/
-        - GREBI_METADATA_HOST=http://grebi-metadata-service:8081/
         - GREBI_PREFIX_HOST=http://grebi-prefix-service:8082/
     grebi-cypher-service:
       image: ghcr.io/ebispot/grebi_cypher_service:dev
@@ -45,12 +36,6 @@ services:
         - GREBI_NEO4J_DATA_SEARCH_PATH=/data/neo4j
         - GREBI_CYPHER_PORT=8085
         - JDK_JAVA_OPTIONS=--add-modules jdk.incubator.vector
-    grebi-solr:
-      image: solr:9.8.1
-      ports:
-        - 8983:8983
-      volumes:
-        - ${GREBI_SOLR_PATH:?Need path to Solr data}:/var/solr/data
     grebi-postgres:
       image: pgvector/pgvector:0.8.2-pg18
       ports:
@@ -61,23 +46,6 @@ services:
         - POSTGRES_USER=grebi
         - POSTGRES_DB=grebi
         - POSTGRES_HOST_AUTH_METHOD=trust
-    grebi-resolver-service:
-      image: ghcr.io/ebispot/grebi_resolver_service:dev
-      ports:
-        - 8084:8084
-      volumes:
-        - ${GREBI_SQLITE_SEARCH_PATH:?Need path to search for sqlite databases}:/sqlite
-      environment:
-        - GREBI_SQLITE_SEARCH_PATH=/sqlite
-        - GREBI_RESOLVER_PORT=8084
-    grebi-metadata-service:
-      image: ghcr.io/ebispot/grebi_metadata_service:dev
-      ports:
-        - 8081:8081
-      volumes:
-        - ${GREBI_METADATA_JSON_SEARCH_PATH:?Need path to search for metadata json files}:/metadata
-      environment:
-        - GREBI_METADATA_JSON_SEARCH_PATH=/metadata
     grebi-prefix-service:
       image: ghcr.io/ebispot/grebi_prefix_service:dev
       ports:
