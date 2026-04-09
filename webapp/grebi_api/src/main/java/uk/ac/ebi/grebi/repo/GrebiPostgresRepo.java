@@ -19,6 +19,10 @@ public class GrebiPostgresRepo {
         this.pgClient = new GrebiPostgresClient();
     }
 
+    public GrebiPostgresClient getPgClient() {
+        return pgClient;
+    }
+
     public Set<String> getGraphs() {
         return pgClient.getGraphs();
     }

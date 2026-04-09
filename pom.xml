@@ -13,7 +13,6 @@
 
     <modules>
         <module>webapp/grebi_api</module>
-        <module>webapp/grebi_metadata_service</module>
         <module>webapp/grebi_cypher_service</module>
     </modules>
 </project>

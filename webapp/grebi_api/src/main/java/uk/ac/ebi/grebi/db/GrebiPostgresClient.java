@@ -101,6 +101,29 @@ public class GrebiPostgresClient {
     }
 
     /**
+     * Load all graph metadata from the graph_metadata table.
+     * Returns a map of graph name → metadata JSON.
+     */
+    public Map<String, JsonElement> getGraphMetadata() {
+        Map<String, JsonElement> result = new LinkedHashMap<>();
+        try {
+            Connection conn = getConnection();
+            try (java.sql.Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT graph, metadata FROM graph_metadata")) {
+                while (rs.next()) {
+                    String graph = rs.getString("graph");
+                    String json = rs.getString("metadata");
+                    result.put(graph, JsonParser.parseString(json));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Failed to load graph metadata from PostgreSQL", e);
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+    /**
      * List all edge tables (tables named edges_*).
      */
     public Set<String> listEdgeTables() {

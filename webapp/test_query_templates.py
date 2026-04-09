@@ -89,8 +89,6 @@ def dump_service_logs():
         ("neo4j_err.log", "Neo4j stderr"),
         ("postgres.log", "PostgreSQL stdout"),
         ("postgres_err.log", "PostgreSQL stderr"),
-        ("metadata_service.log", "Metadata Service stdout"),
-        ("metadata_service_err.log", "Metadata Service stderr"),
         ("prefix_service.log", "Prefix Service stdout"),
         ("prefix_service_err.log", "Prefix Service stderr"),
         ("supervisord.log", "Supervisord"),
@@ -119,7 +117,6 @@ def dump_service_logs():
 def wait_for_all_services(base_url: str = "http://localhost") -> bool:
     services = [
         (f"{base_url}:8082/health", "Prefix Service"),
-        (f"{base_url}:8081/health", "Metadata Service"),
         (f"{base_url}:8090/api/health", "GrEBI API"),
     ]
 

@@ -26,7 +26,6 @@ import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
 import uk.ac.ebi.grebi.db.GrebiPostgresClient;
-import uk.ac.ebi.grebi.db.MetadataClient;
 import uk.ac.ebi.grebi.db.PrefixClient;
 import uk.ac.ebi.grebi.db.EmbeddingServiceClient;
 import uk.ac.ebi.grebi.repo.GrebiPostgresRepo;
@@ -43,21 +42,13 @@ public class GrebiApi {
         GrebiQueryTemplatesRepo queryTemplates = new GrebiQueryTemplatesRepo();
 
         Set<String> postgresGraphs = null;
-        Set<String> metadataServiceGraphs = null;
         Set<String> cypherGraphs = null;
 
         while(true) {
             try {
                 postgres = new GrebiPostgresRepo();
-                metadata = new GrebiMetadataRepo();
                 postgresGraphs = postgres.getGraphs();
-                metadataServiceGraphs = metadata.getGraphs();
-                if(!postgresGraphs.equals(metadataServiceGraphs)) {
-                    throw new RuntimeException("PostgreSQL/the metadata jsons do not seem to contain the same graphs. Found: "
-                            + String.join(",", postgresGraphs) + " for PostgreSQL (from edge tables) and "
-                            + String.join(",", metadataServiceGraphs) + " for the summary jsons (from metadata server)"
-                    );
-                }
+                metadata = new GrebiMetadataRepo(postgres.getPgClient());
                 break;
             } catch(Throwable e) {
                 System.out.println("Could not get graphs from one of the services. Retrying in 10 seconds...");
@@ -76,9 +67,8 @@ public class GrebiApi {
                 cypherGraphs = cypher.getGraphs();
                 if(!postgresGraphs.equals(cypherGraphs)) {
                     cypher = null;
-                    throw new RuntimeException("PostgreSQL/the summary jsons/cypher service do not seem to contain the same graphs. Found: "
-                            + String.join(",", postgresGraphs) + " for PostgreSQL (from edge tables) and "
-                            + String.join(",", metadataServiceGraphs) + " for the summary jsons (from summary server) and "
+                    throw new RuntimeException("PostgreSQL/cypher service do not seem to contain the same graphs. Found: "
+                            + String.join(",", postgresGraphs) + " for PostgreSQL and "
                             + String.join(",", cypherGraphs) + " for cypher service"
                     );
                 }

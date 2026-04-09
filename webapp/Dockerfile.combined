@@ -77,7 +77,6 @@ RUN chmod a+w /etc/passwd /etc/group
 # Create working directories
 RUN mkdir -p /opt/grebi/data/neo4j \
              /opt/grebi/data/postgres \
-             /opt/grebi/data/metadata \
              /opt/grebi/data/prefix_maps \
              /var/run/postgresql && \
     chmod 777 /var/run/postgresql
@@ -103,12 +102,6 @@ COPY webapp/grebi_cypher_service /opt/grebi_cypher_service
 WORKDIR /opt/grebi_cypher_service
 RUN mvn clean package -DskipTests && \
     cp target/grebi_cypher_service-1.0-SNAPSHOT.jar /opt/grebi_cypher_service.jar
-
-# Build grebi_metadata_service
-COPY webapp/grebi_metadata_service /opt/grebi_metadata_service
-WORKDIR /opt/grebi_metadata_service
-RUN mvn clean package assembly:single -DskipTests && \
-    cp target/grebi_metadata_service-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_metadata_service.jar
 
 # Build grebi_ui
 COPY docs /opt/grebi_ui/docs
@@ -150,10 +143,9 @@ WORKDIR /opt
 # 7687 - Neo4j Bolt
 # 8085 - Cypher service
 # 8080 - UI (Caddy)
-# 8081 - Metadata service
 # 8082 - Prefix service
 # 8090 - API
-EXPOSE 5432 7474 7687 8085 8080 8081 8082 8090
+EXPOSE 5432 7474 7687 8085 8080 8082 8090
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
 CMD ["run"]

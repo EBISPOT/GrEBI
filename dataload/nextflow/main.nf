@@ -320,20 +320,23 @@ workflow {
     all_blobs_pgbins = postgres_blobs.blobs_pgbin.map { sg, f -> f }.collect()
     all_autocomplete_tsvs = prepare_postgres_autocomplete.out.autocomplete_tsv.map { sg, f -> f }.collect()
     all_mat_queries_tsvs = prepare_postgres_mat_queries.out.mat_queries_tsv.map { sg, f -> f }.collect()
+    all_metadata_jsons = add_query_metadatas_to_graph_metadata.out.map { sg, meta -> meta }.collect()
 
     if (params.external_postgres) {
         postgres_db = populate_external_postgres(
             all_edges_tsvs, all_edges_cols,
             all_nodes_tsvs, all_nodes_cols,
             all_blobs_pgbins,
-            all_autocomplete_tsvs, all_mat_queries_tsvs
+            all_autocomplete_tsvs, all_mat_queries_tsvs,
+            all_metadata_jsons
         )
     } else {
         postgres_db = create_postgres(
             all_edges_tsvs, all_edges_cols,
             all_nodes_tsvs, all_nodes_cols,
             all_blobs_pgbins,
-            all_autocomplete_tsvs, all_mat_queries_tsvs
+            all_autocomplete_tsvs, all_mat_queries_tsvs,
+            all_metadata_jsons
         )
     }
 

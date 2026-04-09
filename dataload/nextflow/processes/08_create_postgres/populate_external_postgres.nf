@@ -12,6 +12,7 @@ process populate_external_postgres {
     path(blobs_pgbins)
     path(autocomplete_tsvs)
     path(mat_queries_tsvs)
+    path(metadata_jsons)
 
     output:
     path("postgres_external_done")
@@ -188,6 +189,29 @@ process populate_external_postgres {
         \$PSQL -c "CREATE INDEX \\"idx_mat_queries_\${SG}_query_id_row\\" ON \\"materialised_queries_\${SG}\\" USING btree (query_id, row_number);"
         \$PSQL -c "ANALYZE \\"materialised_queries_\${SG}\\";"
     done
+
+    # --- GRAPH METADATA TABLE (one row per graph, JSONB) ---
+    \$PSQL -c "DROP TABLE IF EXISTS graph_metadata CASCADE;"
+    \$PSQL -c "
+        CREATE TABLE graph_metadata (
+            graph TEXT PRIMARY KEY,
+            metadata JSONB NOT NULL
+        );
+    "
+
+    echo "Writing graph_metadata.tsv ..."
+    python3 -c "
+import json, csv, sys, glob
+with open('graph_metadata.tsv', 'w', newline='') as f:
+    w = csv.writer(f, delimiter='\\t')
+    for mf in sorted(glob.glob('*_metadata.json')):
+        sg = mf.removesuffix('_metadata.json')
+        with open(mf) as fi:
+            w.writerow([sg, json.dumps(json.load(fi), separators=(',',':'))])
+"
+    echo "Loading graph_metadata.tsv ..."
+    \$PSQL -c "COPY graph_metadata FROM '\$PWD/graph_metadata.tsv' WITH (FORMAT csv, DELIMITER E'\\t');"
+    \$PSQL -c "ANALYZE graph_metadata;"
 
     mkdir -p postgres_external_done
     echo "Populated \${PGUSER}@\${PGHOST}:\${PGPORT}/\${PGDATABASE} at \$(date)" > postgres_external_done/status.txt

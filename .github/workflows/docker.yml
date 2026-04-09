@@ -26,10 +26,6 @@ jobs:
             image: ghcr.io/ebispot/grebi_api
             context: webapp/grebi_api
             file: webapp/grebi_api/Dockerfile
-          - name: metadata
-            image: ghcr.io/ebispot/grebi_metadata_service
-            context: webapp/grebi_metadata_service
-            file: webapp/grebi_metadata_service/Dockerfile
           - name: prefix
             image: ghcr.io/ebispot/grebi_prefix_service
             context: .

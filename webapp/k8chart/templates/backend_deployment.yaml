@@ -46,8 +46,6 @@ spec:
               value: grebi
             - name: GREBI_CYPHER_HOST
               value: http://{{ .Release.Name }}-cypher-service:8085
-            - name: GREBI_METADATA_HOST
-              value: http://{{ .Release.Name }}-metadata-service:8081
             - name: GREBI_PREFIX_HOST
               value: http://{{ .Release.Name }}-prefix-service:8082
             - name: GREBI_CONTEXT_PATH

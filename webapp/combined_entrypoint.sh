@@ -17,7 +17,7 @@ MODE="${1:-run}"
 #   - Explicit services with cypher_service but NOT neo4j: cypher_service
 #     uses embedded mode (GREBI_NEO4J_DATA_SEARCH_PATH).
 # ---------------------------------------------------------------------------
-ALL_SERVICES="api cypher_service neo4j metadata_service postgres prefix_service ui"
+ALL_SERVICES="api cypher_service neo4j postgres prefix_service ui"
 SUPERVISORD_CONF="/etc/supervisor/conf.d/supervisord.conf"
 
 # Determine which services are enabled
@@ -260,7 +260,7 @@ case "$MODE" in
                 postgres)         echo "  PostgreSQL:         localhost:5432" ;;
                 api)              echo "  GrEBI API:          http://localhost:8090" ;;
                 ui)               echo "  GrEBI UI:           http://localhost:8080" ;;
-                metadata_service) echo "  Metadata Service:   http://localhost:8081" ;;
+
                 prefix_service)   echo "  Prefix Service:     http://localhost:8082" ;;
             esac
         done

@@ -40,7 +40,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         # effect when no positive (include) services are given.
         #
         # Valid service names:
-        #   api  cypher_service  neo4j  metadata_service  postgres
+        #   api  cypher_service  neo4j  postgres
         #   prefix_service  ui
         #
         # By default neo4j runs as a standalone server and cypher_service
@@ -65,7 +65,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
         DATA_DIR="${{GREBI_DATA_DIR:-$SCRIPT_DIR}}"
 
-        ALL_SERVICES="api cypher_service neo4j metadata_service postgres prefix_service ui"
+        ALL_SERVICES="api cypher_service neo4j postgres prefix_service ui"
 
         # Parse arguments: "bash" and "test" are modes; anything else is a service name.
         # A leading dash (e.g. -api) marks a service for exclusion.
@@ -203,12 +203,10 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         svc_enabled api              && echo "  API:            http://localhost:8090"
         svc_enabled cypher_service   && echo "  Cypher Service: http://localhost:8085"
         svc_enabled postgres         && echo "  PostgreSQL:     localhost:5432"
-        svc_enabled metadata_service && echo "  Metadata:       http://localhost:8081"
         svc_enabled prefix_service   && echo "  Prefix:         http://localhost:8082"
         echo ""
 
         ENV_VARS=(
-            GREBI_METADATA_JSON_SEARCH_PATH=/data
             GREBI_QUERY_TEMPLATES_PATH=/data/query_templates
             PUBLIC_URL=/
         )
@@ -230,7 +228,6 @@ def generate_run_script(subgraphs: str, image: str) -> str:
                 -p 7687:7687 \\
                 -p 8080:8080 \\
                 -p 8085:8085 \\
-                -p 8081:8081 \\
                 -p 8082:8082 \\
                 -p 8090:8090 \\
                 -p 5432:5432 \\

@@ -39,7 +39,6 @@ process test_query_templates {
     # Configure environment for the entrypoint
     export GREBI_SUBGRAPHS=${subgraphs}
     export GREBI_POSTGRES_DATA=\$PWD/postgres_data
-    export GREBI_METADATA_JSON_SEARCH_PATH=\$PWD
     export GREBI_SQLITE_SEARCH_PATH=\$PWD
     export GREBI_QUERY_TEMPLATES_PATH=\$PWD/query_templates
     export PUBLIC_URL=/

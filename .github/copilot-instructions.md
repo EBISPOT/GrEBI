@@ -13,7 +13,6 @@ GrEBI is an HPC pipeline that aggregates knowledge graphs from EMBL-EBI resource
 - **webapp/**: Web application stack
   - `grebi_api/`: Java Spring Boot REST API
   - `grebi_ui/`: TypeScript/React frontend
-  - `grebi_metadata_service/`: Java Spring Boot metadata service
   - `grebi_resolver_service/`: Java Spring Boot resolver service
   - `grebi_cypher_service/`: Java Spring Boot Cypher query service
   - `grebi_prefix_service/`: Java Spring Boot prefix mapping service

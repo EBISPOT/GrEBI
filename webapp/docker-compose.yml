@@ -14,12 +14,10 @@ services:
       depends_on:
         - grebi-cypher-service
         - grebi-postgres
-        - grebi-metadata-service
         - grebi-prefix-service
       links:
         - grebi-cypher-service
         - grebi-postgres
-        - grebi-metadata-service
         - grebi-prefix-service
       environment:
         - GREBI_CYPHER_HOST=http://grebi-cypher-service:8085
@@ -27,7 +25,6 @@ services:
         - GREBI_POSTGRES_PORT=5432
         - GREBI_POSTGRES_USER=grebi
         - GREBI_POSTGRES_DB=grebi
-        - GREBI_METADATA_HOST=http://grebi-metadata-service:8081/
         - GREBI_PREFIX_HOST=http://grebi-prefix-service:8082/
     grebi-cypher-service:
       image: ghcr.io/ebispot/grebi_cypher_service:dev
@@ -49,14 +46,6 @@ services:
         - POSTGRES_USER=grebi
         - POSTGRES_DB=grebi
         - POSTGRES_HOST_AUTH_METHOD=trust
-    grebi-metadata-service:
-      image: ghcr.io/ebispot/grebi_metadata_service:dev
-      ports:
-        - 8081:8081
-      volumes:
-        - ${GREBI_METADATA_JSON_SEARCH_PATH:?Need path to search for metadata json files}:/metadata
-      environment:
-        - GREBI_METADATA_JSON_SEARCH_PATH=/metadata
     grebi-prefix-service:
       image: ghcr.io/ebispot/grebi_prefix_service:dev
       ports:
