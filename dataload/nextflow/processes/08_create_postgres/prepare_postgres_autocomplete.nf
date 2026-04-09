@@ -7,13 +7,13 @@ process prepare_postgres_autocomplete {
     tuple val(subgraph), path(names_txt)
 
     output:
-    tuple val(subgraph), path("autocomplete_${subgraph}_0.tsv.gz"), emit: autocomplete_tsv
+    tuple val(subgraph), path("autocomplete_${subgraph}_0.pgbin"), emit: autocomplete_pgbin
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    # names.txt is null-delimited labels; convert to one-label-per-line, deduplicate, gzip
-    tr '\\0' '\\n' < ${names_txt} | sort -u | pigz --best > autocomplete_${subgraph}_0.tsv.gz
+    # names.txt is null-delimited labels; convert to one-label-per-line, deduplicate, write pgbin
+    tr '\\0' '\\n' < ${names_txt} | sort -u | grebi_make_postgres_autocomplete > autocomplete_${subgraph}_0.pgbin
     """
 }

@@ -292,10 +292,10 @@ workflow {
 
     // === STEP 8: PREPARE AUTOCOMPLETE + MATERIALISED QUERY DATA FOR POSTGRES ===
     prepare_postgres_autocomplete(indexed.names_txt)
-    // autocomplete_tsv: [sg, autocomplete_tsv]
+    // autocomplete_pgbin: [sg, autocomplete_pgbin]
 
     prepare_postgres_mat_queries(linked_results)
-    // mat_queries_tsv: [sg, mat_queries_tsv]
+    // mat_queries_pgbin: [sg, mat_queries_pgbin]
 
     // === STEP 8b: CREATE POSTGRESQL (cross-subgraph) ===
     // Pair edges with graph metadata for prepare_postgres_edges
@@ -313,29 +313,29 @@ workflow {
     prepare_postgres_nodes(pg_nodes_input)
 
     // Strip subgraph tags and collect ALL files for cross-subgraph postgres
-    all_edges_tsvs = prepare_postgres_edges.out.edges_tsv.map { sg, f -> f }.collect()
+    all_edges_pgbins = prepare_postgres_edges.out.edges_pgbin.map { sg, f -> f }.collect()
     all_edges_cols = prepare_postgres_edges.out.columns.map { sg, f -> f }.collect()
-    all_nodes_tsvs = prepare_postgres_nodes.out.nodes_tsv.map { sg, f -> f }.collect()
+    all_nodes_pgbins = prepare_postgres_nodes.out.nodes_pgbin.map { sg, f -> f }.collect()
     all_nodes_cols = prepare_postgres_nodes.out.columns.map { sg, f -> f }.collect()
     all_blobs_pgbins = postgres_blobs.blobs_pgbin.map { sg, f -> f }.collect()
-    all_autocomplete_tsvs = prepare_postgres_autocomplete.out.autocomplete_tsv.map { sg, f -> f }.collect()
-    all_mat_queries_tsvs = prepare_postgres_mat_queries.out.mat_queries_tsv.map { sg, f -> f }.collect()
+    all_autocomplete_pgbins = prepare_postgres_autocomplete.out.autocomplete_pgbin.map { sg, f -> f }.collect()
+    all_mat_queries_pgbins = prepare_postgres_mat_queries.out.mat_queries_pgbin.map { sg, f -> f }.collect()
     all_metadata_jsons = add_query_metadatas_to_graph_metadata.out.map { sg, meta -> meta }.collect()
 
     if (params.external_postgres) {
         postgres_db = populate_external_postgres(
-            all_edges_tsvs, all_edges_cols,
-            all_nodes_tsvs, all_nodes_cols,
+            all_edges_pgbins, all_edges_cols,
+            all_nodes_pgbins, all_nodes_cols,
             all_blobs_pgbins,
-            all_autocomplete_tsvs, all_mat_queries_tsvs,
+            all_autocomplete_pgbins, all_mat_queries_pgbins,
             all_metadata_jsons
         )
     } else {
         postgres_db = create_postgres(
-            all_edges_tsvs, all_edges_cols,
-            all_nodes_tsvs, all_nodes_cols,
+            all_edges_pgbins, all_edges_cols,
+            all_nodes_pgbins, all_nodes_cols,
             all_blobs_pgbins,
-            all_autocomplete_tsvs, all_mat_queries_tsvs,
+            all_autocomplete_pgbins, all_mat_queries_pgbins,
             all_metadata_jsons
         )
     }

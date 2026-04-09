@@ -5,6 +5,7 @@ use std::io::BufRead;
 use std::io::Write;
 
 use clap::Parser;
+use grebi_shared::pgcopy::PgCopyWriter;
 use serde_json::Value;
 
 #[global_allocator]
@@ -20,7 +21,7 @@ struct Args {
     in_graph_metadata_json: String,
 
     #[arg(long)]
-    out_edges_tsv_path: String,
+    out_edges_pgbin_path: String,
 
     #[arg(long)]
     out_columns_path: String,
@@ -43,48 +44,41 @@ fn main() -> std::io::Result<()> {
     let args = Args::parse();
     let start_time = std::time::Instant::now();
 
-    // Read extra property names from graph_metadata.json (built by 04_index)
     let extra_props = read_extra_props_from_metadata(&args.in_graph_metadata_json);
     eprintln!("Loaded {} extra edge property names from graph metadata", extra_props.len());
 
-    // Write column definitions (one per line, no CREATE TABLE wrapper)
-    let cols_file = File::create(&args.out_columns_path).unwrap();
+    let cols_file = File::create(&args.out_columns_path)?;
     let mut cols_writer = BufWriter::new(cols_file);
     write_columns(&extra_props, &mut cols_writer);
-    cols_writer.flush().unwrap();
+    cols_writer.flush()?;
 
-    // Single pass: stream edges JSONL → TSV
-    let edges_reader = std::io::BufReader::new(File::open(&args.in_edges_jsonl).unwrap());
-    let edges_file = File::create(&args.out_edges_tsv_path).unwrap();
-    let mut edges_writer = BufWriter::with_capacity(1024 * 1024 * 32, edges_file);
+    let edges_reader = std::io::BufReader::new(File::open(&args.in_edges_jsonl)?);
+    let edges_file = File::create(&args.out_edges_pgbin_path)?;
+    let mut pgw = PgCopyWriter::new(BufWriter::with_capacity(1024 * 1024 * 32, edges_file));
 
-    let mut n_edges: i64 = 0;
+    // 8 fixed columns + extra_props
+    let nfields = (8 + extra_props.len()) as i16;
 
     for line_result in edges_reader.lines() {
-        let line = line_result.unwrap();
+        let line = line_result?;
         if line.is_empty() {
             continue;
         }
 
         let json: serde_json::Map<String, Value> = serde_json::from_str(&line).unwrap();
-        write_edge_tsv_row(&json, &extra_props, &mut edges_writer);
-        n_edges += 1;
+        write_edge_row(&json, &extra_props, nfields, &mut pgw);
     }
 
-    edges_writer.flush().unwrap();
-
+    let n = pgw.finish();
     eprintln!(
         "grebi_make_postgres_edges took {} seconds ({} edges)",
         start_time.elapsed().as_secs(),
-        n_edges
+        n
     );
 
     Ok(())
 }
 
-/// Read the set of extra edge property names from graph_metadata.json.
-/// The index step (04_index) writes `"edge_props": { "prop_name": { "count": N }, ... }`.
-/// We extract those keys, exclude the fixed columns, and return them sorted.
 fn read_extra_props_from_metadata(path: &str) -> Vec<String> {
     let file = File::open(path).expect("Failed to open graph_metadata.json");
     let metadata: Value = serde_json::from_reader(std::io::BufReader::new(file))
@@ -100,170 +94,100 @@ fn read_extra_props_from_metadata(path: &str) -> Vec<String> {
         }
     }
 
-    // Also include entity_props that appear on edges (edge JSON contains the
-    // full merged line which may have entity-level props too). The edge_props
-    // from the index are specifically the *reified* property keys. Entity-level
-    // props that appear in edge JSONL (like grebi:type etc.) are already
-    // handled as fixed columns, so edge_props is sufficient here.
-
     props.into_iter().collect()
 }
 
-fn write_edge_tsv_row(
+fn write_edge_row(
     json: &serde_json::Map<String, Value>,
     extra_props: &[String],
-    writer: &mut BufWriter<File>,
+    nfields: i16,
+    pgw: &mut PgCopyWriter<BufWriter<File>>,
 ) {
-    // Column order:
-    // grebi:edgeId, grebi:type, grebi:fromNodeId, grebi:toNodeId,
-    // grebi:datasources, grebi:subgraph, grebi:fromSourceIds,
-    // ...extra_props...
+    pgw.begin_row(nfields);
 
-    let edge_id = json
-        .get("grebi:edgeId")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    // grebi:edgeId TEXT
+    pgw.write_text(json.get("grebi:edgeId").and_then(|v| v.as_str()).unwrap_or(""));
 
-    let edge_type = json.get("grebi:type").map(|v| value_to_pg_text(v)).unwrap_or_default();
+    // grebi:type TEXT
+    pgw.write_text(&extract_type_text(json.get("grebi:type")));
 
-    let from_node_id = json
-        .get("grebi:fromNodeId")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    // grebi:fromNodeId TEXT
+    pgw.write_text(json.get("grebi:fromNodeId").and_then(|v| v.as_str()).unwrap_or(""));
 
-    let to_node_id = json
-        .get("grebi:toNodeId")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    // grebi:toNodeId TEXT
+    pgw.write_text(json.get("grebi:toNodeId").and_then(|v| v.as_str()).unwrap_or(""));
 
-    let datasources = json
-        .get("grebi:datasources")
-        .map(|v| value_to_pg_array(v))
-        .unwrap_or_else(|| "{}".to_string());
+    // grebi:datasources TEXT[]
+    write_json_as_text_array(json.get("grebi:datasources"), pgw);
 
-    let subgraph = json
-        .get("grebi:subgraph")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    // grebi:subgraph TEXT
+    pgw.write_text(json.get("grebi:subgraph").and_then(|v| v.as_str()).unwrap_or(""));
 
-    let from_source_ids = json
-        .get("grebi:fromSourceIds")
-        .map(|v| value_to_pg_array(v))
-        .unwrap_or_else(|| "{}".to_string());
-
+    // _refs TEXT (JSON stored as text)
     let refs_json = json
         .get("_refs")
         .map(|v| serde_json::to_string(v).unwrap())
         .unwrap_or_else(|| "null".to_string());
+    pgw.write_text(&refs_json);
 
-    // Write fixed columns
-    write!(
-        writer,
-        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
-        escape_tsv(edge_id),
-        escape_tsv(&edge_type),
-        escape_tsv(from_node_id),
-        escape_tsv(to_node_id),
-        escape_tsv(&datasources),
-        escape_tsv(subgraph),
-        escape_tsv(&refs_json),
-        escape_tsv(&from_source_ids),
-    )
-    .unwrap();
+    // grebi:fromSourceIds TEXT[]
+    write_json_as_text_array(json.get("grebi:fromSourceIds"), pgw);
 
-    // Write extra property columns
+    // Extra property columns (all TEXT[])
     for prop in extra_props {
-        let val = json.get(prop);
-        write!(writer, "\t").unwrap();
-        match val {
+        match json.get(prop) {
             Some(v) => {
-                let flattened = flatten_property_values(v);
-                write!(writer, "{}", escape_tsv(&value_to_pg_array(&Value::Array(flattened)))).unwrap();
+                let strings = flatten_property_values_to_strings(v);
+                let refs: Vec<&str> = strings.iter().map(|s| s.as_str()).collect();
+                pgw.write_text_array(&refs);
             }
-            None => {
-                write!(writer, "\\N").unwrap(); // NULL
-            }
+            None => pgw.write_null(),
         }
     }
-
-    write!(writer, "\n").unwrap();
 }
 
-/// Flatten reified values: extract grebi:value from objects, flatten nested arrays
-fn flatten_property_values(v: &Value) -> Vec<Value> {
+fn extract_type_text(v: Option<&Value>) -> String {
     match v {
-        Value::Array(arr) => arr.iter().flat_map(|el| flatten_property_values(el)).collect(),
+        None => String::new(),
+        Some(Value::String(s)) => s.clone(),
+        Some(Value::Array(arr)) if arr.len() == 1 => extract_type_text(Some(&arr[0])),
+        Some(Value::Array(arr)) => arr.iter().filter_map(|el| el.as_str()).collect::<Vec<&str>>().join(","),
+        Some(other) => serde_json::to_string(other).unwrap(),
+    }
+}
+
+fn write_json_as_text_array(v: Option<&Value>, pgw: &mut PgCopyWriter<BufWriter<File>>) {
+    match v {
+        Some(Value::Array(arr)) => {
+            let strings: Vec<String> = arr.iter().map(|el| match el {
+                Value::String(s) => s.clone(),
+                _ => serde_json::to_string(el).unwrap(),
+            }).collect();
+            let refs: Vec<&str> = strings.iter().map(|s| s.as_str()).collect();
+            pgw.write_text_array(&refs);
+        }
+        Some(Value::String(s)) => pgw.write_text_array(&[s.as_str()]),
+        Some(other) => pgw.write_text_array(&[&serde_json::to_string(other).unwrap()]),
+        None => pgw.write_text_array(&[]),
+    }
+}
+
+fn flatten_property_values_to_strings(v: &Value) -> Vec<String> {
+    match v {
+        Value::Array(arr) => arr.iter().flat_map(flatten_property_values_to_strings).collect(),
         Value::Object(obj) => {
             if let Some(inner) = obj.get("grebi:value") {
-                flatten_property_values(inner)
+                flatten_property_values_to_strings(inner)
             } else {
                 vec![]
             }
         }
-        _ => vec![v.clone()],
+        Value::String(s) => vec![s.clone()],
+        _ => vec![serde_json::to_string(v).unwrap()],
     }
 }
 
-/// Convert a JSON value to a PostgreSQL text representation.
-/// For singular string/type values, return the string.
-/// For arrays, return as pg array literal.
-fn value_to_pg_text(v: &Value) -> String {
-    match v {
-        Value::String(s) => s.clone(),
-        Value::Array(arr) => {
-            // For grebi:type which is a singular string for edges, but could be array
-            if arr.len() == 1 {
-                value_to_pg_text(&arr[0])
-            } else {
-                // Join with first value (edge type is always singular really)
-                arr.iter()
-                    .filter_map(|el| el.as_str())
-                    .collect::<Vec<&str>>()
-                    .join(",")
-            }
-        }
-        _ => serde_json::to_string(v).unwrap(),
-    }
-}
-
-/// Convert a JSON array value to a PostgreSQL array literal: {val1,val2,...}
-fn value_to_pg_array(v: &Value) -> String {
-    match v {
-        Value::Array(arr) => {
-            let elements: Vec<String> = arr
-                .iter()
-                .map(|el| match el {
-                    Value::String(s) => format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\"")),
-                    _ => {
-                        let s = serde_json::to_string(el).unwrap();
-                        format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""))
-                    }
-                })
-                .collect();
-            format!("{{{}}}", elements.join(","))
-        }
-        Value::String(s) => format!("{{\"{}\"}}", s.replace('\\', "\\\\").replace('"', "\\\"")),
-        _ => {
-            let s = serde_json::to_string(v).unwrap();
-            format!("{{\"{}\"}}", s.replace('\\', "\\\\").replace('"', "\\\""))
-        }
-    }
-}
-
-/// Escape a value for PostgreSQL COPY TSV format
-fn escape_tsv(s: &str) -> String {
-    s.replace('\\', "\\\\")
-        .replace('\t', "\\t")
-        .replace('\n', "\\n")
-        .replace('\r', "\\r")
-}
-
-/// Write one column definition per line (no CREATE TABLE, no indexes).
-/// The Nextflow script assembles the full DDL.
-fn write_columns(
-    extra_props: &[String],
-    writer: &mut BufWriter<File>,
-) {
+fn write_columns(extra_props: &[String], writer: &mut BufWriter<File>) {
     writeln!(writer, "\"grebi:edgeId\" TEXT").unwrap();
     writeln!(writer, "\"grebi:type\" TEXT NOT NULL").unwrap();
     writeln!(writer, "\"grebi:fromNodeId\" TEXT NOT NULL").unwrap();

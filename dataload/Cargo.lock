@@ -906,9 +906,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_make_postgres_autocomplete"
+version = "0.1.0"
+dependencies = [
+ "grebi_shared",
+ "jemallocator",
+]
+
+[[package]]
 name = "grebi_make_postgres_blobs"
 version = "0.1.0"
 dependencies = [
+ "grebi_shared",
  "jemallocator",
 ]
 
@@ -920,6 +929,15 @@ dependencies = [
  "grebi_shared",
  "jemallocator",
  "serde_json",
+]
+
+[[package]]
+name = "grebi_make_postgres_mat_queries"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "grebi_shared",
+ "jemallocator",
 ]
 
 [[package]]

@@ -5,13 +5,13 @@ process create_postgres {
     cpus "8"
 
     input:
-    path(edges_tsvs)
+    path(edges_pgbins)
     path(edges_columns)
-    path(nodes_tsvs)
+    path(nodes_pgbins)
     path(nodes_columns)
     path(blobs_pgbins)
-    path(autocomplete_tsvs)
-    path(mat_queries_tsvs)
+    path(autocomplete_pgbins)
+    path(mat_queries_pgbins)
     path(metadata_jsons)
 
     output:
@@ -22,9 +22,9 @@ process create_postgres {
     #!/usr/bin/env bash
     set -Eeuo pipefail
 
-    # Discover subgraph names from edge TSV filenames
-    # Filenames: postgres_edges_{SUBGRAPH}_{index}.tsv.gz
-    SUBGRAPHS=(\$(ls postgres_edges_*.tsv.gz | sed -E 's/^postgres_edges_(.*)_[0-9]+\\.tsv\\.gz\$/\\1/' | sort -u))
+    # Discover subgraph names from edge pgbin filenames
+    # Filenames: postgres_edges_{SUBGRAPH}_{index}.pgbin
+    SUBGRAPHS=(\$(ls postgres_edges_*.pgbin | sed -E 's/^postgres_edges_(.*)_[0-9]+\\.pgbin\$/\\1/' | sort -u))
     echo "Discovered subgraphs: \${SUBGRAPHS[*]}"
 
     # Ensure current UID has an entry in /etc/passwd (required by initdb)
@@ -92,16 +92,16 @@ EOF
     \$PSQL -c "CREATE EXTENSION IF NOT EXISTS vector;"
     \$PSQL -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
 
-    # Helper for parallel COPY from gzipped files
-    _pg_import() {
+    # Helper for COPY from binary pgbin files
+    _pg_import_binary() {
         local TABLE=\$1
-        local GZ_FILE=\$2
+        local BIN_FILE=\$2
         local ABSFILE
-        ABSFILE=\$(readlink -f "\$GZ_FILE")
-        echo "Importing \$TABLE \$GZ_FILE ..."
-        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "COPY \\"\$TABLE\\" FROM PROGRAM 'pigz -dc \$ABSFILE' WITH (FORMAT text)"
+        ABSFILE=\$(readlink -f "\$BIN_FILE")
+        echo "Importing binary \$BIN_FILE into \$TABLE ..."
+        psql -h \$PGSOCK -p \$PGPORT -U \$PGUSER -d grebi -c "COPY \\"\$TABLE\\" FROM '\$ABSFILE' WITH (FORMAT binary)"
     }
-    export -f _pg_import
+    export -f _pg_import_binary
 
     # Helper for parallel COPY from binary pgbin files
     _pg_import_binary() {
@@ -130,9 +130,9 @@ EOF
         "
 
         EDGE_WORKERS=\$((NPROC < 8 ? NPROC : 8))
-        echo "Importing \$(ls postgres_edges_\${SG}_*.tsv.gz | wc -l) edge files for \$SG with \$EDGE_WORKERS parallel workers..."
-        printf '%s\\0' postgres_edges_\${SG}_*.tsv.gz | \\
-            xargs -0 -P \$EDGE_WORKERS -n1 bash -c "set -e; _pg_import \\"edges_\${SG}\\" \\"\\\$1\\"" _
+        echo "Importing \$(ls postgres_edges_\${SG}_*.pgbin | wc -l) edge files for \$SG with \$EDGE_WORKERS parallel workers..."
+        printf '%s\\0' postgres_edges_\${SG}_*.pgbin | \\
+            xargs -0 -P \$EDGE_WORKERS -n1 bash -c "set -e; _pg_import_binary \\"edges_\${SG}\\" \\"\\\$1\\"" _
 
         echo "Creating edge indexes for \$SG (parallel)..."
         \$PSQL -c "CREATE INDEX \\"idx_edges_\${SG}_edgeId\\" ON \\"edges_\${SG}\\" USING btree (\\"grebi:edgeId\\");" &
@@ -155,9 +155,9 @@ EOF
             ) WITH (fillfactor=100);
         "
 
-        echo "Importing \$(ls postgres_nodes_\${SG}_*.tsv.gz | wc -l) node files for \$SG with \$NPROC parallel workers..."
-        printf '%s\\0' postgres_nodes_\${SG}_*.tsv.gz | \\
-            xargs -0 -P \$NPROC -n1 bash -c "set -e; _pg_import \\"nodes_\${SG}\\" \\"\\\$1\\"" _
+        echo "Importing \$(ls postgres_nodes_\${SG}_*.pgbin | wc -l) node files for \$SG with \$NPROC parallel workers..."
+        printf '%s\\0' postgres_nodes_\${SG}_*.pgbin | \\
+            xargs -0 -P \$NPROC -n1 bash -c "set -e; _pg_import_binary \\"nodes_\${SG}\\" \\"\\\$1\\"" _
 
         echo "Creating node indexes for \$SG in parallel..."
         \$PSQL -c "CREATE INDEX \\"idx_nodes_\${SG}_name\\" ON \\"nodes_\${SG}\\" USING btree (\\"grebi:name\\");" &
@@ -199,11 +199,11 @@ EOF
             ) WITH (fillfactor=100);
         "
 
-        AUTOCOMPLETE_FILES=(autocomplete_\${SG}_*.tsv.gz)
+        AUTOCOMPLETE_FILES=(autocomplete_\${SG}_*.pgbin)
         if [ -f "\${AUTOCOMPLETE_FILES[0]}" ]; then
             echo "Importing \${#AUTOCOMPLETE_FILES[@]} autocomplete files for \$SG..."
-            printf '%s\\0' autocomplete_\${SG}_*.tsv.gz | \\
-                xargs -0 -P \$NPROC -n1 bash -c "set -e; _pg_import \\"autocomplete_\${SG}\\" \\"\\\$1\\"" _
+            printf '%s\\0' autocomplete_\${SG}_*.pgbin | \\
+                xargs -0 -P \$NPROC -n1 bash -c "set -e; _pg_import_binary \\"autocomplete_\${SG}\\" \\"\\\$1\\"" _
         fi
 
         echo "Creating autocomplete indexes for \$SG..."
@@ -219,11 +219,11 @@ EOF
             ) WITH (fillfactor=100);
         "
 
-        MAT_QUERIES_FILES=(mat_queries_\${SG}_*.tsv.gz)
+        MAT_QUERIES_FILES=(mat_queries_\${SG}_*.pgbin)
         if [ -f "\${MAT_QUERIES_FILES[0]}" ]; then
             echo "Importing \${#MAT_QUERIES_FILES[@]} materialised query files for \$SG..."
-            printf '%s\\0' mat_queries_\${SG}_*.tsv.gz | \\
-                xargs -0 -P \$NPROC -n1 bash -c "set -e; _pg_import \\"materialised_queries_\${SG}\\" \\"\\\$1\\"" _
+            printf '%s\\0' mat_queries_\${SG}_*.pgbin | \\
+                xargs -0 -P \$NPROC -n1 bash -c "set -e; _pg_import_binary \\"materialised_queries_\${SG}\\" \\"\\\$1\\"" _
         fi
 
         echo "Creating materialised query indexes for \$SG..."

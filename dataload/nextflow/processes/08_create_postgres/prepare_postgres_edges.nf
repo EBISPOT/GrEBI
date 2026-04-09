@@ -7,7 +7,7 @@ process prepare_postgres_edges {
     tuple val(subgraph), path(edges_jsonl), path(graph_metadata_json)
 
     output:
-    tuple val(subgraph), path("postgres_edges_${subgraph}_${task.index}.tsv.gz"), emit: edges_tsv
+    tuple val(subgraph), path("postgres_edges_${subgraph}_${task.index}.pgbin"), emit: edges_pgbin
     tuple val(subgraph), path("postgres_edges_columns_${subgraph}_${task.index}.txt"), emit: columns
 
     script:
@@ -17,8 +17,7 @@ process prepare_postgres_edges {
     grebi_make_postgres_edges \
       --in-edges-jsonl ${edges_jsonl} \
       --in-graph-metadata-json ${graph_metadata_json} \
-      --out-edges-tsv-path postgres_edges_${subgraph}_${task.index}.tsv \
+      --out-edges-pgbin-path postgres_edges_${subgraph}_${task.index}.pgbin \
       --out-columns-path postgres_edges_columns_${subgraph}_${task.index}.txt
-    pigz --best postgres_edges_${subgraph}_${task.index}.tsv
     """
 }

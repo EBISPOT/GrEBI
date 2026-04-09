@@ -1,5 +1,5 @@
 [package]
-name = "grebi_make_postgres_blobs"
+name = "grebi_make_postgres_autocomplete"
 version = "0.1.0"
 edition = "2021"
 

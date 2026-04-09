@@ -5,6 +5,7 @@ use std::io::BufRead;
 use std::io::Write;
 
 use clap::Parser;
+use grebi_shared::pgcopy::PgCopyWriter;
 use serde_json::Value;
 
 #[global_allocator]
@@ -20,7 +21,7 @@ struct Args {
     in_graph_metadata_json: String,
 
     #[arg(long)]
-    out_nodes_tsv_path: String,
+    out_nodes_pgbin_path: String,
 
     #[arg(long)]
     out_columns_path: String,
@@ -30,25 +31,23 @@ fn main() -> std::io::Result<()> {
     let args = Args::parse();
     let start_time = std::time::Instant::now();
 
-    // Read embedding model dimensions from graph_metadata.json
     let embedding_models = read_embedding_models(&args.in_graph_metadata_json);
     eprintln!(
         "Loaded {} embedding models from graph metadata",
         embedding_models.len()
     );
 
-    // Write column definitions (one per line, no CREATE TABLE wrapper)
     let cols_file = File::create(&args.out_columns_path)?;
     let mut cols_writer = BufWriter::new(cols_file);
     write_columns(&embedding_models, &mut cols_writer);
     cols_writer.flush()?;
 
-    // Stream nodes JSONL → TSV
     let nodes_reader = std::io::BufReader::new(File::open(&args.in_nodes_jsonl)?);
-    let nodes_file = File::create(&args.out_nodes_tsv_path)?;
-    let mut nodes_writer = BufWriter::with_capacity(1024 * 1024 * 32, nodes_file);
+    let nodes_file = File::create(&args.out_nodes_pgbin_path)?;
+    let mut pgw = PgCopyWriter::new(BufWriter::with_capacity(1024 * 1024 * 32, nodes_file));
 
-    let mut n_nodes: i64 = 0;
+    // 6 fixed columns + embedding columns
+    let nfields = (6 + embedding_models.len()) as i16;
 
     for line_result in nodes_reader.lines() {
         let line = line_result?;
@@ -57,23 +56,19 @@ fn main() -> std::io::Result<()> {
         }
 
         let json: serde_json::Map<String, Value> = serde_json::from_str(&line).unwrap();
-        write_node_tsv_row(&json, &embedding_models, &mut nodes_writer);
-        n_nodes += 1;
+        write_node_row(&json, &embedding_models, nfields, &mut pgw);
     }
 
-    nodes_writer.flush()?;
-
+    let n = pgw.finish();
     eprintln!(
         "grebi_make_postgres_nodes took {} seconds ({} nodes)",
         start_time.elapsed().as_secs(),
-        n_nodes
+        n
     );
 
     Ok(())
 }
 
-/// Read embedding model name → dimension from graph_metadata.json.
-/// The link step writes `"embedding_models2dims": { "model_name": dim, ... }`.
 fn read_embedding_models(path: &str) -> BTreeMap<String, i64> {
     let file = File::open(path).expect("Failed to open graph_metadata.json");
     let metadata: Value =
@@ -94,78 +89,45 @@ fn read_embedding_models(path: &str) -> BTreeMap<String, i64> {
     models
 }
 
-fn write_node_tsv_row(
+fn write_node_row(
     json: &serde_json::Map<String, Value>,
     embedding_models: &BTreeMap<String, i64>,
-    writer: &mut BufWriter<File>,
+    nfields: i16,
+    pgw: &mut PgCopyWriter<BufWriter<File>>,
 ) {
-    // Column order:
-    // grebi:nodeId, grebi:name, grebi:type, grebi:datasources, grebi:sourceIds,
-    // ols:curie, ...embedding columns...
+    pgw.begin_row(nfields);
 
-    let node_id = json
-        .get("grebi:nodeId")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    // grebi:nodeId TEXT
+    pgw.write_text(json.get("grebi:nodeId").and_then(|v| v.as_str()).unwrap_or(""));
 
-    let name = extract_first_string(json.get("grebi:name"));
-    let types = json
-        .get("grebi:type")
-        .map(|v| value_to_pg_array(v))
-        .unwrap_or_else(|| "{}".to_string());
-    let datasources = json
-        .get("grebi:datasources")
-        .map(|v| value_to_pg_array(v))
-        .unwrap_or_else(|| "{}".to_string());
-    let source_ids = json
-        .get("grebi:sourceIds")
-        .map(|v| value_to_pg_array(v))
-        .unwrap_or_else(|| "{}".to_string());
-    let ols_curie = extract_first_string(json.get("ols:curie"));
+    // grebi:name TEXT
+    pgw.write_text(&extract_first_string(json.get("grebi:name")));
 
-    // Write ref columns
-    write!(
-        writer,
-        "{}\t{}\t{}\t{}\t{}\t{}",
-        escape_tsv(node_id),
-        escape_tsv(&name),
-        escape_tsv(&types),
-        escape_tsv(&datasources),
-        escape_tsv(&source_ids),
-        escape_tsv(&ols_curie),
-    )
-    .unwrap();
+    // grebi:type TEXT[]
+    write_json_as_text_array(json.get("grebi:type"), pgw);
 
-    // Write embedding columns
+    // grebi:datasources TEXT[]
+    write_json_as_text_array(json.get("grebi:datasources"), pgw);
+
+    // grebi:sourceIds TEXT[]
+    write_json_as_text_array(json.get("grebi:sourceIds"), pgw);
+
+    // ols:curie TEXT
+    pgw.write_text(&extract_first_string(json.get("ols:curie")));
+
+    // Embedding columns (vector(dim))
     for model_name in embedding_models.keys() {
         let key = format!("embedding:{}", model_name);
-        write!(writer, "\t").unwrap();
         match json.get(&key) {
             Some(Value::Array(arr)) => {
-                // Write as pgvector literal: [0.1,0.2,...]
-                write!(writer, "[").unwrap();
-                for (i, el) in arr.iter().enumerate() {
-                    if i > 0 {
-                        write!(writer, ",").unwrap();
-                    }
-                    match el.as_f64() {
-                        Some(f) => write!(writer, "{}", f).unwrap(),
-                        None => write!(writer, "0").unwrap(),
-                    }
-                }
-                write!(writer, "]").unwrap();
+                let floats: Vec<f32> = arr.iter().map(|el| el.as_f64().unwrap_or(0.0) as f32).collect();
+                pgw.write_vector_f32(&floats);
             }
-            _ => {
-                write!(writer, "\\N").unwrap(); // NULL
-            }
+            _ => pgw.write_null(),
         }
     }
-
-    write!(writer, "\n").unwrap();
 }
 
-/// Extract the first string value from a property (which may be a plain string,
-/// an array of strings, or an array of reified objects with grebi:value).
 fn extract_first_string(v: Option<&Value>) -> String {
     match v {
         None => String::new(),
@@ -188,26 +150,19 @@ fn extract_first_string(v: Option<&Value>) -> String {
     }
 }
 
-/// Convert a JSON array value to a PostgreSQL array literal: {val1,val2,...}
-fn value_to_pg_array(v: &Value) -> String {
+fn write_json_as_text_array(v: Option<&Value>, pgw: &mut PgCopyWriter<BufWriter<File>>) {
     match v {
-        Value::Array(arr) => {
-            let elements: Vec<String> = arr
-                .iter()
-                .flat_map(|el| flatten_to_strings(el))
-                .map(|s| format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\"")))
-                .collect();
-            format!("{{{}}}", elements.join(","))
+        Some(Value::Array(arr)) => {
+            let strings: Vec<String> = arr.iter().flat_map(flatten_to_strings).collect();
+            let refs: Vec<&str> = strings.iter().map(|s| s.as_str()).collect();
+            pgw.write_text_array(&refs);
         }
-        Value::String(s) => format!("{{\"{}\"}}", s.replace('\\', "\\\\").replace('"', "\\\"")),
-        _ => {
-            let s = serde_json::to_string(v).unwrap();
-            format!("{{\"{}\"}}", s.replace('\\', "\\\\").replace('"', "\\\""))
-        }
+        Some(Value::String(s)) => pgw.write_text_array(&[s.as_str()]),
+        Some(other) => pgw.write_text_array(&[&serde_json::to_string(other).unwrap()]),
+        None => pgw.write_text_array(&[]),
     }
 }
 
-/// Flatten a value to its string representations (unwrapping reified objects)
 fn flatten_to_strings(v: &Value) -> Vec<String> {
     match v {
         Value::String(s) => vec![s.clone()],
@@ -218,21 +173,11 @@ fn flatten_to_strings(v: &Value) -> Vec<String> {
                 vec![]
             }
         }
-        Value::Array(arr) => arr.iter().flat_map(|el| flatten_to_strings(el)).collect(),
+        Value::Array(arr) => arr.iter().flat_map(flatten_to_strings).collect(),
         _ => vec![serde_json::to_string(v).unwrap()],
     }
 }
 
-/// Escape a value for PostgreSQL COPY TSV format
-fn escape_tsv(s: &str) -> String {
-    s.replace('\\', "\\\\")
-        .replace('\t', "\\t")
-        .replace('\n', "\\n")
-        .replace('\r', "\\r")
-}
-
-/// Write one column definition per line (no CREATE TABLE, no indexes).
-/// The Nextflow script assembles the full DDL.
 fn write_columns(
     embedding_models: &BTreeMap<String, i64>,
     writer: &mut BufWriter<File>,

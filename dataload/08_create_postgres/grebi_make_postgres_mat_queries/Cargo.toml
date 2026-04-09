@@ -1,8 +1,9 @@
 [package]
-name = "grebi_make_postgres_blobs"
+name = "grebi_make_postgres_mat_queries"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
 jemallocator = "0.5.4"
 grebi_shared = { path = "../../grebi_shared" }
