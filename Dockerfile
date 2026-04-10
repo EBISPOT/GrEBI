@@ -7,12 +7,13 @@ FROM --platform=$BUILDPLATFORM rust:1.90.0-bullseye AS rust-builder
 ARG TARGETPLATFORM
 
 # Install cross-compilation toolchain for arm64 when needed
-RUN case "$TARGETPLATFORM" in \
+RUN apt-get update -y && apt-get install -y cmake && \
+    case "$TARGETPLATFORM" in \
       "linux/arm64") \
-        apt-get update -y && apt-get install -y gcc-aarch64-linux-gnu && \
-        rustup target add aarch64-unknown-linux-gnu && \
-        rm -rf /var/lib/apt/lists/* ;; \
-    esac
+        apt-get install -y gcc-aarch64-linux-gnu && \
+        rustup target add aarch64-unknown-linux-gnu ;; \
+    esac && \
+    rm -rf /var/lib/apt/lists/*
 
 # Build dataload binaries
 COPY dataload /opt/grebi_dataload
