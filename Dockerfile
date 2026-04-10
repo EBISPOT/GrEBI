@@ -83,7 +83,8 @@ RUN mkdir -p /etc/postgresql-common && \
     echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     apt-get update -y && \
-    apt-get install -y postgresql-18 postgresql-client-18 postgresql-18-pgvector && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confold" \
+        postgresql-18 postgresql-client-18 postgresql-18-pgvector && \
     rm -rf /var/lib/apt/lists/*
 ENV PATH="$PATH:/usr/lib/postgresql/18/bin"
 
