@@ -75,7 +75,11 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # ---- PostgreSQL 18 ----
-RUN echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+# Prevent initdb from running during apt install (segfaults under QEMU);
+# the cluster is created at runtime instead.
+RUN mkdir -p /etc/postgresql-common && \
+    echo 'create_main_cluster = false' > /etc/postgresql-common/createcluster.conf && \
+    echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     apt-get update -y && \
     apt-get install -y postgresql-18 postgresql-client-18 postgresql-18-pgvector && \
