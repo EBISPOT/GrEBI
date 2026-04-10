@@ -322,16 +322,18 @@ workflow {
     all_mat_queries_pgbins = prepare_postgres_mat_queries.out.mat_queries_pgbin.map { sg, f -> f }.collect()
     all_metadata_jsons = add_query_metadatas_to_graph_metadata.out.map { sg, meta -> meta }.collect()
 
+    // create_postgres always runs (produces the packaged release artifact)
+    postgres_db = create_postgres(
+        all_edges_pgbins, all_edges_cols,
+        all_nodes_pgbins, all_nodes_cols,
+        all_blobs_pgbins,
+        all_autocomplete_pgbins, all_mat_queries_pgbins,
+        all_metadata_jsons
+    )
+
+    // populate_external_postgres is optional, runs in addition to create_postgres
     if (params.external_postgres) {
-        postgres_db = populate_external_postgres(
-            all_edges_pgbins, all_edges_cols,
-            all_nodes_pgbins, all_nodes_cols,
-            all_blobs_pgbins,
-            all_autocomplete_pgbins, all_mat_queries_pgbins,
-            all_metadata_jsons
-        )
-    } else {
-        postgres_db = create_postgres(
+        populate_external_postgres(
             all_edges_pgbins, all_edges_cols,
             all_nodes_pgbins, all_nodes_cols,
             all_blobs_pgbins,
@@ -342,9 +344,7 @@ workflow {
 
     // === PACKAGE OUTPUTS ===
     neo_tgz = package_neo(neo_db, Channel.value(params.out))
-    if (!params.external_postgres) {
-        postgres_tgz = package_postgres(postgres_db, Channel.value(params.out))
-    }
+    postgres_tgz = package_postgres(postgres_db, Channel.value(params.out))
 
     // === CONSTRUCT & PACKAGE RELEASE ===
     release_dir = construct_release(
