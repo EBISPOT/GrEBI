@@ -163,6 +163,9 @@ ENV PATH="$PATH:/usr/local/bin"
 # Copy prefix maps
 COPY dataload/prefix_maps /opt/grebi/data/prefix_maps
 
+# Copy full dataload directory (scripts, prefix_maps, python utils needed at runtime by Nextflow processes)
+COPY dataload /opt/grebi_dataload
+
 # ---- Build grebi_api (Java) ----
 COPY webapp/grebi_api /opt/grebi_api
 WORKDIR /opt/grebi_api
