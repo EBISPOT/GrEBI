@@ -19,6 +19,6 @@ process populate_external_postgres {
 
     script:
     """
-    bash ${projectDir}/nextflow/processes/08_create_postgres/populate_external_postgres.sh
+    python3 ${projectDir}/processes/08_create_postgres/populate_external_postgres.py
     """
 }
