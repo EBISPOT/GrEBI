@@ -4,7 +4,7 @@ description: "The authoritative resource for approved human gene symbols and nam
 download:
   - dest: hgnc/hgnc_complete_set.json
     sources:
-      - https://ftp.ebi.ac.uk/pub/databases/genenames/out_of_date_hgnc/json/hgnc_complete_set.json
+      - storage.googleapis.com/public-download-files/hgnc/json/json/hgnc_complete_set.json
 ingests:
   - globs: ["hgnc/hgnc_complete_set.json"]
     command: '
