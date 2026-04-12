@@ -27,7 +27,6 @@ def main():
 
     os.environ.setdefault("PGPORT", "5432")
     os.environ.setdefault("PGPASSWORD", "")
-    os.environ.setdefault("PGSSLMODE", "")
 
     pghost = os.environ["PGHOST"]
     pgport = os.environ["PGPORT"]
