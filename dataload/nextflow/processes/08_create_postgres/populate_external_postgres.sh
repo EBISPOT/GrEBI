@@ -7,7 +7,10 @@ set -Eeuo pipefail
 : "${PGUSER:?PGUSER must be set}"
 export PGPORT="${PGPORT:-5432}"
 export PGPASSWORD="${PGPASSWORD:-}"
-export PGSSLMODE="${PGSSLMODE:-}"
+# Only export PGSSLMODE if non-empty — psql rejects an empty string as invalid
+if [ -n "${PGSSLMODE:-}" ]; then
+    export PGSSLMODE
+fi
 
 echo "=== Connecting to ${PGUSER}@${PGHOST}:${PGPORT}/${PGDATABASE} ==="
 
