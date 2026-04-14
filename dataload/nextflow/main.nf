@@ -42,6 +42,7 @@ params.neo_query_mem = "140g"
 params.pg_shared_buffers = "2GB"
 params.pg_work_mem = "256MB"
 params.pg_maintenance_work_mem = "1GB"
+params.pg_parallel_workers = 2
 params.pg_max_wal_size = "4GB"
 params.pg_build_shared_buffers = "2GB"
 params.pg_build_work_mem = "256MB"

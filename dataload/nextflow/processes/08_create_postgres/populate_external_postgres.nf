@@ -19,6 +19,6 @@ process populate_external_postgres {
 
     script:
     """
-    python3 ${projectDir}/processes/08_create_postgres/populate_external_postgres.py
+    python3 ${projectDir}/processes/08_create_postgres/populate_external_postgres.py --parallel-workers ${params.pg_parallel_workers} ${params.pg_maintenance_work_mem ? '--maintenance-work-mem ' + params.pg_maintenance_work_mem : ''}
     """
 }

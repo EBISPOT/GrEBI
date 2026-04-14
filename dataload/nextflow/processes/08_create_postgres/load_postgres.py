@@ -112,7 +112,13 @@ def discover_subgraphs() -> list[str]:
 # Index creation
 # ---------------------------------------------------------------------------
 
-def create_indexes_for_subgraph(sg: str, nodes_cols_file: str, psql_base: list[str] | None = None):
+def create_indexes_for_subgraph(
+    sg: str,
+    nodes_cols_file: str,
+    psql_base: list[str] | None = None,
+    parallel_workers: int = 0,
+    maintenance_work_mem: str = "",
+):
     """Create all indexes for a subgraph (edges, nodes, blobs, autocomplete, mat_queries)."""
 
     stmts = []
@@ -154,10 +160,38 @@ def create_indexes_for_subgraph(sg: str, nodes_cols_file: str, psql_base: list[s
 
     print(f"  Creating {len(stmts)} indexes for {sg}...", flush=True)
     t0 = time.time()
+    tables = [
+        f'"edges_{sg}"',
+        f'"nodes_{sg}"',
+        f'"blobs_{sg}"',
+        f'"autocomplete_{sg}"',
+        f'"materialised_queries_{sg}"',
+    ]
 
-    # Run all index statements. Use separate connections for parallelism via
-    # subprocess, but keep it simple: run them all in one psql call.
-    run_psql("\n".join(stmts), f"indexes_{sg}", psql_base)
+    if parallel_workers > 0:
+        print(f"  Setting parallel_workers={parallel_workers} on {len(tables)} tables for {sg}", flush=True)
+        for table in tables:
+            run_psql(f"ALTER TABLE {table} SET (parallel_workers = {parallel_workers});", f"parallel_workers_{table}", psql_base)
+
+    set_prefix = ""
+    if maintenance_work_mem:
+        set_prefix += f"SET maintenance_work_mem = '{maintenance_work_mem}';\n"
+        print(f"  Setting maintenance_work_mem={maintenance_work_mem} per index session", flush=True)
+    if parallel_workers > 0:
+        set_prefix += f"SET max_parallel_maintenance_workers = {parallel_workers};\n"
+        print(f"  Setting max_parallel_maintenance_workers={parallel_workers} per index session", flush=True)
+
+    try:
+        for idx_i, stmt in enumerate(stmts, 1):
+            short = stmt.split("(")[0].strip() if "(" in stmt else stmt.strip()
+            print(f"    [{idx_i}/{len(stmts)}] {short} ...", flush=True)
+            stmt_t0 = time.time()
+            run_psql(set_prefix + stmt, f"index_{sg}_{idx_i}", psql_base)
+            print(f"    [{idx_i}/{len(stmts)}] done ({time.time() - stmt_t0:.1f}s)", flush=True)
+    finally:
+        if parallel_workers > 0:
+            for table in tables:
+                run_psql(f"ALTER TABLE {table} RESET (parallel_workers);", f"reset_parallel_workers_{table}", psql_base)
 
     elapsed = time.time() - t0
     print(f"  Indexes for {sg} created in {elapsed:.1f}s", flush=True)
@@ -170,6 +204,8 @@ def create_indexes_for_subgraph(sg: str, nodes_cols_file: str, psql_base: list[s
 def load_all(
     psql_base: list[str] | None = None,
     drop_existing: bool = False,
+    parallel_workers: int = 0,
+    maintenance_work_mem: str = "",
 ):
     """
     Load all data into PostgreSQL using COPY FREEZE.
@@ -177,6 +213,8 @@ def load_all(
     Args:
         psql_base: Base psql command list (e.g. ["psql", "-h", sock, "-p", port, ...])
         drop_existing: If True, DROP tables before creating (for external postgres)
+        parallel_workers: Per-table parallel_workers and max_parallel_maintenance_workers for index builds
+        maintenance_work_mem: Session maintenance_work_mem to use for index builds
     """
     subgraphs = discover_subgraphs()
     print(f"Discovered subgraphs: {' '.join(subgraphs)}", flush=True)
@@ -251,7 +289,13 @@ def load_all(
         load_table(f"materialised_queries_{sg}", create_mat, mat_queries_pgbins, psql_base)
 
         # --- INDEXES ---
-        create_indexes_for_subgraph(sg, nodes_cols_file, psql_base)
+        create_indexes_for_subgraph(
+            sg,
+            nodes_cols_file,
+            psql_base,
+            parallel_workers=parallel_workers,
+            maintenance_work_mem=maintenance_work_mem,
+        )
 
         # --- ANALYZE ---
         analyze_stmts = "\n".join([
@@ -301,6 +345,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Load grebi data into PostgreSQL using COPY FREEZE")
     parser.add_argument("--local", action="store_true",
                         help="Local mode: tables are freshly created (no DROP)")
+    parser.add_argument("--parallel-workers", type=int, default=0,
+                        help="Per-table parallel_workers and max_parallel_maintenance_workers for index builds")
+    parser.add_argument("--maintenance-work-mem", default="",
+                        help="Session maintenance_work_mem for index builds")
     args = parser.parse_args()
 
-    load_all(drop_existing=not args.local)
+    load_all(
+        drop_existing=not args.local,
+        parallel_workers=args.parallel_workers,
+        maintenance_work_mem=args.maintenance_work_mem,
+    )

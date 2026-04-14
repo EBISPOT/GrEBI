@@ -11,6 +11,7 @@ Connects using standard libpq environment variables (PGHOST, PGDATABASE, etc.).
 
 import os
 import sys
+import argparse
 from pathlib import Path
 
 # Allow importing load_postgres from the same directory
@@ -20,6 +21,13 @@ from load_postgres import load_all, run_psql
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Populate an existing external PostgreSQL database with grebi data")
+    parser.add_argument("--parallel-workers", type=int, default=0,
+                        help="Per-table parallel_workers and max_parallel_maintenance_workers for index builds")
+    parser.add_argument("--maintenance-work-mem", default="",
+                        help="Session maintenance_work_mem for index builds")
+    args = parser.parse_args()
+
     # Validate required env vars
     for var in ("PGHOST", "PGDATABASE", "PGUSER"):
         if not os.environ.get(var):
@@ -40,7 +48,11 @@ def main():
         sys.exit(f"ERROR: Cannot connect to PostgreSQL: {e}")
     print("Connection OK.", flush=True)
 
-    load_all(drop_existing=True)
+    load_all(
+        drop_existing=True,
+        parallel_workers=args.parallel_workers,
+        maintenance_work_mem=args.maintenance_work_mem,
+    )
 
     # Write status file (Nextflow output)
     from datetime import datetime
