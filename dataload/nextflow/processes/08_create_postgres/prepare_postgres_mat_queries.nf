@@ -7,7 +7,7 @@ process prepare_postgres_mat_queries {
     tuple val(subgraph), path(linked_results_jsonl)
 
     output:
-    tuple val(subgraph), path("mat_queries_${subgraph}_${task.index}.pgbin"), emit: mat_queries_pgbin
+    tuple val(subgraph), path("mat_queries_${subgraph}_${linked_results_jsonl.simpleName}.pgbin"), emit: mat_queries_pgbin
 
     script:
     """
@@ -18,6 +18,6 @@ process prepare_postgres_mat_queries {
     QUERY_ID=\$(basename ${linked_results_jsonl} .linked_results.jsonl)
 
     grebi_make_postgres_mat_queries --query-id "\$QUERY_ID" < ${linked_results_jsonl} \
-        > mat_queries_${subgraph}_${task.index}.pgbin
+        > mat_queries_${subgraph}_${linked_results_jsonl.simpleName}.pgbin
     """
 }

@@ -143,6 +143,7 @@ workflow {
     assigned_grouped = assigned
         .map { sg, ds_name, f -> [sg, [ds_name, f]] }
         .groupTuple(by: 0)
+        .map { sg, assigned_files -> [sg, sortAssignedEntries(assigned_files)] }
     // → [sg, [[ds1, f1], [ds2, f2], ...]]
 
     merge_config_ch = Channel.from(
@@ -164,6 +165,7 @@ workflow {
         subgraph_names.collect { sg -> [sg, resolved_paths[sg]] }
     )
     index_input = merged
+        .map { sg, merge_files -> [sg, sortPaths(merge_files)] }
         .combine(index_config_ch, by: 0)
     // → [sg, merged_files, config_path]
 
@@ -176,8 +178,7 @@ workflow {
     // === STEP 5: LINK ===
     // Flatten merged files to per-file tuples for scattered processing
     merged_flat = merged.flatMap { sg, merge_files ->
-        def fs = (merge_files instanceof List ? merge_files : [merge_files])
-        fs.collect { f -> [sg, f] }
+        sortPaths(merge_files).collect { f -> [sg, mergedShardId(f), f] }
     }
 
     // Per-subgraph exclude config
@@ -195,7 +196,7 @@ workflow {
         .combine(indexed.graph_metadata_json, by: 0)
         .combine(link_config_ch, by: 0)
         .combine(groups, by: 0)
-    // → [sg, merged_file, entity_meta, graph_meta, exclude, exclude_self_ref, groups]
+    // → [sg, shard_id, merged_file, entity_meta, graph_meta, exclude, exclude_self_ref, groups]
 
     link(link_input)
     // link.out.nodes: [sg, linked_nodes_file]
@@ -204,9 +205,9 @@ workflow {
 
     // Merge graph metadata (per-subgraph gather)
     graph_metas_for_merge = indexed.graph_metadata_json
-        .mix(link.out.linked_summary)
+        .mix(link.out.linked_summary.map { sg, shard_id, summary -> [sg, summary] })
         .groupTuple(by: 0)
-        .map { sg, meta_files -> [sg, meta_files, "${params.downloads_path}/${sg}"] }
+        .map { sg, meta_files -> [sg, sortPaths(meta_files), "${params.downloads_path}/${sg}"] }
     // → [sg, [graph_meta, summary1, ...], downloads_path_for_sg]
 
     merge_graph_metadata_jsons(graph_metas_for_merge)
@@ -216,22 +217,25 @@ workflow {
 
     // Compressed blobs (per-shard, then converted to PG COPY BINARY)
     compressed_blobs = create_compressed_blobs(
-        link.out.nodes.mix(link.out.edges)
+        link.out.nodes
+            .map { sg, shard_id, f -> [sg, "nodes", shard_id, f] }
+            .mix(link.out.edges.map { sg, shard_id, f -> [sg, "edges", shard_id, f] })
     )
-    // compressed_blobs: [sg, blob_file]
+    // compressed_blobs: [sg, blob_kind, shard_id, blob_file]
 
     postgres_blobs = prepare_postgres_blobs(compressed_blobs)
-    // postgres_blobs.blobs_pgbin: [sg, pgbin_file]
+    // postgres_blobs.blobs_pgbin: [sg, blob_kind, shard_id, pgbin_file]
 
     // Neo4j (per-subgraph)
-    // Pair nodes+edges from same link invocation using positional merge
-    link_nodes_edges = link.out.nodes.merge(link.out.edges)
-        .map { sg1, nodes, sg2, edges -> [sg1, nodes, edges] }
+    // Pair nodes+edges from the same merged shard using stable keys
+    link_nodes_edges = link.out.nodes
+        .join(link.out.edges, by: [0, 1])
+        .map { sg, shard_id, nodes, edges -> [sg, shard_id, nodes, edges] }
 
     prepare_neo_input = link_nodes_edges
         .combine(indexed.graph_metadata_json, by: 0)
-        .map { sg, nodes, edges, graph_meta -> [sg, graph_meta, nodes, edges] }
-    // → [sg, graph_meta, nodes, edges]
+        .map { sg, shard_id, nodes, edges, graph_meta -> [sg, shard_id, graph_meta, nodes, edges] }
+    // → [sg, shard_id, graph_meta, nodes, edges]
 
     prepare_neo(prepare_neo_input)
 
@@ -239,10 +243,12 @@ workflow {
 
     // Collect all neo CSVs per subgraph
     neo_csvs_per_sg = prepare_neo.out.nodes
-        .mix(prepare_neo.out.edges)
-        .mix(prepare_neo.out.id_edges)
+        .map { sg, shard_id, f -> [sg, f] }
+        .mix(prepare_neo.out.edges.map { sg, shard_id, f -> [sg, f] })
+        .mix(prepare_neo.out.id_edges.map { sg, shard_id, f -> [sg, f] })
         .mix(ids_csv)
         .groupTuple(by: 0)
+        .map { sg, neo_inputs -> [sg, sortPaths(neo_inputs)] }
     // → [sg, [csv1, csv2, ...]]
 
     neo_db = create_neo(neo_csvs_per_sg, Channel.value(params.neo_mem))
@@ -265,8 +271,7 @@ workflow {
     // Flatten results to per-file
     results_flat = run_materialised_queries.out.results
         .flatMap { sg, result_files ->
-            def fs = (result_files instanceof List ? result_files : [result_files])
-            fs.collect { f -> [sg, f] }
+            sortPaths(result_files).collect { f -> [sg, f] }
         }
 
     csv_results = results_to_csv(results_flat, Channel.value(params.out))
@@ -302,26 +307,50 @@ workflow {
     // Pair edges with graph metadata for prepare_postgres_edges
     pg_edges_input = link.out.edges
         .combine(indexed.graph_metadata_json, by: 0)
-    // → [sg, edges_file, graph_meta]
+    // → [sg, shard_id, edges_file, graph_meta]
 
     prepare_postgres_edges(pg_edges_input)
 
     // Pair nodes with merged graph metadata (has all embedding models)
     pg_nodes_input = link.out.nodes
         .combine(merge_graph_metadata_jsons.out, by: 0)
-    // → [sg, nodes_file, merged_graph_metadata]
+    // → [sg, shard_id, nodes_file, merged_graph_metadata]
 
     prepare_postgres_nodes(pg_nodes_input)
 
     // Strip subgraph tags and collect ALL files for cross-subgraph postgres
-    all_edges_pgbins = prepare_postgres_edges.out.edges_pgbin.map { sg, f -> f }.collect()
-    all_edges_cols = prepare_postgres_edges.out.columns.map { sg, f -> f }.collect()
-    all_nodes_pgbins = prepare_postgres_nodes.out.nodes_pgbin.map { sg, f -> f }.collect()
-    all_nodes_cols = prepare_postgres_nodes.out.columns.map { sg, f -> f }.collect()
-    all_blobs_pgbins = postgres_blobs.blobs_pgbin.map { sg, f -> f }.collect()
-    all_autocomplete_pgbins = prepare_postgres_autocomplete.out.autocomplete_pgbin.map { sg, f -> f }.collect()
-    all_mat_queries_pgbins = prepare_postgres_mat_queries.out.mat_queries_pgbin.map { sg, f -> f }.collect()
-    all_metadata_jsons = add_query_metadatas_to_graph_metadata.out.map { sg, meta -> meta }.collect()
+    all_edges_pgbins = prepare_postgres_edges.out.edges_pgbin
+        .map { sg, shard_id, f -> f }
+        .collect()
+        .map { files -> sortPaths(files) }
+    all_edges_cols = prepare_postgres_edges.out.columns
+        .map { sg, shard_id, f -> f }
+        .collect()
+        .map { files -> sortPaths(files) }
+    all_nodes_pgbins = prepare_postgres_nodes.out.nodes_pgbin
+        .map { sg, shard_id, f -> f }
+        .collect()
+        .map { files -> sortPaths(files) }
+    all_nodes_cols = prepare_postgres_nodes.out.columns
+        .map { sg, shard_id, f -> f }
+        .collect()
+        .map { files -> sortPaths(files) }
+    all_blobs_pgbins = postgres_blobs.blobs_pgbin
+        .map { sg, blob_kind, shard_id, f -> f }
+        .collect()
+        .map { files -> sortPaths(files) }
+    all_autocomplete_pgbins = prepare_postgres_autocomplete.out.autocomplete_pgbin
+        .map { sg, f -> f }
+        .collect()
+        .map { files -> sortPaths(files) }
+    all_mat_queries_pgbins = prepare_postgres_mat_queries.out.mat_queries_pgbin
+        .map { sg, f -> f }
+        .collect()
+        .map { files -> sortPaths(files) }
+    all_metadata_jsons = add_query_metadatas_to_graph_metadata.out
+        .map { sg, meta -> meta }
+        .collect()
+        .map { files -> sortPaths(files) }
 
     // create_postgres always runs (produces the packaged release artifact)
     postgres_db = create_postgres(
@@ -389,10 +418,32 @@ def buildAddEquivGroupArgs(equivGroups) {
 
 def buildMergeArgs(assigned) {
     def res = ""
-    assigned.each { a ->
+    sortAssignedEntries(assigned).each { a ->
         res += "${a[0]}:${a[1]} "
     }
     return res
+}
+
+def sortAssignedEntries(assigned) {
+    def entries = assigned instanceof List ? assigned : [assigned]
+    entries.sort { a, b ->
+        def left = "${a[0]}\u0000${a[1]}"
+        def right = "${b[0]}\u0000${b[1]}"
+        left <=> right
+    }
+}
+
+def sortPaths(paths) {
+    def values = paths instanceof List ? paths : [paths]
+    values.sort { a, b -> basename(a.toString()) <=> basename(b.toString()) }
+}
+
+def mergedShardId(pathLike) {
+    def name = basename(pathLike.toString())
+    if (!name.startsWith("merged.jsonl.")) {
+        throw new IllegalArgumentException("Unexpected merged shard filename: ${name}")
+    }
+    name.substring("merged.jsonl.".length())
 }
 
 def basename(filename) {

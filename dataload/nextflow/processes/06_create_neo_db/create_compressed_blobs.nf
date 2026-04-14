@@ -4,15 +4,15 @@ process create_compressed_blobs {
     time "1h"
 
     input:
-    tuple val(subgraph), path(mat_jsonl)
+    tuple val(subgraph), val(blob_kind), val(shard_id), path(mat_jsonl)
 
     output:
-    tuple val(subgraph), path("${subgraph}_${task.index}_compressed.blob"), emit: compressed_blob
+    tuple val(subgraph), val(blob_kind), val(shard_id), path("${subgraph}_${blob_kind}_${shard_id}_compressed.blob"), emit: compressed_blob
 
     script:
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    cat ${mat_jsonl} | grebi_make_compressed_blob > ${subgraph}_${task.index}_compressed.blob
+    cat ${mat_jsonl} | grebi_make_compressed_blob > ${subgraph}_${blob_kind}_${shard_id}_compressed.blob
     """
 }
