@@ -39,28 +39,20 @@ for SUBGRAPH in "${SUBGRAPHS[@]}"; do
     fi
   done
 done
-if [ ! -f "$DATARELEASE_PATH/solr.tgz" ]; then
-  echo "solr.tgz not found in $DATARELEASE_PATH"
-  exit 1
-fi
 
 echo "Deploying release to staging (subgraphs: ${SUBGRAPHS[*]})"
 
 echo Removing old files from staging
 
 rm -rf $STAGING_PATH/neo4j
-rm -rf $STAGING_PATH/solr
 
 mkdir -p $STAGING_PATH/neo4j
-mkdir -p $STAGING_PATH/solr
 
 echo Extracting new data release
 
 for SUBGRAPH in "${SUBGRAPHS[@]}"; do
   tar --use-compress-program=pigz -xf $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz -C $STAGING_PATH/neo4j
 done
-tar --use-compress-program=pigz -xf $DATARELEASE_PATH/solr.tgz -C $STAGING_PATH/solr
-
 
 
 
