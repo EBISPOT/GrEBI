@@ -4,5 +4,7 @@ imageTag: dev
 local_disk: "2Ti"
 
 neo_worker_n: "1"
-postgres_worker_n: "3"
 
+postgres:
+  secret:
+    name: ""

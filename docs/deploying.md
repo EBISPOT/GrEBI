@@ -419,12 +419,34 @@ curl "http://localhost:8082/curie_to_iri?curie=hgnc:1100"
 
 ## Deploying the GrEBI stack
 
-The dataload produces four databases used to run the GrEBI stack: Neo4j, PostgreSQL, Solr, and SQLite. Each database stores different views over the same data (simple JSON objects for nodes and edges), with different purposes:
+The dataload produces three main database artefacts used to run the GrEBI stack: Neo4j, PostgreSQL, and Solr. Each database stores different views over the same data (simple JSON objects for nodes and edges), with different purposes:
 
-* Postgres is used by the backend to drive most of the API endpoints used by the website. It stores nodes and edges with minimal metadata, and embedding vectors with pgvector.
+* Postgres is used by the backend to drive most of the API endpoints used by the website. It stores nodes and edges with minimal metadata, embedding vectors with pgvector, graph metadata, and compressed JSON blobs used to resolve full node and edge objects.
 * Neo4j is used by the `grebi_cypher_service` to drive Cypher queries. It stores nodes and edges with minimal metadata.
 * Solr drives the free text lexical search. It stores nodes with minimal metadata and also has an autocomplete list derived from all of the names in the graph.
-* SQLite is used as a key value store to back the `grebi_resolver_service`. The resolver service maps node and edge IDs to compressed binary blobs containing their complete set of properties stored as JSON.
 
-> **Why do we duplicate the data with `grebi_resolver_service`?** All of the information GrEBI has about a node can be multiple MB, which adds up quickly for hundreds of millions of nodes. The website therefore shows minimal metadata in search results, which it can retrieve from Postgres, Neo, or Solr. Then it uses the resolved object for the full page (e.g. viewing an individual node with all of its properties). 
+### Kubernetes with managed PostgreSQL
 
+The Helm chart under `webapp/k8chart` expects PostgreSQL to be provided externally. The backend reads its connection settings from a Kubernetes secret containing these environment variables:
+
+* `GREBI_POSTGRES_HOST`
+* `GREBI_POSTGRES_PORT`
+* `GREBI_POSTGRES_DB`
+* `GREBI_POSTGRES_USER`
+* `GREBI_POSTGRES_PASSWORD`
+* `GREBI_POSTGRES_SSLMODE` (optional, for example `require`)
+* `GREBI_POSTGRES_JDBC_PARAMS` (optional extra JDBC query parameters)
+
+By default the chart looks for a secret named `<release-name>-postgres`. You can create it ahead of time:
+
+```bash
+kubectl create secret generic grebi-postgres \
+  --from-literal=GREBI_POSTGRES_HOST=pgsql-hlvm-138 \
+  --from-literal=GREBI_POSTGRES_PORT=5432 \
+  --from-literal=GREBI_POSTGRES_DB=spotefoexp \
+  --from-literal=GREBI_POSTGRES_USER=spot \
+  --from-literal=GREBI_POSTGRES_PASSWORD='<password>' \
+  --from-literal=GREBI_POSTGRES_SSLMODE=require
+```
+
+Then either name your Helm release `grebi`, or set `postgres.secret.name` to the secret name you want the chart to reference. The chart does not create this secret for you.

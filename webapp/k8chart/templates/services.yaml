@@ -44,21 +44,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-postgres
-  labels:
-    app: {{ .Release.Name }}-postgres
-spec:
-  ports:
-      - port: 5432
-        targetPort: 5432
-        name: postgres
-        protocol: TCP
-  selector:
-    app: {{ .Release.Name }}-postgres
----
-apiVersion: v1
-kind: Service
-metadata:
   name: {{ .Release.Name }}-prefix-service
   labels:
     app: {{ .Release.Name }}-prefix-service

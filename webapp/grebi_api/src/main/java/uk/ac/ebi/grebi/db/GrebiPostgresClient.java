@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.io.ByteArrayInputStream;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Stream;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.InflaterInputStream;
@@ -64,6 +65,9 @@ public class GrebiPostgresClient {
     private final String port;
     private final String user;
     private final String dbName;
+    private final String password;
+    private final String sslMode;
+    private final String jdbcParams;
     private Connection connection;
 
     public GrebiPostgresClient() {
@@ -71,6 +75,9 @@ public class GrebiPostgresClient {
         this.port = getEnvOrDefault("GREBI_POSTGRES_PORT", "5432");
         this.user = getEnvOrDefault("GREBI_POSTGRES_USER", "grebi");
         this.dbName = getEnvOrDefault("GREBI_POSTGRES_DB", "grebi");
+        this.password = System.getenv("GREBI_POSTGRES_PASSWORD");
+        this.sslMode = System.getenv("GREBI_POSTGRES_SSLMODE");
+        this.jdbcParams = System.getenv("GREBI_POSTGRES_JDBC_PARAMS");
 
         try {
             Class.forName("org.postgresql.Driver");
@@ -84,14 +91,45 @@ public class GrebiPostgresClient {
         return val != null ? val : defaultValue;
     }
 
-    private String getJdbcUrl() {
+    private String getJdbcBaseUrl() {
         return "jdbc:postgresql://" + host + ":" + port + "/" + dbName;
+    }
+
+    private String getJdbcUrl() {
+        String baseUrl = getJdbcBaseUrl();
+        var params = Stream.of(
+                normaliseJdbcParam("sslmode", sslMode),
+                normaliseRawJdbcParams(jdbcParams)
+        )
+            .filter(param -> !param.isBlank())
+            .collect(Collectors.joining("&"));
+
+        return params.isBlank() ? baseUrl : baseUrl + "?" + params;
+    }
+
+    private static String normaliseJdbcParam(String key, String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return key + "=" + value;
+    }
+
+    private static String normaliseRawJdbcParams(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.strip().replaceFirst("^[?&]+", "");
     }
 
     public synchronized Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
-            logger.info("Connecting to PostgreSQL at {}", getJdbcUrl());
-            connection = DriverManager.getConnection(getJdbcUrl(), user, "");
+            logger.info("Connecting to PostgreSQL at {}", getJdbcBaseUrl());
+            Properties props = new Properties();
+            props.setProperty("user", user);
+            if (password != null && !password.isBlank()) {
+                props.setProperty("password", password);
+            }
+            connection = DriverManager.getConnection(getJdbcUrl(), props);
         }
         return connection;
     }

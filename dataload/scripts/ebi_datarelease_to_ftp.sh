@@ -24,14 +24,12 @@ rm -rf $FTP_PATH
 mkdir -p $FTP_PATH
 
 cp -L $DATARELEASE_PATH/*.tgz $FTP_PATH/
-cp -L $DATARELEASE_PATH/*.sqlite3 $FTP_PATH/
 cp -L $DATARELEASE_PATH/*_metadata.json $FTP_PATH/
 cp -rL $DATARELEASE_PATH/query_results $FTP_PATH/
 
 echo "Copying $FTP_PATH to $LATEST_PATH"
 rm -rf $LATEST_PATH
 cp -r $FTP_PATH $LATEST_PATH
-
 
 
 

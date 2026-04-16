@@ -29,7 +29,6 @@ include { run_materialised_queries } from './processes/07_run_queries/run_materi
 include { results_to_csv } from './processes/07_run_queries/results_to_csv'
 include { link_results } from './processes/07_run_queries/link_results'
 include { add_query_metadatas_to_graph_metadata } from './processes/07_run_queries/add_query_metadatas_to_graph_metadata'
-include { csvs_to_sqlite } from './processes/07_run_queries/csvs_to_sqlite'
 include { test_query_templates } from './processes/09_integration_tests/test_query_templates'
 include { construct_release } from './processes/10_package_release/construct_release'
 include { package_release } from './processes/10_package_release/package_release'

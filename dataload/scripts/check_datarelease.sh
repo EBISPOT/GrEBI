@@ -22,7 +22,7 @@ fi
 echo "Checking data release at $DATARELEASE_PATH (subgraphs: ${SUBGRAPHS[*]})"
 
 for SUBGRAPH in "${SUBGRAPHS[@]}"; do
-  for f in "${SUBGRAPH}_neo4j.tgz" "${SUBGRAPH}.sqlite3" "${SUBGRAPH}_metadata.json"; do
+  for f in "${SUBGRAPH}_neo4j.tgz" "${SUBGRAPH}_metadata.json"; do
     if [ ! -f "$DATARELEASE_PATH/$f" ]; then
       echo "$f not found in $DATARELEASE_PATH"
       exit 1

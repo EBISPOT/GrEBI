@@ -14,6 +14,7 @@ spec:
       labels:
         app: {{ .Release.Name }}-backend
     spec:
+      {{- $postgresSecretName := include "grebi.postgresSecretName" . }}
       volumes:
         - name: {{ .Release.Name }}-import
           persistentVolumeClaim:
@@ -35,15 +36,10 @@ spec:
             limits:
               memory: 8Gi
               cpu: 0.5
+          envFrom:
+            - secretRef:
+                name: {{ $postgresSecretName }}
           env:
-            - name: GREBI_POSTGRES_HOST
-              value: {{ .Release.Name }}-postgres
-            - name: GREBI_POSTGRES_PORT
-              value: "5432"
-            - name: GREBI_POSTGRES_USER
-              value: grebi
-            - name: GREBI_POSTGRES_DB
-              value: grebi
             - name: GREBI_CYPHER_HOST
               value: http://{{ .Release.Name }}-cypher-service:8085
             - name: GREBI_PREFIX_HOST
