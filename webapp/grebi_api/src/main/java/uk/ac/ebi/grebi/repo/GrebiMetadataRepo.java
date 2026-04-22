@@ -1,10 +1,12 @@
 package uk.ac.ebi.grebi.repo;
 
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 import com.google.gson.JsonElement;
 
+import uk.ac.ebi.grebi.GraphOrder;
 import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 
 public class GrebiMetadataRepo {
@@ -12,7 +14,11 @@ public class GrebiMetadataRepo {
     Map<String,JsonElement> graph2metadata;
     
     public GrebiMetadataRepo(GrebiPostgresClient pgClient) {
-        graph2metadata = pgClient.getGraphMetadata();
+        var unorderedMetadata = pgClient.getGraphMetadata();
+        graph2metadata = new LinkedHashMap<>();
+        for (String graph : GraphOrder.orderedSet(unorderedMetadata.keySet())) {
+            graph2metadata.put(graph, unorderedMetadata.get(graph));
+        }
     }
 
     public Set<String> getGraphs() {

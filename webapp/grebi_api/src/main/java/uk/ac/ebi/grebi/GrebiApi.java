@@ -23,6 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import uk.ac.ebi.grebi.GraphOrder;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
 import uk.ac.ebi.grebi.db.GrebiPostgresClient;
@@ -88,6 +89,8 @@ public class GrebiApi {
         } else {
             System.out.println("Cypher service is available");
         }
+
+        postgresGraphs = GraphOrder.orderedSet(postgresGraphs);
 
         System.out.println("Found graphs: " + String.join(",", postgresGraphs));
 
@@ -778,4 +781,3 @@ public class GrebiApi {
     }
 
 }
-
