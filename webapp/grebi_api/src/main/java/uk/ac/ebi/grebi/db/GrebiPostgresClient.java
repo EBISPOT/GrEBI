@@ -91,6 +91,29 @@ public class GrebiPostgresClient {
         return val != null ? val : defaultValue;
     }
 
+    private static String getSchemaPattern(Connection conn) {
+        try {
+            String schema = conn.getSchema();
+            if (schema != null && !schema.isBlank()) {
+                return schema;
+            }
+        } catch (SQLException ignored) {
+            // Fall back to all visible schemas below.
+        }
+        return null;
+    }
+
+    private static Set<String> listTables(DatabaseMetaData meta, String schemaPattern, String tablePattern)
+            throws SQLException {
+        Set<String> tables = new LinkedHashSet<>();
+        try (ResultSet rs = meta.getTables(null, schemaPattern, tablePattern, new String[]{"TABLE"})) {
+            while (rs.next()) {
+                tables.add(rs.getString("TABLE_NAME"));
+            }
+        }
+        return tables;
+    }
+
     private String getJdbcBaseUrl() {
         return "jdbc:postgresql://" + host + ":" + port + "/" + dbName;
     }
@@ -169,10 +192,10 @@ public class GrebiPostgresClient {
         try {
             Connection conn = getConnection();
             DatabaseMetaData meta = conn.getMetaData();
-            try (ResultSet rs = meta.getTables(null, "public", "edges_%", new String[]{"TABLE"})) {
-                while (rs.next()) {
-                    tables.add(rs.getString("TABLE_NAME"));
-                }
+            String schemaPattern = getSchemaPattern(conn);
+            tables.addAll(listTables(meta, schemaPattern, "edges_%"));
+            if (tables.isEmpty() && schemaPattern != null) {
+                tables.addAll(listTables(meta, null, "edges_%"));
             }
         } catch (SQLException e) {
             logger.error("Failed to list edge tables", e);
@@ -189,10 +212,10 @@ public class GrebiPostgresClient {
         try {
             Connection conn = getConnection();
             DatabaseMetaData meta = conn.getMetaData();
-            try (ResultSet rs = meta.getTables(null, "public", "nodes_%", new String[]{"TABLE"})) {
-                while (rs.next()) {
-                    tables.add(rs.getString("TABLE_NAME"));
-                }
+            String schemaPattern = getSchemaPattern(conn);
+            tables.addAll(listTables(meta, schemaPattern, "nodes_%"));
+            if (tables.isEmpty() && schemaPattern != null) {
+                tables.addAll(listTables(meta, null, "nodes_%"));
             }
         } catch (SQLException e) {
             logger.error("Failed to list node tables", e);
@@ -743,10 +766,10 @@ public class GrebiPostgresClient {
         try {
             Connection conn = getConnection();
             DatabaseMetaData meta = conn.getMetaData();
-            try (ResultSet rs = meta.getTables(null, "public", "blobs_%", new String[]{"TABLE"})) {
-                while (rs.next()) {
-                    tables.add(rs.getString("TABLE_NAME"));
-                }
+            String schemaPattern = getSchemaPattern(conn);
+            tables.addAll(listTables(meta, schemaPattern, "blobs_%"));
+            if (tables.isEmpty() && schemaPattern != null) {
+                tables.addAll(listTables(meta, null, "blobs_%"));
             }
         } catch (SQLException e) {
             logger.error("Failed to list blob tables", e);
@@ -839,10 +862,10 @@ public class GrebiPostgresClient {
         try {
             Connection conn = getConnection();
             DatabaseMetaData meta = conn.getMetaData();
-            try (ResultSet rs = meta.getTables(null, "public", "autocomplete_%", new String[]{"TABLE"})) {
-                while (rs.next()) {
-                    tables.add(rs.getString("TABLE_NAME"));
-                }
+            String schemaPattern = getSchemaPattern(conn);
+            tables.addAll(listTables(meta, schemaPattern, "autocomplete_%"));
+            if (tables.isEmpty() && schemaPattern != null) {
+                tables.addAll(listTables(meta, null, "autocomplete_%"));
             }
         } catch (SQLException e) {
             logger.error("Failed to list autocomplete tables", e);
@@ -1014,10 +1037,10 @@ public class GrebiPostgresClient {
         try {
             Connection conn = getConnection();
             DatabaseMetaData meta = conn.getMetaData();
-            try (ResultSet rs = meta.getTables(null, "public", "materialised_queries_%", new String[]{"TABLE"})) {
-                while (rs.next()) {
-                    tables.add(rs.getString("TABLE_NAME"));
-                }
+            String schemaPattern = getSchemaPattern(conn);
+            tables.addAll(listTables(meta, schemaPattern, "materialised_queries_%"));
+            if (tables.isEmpty() && schemaPattern != null) {
+                tables.addAll(listTables(meta, null, "materialised_queries_%"));
             }
         } catch (SQLException e) {
             logger.error("Failed to list materialised query tables", e);
