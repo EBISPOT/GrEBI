@@ -135,6 +135,7 @@ def create_indexes_for_subgraph(
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_name_trgm" ON "nodes_{sg}" USING gin ("grebi:name" gin_trgm_ops);')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_type_gin" ON "nodes_{sg}" USING gin ("grebi:type");')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_datasources_gin" ON "nodes_{sg}" USING gin ("grebi:datasources");')
+    stmts.append(f'CREATE INDEX "idx_nodes_{sg}_sourceIds_gin" ON "nodes_{sg}" USING gin ("grebi:sourceIds");')
 
     # Embedding indexes from column definitions
     with open(nodes_cols_file) as f:
