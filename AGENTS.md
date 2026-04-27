@@ -11,6 +11,9 @@ use a high one so it doesn't clash with any local running neo4j. Then test the q
 (note this is not the same as the standard Neo4j query endpoint and it doesn't use bolt).
 You should establish some good examples for your query template and test them before finalizing it.
 When you are happy with the template, build and start the backend locally on a high port using the databases forwarded from k8s, also on high ports. You can use that local backend to run the query through GrEBI and be certain that it works.
+The initial metadata load in the backend can take several minutes before it binds the port. This is normal, don't try to bypass it by not using the real backend.
+
+
 
 
 

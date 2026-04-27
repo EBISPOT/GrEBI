@@ -8,6 +8,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.internal.LinkedTreeMap;
 import io.javalin.Javalin;
+import io.javalin.http.HttpResponseException;
+import io.javalin.http.NotFoundResponse;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -25,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.GraphOrder;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
+import uk.ac.ebi.grebi.repo.QueryTemplate;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
 import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 import uk.ac.ebi.grebi.db.PrefixClient;
@@ -116,6 +119,7 @@ public class GrebiApi {
         final Map<String, EmbeddingServiceClient> embeddingClients
     ) {
         var stats = cypher != null ? cypher.getStats() : null;
+        var port = Integer.parseInt(Objects.requireNonNullElse(System.getenv("GREBI_PORT"), "8090"));
 
         Gson gson = new Gson();
 
@@ -124,12 +128,7 @@ public class GrebiApi {
         );
 
         Javalin.create(config -> {
-              config.jetty.modifyServer(server -> {
-                        var gzip = new org.eclipse.jetty.server.handler.gzip.GzipHandler();
-                        gzip.addExcludedMimeTypes("text/event-stream");
-                        gzip.setInflateBufferSize(0); // disable request body inflation to avoid consuming POST bodies
-                        server.insertHandler(gzip);
-                    });
+                    config.http.gzipOnlyCompression();
                     config.jetty.modifyServletContextHandler(ctx -> {
                         var holder = new ServletHolder(mcpServer.getTransportProvider());
                         holder.setAsyncSupported(true);
@@ -319,10 +318,7 @@ public class GrebiApi {
                 .get("/api/v1/graphs/{graph}/query_templates/{templateId}", ctx -> {
                     var graph = ctx.pathParam("graph");
                     var templateId = ctx.pathParam("templateId");
-                    var template = queryTemplates.getQueryTemplates().stream()
-                            .filter(qt -> qt.id.equals(templateId) && (qt.graphs == null || qt.graphs.contains(graph)))
-                            .findFirst()
-                            .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found for graph " + graph));
+                    var template = getQueryTemplateOrThrow(queryTemplates, graph, templateId);
                     ctx.contentType("application/json");
                     ctx.header("cache-control", "no-cache");
                     ctx.result(gson.toJson(template));
@@ -330,10 +326,7 @@ public class GrebiApi {
                 .get("/api/v1/graphs/{graph}/query/{templateId}.csv", ctx -> {
                     var graph = ctx.pathParam("graph");
                     var templateId = ctx.pathParam("templateId");
-                    var template = queryTemplates.getQueryTemplates().stream()
-                            .filter(qt -> qt.id.equals(templateId))
-                            .findFirst()
-                            .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found"));
+                    var template = getQueryTemplateOrThrow(queryTemplates, graph, templateId);
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), template.result_columns.get(0).column_id);
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
 
@@ -361,10 +354,7 @@ public class GrebiApi {
                 .get("/api/v1/graphs/{graph}/query/{templateId}", ctx -> {
                     var graph = ctx.pathParam("graph");
                     var templateId = ctx.pathParam("templateId");
-                    var template = queryTemplates.getQueryTemplates().stream()
-                            .filter(qt -> qt.id.equals(templateId))
-                            .findFirst()
-                            .orElseThrow(() -> new RuntimeException("Query template " + templateId + " not found"));
+                    var template = getQueryTemplateOrThrow(queryTemplates, graph, templateId);
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), template.result_columns.get(0).column_id);
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
                     var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
@@ -771,13 +761,31 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.json(res);
                 })
+                .exception(HttpResponseException.class, (e, ctx) -> {
+                    ctx.status(e.getStatus());
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(Map.of("error", e.getMessage())));
+                })
                 .exception(Exception.class, (e, ctx) -> {
                     ctx.status(500);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(Map.of("error", e.getMessage())));
                     e.printStackTrace();
                 })
-                .start("0.0.0.0", 8090);
+                .start("0.0.0.0", port);
+    }
+
+    private static QueryTemplate getQueryTemplateOrThrow(
+        GrebiQueryTemplatesRepo queryTemplates,
+        String graph,
+        String templateId
+    ) {
+        return queryTemplates.getQueryTemplates().stream()
+            .filter(qt -> qt.id.equals(templateId) && (qt.graphs == null || qt.graphs.contains(graph)))
+            .findFirst()
+            .orElseThrow(() -> new NotFoundResponse(
+                "Query template " + templateId + " not found for graph " + graph
+            ));
     }
 
 }
