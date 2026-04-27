@@ -1,5 +1,5 @@
-title: Search GWAS Catalog by drugs indicated for a disease
-question: What [GWAS study traits]{trait} are associated with drugs used to treat {disease_id}?
+title: Search GWAS Catalog by drugs or drug classes indicated for a disease
+question: What [GWAS study traits]{trait} are associated with [drugs or drug classes]{drug} used to treat {disease_id}?
 graphs:
   - ebi_monarch_xspecies
 topics:
@@ -7,13 +7,32 @@ topics:
   - chebi
 cypher_match_fragment: |-
   MATCH (disease)-[:sourceId]->(:Id {id: $disease_id })
-  MATCH (drug)-[r:(
+  MATCH (treatment_drug)-[:(
         `biolink:treats` |
         `biolink:applied_to_treat` |
         `biolink:treats_or_applied_or_studied_to_treat` |
         `primekg:indication`
       )]->(disease)
-  MATCH (trait)-[:`ro:has_primary_input`]->(drug)
+  WITH DISTINCT treatment_drug
+  CALL {
+      WITH treatment_drug
+      RETURN treatment_drug AS trait_input, treatment_drug AS drug
+      UNION
+      WITH treatment_drug
+      MATCH (treatment_drug)-[:`mesh.vocab:pharmacologicalAction`]->(role_input)
+      RETURN DISTINCT role_input AS trait_input, role_input AS drug
+      UNION
+      WITH treatment_drug
+      MATCH (treatment_drug)-[:`mesh.vocab:pharmacologicalAction`]->(role)
+      WITH DISTINCT
+          role,
+          [role_id IN role.id WHERE role_id =~ "chebi:[0-9]+" | role_id][0] AS chebi_role_id
+      WHERE chebi_role_id IS NOT NULL
+      MATCH (goche_role)-[:sourceId]->(:Id { id: replace(chebi_role_id, "chebi:", "goche:") })
+      RETURN DISTINCT goche_role AS trait_input, role AS drug
+  }
+  MATCH (matched_trait)-[:`ro:has_primary_input`]->(trait_input)
+  MATCH (trait)-[:(`biolink:subclass_of`|`biolink:broad_match`)*0..1]->(matched_trait)
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
   OPTIONAL MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
   WITH
@@ -29,9 +48,9 @@ cypher_match_fragment: |-
 cypher_return_fragment: |-
   RETURN DISTINCT
       trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
-      drug { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS drug,
-      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS snp,
-      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS gene,
+      drug { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(drug) } AS drug,
+      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
+      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
       study.`grebi:name`[0] AS study_name,
       study.`gwas:pubmedid`[0] AS pubmed_id,
       or_or_beta,
@@ -71,6 +90,9 @@ examples:
   - title: asthma
     params:
       disease_id: mondo:0004979
+  - title: major depressive disorder
+    params:
+      disease_id: mondo:0002009
   - title: lung cancer
     params:
       disease_id: mondo:0008903
