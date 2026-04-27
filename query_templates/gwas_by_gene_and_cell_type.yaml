@@ -1,0 +1,74 @@
+title: Search GWAS Catalog by gene and cell type
+question: What GWAS [traits]{trait} are associated with {gene_id} in {cell_type_id}?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+  - cl
+cypher_match_fragment: |-
+  MATCH (gene)-[:sourceId]->(:Id {id: $gene_id })
+  MATCH (cl_term)-[:sourceId]->(:Id {id: $cell_type_id })
+  MATCH (cl_term)<-[r:(`ro:characteristic_of`|`ro:characteristic_of_part_of`|`iao:is_about`|`biolink:has_participant`|`biolink:disease_has_location`|`efo:has_disease_location`)]-(trait)
+  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
+  MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  WITH
+      gene,
+      cl_term,
+      trait,
+      snp,
+      [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
+      assoc.`gwas:or_or_beta`[0] AS or_or_beta,
+      assoc.edge_id AS edge_id
+  MATCH
+      (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      cl_term { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(cl_term) } AS cell_type,
+      trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
+      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
+      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
+      study.`grebi:name`[0] AS study_name,
+      study.`gwas:pubmedid`[0] AS pubmed_id,
+      or_or_beta,
+      edge_id
+cypher_count_fragment: |-
+  WITH DISTINCT gene, cl_term, trait, snp, study, or_or_beta, edge_id
+  RETURN count(*) AS count
+params:
+  - param_id: gene_id
+    param_name: Gene
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'hgnc:Gene'
+  - param_id: cell_type_id
+    param_name: Cell Type
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'cl:0000000'
+result_columns:
+  - column_id: cell_type
+    column_type: GraphNodeId
+  - column_id: trait
+    column_type: GraphNodeId
+  - column_id: snp
+    column_type: GraphNodeId
+  - column_id: gene
+    column_type: GraphNodeId
+  - column_id: study_name
+    column_type: string
+  - column_id: pubmed_id
+    column_type: string
+  - column_id: or_or_beta
+    column_type: float
+    optional: true
+  - column_id: edge_id
+    column_type: EdgeId
+examples:
+  - title: IRF4 in leukocyte
+    params:
+      gene_id: hgnc:6119
+      cell_type_id: cl:0000738
+  - title: BCL2L11 in leukocyte
+    params:
+      gene_id: hgnc:994
+      cell_type_id: cl:0000738
