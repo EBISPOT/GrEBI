@@ -11,8 +11,8 @@ cypher_match_fragment: |-
   UNWIND assoc.`gwas:disease_trait` AS reported_trait
   With trait, reported_trait, [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id, assoc.edge_id AS edge_id
   WHERE NOT reported_trait IN trait.`grebi:name` AND NOT reported_trait IN trait.`grebi:synonym`
-  MATCH (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
 cypher_return_fragment: |-
+  MATCH (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
   RETURN DISTINCT
       reported_trait,
       trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,

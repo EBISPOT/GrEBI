@@ -240,6 +240,122 @@ public class GrebiCypherRepo {
         public Map<String, Object> params;
     }
 
+    private QueryTemplate.ResultColumn getResultColumn(QueryTemplate template, String columnId) {
+        return template.result_columns.stream()
+            .filter(column -> column.column_id.equals(columnId))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Result column " + columnId + " not found"));
+    }
+
+    private String getSortExpression(QueryTemplate.ResultColumn column) {
+        var columnType = column.column_type == null ? "" : column.column_type.toLowerCase();
+        if (columnType.equals("float")) {
+            return "toFloat(" + column.column_id + ")";
+        }
+        if (columnType.equals("int") || columnType.equals("integer")) {
+            return "toInteger(" + column.column_id + ")";
+        }
+        return column.column_id;
+    }
+
+    private Object normalizeResultValue(QueryTemplate.ResultColumn column, Object value) {
+        if (value == null || column == null || column.column_type == null) {
+            return value;
+        }
+
+        var columnType = column.column_type.toLowerCase();
+
+        switch (columnType) {
+            case "float":
+                return normalizeFloat(value, column.column_id);
+            case "int":
+            case "integer":
+                return normalizeInteger(value, column.column_id);
+            case "boolean":
+                return normalizeBoolean(value, column.column_id);
+            case "datasourcelist":
+                return normalizeDatasourceList(value);
+            case "string":
+                return value instanceof String ? value : Objects.toString(value, null);
+            default:
+                return value;
+        }
+    }
+
+    private Double normalizeFloat(Object value, String columnId) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value instanceof String str) {
+            if (str.isBlank()) {
+                return null;
+            }
+            try {
+                return Double.parseDouble(str);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Could not parse float value for column " + columnId + ": " + str, e);
+            }
+        }
+        throw new IllegalArgumentException("Unsupported float value type for column " + columnId + ": " + value.getClass().getName());
+    }
+
+    private Integer normalizeInteger(Object value, String columnId) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String str) {
+            if (str.isBlank()) {
+                return null;
+            }
+            try {
+                return Integer.parseInt(str);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Could not parse integer value for column " + columnId + ": " + str, e);
+            }
+        }
+        throw new IllegalArgumentException("Unsupported integer value type for column " + columnId + ": " + value.getClass().getName());
+    }
+
+    private Boolean normalizeBoolean(Object value, String columnId) {
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value instanceof String str) {
+            if (str.equalsIgnoreCase("true")) {
+                return true;
+            }
+            if (str.equalsIgnoreCase("false")) {
+                return false;
+            }
+            if (str.isBlank()) {
+                return null;
+            }
+        }
+        throw new IllegalArgumentException("Unsupported boolean value for column " + columnId + ": " + value);
+    }
+
+    private List<String> normalizeDatasourceList(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream()
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .toList();
+        }
+        if (value instanceof Collection<?> collection) {
+            return collection.stream()
+                .filter(Objects::nonNull)
+                .map(Object::toString)
+                .toList();
+        }
+        if (value instanceof String str) {
+            if (str.isBlank()) {
+                return List.of();
+            }
+            return List.of(str);
+        }
+        return List.of(value.toString());
+    }
+
     PreparedQuery prepareQuery(
         String graph, 
         QueryTemplate template,
@@ -320,10 +436,12 @@ public class GrebiCypherRepo {
                 throw new IllegalArgumentException("Sort column " + sortField + " not found; valid columns are: " +
                     template.result_columns.stream().map(c -> c.column_id).collect(Collectors.joining(", ")));
             }
+            var sortColumn = getResultColumn(template, sortField);
+            var sortExpression = getSortExpression(sortColumn);
             if(sorts.get(0).isAscending()) {
-                preparedQuery.query += "\nORDER BY " + sortField + " ASC";
+                preparedQuery.query += "\nORDER BY " + sortExpression + " ASC";
             } else {
-                preparedQuery.query += "\nORDER BY " + sortField + " DESC";
+                preparedQuery.query += "\nORDER BY " + sortExpression + " DESC";
             }
         }
 
@@ -394,7 +512,7 @@ public class GrebiCypherRepo {
             );
 
             var results =  records.stream().map(record -> {
-                Map<String, Object> row = new HashMap<>();
+                Map<String, Object> row = new LinkedHashMap<>();
                 for (QueryTemplate.ResultColumn column : columns) {
                     String columnId = column.column_id;
                     if (column.column_type.equals("GraphNodeId")) {
@@ -410,7 +528,7 @@ public class GrebiCypherRepo {
 
                         row.put(columnId, resolved.get(nodeId));
                     } else {
-                        row.put(columnId, record.get(columnId));
+                        row.put(columnId, normalizeResultValue(column, record.get(columnId)));
                     }
                 }
                 return row;
@@ -426,7 +544,7 @@ public class GrebiCypherRepo {
             return new PageImpl<Map<String, Object>>(
                 records.stream()
                     .map(record -> {
-                        Map<String, Object> row = new HashMap<>();
+                        Map<String, Object> row = new LinkedHashMap<>();
 
                         for (QueryTemplate.ResultColumn column : columns) {
                             String columnId = column.column_id;
@@ -445,7 +563,7 @@ public class GrebiCypherRepo {
 
                                 row.put(columnId, valueCopy);
                             } else {
-                                row.put(columnId, record.get(columnId));
+                                row.put(columnId, normalizeResultValue(column, record.get(columnId)));
                             }
                         }
 
@@ -528,7 +646,7 @@ public class GrebiCypherRepo {
                             writer.write("\"" + nodeLabel.replace("\"", "\"\"") + "\"");
 
                         } else {
-                            String raw = Objects.toString(record.get(columnId), "");
+                            String raw = Objects.toString(normalizeResultValue(column, record.get(columnId)), "");
                             writer.write("\"" + raw.replace("\"", "\"\"") + "\"");
                         }
                     }

@@ -40,6 +40,36 @@ public class GrebiMcpServer {
     and edges using the MCP to traverse your own way through the graph.
     """;
 
+    private static Map<String, Object> getColumnSchema(uk.ac.ebi.grebi.repo.QueryTemplate.ResultColumn column) {
+        var columnSchema = new LinkedHashMap<String, Object>();
+
+        var columnType = column.column_type == null ? "" : column.column_type.toLowerCase();
+        String jsonType;
+
+        if (columnType.equals("graphnodeid")) {
+            jsonType = "object";
+        } else if (columnType.equals("datasourcelist")) {
+            jsonType = "array";
+            columnSchema.put("items", Map.of("type", "string"));
+        } else if (columnType.equals("float")) {
+            jsonType = "number";
+        } else if (columnType.equals("int") || columnType.equals("integer")) {
+            jsonType = "integer";
+        } else if (columnType.equals("boolean")) {
+            jsonType = "boolean";
+        } else {
+            jsonType = "string";
+        }
+
+        if (Boolean.TRUE.equals(column.optional)) {
+            columnSchema.put("type", List.of(jsonType, "null"));
+        } else {
+            columnSchema.put("type", jsonType);
+        }
+
+        return columnSchema;
+    }
+
     public GrebiMcpServer(
         final GrebiCypherRepo cypher,
         final GrebiMetadataRepo metadata,
@@ -172,20 +202,7 @@ public class GrebiMcpServer {
                     continue;
                 }
                 // TODO: add description for result cols
-                var colDef = new LinkedHashMap<String, Object>();
-                if(col.column_type.equalsIgnoreCase("GraphNodeId")) {
-                    colDef.put("type", "object"); 
-                // } else if(col.column_type.equalsIgnoreCase("float")) {
-                //     colDef.put("type", "number");
-                // } else if(col.column_type.equalsIgnoreCase("int")) {
-                //     colDef.put("type", "number");
-                } else {
-                    colDef.put("type", "string");
-                }
-                if(col.optional != null && col.optional) {
-                    colDef.put("type", List.of(colDef.get("type"), "null"));
-                }
-                rowSchemaProps.put(col.column_id, colDef);
+                rowSchemaProps.put(col.column_id, getColumnSchema(col));
             }
 
 
