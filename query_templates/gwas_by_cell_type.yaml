@@ -9,7 +9,7 @@ cypher_match_fragment: |-
   MATCH (cl_term)-[:sourceId]->(:Id {id: $cell_type_id })
   MATCH (cl_term)<-[r:(`ro:characteristic_of`|`ro:characteristic_of_part_of`|`iao:is_about`|`biolink:has_participant`|`biolink:disease_has_location`|`efo:has_disease_location`)]-(trait)
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
-  MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  OPTIONAL MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
   WITH
       cl_term,
       trait,
@@ -48,6 +48,7 @@ result_columns:
     column_type: GraphNodeId
   - column_id: gene
     column_type: GraphNodeId
+    optional: true
   - column_id: study_name
     column_type: string
   - column_id: pubmed_id

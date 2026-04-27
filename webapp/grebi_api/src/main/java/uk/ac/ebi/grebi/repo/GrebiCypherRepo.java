@@ -234,6 +234,39 @@ public class GrebiCypherRepo {
         return id.substring(graph.length() + 1);
     }
 
+    @SuppressWarnings("unchecked")
+    private String extractCleanGraphNodeId(String graph, Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        var node = (Map<String, Object>) value;
+        var rawNodeId = node.get("grebi:nodeId");
+        if (rawNodeId == null) {
+            return null;
+        }
+
+        var nodeId = rawNodeId.toString();
+        if (nodeId.startsWith(graph + ":")) {
+            return nodeId.substring(graph.length() + 1);
+        }
+        return nodeId;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> normalizeGraphNodeValue(String graph, Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        var node = new TreeMap<>((Map<String, Object>) value);
+        var nodeId = extractCleanGraphNodeId(graph, value);
+        if (nodeId != null) {
+            node.put("grebi:nodeId", nodeId);
+        }
+        return node;
+    }
+
     class PreparedQuery {
         public String query;
         public String countQuery;
@@ -494,19 +527,8 @@ public class GrebiCypherRepo {
                 records.stream()
                     .flatMap(record -> columns.stream()
                         .filter(column -> column.column_type.equals("GraphNodeId"))
-                        .map(column -> {
-                            String columnId = column.column_id;
-                            @SuppressWarnings("unchecked")
-                            var value = (Map<String, Object>) record.get(columnId);
-                            String nodeId = value.get("grebi:nodeId").toString();
-
-                            // TODO ?? 
-                            if(nodeId.startsWith(graph + ":")) {
-                                nodeId = nodeId.substring(graph.length() + 1);
-                            }
-
-                            return nodeId;
-                        })
+                        .map(column -> extractCleanGraphNodeId(graph, record.get(column.column_id)))
+                        .filter(Objects::nonNull)
                     )
                     .collect(Collectors.toSet())
             );
@@ -516,17 +538,8 @@ public class GrebiCypherRepo {
                 for (QueryTemplate.ResultColumn column : columns) {
                     String columnId = column.column_id;
                     if (column.column_type.equals("GraphNodeId")) {
-
-                        @SuppressWarnings("unchecked")
-                        var value = (Map<String, Object>) record.get(columnId);
-                        String nodeId = value.get("grebi:nodeId").toString();
-
-                        // TODO ??
-                        if(nodeId.startsWith(graph + ":")) {
-                            nodeId = nodeId.substring(graph.length() + 1);
-                        }
-
-                        row.put(columnId, resolved.get(nodeId));
+                        var nodeId = extractCleanGraphNodeId(graph, record.get(columnId));
+                        row.put(columnId, nodeId == null ? null : resolved.get(nodeId));
                     } else {
                         row.put(columnId, normalizeResultValue(column, record.get(columnId)));
                     }
@@ -549,19 +562,7 @@ public class GrebiCypherRepo {
                         for (QueryTemplate.ResultColumn column : columns) {
                             String columnId = column.column_id;
                             if (column.column_type.equals("GraphNodeId")) {
-                                @SuppressWarnings("unchecked")
-                                var value = (Map<String, Object>) record.get(columnId);
-                                String nodeId = value.get("grebi:nodeId").toString();
-
-                                var valueCopy = new TreeMap<>(value);
-
-                                // TODO ??
-                                if(nodeId.startsWith(graph + ":")) {
-                                    nodeId = nodeId.substring(graph.length() + 1);
-                                }
-                                valueCopy.put("grebi:nodeId", nodeId);
-
-                                row.put(columnId, valueCopy);
+                                row.put(columnId, normalizeGraphNodeValue(graph, record.get(columnId)));
                             } else {
                                 row.put(columnId, normalizeResultValue(column, record.get(columnId)));
                             }
@@ -629,6 +630,10 @@ public class GrebiCypherRepo {
                         String columnId = column.column_id;
                         if (column.column_type.equals("GraphNodeId")) {
                             var value = (Map<String, Object>) record.get(columnId);
+                            if (value == null) {
+                                writer.write("\"\",\"\"");
+                                continue;
+                            }
 
                             var sourceIds = (List<String>) value.get("id");
                             var nodeId = pickFavouriteSourceId(sourceIds);

@@ -70,6 +70,9 @@ export default function ResultsTable({ graph, queryId, params, resultColumns }: 
     selector: (row: any) => {
       const val = row[col.column_id];
       if (col.column_type === 'GraphNodeId') {
+        if (!val) {
+          return '-';
+        }
         const node = new GraphNodeRef(val);
         return (
           <Link

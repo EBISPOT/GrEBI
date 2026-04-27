@@ -15,7 +15,7 @@ cypher_match_fragment: |-
       )]->(disease)
   MATCH (trait)-[:`ro:has_primary_input`]->(drug)
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
-  MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  OPTIONAL MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
   WITH
       trait,
       drug,
@@ -54,6 +54,7 @@ result_columns:
     column_type: GraphNodeId
   - column_id: gene
     column_type: GraphNodeId
+    optional: true
   - column_id: study_name
     column_type: string
   - column_id: pubmed_id
@@ -73,4 +74,3 @@ examples:
   - title: lung cancer
     params:
       disease_id: mondo:0008903
-
