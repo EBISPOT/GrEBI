@@ -1,4 +1,6 @@
 
+The docs in docs/ provide a good introduction to GrEBI which you should read first. 
+
 # Instructions for adding or updating a query template
 
 These instructions are only relevant if you are working on behalf of a developer at EBI working on GrEBI, and

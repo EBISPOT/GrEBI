@@ -7,7 +7,22 @@ topics:
   - reactome
 cypher_match_fragment: |-
   MATCH (pathway)-[:sourceId]->(id:Id { id: $pathway_id })
-  MATCH (gene)-[:`biolink:participates_in`]->(pathway)
+  MATCH (pathway)-[:`reactome:hasEvent`*]->(reaction_like_event)
+  MATCH (reaction_like_event)-[:`reactome:input`|`reactome:output`|`reactome:catalystActivity`|`reactome:physicalEntity`|`reactome:regulatedBy`|`reactome:regulator`|`reactome:hasComponent`|`reactome:hasMember`|`reactome:hasCandidate`*]->(physical_entity)
+  MATCH (physical_entity)-[:`reactome:referenceEntity`]->(reference_gene_product)
+  WHERE 'reactome:ReferenceGeneProduct' IN labels(reference_gene_product)
+  MATCH (reference_gene_product)-[:`reactome:referenceGene`]->(reactome_gene)
+  WITH DISTINCT
+      reference_gene_product,
+      [name in reactome_gene.`grebi:name` WHERE name STARTS WITH 'ensembl:ENSG' OR name STARTS WITH 'hgnc:'] AS gene_source_names,
+      pathway
+  UNWIND gene_source_names AS gene_source_name
+  WITH DISTINCT
+      reference_gene_product,
+      split(gene_source_name, ' ')[0] AS gene_source_id,
+      pathway
+  MATCH (gene)-[:sourceId]->(:Id { id: gene_source_id })
+  WHERE gene.`hgnc:symbol`[0] = reference_gene_product.`reactome:name`[0]
   MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
   MATCH (snp)-[assoc:`gwas:associated_with`]->(trait)
   WITH
@@ -63,5 +78,3 @@ examples:
   - title: Wnt signaling
     params:
       pathway_id: reactome:R-HSA-195721
-
-  
