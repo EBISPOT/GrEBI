@@ -28,9 +28,9 @@ cypher_return_fragment: |-
     study.`grebi:name`[0] AS study_name,
     study.`gwas:pubmedid`[0] AS pubmed_id,
     or_or_beta,
-    edge_props
+    edge_id
 cypher_count_fragment: |-
-  WITH DISTINCT location, disease, snp, gene, study, or_or_beta, edge_props
+  WITH DISTINCT location, disease, snp, gene, study, or_or_beta, edge_id
   RETURN count(*) AS count
 params:
   - param_id: location_id

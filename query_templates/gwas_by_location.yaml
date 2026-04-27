@@ -1,0 +1,69 @@
+title: Search GWAS Catalog by anatomical location
+question: What GWAS studies have [traits]{trait} associated with {location_id}?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+  - uberon
+cypher_match_fragment: |-
+  MATCH (location)-[:sourceId]->(:Id {id: $location_id })
+  MATCH (location)<-[r:(`ro:characteristic_of`|`ro:characteristic_of_part_of`|`iao:is_about`|`biolink:has_participant`|`biolink:disease_has_location`|`efo:has_disease_location`)]-(trait)
+  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
+  MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  WITH
+      location,
+      trait,
+      snp,
+      gene,
+      [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
+      assoc.`gwas:or_or_beta`[0] AS or_or_beta,
+      assoc.edge_id AS edge_id
+  MATCH
+      (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      location { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(location) } AS location,
+      trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
+      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
+      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
+      study.`grebi:name`[0] AS study_name,
+      study.`gwas:pubmedid`[0] AS pubmed_id,
+      or_or_beta,
+      edge_id
+cypher_count_fragment: |-
+  WITH DISTINCT location, trait, snp, gene, study, or_or_beta, edge_id
+  RETURN count(*) AS count
+params:
+  - param_id: location_id
+    param_name: Anatomical Location
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'uberon:0001062'
+result_columns:
+  - column_id: location
+    column_type: GraphNodeId
+  - column_id: trait
+    column_type: GraphNodeId
+  - column_id: snp
+    column_type: GraphNodeId
+  - column_id: gene
+    column_type: GraphNodeId
+  - column_id: study_name
+    column_type: string
+  - column_id: pubmed_id
+    column_type: string
+  - column_id: or_or_beta
+    column_type: float
+    optional: true
+  - column_id: edge_id
+    column_type: EdgeId
+examples:
+  - title: lung
+    params:
+      location_id: uberon:0002048
+  - title: liver
+    params:
+      location_id: uberon:0002107
+  - title: retina
+    params:
+      location_id: uberon:0000966
