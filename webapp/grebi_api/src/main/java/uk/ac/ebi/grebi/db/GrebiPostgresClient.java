@@ -6,6 +6,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.reflect.TypeToken;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.jooq.*;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
@@ -68,7 +70,7 @@ public class GrebiPostgresClient {
     private final String password;
     private final String sslMode;
     private final String jdbcParams;
-    private Connection connection;
+    private volatile HikariDataSource dataSource;
 
     public GrebiPostgresClient() {
         this.host = getEnvOrDefault("GREBI_POSTGRES_HOST", "localhost");
@@ -144,21 +146,43 @@ public class GrebiPostgresClient {
         return value.strip().replaceFirst("^[?&]+", "");
     }
 
-    public synchronized Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            logger.info("Connecting to PostgreSQL at {}", getJdbcBaseUrl());
-            Properties props = new Properties();
-            props.setProperty("user", user);
-            if (password != null && !password.isBlank()) {
-                props.setProperty("password", password);
-            }
-            connection = DriverManager.getConnection(getJdbcUrl(), props);
+    private HikariDataSource getDataSource() {
+        var ds = dataSource;
+        if (ds != null) {
+            return ds;
         }
-        return connection;
+        synchronized (this) {
+            ds = dataSource;
+            if (ds != null) {
+                return ds;
+            }
+            logger.info("Connecting to PostgreSQL at {}", getJdbcBaseUrl());
+            var config = new HikariConfig();
+            config.setJdbcUrl(getJdbcUrl());
+            config.setUsername(user);
+            if (password != null && !password.isBlank()) {
+                config.setPassword(password);
+            }
+            config.setMaximumPoolSize(16);
+            config.setMinimumIdle(0);
+            config.setAutoCommit(true);
+            config.setPoolName("grebi-postgres");
+            config.setInitializationFailTimeout(-1);
+            config.setConnectionTimeout(30_000);
+            config.setValidationTimeout(5_000);
+            config.setKeepaliveTime(120_000);
+            ds = new HikariDataSource(config);
+            dataSource = ds;
+            return ds;
+        }
+    }
+
+    public Connection getConnection() throws SQLException {
+        return getDataSource().getConnection();
     }
 
     private DSLContext dsl() throws SQLException {
-        return DSL.using(getConnection(), SQLDialect.POSTGRES);
+        return DSL.using(getDataSource(), SQLDialect.POSTGRES);
     }
 
     /**
@@ -167,8 +191,7 @@ public class GrebiPostgresClient {
      */
     public Map<String, JsonElement> getGraphMetadata() {
         Map<String, JsonElement> result = new LinkedHashMap<>();
-        try {
-            Connection conn = getConnection();
+        try (Connection conn = getConnection()) {
             try (java.sql.Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery("SELECT graph, metadata FROM graph_metadata")) {
                 while (rs.next()) {
@@ -189,8 +212,7 @@ public class GrebiPostgresClient {
      */
     public Set<String> listEdgeTables() {
         Set<String> tables = new LinkedHashSet<>();
-        try {
-            Connection conn = getConnection();
+        try (Connection conn = getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
             String schemaPattern = getSchemaPattern(conn);
             tables.addAll(listTables(meta, schemaPattern, "edges_%"));
@@ -209,8 +231,7 @@ public class GrebiPostgresClient {
      */
     public Set<String> listNodeTables() {
         Set<String> tables = new LinkedHashSet<>();
-        try {
-            Connection conn = getConnection();
+        try (Connection conn = getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
             String schemaPattern = getSchemaPattern(conn);
             tables.addAll(listTables(meta, schemaPattern, "nodes_%"));
@@ -657,8 +678,7 @@ public class GrebiPostgresClient {
         }
         vecLiteral.append("]");
 
-        try {
-            Connection conn = getConnection();
+        try (Connection conn = getConnection()) {
             var tbl = nodesTable(graph);
             var nodeIdField = field(name("grebi:nodeId"), String.class);
             var nameField = field(name("grebi:name"), String.class);
@@ -705,8 +725,7 @@ public class GrebiPostgresClient {
     public float[] getNodeEmbedding(String graph, String nodeId, String embeddingModel) {
         String col = checkedEmbeddingColumn(embeddingModel);
 
-        try {
-            Connection conn = getConnection();
+        try (Connection conn = getConnection()) {
             var tbl = nodesTable(graph);
 
             String sql = "SELECT \"" + col + "\"::text FROM " + dsl().render(tbl) +
@@ -763,8 +782,7 @@ public class GrebiPostgresClient {
      */
     public Set<String> listBlobTables() {
         Set<String> tables = new LinkedHashSet<>();
-        try {
-            Connection conn = getConnection();
+        try (Connection conn = getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
             String schemaPattern = getSchemaPattern(conn);
             tables.addAll(listTables(meta, schemaPattern, "blobs_%"));
@@ -805,13 +823,14 @@ public class GrebiPostgresClient {
         Map<String, Map<String, Object>> result = new LinkedHashMap<>();
         String sql = "SELECT id, json FROM \"blobs_" + graph + "\" WHERE id = ANY(?)";
 
-        try (PreparedStatement ps = getConnection().prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             String[] idArray = ids.toArray(new String[0]);
             byte[][] byteIds = new byte[idArray.length][];
             for (int i = 0; i < idArray.length; i++) {
                 byteIds[i] = idArray[i].getBytes(java.nio.charset.StandardCharsets.UTF_8);
             }
-            ps.setArray(1, getConnection().createArrayOf("bytea", byteIds));
+            ps.setArray(1, conn.createArrayOf("bytea", byteIds));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     byte[] idBytes = rs.getBytes("id");
@@ -859,8 +878,7 @@ public class GrebiPostgresClient {
 
     public Set<String> listAutocompleteTables() {
         Set<String> tables = new LinkedHashSet<>();
-        try {
-            Connection conn = getConnection();
+        try (Connection conn = getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
             String schemaPattern = getSchemaPattern(conn);
             tables.addAll(listTables(meta, schemaPattern, "autocomplete_%"));
@@ -1090,8 +1108,7 @@ public class GrebiPostgresClient {
 
     public Set<String> listMatQueryTables() {
         Set<String> tables = new LinkedHashSet<>();
-        try {
-            Connection conn = getConnection();
+        try (Connection conn = getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
             String schemaPattern = getSchemaPattern(conn);
             tables.addAll(listTables(meta, schemaPattern, "materialised_queries_%"));
