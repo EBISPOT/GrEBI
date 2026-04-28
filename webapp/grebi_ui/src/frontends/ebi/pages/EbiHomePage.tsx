@@ -10,7 +10,12 @@ import CyclingQuestions from "../../../components/query/CyclingQuestions";
 import urlJoin from "url-join";
 import SourceCodeSection from "../../../components/query/SourceCodeSection";
 import GraphView from "../../../components/node_graph_view/GraphView";
+import { prefetchNodeEdgeCounts } from "../../../components/node_graph_view/edgeCountsCache";
 import GraphNode from "../../../model/GraphNode";
+
+function buildNodeCacheKey(graph: string, sourceId: string): string {
+  return `${graph}::${sourceId}`;
+}
 
 export default function EbiHomePage() {
 
@@ -28,6 +33,8 @@ export default function EbiHomePage() {
   let [graphLocked, setGraphLocked] = useState(false);
   let [graphHovered, setGraphHovered] = useState(false);
   let nodeCacheRef = useRef<Record<string, GraphNode>>({});
+  let nodeRequestRef = useRef<Record<string, Promise<GraphNode | null>>>({});
+  let activeNodeKeyRef = useRef<string | null>(null);
 
 function navigateToGraph(sg: string) {
   let currentUrl = loc.pathname;
@@ -45,37 +52,77 @@ function navigateToGraph(sg: string) {
     get<Stats>("api/v1/stats").then(r => setStats(r));
   }, [graph]);
 
-  const onExampleChange = useCallback((sourceId: string | null, title: string | null) => {
-    if (!graph || !sourceId) return;
-    const cached = nodeCacheRef.current[sourceId];
-    if (cached) {
-      setGraphNode(cached);
-      return;
-    }
-    getPaginated<any>(`api/v1/graphs/${graph}/nodes`, { "grebi:sourceIds": sourceId, size: "1" })
-      .then(r => {
-        if (r.elements.length > 0) {
-          const node = new GraphNode(r.elements[0]);
-          nodeCacheRef.current[sourceId] = node;
-          setGraphNode(node);
-        }
-      })
-      .catch(() => {});
+  useEffect(() => {
+    activeNodeKeyRef.current = null;
+    setGraphNode(null);
   }, [graph]);
 
-  const onAllSourceIds = useCallback((sourceIds: string[]) => {
-    if (!graph) return;
-    for (const sid of sourceIds) {
-      if (nodeCacheRef.current[sid]) continue;
-      getPaginated<any>(`api/v1/graphs/${graph}/nodes`, { "grebi:sourceIds": sid, size: "1" })
-        .then(r => {
-          if (r.elements.length > 0) {
-            nodeCacheRef.current[sid] = new GraphNode(r.elements[0]);
-          }
-        })
-        .catch(() => {});
+  const ensureNodeLoaded = useCallback((sourceId: string, makeActive = false) => {
+    if (!graph) return Promise.resolve<GraphNode | null>(null);
+
+    const cacheKey = buildNodeCacheKey(graph, sourceId);
+    if (makeActive) {
+      activeNodeKeyRef.current = cacheKey;
     }
+
+    const cached = nodeCacheRef.current[cacheKey];
+    if (cached) {
+      prefetchNodeEdgeCounts(graph, cached.getEncodedNodeId());
+      if (makeActive && activeNodeKeyRef.current === cacheKey) {
+        setGraphNode(cached);
+      }
+      return Promise.resolve(cached);
+    }
+
+    const pending = nodeRequestRef.current[cacheKey];
+    if (pending) {
+      if (makeActive) {
+        pending.then(node => {
+          if (node && activeNodeKeyRef.current === cacheKey) {
+            setGraphNode(node);
+          }
+        }).catch(() => {});
+      }
+      return pending;
+    }
+
+    const request = getPaginated<any>(`api/v1/graphs/${graph}/nodes`, {
+      "grebi:sourceIds": sourceId,
+      size: "1",
+      resolve: "false",
+    })
+      .then(r => {
+        if (r.elements.length === 0) return null;
+        const node = new GraphNode(r.elements[0]);
+        nodeCacheRef.current[cacheKey] = node;
+        prefetchNodeEdgeCounts(graph, node.getEncodedNodeId());
+        if (activeNodeKeyRef.current === cacheKey) {
+          setGraphNode(node);
+        }
+        return node;
+      })
+      .catch(() => null)
+      .finally(() => {
+        delete nodeRequestRef.current[cacheKey];
+      });
+
+    nodeRequestRef.current[cacheKey] = request;
+    return request;
   }, [graph]);
+
+  const onVisibleSourceIdsChange = useCallback((currentSourceId: string | null, nextSourceId: string | null) => {
+    if (!currentSourceId) {
+      activeNodeKeyRef.current = null;
+      setGraphNode(null);
+      return;
+    }
+
+    void ensureNodeLoaded(currentSourceId, true);
+
+    if (nextSourceId && nextSourceId !== currentSourceId) {
+      void ensureNodeLoaded(nextSourceId, false);
+    }
+  }, [ensureNodeLoaded]);
 
   const lockGraph = useCallback(() => {
     setGraphLocked(true);
@@ -197,7 +244,7 @@ function navigateToGraph(sg: string) {
 
           {graph && (
             <div className="mt-2 mb-8">
-              <CyclingQuestions graph={graph} autoPlay={!graphLocked && !graphHovered} onExampleChange={onExampleChange} onAllSourceIds={onAllSourceIds} />
+              <CyclingQuestions graph={graph} autoPlay={!graphLocked && !graphHovered} onVisibleSourceIdsChange={onVisibleSourceIdsChange} />
             </div>
           )}
 

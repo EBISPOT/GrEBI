@@ -6,7 +6,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
@@ -14,6 +18,8 @@ import java.nio.file.*;
 
 
 public class GrebiQueryTemplatesRepo {
+
+    private static final Logger logger = LoggerFactory.getLogger(GrebiQueryTemplatesRepo.class);
 
     static final String QUERY_TEMPLATES_PATH = System.getenv("GREBI_QUERY_TEMPLATES_PATH");
 
@@ -25,6 +31,7 @@ public class GrebiQueryTemplatesRepo {
 
     private volatile List<QueryTemplate> queryTemplates;
     private volatile List<QueryTopic> queryTopics;
+    private final List<Consumer<List<QueryTemplate>>> reloadListeners = new CopyOnWriteArrayList<>();
 
     public GrebiQueryTemplatesRepo() {
         reload();
@@ -39,6 +46,12 @@ public class GrebiQueryTemplatesRepo {
         return queryTopics;
     }
 
+    public void addReloadListener(Consumer<List<QueryTemplate>> listener) {
+        if (listener != null) {
+            reloadListeners.add(listener);
+        }
+    }
+
     private void reload() {
         try {
             List<QueryTemplate> newTemplates = loadQueryTemplates(getQueryTemplatesPath());
@@ -46,9 +59,23 @@ public class GrebiQueryTemplatesRepo {
             this.queryTemplates = newTemplates;
             this.queryTopics = newTopics;
             System.out.println("Loaded " + newTemplates.size() + " query templates and " + newTopics.size() + " topics");
+            notifyReloadListeners(newTemplates);
         } catch (Exception e) {
             System.err.println("Failed to reload query templates: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private void notifyReloadListeners(List<QueryTemplate> templates) {
+        logger.info("Notifying {} query-template reload listeners for {} templates",
+                reloadListeners.size(), templates == null ? 0 : templates.size());
+        for (var listener : reloadListeners) {
+            try {
+                listener.accept(templates);
+            } catch (Exception e) {
+                System.err.println("Query template reload listener failed: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 

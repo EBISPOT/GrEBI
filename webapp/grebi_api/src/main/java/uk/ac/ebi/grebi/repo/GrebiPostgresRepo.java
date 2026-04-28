@@ -2,7 +2,12 @@ package uk.ac.ebi.grebi.repo;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 
 import uk.ac.ebi.grebi.GrebiFacetedResultsPage;
@@ -13,10 +18,24 @@ import uk.ac.ebi.grebi.db.GrebiPostgresClient;
  */
 public class GrebiPostgresRepo {
 
+    private static final Logger logger = LoggerFactory.getLogger(GrebiPostgresRepo.class);
+    private static final String INCOMING = "incoming";
+    private static final String OUTGOING = "outgoing";
+
     private final GrebiPostgresClient pgClient;
+    private final ExecutorService exampleEdgeCountWarmupExecutor;
+    private final AtomicLong exampleEdgeCountWarmupGeneration = new AtomicLong();
+    private volatile Map<ExampleNodeCacheKey, Map<String, Map<String, Map<String, Integer>>>> exampleEdgeCountCache = Map.of();
+
+    private record ExampleNodeCacheKey(String graph, String nodeId) {}
 
     public GrebiPostgresRepo() {
         this.pgClient = new GrebiPostgresClient();
+        this.exampleEdgeCountWarmupExecutor = Executors.newSingleThreadExecutor(r -> {
+            var thread = new Thread(r, "example-edge-count-prewarm");
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     public GrebiPostgresClient getPgClient() {
@@ -25,6 +44,14 @@ public class GrebiPostgresRepo {
 
     public Set<String> getGraphs() {
         return pgClient.getGraphs();
+    }
+
+    public void refreshExampleEdgeCountCacheAsync(List<QueryTemplate> templates) {
+        var templateSnapshot = templates == null ? List.<QueryTemplate>of() : List.copyOf(templates);
+        long generation = exampleEdgeCountWarmupGeneration.incrementAndGet();
+        logger.info("Queueing example edge-count cache rebuild #{} from {} templates",
+                generation, templateSnapshot.size());
+        exampleEdgeCountWarmupExecutor.submit(() -> rebuildExampleEdgeCountCache(templateSnapshot, generation));
     }
 
     /**
@@ -81,10 +108,18 @@ public class GrebiPostgresRepo {
     }
 
     public Map<String, Map<String, Integer>> getIncomingEdgeCounts(String graph, String nodeId) {
+        var cached = getCachedBothEdgeCounts(graph, nodeId);
+        if (cached != null) {
+            return cached.get(INCOMING);
+        }
         return pgClient.getEdgeCounts(graph, "grebi:toNodeId", nodeId);
     }
 
     public Map<String, Map<String, Integer>> getOutgoingEdgeCounts(String graph, String nodeId) {
+        var cached = getCachedBothEdgeCounts(graph, nodeId);
+        if (cached != null) {
+            return cached.get(OUTGOING);
+        }
         return pgClient.getEdgeCounts(graph, "grebi:fromNodeId", nodeId);
     }
 
@@ -92,14 +127,19 @@ public class GrebiPostgresRepo {
      * Fetch both incoming and outgoing edge counts in parallel.
      */
     public Map<String, Map<String, Map<String, Integer>>> getBothEdgeCounts(String graph, String nodeId) {
+        var cached = getCachedBothEdgeCounts(graph, nodeId);
+        if (cached != null) {
+            return cached;
+        }
+
         CompletableFuture<Map<String, Map<String, Integer>>> inFuture =
                 CompletableFuture.supplyAsync(() -> getIncomingEdgeCounts(graph, nodeId));
         CompletableFuture<Map<String, Map<String, Integer>>> outFuture =
                 CompletableFuture.supplyAsync(() -> getOutgoingEdgeCounts(graph, nodeId));
 
         Map<String, Map<String, Map<String, Integer>>> result = new LinkedHashMap<>();
-        result.put("incoming", inFuture.join());
-        result.put("outgoing", outFuture.join());
+        result.put(INCOMING, inFuture.join());
+        result.put(OUTGOING, outFuture.join());
         return result;
     }
 
@@ -223,5 +263,138 @@ public class GrebiPostgresRepo {
 
         return new GrebiFacetedResultsPage<>(
                 result.results, result.facets, pageable, result.totalCount);
+    }
+
+    private Map<String, Map<String, Map<String, Integer>>> getCachedBothEdgeCounts(String graph, String nodeId) {
+        return exampleEdgeCountCache.get(new ExampleNodeCacheKey(graph, nodeId));
+    }
+
+    private void rebuildExampleEdgeCountCache(List<QueryTemplate> templates, long generation) {
+        long startNanos = System.nanoTime();
+        try {
+            var sourceIdsByGraph = collectExampleSourceIdsByGraph(templates, getGraphs());
+            int exampleSourceIdCount = sourceIdsByGraph.values().stream().mapToInt(Set::size).sum();
+            logger.info("Starting example edge-count cache rebuild #{} for {} example source IDs across {} graphs ({})",
+                    generation, exampleSourceIdCount, sourceIdsByGraph.size(), summariseGraphSourceIds(sourceIdsByGraph));
+
+            Map<ExampleNodeCacheKey, Map<String, Map<String, Map<String, Integer>>>> nextCache = new LinkedHashMap<>();
+            for (var graphEntry : sourceIdsByGraph.entrySet()) {
+                String graph = graphEntry.getKey();
+                long graphStartNanos = System.nanoTime();
+                int resolvedNodeCount = 0;
+                int skippedSourceIdCount = 0;
+
+                for (String sourceId : graphEntry.getValue()) {
+                    String nodeId = resolveExampleSourceIdToNodeId(graph, sourceId);
+                    if (nodeId == null) {
+                        skippedSourceIdCount += 1;
+                        logger.warn("Skipping edge-count prewarm for {}:{} because no node was found", graph, sourceId);
+                        continue;
+                    }
+
+                    var cacheKey = new ExampleNodeCacheKey(graph, nodeId);
+                    if (!nextCache.containsKey(cacheKey)) {
+                        nextCache.put(cacheKey, loadBothEdgeCounts(graph, nodeId));
+                        resolvedNodeCount += 1;
+                    }
+                }
+
+                logger.info("Finished prewarming graph {} for rebuild #{}: {} example source IDs, {} unique nodes, {} skipped, {} ms",
+                        graph,
+                        generation,
+                        graphEntry.getValue().size(),
+                        resolvedNodeCount,
+                        skippedSourceIdCount,
+                        elapsedMillis(graphStartNanos));
+            }
+
+            int previousSize = exampleEdgeCountCache.size();
+            exampleEdgeCountCache = Map.copyOf(nextCache);
+            logger.info("Completed example edge-count cache rebuild #{} in {} ms: {} cached nodes (was {})",
+                    generation,
+                    elapsedMillis(startNanos),
+                    exampleEdgeCountCache.size(),
+                    previousSize);
+        } catch (Exception e) {
+            logger.error("Failed to rebuild example edge-count cache #{} after {} ms",
+                    generation, elapsedMillis(startNanos), e);
+        }
+    }
+
+    private static Map<String, Set<String>> collectExampleSourceIdsByGraph(
+            List<QueryTemplate> templates,
+            Set<String> availableGraphs) {
+        Map<String, Set<String>> sourceIdsByGraph = new LinkedHashMap<>();
+        if (templates == null || templates.isEmpty()) {
+            return sourceIdsByGraph;
+        }
+
+        for (var template : templates) {
+            if (template == null || template.params == null || template.params.isEmpty()
+                    || template.examples == null || template.examples.isEmpty()) {
+                continue;
+            }
+
+            String firstParamId = template.params.get(0).param_id;
+            if (firstParamId == null || firstParamId.isBlank()) {
+                continue;
+            }
+
+            Collection<String> graphs = (template.graphs == null || template.graphs.isEmpty())
+                    ? availableGraphs
+                    : template.graphs;
+
+            for (String graph : graphs) {
+                if (graph == null || graph.isBlank() || !availableGraphs.contains(graph)) {
+                    continue;
+                }
+
+                var graphSourceIds = sourceIdsByGraph.computeIfAbsent(graph, ignored -> new LinkedHashSet<>());
+                for (var example : template.examples) {
+                    if (example == null || example.params == null) {
+                        continue;
+                    }
+                    String sourceId = example.params.get(firstParamId);
+                    if (sourceId != null && !sourceId.isBlank()) {
+                        graphSourceIds.add(sourceId);
+                    }
+                }
+            }
+        }
+
+        return sourceIdsByGraph;
+    }
+
+    private String resolveExampleSourceIdToNodeId(String graph, String sourceId) {
+        Map<String, List<String>> filters = new LinkedHashMap<>();
+        filters.put("grebi:sourceIds", List.of(sourceId));
+        var result = pgClient.searchNodes(graph, null, filters, 0, 1);
+        if (result.results.isEmpty()) {
+            return null;
+        }
+        return (String) result.results.get(0).get("grebi:nodeId");
+    }
+
+    private Map<String, Map<String, Map<String, Integer>>> loadBothEdgeCounts(String graph, String nodeId) {
+        Map<String, Map<String, Map<String, Integer>>> result = new LinkedHashMap<>();
+        result.put(INCOMING, pgClient.getEdgeCounts(graph, "grebi:toNodeId", nodeId));
+        result.put(OUTGOING, pgClient.getEdgeCounts(graph, "grebi:fromNodeId", nodeId));
+        return result;
+    }
+
+    private static String summariseGraphSourceIds(Map<String, Set<String>> sourceIdsByGraph) {
+        if (sourceIdsByGraph.isEmpty()) {
+            return "no example source IDs";
+        }
+
+        List<String> parts = new ArrayList<>();
+        for (var entry : sourceIdsByGraph.entrySet()) {
+            parts.add(entry.getKey() + "=" + entry.getValue().size());
+        }
+        return String.join(", ", parts);
+    }
+
+    private static long elapsedMillis(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000;
     }
 }

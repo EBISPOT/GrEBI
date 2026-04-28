@@ -96,6 +96,8 @@ public class GrebiApi {
         postgresGraphs = GraphOrder.orderedSet(postgresGraphs);
 
         System.out.println("Found graphs: " + String.join(",", postgresGraphs));
+        postgres.refreshExampleEdgeCountCacheAsync(queryTemplates.getQueryTemplates());
+        queryTemplates.addReloadListener(postgres::refreshExampleEdgeCountCacheAsync);
 
         // Initialize embedding service clients (one per graph with PCA models)
         Map<String, EmbeddingServiceClient> embeddingClients = new LinkedHashMap<>();
@@ -436,16 +438,19 @@ public class GrebiApi {
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/edge_counts", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
+                    ctx.header("cache-control", "public, max-age=600");
                     ctx.result(gson.toJson(postgres.getBothEdgeCounts(ctx.pathParam("graph"), nodeId)));
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edge_counts", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
+                    ctx.header("cache-control", "public, max-age=600");
                     ctx.result(gson.toJson(postgres.getIncomingEdgeCounts(ctx.pathParam("graph"), nodeId)));
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edge_counts", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
+                    ctx.header("cache-control", "public, max-age=600");
                     ctx.result(gson.toJson(postgres.getOutgoingEdgeCounts(ctx.pathParam("graph"), nodeId)));
                 })
                 .post("/api/v1/graphs/{graph}/nodes/{nodeId}/resolve_single_edges", ctx -> {

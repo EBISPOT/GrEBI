@@ -1,11 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { get, post } from "../../app/api";
+import { post } from "../../app/api";
 import GraphNodeRef from "../../model/GraphNodeRef";
+import { EdgeCountByTypeAndDs, fetchNodeEdgeCounts } from "./edgeCountsCache";
 
-/**
- * Edge count data from API: { edgeType: { datasource: count } }
- */
-export type EdgeCountByTypeAndDs = { [edgeType: string]: { [datasource: string]: number } };
+export type { EdgeCountByTypeAndDs } from "./edgeCountsCache";
 
 /**
  * Aggregated count for a single edge type (after applying datasource filters).
@@ -110,9 +108,7 @@ export default function useGraphViewState(graph: string) {
       setHiddenEdgeTypes(new Set());
 
       try {
-        const bothCounts = await get<{ incoming: EdgeCountByTypeAndDs; outgoing: EdgeCountByTypeAndDs }>(
-          `api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/edge_counts`
-        );
+        const bothCounts = await fetchNodeEdgeCounts(graph, node.getEncodedNodeId());
 
         if (myLoadId !== loadIdRef.current) return;
 
@@ -210,9 +206,7 @@ export default function useGraphViewState(graph: string) {
 
       // Load edge counts for the expanded node
       try {
-        const bothCounts = await get<{ incoming: EdgeCountByTypeAndDs; outgoing: EdgeCountByTypeAndDs }>(
-          `api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/edge_counts`
-        );
+        const bothCounts = await fetchNodeEdgeCounts(graph, node.getEncodedNodeId());
 
         const incoming = bothCounts?.incoming || {};
         const outgoing = bothCounts?.outgoing || {};

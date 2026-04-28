@@ -7,11 +7,17 @@ import QueryQuestion from "./QueryQuestion";
 interface CyclingQuestionsProps {
   graph: string;
   autoPlay?: boolean;
-  onExampleChange?: (firstParamValue: string | null, exampleTitle: string | null) => void;
-  onAllSourceIds?: (sourceIds: string[]) => void;
+  onVisibleSourceIdsChange?: (currentSourceId: string | null, nextSourceId: string | null) => void;
 }
 
-export default function CyclingQuestions({ graph, autoPlay = true, onExampleChange, onAllSourceIds }: CyclingQuestionsProps) {
+function getExampleSourceId(template: QueryTemplate | null | undefined, exampleIndex: number): string | null {
+  if (!template || !template.params?.length) return null;
+  const example = template.examples?.[exampleIndex];
+  if (!example) return null;
+  return example.params[template.params[0].param_id] ?? null;
+}
+
+export default function CyclingQuestions({ graph, autoPlay = true, onVisibleSourceIdsChange }: CyclingQuestionsProps) {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<QueryTemplate[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -29,21 +35,6 @@ export default function CyclingQuestions({ graph, autoPlay = true, onExampleChan
       setTemplates(withQuestions);
       setExampleIndices(new Array(withQuestions.length).fill(0));
       setCurrentIndex(0);
-
-      // Report all unique first-param source IDs for precaching
-      if (onAllSourceIds) {
-        const ids = new Set<string>();
-        for (const t of withQuestions) {
-          if (t.params?.length > 0 && t.examples) {
-            const pid = t.params[0].param_id;
-            for (const ex of t.examples) {
-              const v = ex.params[pid];
-              if (v) ids.add(v);
-            }
-          }
-        }
-        onAllSourceIds(Array.from(ids));
-      }
     });
   }, [graph]);
 
@@ -127,20 +118,25 @@ export default function CyclingQuestions({ graph, autoPlay = true, onExampleChan
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cycleToNext, cycleToPrev, stopCycling]);
 
-  // Notify parent of the current example's first param value
+  // Notify parent of the current source ID and the next visible one so the
+  // homepage can keep a tiny warm cache instead of preloading everything.
   useEffect(() => {
-    if (!onExampleChange || !templates || templates.length === 0) return;
-    const tmpl = templates[currentIndex];
-    const exIdx = exampleIndices[currentIndex] ?? 0;
-    const example = tmpl.examples?.[exIdx];
-    if (example && tmpl.params?.length > 0) {
-      const firstParamId = tmpl.params[0].param_id;
-      const val = example.params[firstParamId];
-      onExampleChange(val ?? null, example.title ?? null);
-    } else {
-      onExampleChange(null, null);
+    if (!onVisibleSourceIdsChange || !templates || templates.length === 0) return;
+
+    const currentTemplate = templates[currentIndex];
+    const currentExampleIndex = exampleIndices[currentIndex] ?? 0;
+    const currentSourceId = getExampleSourceId(currentTemplate, currentExampleIndex);
+
+    let nextSourceId: string | null = null;
+    if (templates.length > 1) {
+      const nextIndex = (currentIndex + 1) % templates.length;
+      const nextTemplate = templates[nextIndex];
+      const nextExampleIndex = exampleIndices[nextIndex] ?? 0;
+      nextSourceId = getExampleSourceId(nextTemplate, nextExampleIndex);
     }
-  }, [currentIndex, exampleIndices, templates, onExampleChange]);
+
+    onVisibleSourceIdsChange(currentSourceId, nextSourceId);
+  }, [currentIndex, exampleIndices, templates, onVisibleSourceIdsChange]);
 
   if (!templates || templates.length === 0) return null;
 
