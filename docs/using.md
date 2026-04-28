@@ -72,3 +72,15 @@ Errors return standard HTTP status codes with a JSON body:
 ```
 
 ## Using the GrEBI MCP server
+
+GrEBI exposes a Streamable HTTP MCP endpoint at `/api/v1/mcp`.
+
+The MCP server makes query templates available as tools, so LLM agents can execute the same pre-baked graph queries that are available in the browser and REST API. It also provides a small graph-traversal toolset for exploring the graph directly:
+
+- `search_nodes` to find candidate starting nodes
+- `get_node` to inspect a specific node
+- `get_node_edge_counts` to summarise incoming and outgoing edges by type and datasource
+- `list_node_edges` to traverse incoming or outgoing edges, with an optional lightweight `refsOnly` mode
+- `get_edge` to inspect a specific edge
+
+The MCP server also publishes read-only resources for available graphs, query topics, query templates, and graph statistics.

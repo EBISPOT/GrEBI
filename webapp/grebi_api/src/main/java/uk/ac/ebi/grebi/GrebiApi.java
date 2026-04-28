@@ -126,7 +126,7 @@ public class GrebiApi {
         Gson gson = new Gson();
 
         GrebiMcpServer mcpServer = new GrebiMcpServer(
-            cypher, metadata, graphs, queryTemplates
+            cypher, postgres, metadata, graphs, queryTemplates
         );
 
         Javalin.create(config -> {
