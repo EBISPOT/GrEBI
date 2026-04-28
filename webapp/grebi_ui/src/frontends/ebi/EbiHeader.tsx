@@ -7,6 +7,7 @@ import TravelExplore from '@mui/icons-material/TravelExplore';
 import Apps from '@mui/icons-material/Apps';
 import { ManageSearch, TableChart } from "@mui/icons-material";
 import Breadcrumbs, { BreadcrumbsEntry } from "../../components/Breadcrumbs";
+import useEffectiveGraph from "./useEffectiveGraph";
 
 export default function EbiHeader({
   section,
@@ -22,11 +23,7 @@ export default function EbiHeader({
   let loc = useLocation();
   let navigate = useNavigate();
 
-  // Persist last-selected graph so nav items work even on /graphs
-  if (graph) {
-    sessionStorage.setItem("grebi_last_graph", graph);
-  }
-  const effectiveGraph = graph || sessionStorage.getItem("grebi_last_graph") || undefined;
+  const effectiveGraph = useEffectiveGraph(graph);
 
 function setGraph(graph: string) {
   const { pathname, search, hash } = loc; 
@@ -164,4 +161,3 @@ function setGraph(graph: string) {
 function caps(str) {
     return str[0].toUpperCase() + str.slice(1);
 }
-

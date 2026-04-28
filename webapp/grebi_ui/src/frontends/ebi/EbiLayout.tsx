@@ -7,6 +7,7 @@ import TravelExplore from "@mui/icons-material/TravelExplore";
 import Apps from "@mui/icons-material/Apps";
 import { ManageSearch, TableChart, MenuBook } from "@mui/icons-material";
 import GitHubIcon from "@mui/icons-material/GitHub";
+import useEffectiveGraph from "./useEffectiveGraph";
 
 export default function EbiLayout() {
   const loc = useLocation();
@@ -16,12 +17,7 @@ export default function EbiLayout() {
   const graph = sgMatch?.[1];
   const subpath = sgMatch?.[2] || "";
 
-  // Persist last-selected graph so nav items work even on /graphs
-  if (graph) {
-    sessionStorage.setItem("grebi_last_graph", graph);
-  }
-  const effectiveGraph =
-    graph || sessionStorage.getItem("grebi_last_graph") || undefined;
+  const effectiveGraph = useEffectiveGraph(graph);
 
   let activeNav = "explore";
   if (pathname === "/graphs" || (graph && subpath === "")) {
