@@ -945,6 +945,29 @@ public class GrebiPostgresClient {
                 || hasSingleFilterValue(filters, "ols:curie");
     }
 
+    private List<Map<String, Object>> fetchExactIdentifierLookup(
+            DSLContext ctx,
+            SelectConditionStep<Record6<String, String, Object, Object, Object, String>> select,
+            int offset,
+            int limit) {
+        var sql = "WITH filtered AS MATERIALIZED (" +
+                select.getSQL(ParamType.INLINED) +
+                ") SELECT * FROM filtered LIMIT " + limit + " OFFSET " + offset;
+
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (var record : ctx.fetch(sql)) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("grebi:nodeId", record.get("grebi:nodeId", String.class));
+            row.put("grebi:name", record.get("grebi:name", String.class));
+            row.put("grebi:type", toDatasourceList(record.get("grebi:type")));
+            row.put("grebi:datasources", toDatasourceList(record.get("grebi:datasources")));
+            row.put("grebi:sourceIds", toDatasourceList(record.get("grebi:sourceIds")));
+            row.put("ols:curie", record.get("ols:curie", String.class));
+            results.add(row);
+        }
+        return results;
+    }
+
     public NodeQueryResult searchNodes(String graph, String q,
                                         Map<String, List<String>> filters,
                                         int offset, int limit) {
@@ -993,30 +1016,41 @@ public class GrebiPostgresClient {
                     .from(tbl)
                     .where(conditions);
 
-            boolean skipNameOrdering = (q == null || q.isBlank()) && isExactIdentifierLookup(filters);
+            boolean exactIdentifierLookup = (q == null || q.isBlank()) && isExactIdentifierLookup(filters);
 
-            // For exact identifier lookups, ORDER BY name LIMIT 1 can trigger a pathological
-            // plan that walks the name index and filters millions of rows instead of using the
-            // identifier predicate first. These lookups are effectively point queries, so we can
-            // safely skip the alphabetical ordering and let PostgreSQL use the selective index.
-            var fetched = q != null && !q.isBlank()
-                    ? select.orderBy(
-                            field("similarity({0}, {1})", Double.class, nameField, val(q)).desc()
-                      ).limit(limit).offset(offset).fetch()
-                    : skipNameOrdering
-                        ? select.limit(limit).offset(offset).fetch()
-                        : select.orderBy(nameField.asc()).limit(limit).offset(offset).fetch();
-
-            List<Map<String, Object>> results = new ArrayList<>();
-            for (var record : fetched) {
-                Map<String, Object> row = new LinkedHashMap<>();
-                row.put("grebi:nodeId", record.get(nodeIdField));
-                row.put("grebi:name", record.get(nameField));
-                row.put("grebi:type", toDatasourceList(record.get(typeField)));
-                row.put("grebi:datasources", toDatasourceList(record.get(dsField)));
-                row.put("grebi:sourceIds", toDatasourceList(record.get(srcField)));
-                row.put("ols:curie", record.get(curieField));
-                results.add(row);
+            List<Map<String, Object>> results;
+            if (q != null && !q.isBlank()) {
+                results = new ArrayList<>();
+                for (var record : select.orderBy(
+                        field("similarity({0}, {1})", Double.class, nameField, val(q)).desc()
+                ).limit(limit).offset(offset).fetch()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("grebi:nodeId", record.get(nodeIdField));
+                    row.put("grebi:name", record.get(nameField));
+                    row.put("grebi:type", toDatasourceList(record.get(typeField)));
+                    row.put("grebi:datasources", toDatasourceList(record.get(dsField)));
+                    row.put("grebi:sourceIds", toDatasourceList(record.get(srcField)));
+                    row.put("ols:curie", record.get(curieField));
+                    results.add(row);
+                }
+            } else if (exactIdentifierLookup) {
+                // PostgreSQL can still choose a seq scan for `WHERE identifier = ... LIMIT 1`
+                // if it predicts an early hit. Wrapping the exact-match subquery in a
+                // MATERIALIZED CTE forces the identifier predicate to run first and reliably
+                // uses the selective index for sourceIds/nodeId/curie lookups.
+                results = fetchExactIdentifierLookup(ctx, select, offset, limit);
+            } else {
+                results = new ArrayList<>();
+                for (var record : select.orderBy(nameField.asc()).limit(limit).offset(offset).fetch()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("grebi:nodeId", record.get(nodeIdField));
+                    row.put("grebi:name", record.get(nameField));
+                    row.put("grebi:type", toDatasourceList(record.get(typeField)));
+                    row.put("grebi:datasources", toDatasourceList(record.get(dsField)));
+                    row.put("grebi:sourceIds", toDatasourceList(record.get(srcField)));
+                    row.put("ols:curie", record.get(curieField));
+                    results.add(row);
+                }
             }
 
             Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
