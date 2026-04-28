@@ -1,11 +1,13 @@
 package uk.ac.ebi.grebi.repo;
 
 import java.io.InputStream;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
@@ -80,29 +82,42 @@ public class GrebiQueryTemplatesRepo {
     }
 
     private void startWatching() {
-        Path dir = Path.of(getQueryTemplatesPath()).toAbsolutePath();
+        Path rootDir = Path.of(getQueryTemplatesPath()).toAbsolutePath();
         Thread watchThread = new Thread(() -> {
             try {
                 WatchService watchService = FileSystems.getDefault().newWatchService();
-                dir.register(watchService,
-                        StandardWatchEventKinds.ENTRY_CREATE,
-                        StandardWatchEventKinds.ENTRY_MODIFY,
-                        StandardWatchEventKinds.ENTRY_DELETE);
-                System.out.println("Watching query templates directory for changes: " + dir);
+                Set<Path> watchedDirs = new HashSet<>();
+                registerDirectoryTree(rootDir, watchService, watchedDirs);
+                System.out.println("Watching query templates directory tree for changes: " + rootDir);
                 while (true) {
                     WatchKey key = watchService.take();
+                    Path watchedDir = (Path) key.watchable();
                     // Drain all pending events
                     for (WatchEvent<?> event : key.pollEvents()) {
                         Path changed = (Path) event.context();
-                        System.out.println("Query template file changed: " + changed + " (" + event.kind() + ")");
+                        Path changedPath = watchedDir.resolve(changed);
+                        System.out.println("Query template file changed: " + changedPath + " (" + event.kind() + ")");
+
+                        if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE && Files.isDirectory(changedPath)) {
+                            registerDirectoryTree(changedPath, watchService, watchedDirs);
+                        }
                     }
-                    key.reset();
+                    if (!key.reset()) {
+                        watchedDirs.remove(watchedDir);
+                    }
                     // Brief pause to coalesce rapid successive changes (e.g. editor save)
                     Thread.sleep(500);
                     // Drain any events that arrived during the pause
                     WatchKey extra = watchService.poll();
                     while (extra != null) {
-                        extra.pollEvents();
+                        Path extraWatchedDir = (Path) extra.watchable();
+                        for (WatchEvent<?> event : extra.pollEvents()) {
+                            Path changed = (Path) event.context();
+                            Path changedPath = extraWatchedDir.resolve(changed);
+                            if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE && Files.isDirectory(changedPath)) {
+                                registerDirectoryTree(changedPath, watchService, watchedDirs);
+                            }
+                        }
                         extra.reset();
                         extra = watchService.poll();
                     }
@@ -120,25 +135,61 @@ public class GrebiQueryTemplatesRepo {
         watchThread.start();
     }
 
+    private static void registerDirectoryTree(Path rootDir, WatchService watchService, Set<Path> watchedDirs) throws IOException {
+        try (var stream = Files.walk(rootDir)) {
+            stream.filter(Files::isDirectory)
+                    .sorted()
+                    .forEach(dir -> registerDirectory(dir, watchService, watchedDirs));
+        }
+    }
+
+    private static void registerDirectory(Path dir, WatchService watchService, Set<Path> watchedDirs) {
+        try {
+            Path absoluteDir = dir.toAbsolutePath().normalize();
+            if (!watchedDirs.add(absoluteDir)) {
+                return;
+            }
+            absoluteDir.register(
+                    watchService,
+                    StandardWatchEventKinds.ENTRY_CREATE,
+                    StandardWatchEventKinds.ENTRY_MODIFY,
+                    StandardWatchEventKinds.ENTRY_DELETE
+            );
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to watch query templates directory " + dir, e);
+        }
+    }
+
     private static List<QueryTemplate> loadQueryTemplates(String directoryPath) {
         List<QueryTemplate> templates = new ArrayList<>();
+        Set<String> ids = new HashSet<>();
         try {
-            DirectoryStream<Path> stream = Files.newDirectoryStream(Path.of(directoryPath), "*.yaml");
-
             Yaml yaml = new Yaml();
+            Path rootDir = Path.of(directoryPath).toAbsolutePath().normalize();
 
-            for (Path file : stream) {
-                if (file.getFileName().toString().startsWith("_")) continue;
+            try (var stream = Files.walk(rootDir)) {
+                List<Path> templateFiles = stream
+                        .filter(Files::isRegularFile)
+                        .filter(path -> path.getFileName().toString().endsWith(".yaml"))
+                        .filter(path -> !path.getFileName().toString().startsWith("_"))
+                        .sorted(Comparator.comparing(path -> rootDir.relativize(path).toString()))
+                        .toList();
 
-                System.out.println("Loading query template from " + file.getFileName());
+                for (Path file : templateFiles) {
+                    String templateId = file.getFileName().toString().replace(".yaml", "");
+                    if (!ids.add(templateId)) {
+                        throw new IllegalStateException("Duplicate query template id '" + templateId + "' found at " + rootDir.relativize(file));
+                    }
 
-                try (InputStream input = Files.newInputStream(file)) {
-                    QueryTemplate qt = yaml.loadAs(input, QueryTemplate.class);
-                    qt.id = file.getFileName().toString().replace(".yaml", "");
-                    templates.add(qt);
+                    System.out.println("Loading query template from " + rootDir.relativize(file));
+
+                    try (InputStream input = Files.newInputStream(file)) {
+                        QueryTemplate qt = yaml.loadAs(input, QueryTemplate.class);
+                        qt.id = templateId;
+                        templates.add(qt);
+                    }
                 }
             }
-            stream.close();
         } catch (Exception e) {
             throw new RuntimeException("Failed to load query templates", e);
         }

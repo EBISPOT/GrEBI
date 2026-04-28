@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../app/api";
 import { QueryTemplate } from "../../model/QueryTemplate";
-import QueryQuestion from "./QueryQuestion";
+import QueryQuestion, { preloadExampleDisplayValues } from "./QueryQuestion";
 
 interface CyclingQuestionsProps {
   graph: string;
@@ -28,43 +28,75 @@ export default function CyclingQuestions({ graph, autoPlay = true, onVisibleSour
   const [animKey, setAnimKey] = useState(0);
   const intervalRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const transitionInFlightRef = useRef(false);
 
   useEffect(() => {
-    get<QueryTemplate[]>(`api/v1/graphs/${graph}/query_templates`).then((r) => {
+    let cancelled = false;
+
+    get<QueryTemplate[]>(`api/v1/graphs/${graph}/query_templates`).then(async (r) => {
       const withQuestions = r.filter((t) => t.question && t.question.trim() !== "");
+      const initialExampleIndices = new Array(withQuestions.length).fill(0);
+
+      if (withQuestions.length > 0) {
+        await preloadExampleDisplayValues(graph, withQuestions[0], 0);
+      }
+
+      if (withQuestions.length > 1) {
+        void preloadExampleDisplayValues(graph, withQuestions[1], 0);
+      }
+
+      if (cancelled) {
+        return;
+      }
+
       setTemplates(withQuestions);
-      setExampleIndices(new Array(withQuestions.length).fill(0));
+      setExampleIndices(initialExampleIndices);
       setCurrentIndex(0);
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [graph]);
+
+  const transitionTo = useCallback(async (nextIndex: number, nextExampleIndices: number[]) => {
+    if (!templates || templates.length === 0 || transitionInFlightRef.current) return;
+
+    transitionInFlightRef.current = true;
+    try {
+      const nextTemplate = templates[nextIndex];
+      const nextExampleIndex = nextExampleIndices[nextIndex] ?? 0;
+      await preloadExampleDisplayValues(graph, nextTemplate, nextExampleIndex);
+      setExampleIndices(nextExampleIndices);
+      setCurrentIndex(nextIndex);
+      setAnimKey((k) => k + 1);
+    } finally {
+      transitionInFlightRef.current = false;
+    }
+  }, [graph, templates]);
 
   const cycleToNext = useCallback(() => {
     if (!templates || templates.length === 0) return;
-    setCurrentIndex((prev) => {
-      // Advance the example index for the template we're leaving
-      setExampleIndices((indices) => {
-        const newIndices = [...indices];
-        const tmpl = templates[prev];
-        if (tmpl.examples && tmpl.examples.length > 0) {
-          newIndices[prev] = (newIndices[prev] + 1) % tmpl.examples.length;
-        }
-        return newIndices;
-      });
-      return (prev + 1) % templates.length;
-    });
-    setAnimKey((k) => k + 1);
-  }, [templates]);
+
+    const nextExampleIndices = [...exampleIndices];
+    const currentTemplate = templates[currentIndex];
+    if (currentTemplate.examples && currentTemplate.examples.length > 0) {
+      nextExampleIndices[currentIndex] = (nextExampleIndices[currentIndex] + 1) % currentTemplate.examples.length;
+    }
+
+    const nextIndex = (currentIndex + 1) % templates.length;
+    void transitionTo(nextIndex, nextExampleIndices);
+  }, [currentIndex, exampleIndices, templates, transitionTo]);
 
   const cycleToPrev = useCallback(() => {
     if (!templates || templates.length === 0) return;
-    setCurrentIndex((prev) => (prev - 1 + templates.length) % templates.length);
-    setAnimKey((k) => k + 1);
-  }, [templates]);
+    const nextIndex = (currentIndex - 1 + templates.length) % templates.length;
+    void transitionTo(nextIndex, [...exampleIndices]);
+  }, [currentIndex, exampleIndices, templates, transitionTo]);
 
   const goToIndex = useCallback((i: number) => {
-    setCurrentIndex(i);
-    setAnimKey((k) => k + 1);
-  }, []);
+    void transitionTo(i, [...exampleIndices]);
+  }, [exampleIndices, transitionTo]);
 
   // Stop/resume cycling when autoPlay changes
   useEffect(() => {
@@ -117,6 +149,19 @@ export default function CyclingQuestions({ graph, autoPlay = true, onVisibleSour
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cycleToNext, cycleToPrev, stopCycling]);
+
+  useEffect(() => {
+    if (!templates || templates.length === 0) return;
+
+    const currentExampleIndex = exampleIndices[currentIndex] ?? 0;
+    void preloadExampleDisplayValues(graph, templates[currentIndex], currentExampleIndex);
+
+    if (templates.length > 1) {
+      const nextIndex = (currentIndex + 1) % templates.length;
+      const nextExampleIndex = exampleIndices[nextIndex] ?? 0;
+      void preloadExampleDisplayValues(graph, templates[nextIndex], nextExampleIndex);
+    }
+  }, [currentIndex, exampleIndices, graph, templates]);
 
   // Notify parent of the current source ID and the next visible one so the
   // homepage can keep a tiny warm cache instead of preloading everything.

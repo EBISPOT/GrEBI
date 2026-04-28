@@ -3,29 +3,50 @@ import { get } from "../../app/api";
 
 const LAST_GRAPH_KEY = "grebi_last_graph";
 
+function normalizeGraph(graph?: string | null) {
+  if (!graph) {
+    return undefined;
+  }
+
+  const trimmed = graph.trim();
+  if (!trimmed || trimmed === "undefined" || trimmed === "null") {
+    return undefined;
+  }
+
+  return trimmed;
+}
+
 export default function useEffectiveGraph(graph?: string) {
   const [effectiveGraph, setEffectiveGraph] = useState<string | undefined>(() => {
-    return graph || sessionStorage.getItem(LAST_GRAPH_KEY) || undefined;
+    const normalizedGraph = normalizeGraph(graph);
+    if (normalizedGraph) {
+      return normalizedGraph;
+    }
+
+    return normalizeGraph(sessionStorage.getItem(LAST_GRAPH_KEY));
   });
 
   useEffect(() => {
-    if (graph) {
-      sessionStorage.setItem(LAST_GRAPH_KEY, graph);
-      setEffectiveGraph(graph);
+    const normalizedGraph = normalizeGraph(graph);
+    if (normalizedGraph) {
+      sessionStorage.setItem(LAST_GRAPH_KEY, normalizedGraph);
+      setEffectiveGraph(normalizedGraph);
       return;
     }
 
-    const storedGraph = sessionStorage.getItem(LAST_GRAPH_KEY);
+    const storedGraph = normalizeGraph(sessionStorage.getItem(LAST_GRAPH_KEY));
     if (storedGraph) {
       setEffectiveGraph(storedGraph);
       return;
     }
 
+    sessionStorage.removeItem(LAST_GRAPH_KEY);
+
     let cancelled = false;
 
     get<string[]>("api/v1/graphs")
       .then((graphs) => {
-        const fallbackGraph = graphs[0];
+        const fallbackGraph = normalizeGraph(graphs[0]);
         if (!fallbackGraph || cancelled) {
           return;
         }

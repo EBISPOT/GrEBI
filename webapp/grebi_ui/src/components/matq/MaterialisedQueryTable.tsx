@@ -81,7 +81,11 @@ export default function MaterialisedQueryTable({
                     defaultSelector={(row,key)=>row[key]}
                     columns={cols}
                     onSelectRow={(row) => {
-                        navigate(`/graphs/${row['graph']}/tables/${row['id']}`)
+                        const rowGraph = row["graph"] || graph;
+                        if (!rowGraph) {
+                            return;
+                        }
+                        navigate(`/graphs/${rowGraph}/tables/${row["id"]}`)
                     }}
                     />
 

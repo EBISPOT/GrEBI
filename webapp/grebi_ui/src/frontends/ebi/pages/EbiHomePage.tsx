@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import React, { Fragment } from "react";
-import { List, ListItem, MenuItem, Select, IconButton } from "@mui/material";
+import { List, ListItem, MenuItem, Select, IconButton, Skeleton } from "@mui/material";
 import { InfoOutlined } from "@mui/icons-material";
 import { get, getPaginated } from "../../../app/api";
 import SearchBox from "../../../components/SearchBox";
@@ -35,6 +35,7 @@ export default function EbiHomePage() {
   let nodeCacheRef = useRef<Record<string, GraphNode>>({});
   let nodeRequestRef = useRef<Record<string, Promise<GraphNode | null>>>({});
   let activeNodeKeyRef = useRef<string | null>(null);
+  const graphMetadataLoaded = graphs !== null && Object.keys(graphNames).length === graphs.length;
 
 function navigateToGraph(sg: string) {
   let currentUrl = loc.pathname;
@@ -150,103 +151,150 @@ function navigateToGraph(sg: string) {
   return (
     <div>
       <main className="container mx-auto px-4 h-fit">
-        <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
-          <div className="lg:col-span-3">
-            <div className="bg-gradient-to-r from-neutral-light/50 to-white rounded-lg mt-8 mb-2 p-8 pb-4">
-              <div className="mb-4">
-                <div className="text-3xl text-neutral-black font-bold">
-                  Welcome to GrEBI (Graphs@EBI)
+        <section className="bg-gradient-to-r from-neutral-light/50 to-white rounded-lg mt-8 mb-2 p-8 pb-4">
+          <div className="mb-4">
+            <div className="text-3xl text-neutral-black font-bold">
+              Welcome to GrEBI (Graphs@EBI)
+            </div>
+          </div>
+          {graphs && graph ? (
+            <Fragment>
+              <SearchBox
+                graph={graph}
+                placeholder={`Search ${graphMetadataLoaded ? graphNames[graph] || graph : "this graph"} for knowledge about...`}
+              />
+              <div className="mt-4 grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_minmax(0,38rem)] gap-6 items-start">
+                <div className="min-w-0">
+                  <p>
+                    GrEBI enables researchers and their LLM agents to search and explore biomedical knowledge graphs derived from <Link className="link-default" to="https://www.ebi.ac.uk/services/">EMBL-EBI databases</Link>, the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative</Link>, <Link className="link-default" to="https://dismech.monarchinitiative.org/">DisMech</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other sources. For more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI GitHub repository</Link>.
+                    <br />
+                    <br />
+                    MCP endpoint (Streamable HTTP): <code className="text-sm text-blue-600">https://wwwdev.ebi.ac.uk/kg/api/v1/mcp</code>
+                  </p>
                 </div>
+                {graphs.length > 0 && (
+                  <div className="min-w-0">
+                    <div className="text-lg font-semibold text-gray-700 mb-2">Select a graph to search</div>
+                    <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full table-fixed text-sm">
+                          <colgroup>
+                            <col style={{ width: "11rem" }} />
+                            <col />
+                            <col style={{ width: "6.5rem" }} />
+                            <col style={{ width: "6.5rem" }} />
+                            <col style={{ width: "3rem" }} />
+                          </colgroup>
+                          <thead>
+                            <tr className="bg-gray-100 text-left text-gray-600 border-b border-gray-200">
+                              <th className="py-2 px-3 font-medium">Graph</th>
+                              <th className="py-2 px-3 font-medium">Name</th>
+                              <th className="py-2 px-3 font-medium text-right">Nodes</th>
+                              <th className="py-2 px-3 font-medium text-right">Edges</th>
+                              <th className="py-2 px-3"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {!graphMetadataLoaded &&
+                              graphs.map((_, i) => (
+                                <tr key={i} className={i % 2 === 1 ? "bg-gray-50" : ""}>
+                                  <td className="py-2 px-3 align-top">
+                                    <div className="flex items-center gap-2">
+                                      <Skeleton variant="circular" width={16} height={16} />
+                                      <Skeleton variant="text" width={120} />
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 align-top">
+                                    <Skeleton variant="text" width="90%" />
+                                    <Skeleton variant="text" width="65%" />
+                                  </td>
+                                  <td className="py-2 px-3 text-right align-top">
+                                    <div className="flex justify-end">
+                                      <Skeleton variant="text" width={60} />
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-right align-top">
+                                    <div className="flex justify-end">
+                                      <Skeleton variant="text" width={60} />
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 align-top">
+                                    <div className="flex justify-center">
+                                      <Skeleton variant="circular" width={20} height={20} />
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            {graphMetadataLoaded &&
+                              graphs.map((sg, i) => (
+                                <tr
+                                  key={sg}
+                                  className={`hover:bg-blue-50 cursor-pointer transition-colors ${sg === graph ? "bg-blue-50/50" : i % 2 === 1 ? "bg-gray-50" : ""}`}
+                                  onClick={() => navigateToGraph(sg)}
+                                >
+                                  <td className="py-2 px-3 font-mono text-gray-700 align-top">
+                                    <label className="flex items-start gap-2 min-w-0 cursor-pointer">
+                                      <input
+                                        type="radio"
+                                        name="graph"
+                                        checked={sg === graph}
+                                        onChange={() => navigateToGraph(sg)}
+                                        className="mt-0.5 shrink-0"
+                                      />
+                                      <span className="block break-all leading-snug" title={sg}>
+                                        {sg}
+                                      </span>
+                                    </label>
+                                  </td>
+                                  <td className="py-2 px-3 align-top">
+                                    <div className="whitespace-normal break-words leading-snug" title={graphNames[sg] || sg}>
+                                      {graphNames[sg] || sg}
+                                    </div>
+                                  </td>
+                                  <td className="py-2 px-3 text-right tabular-nums text-gray-600 align-top whitespace-nowrap">
+                                    {stats && stats[sg] ? stats[sg].num_nodes.toLocaleString() : "—"}
+                                  </td>
+                                  <td className="py-2 px-3 text-right tabular-nums text-gray-600 align-top whitespace-nowrap">
+                                    {stats && stats[sg] ? stats[sg].num_edges.toLocaleString() : "—"}
+                                  </td>
+                                  <td className="py-2 px-3 align-top">
+                                    <Link to={`/graphs/${sg}`} onClick={(e) => e.stopPropagation()}>
+                                      <IconButton size="small" title="Graph info">
+                                        <InfoOutlined fontSize="small" />
+                                      </IconButton>
+                                    </Link>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              {graphs && graph ?
-                <Fragment>
-                  <SearchBox graph={graph} placeholder={`Search ${graphNames[graph] || graph} for knowledge about...`} />
-                  <div className="flex gap-6 items-start mb-4 mt-4">
-                    <div className="flex-grow min-w-0">
-                      <p>
-                        GrEBI enables researchers and their LLM agents to search and explore biomedical knowledge graphs derived from <Link className="link-default" to="https://www.ebi.ac.uk/services/">EMBL-EBI databases</Link>, the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative</Link>, <Link className="link-default" to="https://dismech.monarchinitiative.org/">DisMech</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other sources.  For more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI GitHub repository</Link>.
-                        <br/>
-                        <br/>
-                        MCP endpoint (Streamable HTTP): <code className="text-sm text-blue-600">https://wwwdev.ebi.ac.uk/kg/api/v1/mcp</code>
-                      </p>
-                    </div>
-                    {graphs.length > 0 && (
-                    <div className="flex-shrink-0">
-                      <div className="text-lg font-semibold text-gray-700 mb-2">Select a graph to search</div>
-                    <table className="text-sm border border-gray-200 rounded-lg overflow-hidden">
-                      <thead>
-                        <tr className="bg-gray-100 text-left text-gray-600 border-b border-gray-200">
-                          <th className="py-2 px-3 font-medium">Graph</th>
-                          <th className="py-2 px-3 font-medium">Name</th>
-                          <th className="py-2 px-3 font-medium text-right">Nodes</th>
-                          <th className="py-2 px-3 font-medium text-right">Edges</th>
-                          <th className="py-2 px-3 w-8"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {graphs.map((sg, i) => (
-                          <tr
-                            key={sg}
-                            className={`hover:bg-blue-50 cursor-pointer transition-colors ${sg === graph ? 'bg-blue-50/50' : i % 2 === 1 ? 'bg-gray-50' : ''}`}
-                            onClick={() => navigateToGraph(sg)}
-                          >
-                            <td className="py-2 px-3 font-mono text-gray-700 whitespace-nowrap">
-                              <input
-                                type="radio"
-                                name="graph"
-                                checked={sg === graph}
-                                onChange={() => navigateToGraph(sg)}
-                                className="mr-2"
-                              />
-                              {sg}
-                            </td>
-                            <td className="py-2 px-3 whitespace-nowrap">{graphNames[sg] || sg}</td>
-                            <td className="py-2 px-3 text-right tabular-nums text-gray-600">
-                              {stats && stats[sg] ? stats[sg].num_nodes.toLocaleString() : '—'}
-                            </td>
-                            <td className="py-2 px-3 text-right tabular-nums text-gray-600">
-                              {stats && stats[sg] ? stats[sg].num_edges.toLocaleString() : '—'}
-                            </td>
-                            <td className="py-2 px-3">
-                              <Link to={`/graphs/${sg}`} onClick={(e) => e.stopPropagation()}>
-                                <IconButton size="small" title="Graph info">
-                                  <InfoOutlined fontSize="small" />
-                                </IconButton>
-                              </Link>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-12 mt-8 mb-4">
-                    <a target="_blank" href="https://www.ebi.ac.uk/">
-                      <img style={{width:'100px'}} src={urlJoin(process.env.PUBLIC_URL!, "/ebi.png")} alt="EMBL-EBI" />
-                    </a>
-                    <a target="_blank" href="https://monarchinitiative.org/">
-                      <img style={{width:'100px'}} src={urlJoin(process.env.PUBLIC_URL!, "/monarch.png")} alt="MONARCH Initiative" />
-                    </a>
-                    <a target="_blank" href="https://mousephenotype.org/">
-                      <img style={{width:'100px'}} src={urlJoin(process.env.PUBLIC_URL!, "/impc.svg")} alt="International Mouse Phenotyping Consortium (IMPC)" />
-                    </a>
-                  </div>
-                </Fragment>
-                :
-                <div className="flex flex-nowrap gap-4">
-                  Loading graphs...
-                </div>
-              }
-            </div>
-          </div>
-          </div>
-
-          {graph && (
-            <div className="mt-2 mb-8">
-              <CyclingQuestions graph={graph} autoPlay={!graphLocked && !graphHovered} onVisibleSourceIdsChange={onVisibleSourceIdsChange} />
-            </div>
+              <div className="flex items-center gap-12 mt-8 mb-4">
+                <a target="_blank" href="https://www.ebi.ac.uk/">
+                  <img style={{ width: "100px" }} src={urlJoin(process.env.PUBLIC_URL!, "/ebi.png")} alt="EMBL-EBI" />
+                </a>
+                <a target="_blank" href="https://monarchinitiative.org/">
+                  <img style={{ width: "100px" }} src={urlJoin(process.env.PUBLIC_URL!, "/monarch.png")} alt="MONARCH Initiative" />
+                </a>
+                <a target="_blank" href="https://mousephenotype.org/">
+                  <img style={{ width: "100px" }} src={urlJoin(process.env.PUBLIC_URL!, "/impc.svg")} alt="International Mouse Phenotyping Consortium (IMPC)" />
+                </a>
+              </div>
+            </Fragment>
+          ) : (
+            <div className="flex flex-nowrap gap-4">Loading graphs...</div>
           )}
+        </section>
+
+        {graph && (
+          <div className="mt-2 mb-8">
+            <CyclingQuestions graph={graph} autoPlay={!graphLocked && !graphHovered} onVisibleSourceIdsChange={onVisibleSourceIdsChange} />
+          </div>
+        )}
 
 
 

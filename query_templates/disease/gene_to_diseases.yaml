@@ -1,0 +1,72 @@
+title: Search for diseases associated with a gene
+question: What [diseases]{disease} are associated with {gene_id}?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+cypher_match_fragment: |-
+  MATCH (gene)-[:sourceId]->(:Id {id: $gene_id})
+
+  // branch 1: gene -> disease
+  OPTIONAL MATCH (gene)-[r1:(
+    `biolink:gene_to_disease_association`|
+    `ncit:Gene_Associated_With_Disease`|
+    `biolink:has_phenotype`
+    )]->(d1)
+  WITH gene, collect(DISTINCT {disease: d1, r: r1}) AS rows
+
+  // branch 2: disease -> gene
+  OPTIONAL MATCH (d2)-[r2:`ncit:Disease_Mapped_To_Gene`]->(gene)
+  WITH gene, rows, collect(DISTINCT {disease: d2, r: r2}) AS add2
+  WITH gene, rows + add2 AS rows
+
+  // branch 3: GWAS associations with variants mapped to the gene
+  OPTIONAL MATCH (gene)<-[:(
+    `gwas:mapped_gene`|
+    `gwas:snp_gene_ids`|
+    `gwas:upstream_gene_id`|
+    `gwas:downstream_gene_id`
+  )]-(snp:`gwas:SNP`)-[r3:`gwas:associated_with`]->(d3)
+  WITH gene, rows, collect(DISTINCT {disease: d3, r: r3}) AS add3
+  WITH gene, rows + add3 AS rows
+
+  // turn collected rows back into rows
+  UNWIND [row IN rows WHERE row.disease IS NOT NULL AND row.r IS NOT NULL] AS row
+  WITH gene, row.disease AS disease, row.r AS r
+  WHERE disease:`biolink:Disease`
+    AND NONE(source_id IN disease.id WHERE source_id = 'mondo:0000001')
+    AND NONE(x IN r.`grebi:datasources` WHERE x = 'CTD')
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
+      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
+      r.`grebi:datasources` AS from_datasources,
+      r.edge_id AS edge_id
+cypher_count_fragment: |-
+  WITH DISTINCT disease, gene, r.`grebi:datasources` AS from_datasources, properties(r) AS edge_props
+  RETURN count(*) AS count
+params:
+  - param_id: gene_id
+    param_name: Gene
+    param_type: SourceId
+    param_opts:
+      'biolink:broad_match': 'hgnc:Gene'
+result_columns:
+  - column_id: disease
+    column_type: GraphNodeId
+  - column_id: gene
+    column_type: GraphNodeId
+  - column_id: from_datasources
+    column_type: DatasourceList
+  - column_id: edge_id
+    column_type: EdgeId
+examples:
+  - title: SP140
+    params:
+      gene_id: hgnc:17133
+  - title: NOTCH4
+    params:
+      gene_id: hgnc:7884
+  - title: BRCA1
+    params:
+      gene_id: hgnc:1100

@@ -11,6 +11,95 @@ import { QueryTemplate, Parameter, Example } from "../../model/QueryTemplate";
 import { DatasourceTags } from "../DatasourceTag";
 import NodeTypeChip from "../NodeTypeChip";
 
+const exampleDisplayNameCache = new Map<string, string>();
+const exampleDisplayNameRequestCache = new Map<string, Promise<string | null>>();
+
+function getExampleSourceIdParams(params: Parameter[], example: Example | undefined): { paramId: string; sourceId: string }[] {
+  if (!example) {
+    return [];
+  }
+
+  return params
+    .filter((param) => param.param_type === "SourceId")
+    .map((param) => ({
+      paramId: param.param_id,
+      sourceId: example.params?.[param.param_id],
+    }))
+    .filter((entry): entry is { paramId: string; sourceId: string } => Boolean(entry.sourceId));
+}
+
+function buildExampleDisplayNameCacheKey(graph: string, sourceId: string): string {
+  return `${graph}::${sourceId}`;
+}
+
+async function loadExampleDisplayName(graph: string, sourceId: string): Promise<string | null> {
+  const cacheKey = buildExampleDisplayNameCacheKey(graph, sourceId);
+  const cachedName = exampleDisplayNameCache.get(cacheKey);
+  if (cachedName) {
+    return cachedName;
+  }
+
+  const pendingRequest = exampleDisplayNameRequestCache.get(cacheKey);
+  if (pendingRequest) {
+    return pendingRequest;
+  }
+
+  const request = getPaginated<any>(`api/v1/graphs/${graph}/nodes`, {
+    "grebi:sourceIds": sourceId,
+    size: "1",
+    resolve: "false",
+  })
+    .then((response) => {
+      if (response.elements.length === 0) {
+        return null;
+      }
+
+      const displayName = new GraphNodeRef(response.elements[0]).getName();
+      if (!displayName || displayName === sourceId) {
+        return null;
+      }
+
+      exampleDisplayNameCache.set(cacheKey, displayName);
+      return displayName;
+    })
+    .catch(() => null)
+    .finally(() => {
+      exampleDisplayNameRequestCache.delete(cacheKey);
+    });
+
+  exampleDisplayNameRequestCache.set(cacheKey, request);
+  return request;
+}
+
+function getCachedExampleDisplayValues(graph: string, params: Parameter[], example: Example | undefined): Record<string, string> {
+  const cachedValues: Record<string, string> = {};
+
+  for (const { paramId, sourceId } of getExampleSourceIdParams(params, example)) {
+    const cachedName = exampleDisplayNameCache.get(buildExampleDisplayNameCacheKey(graph, sourceId));
+    if (cachedName) {
+      cachedValues[paramId] = cachedName;
+    }
+  }
+
+  return cachedValues;
+}
+
+export async function preloadExampleDisplayValues(
+  graph: string,
+  template: QueryTemplate,
+  exampleIndex = 0
+): Promise<void> {
+  const params = template.params || [];
+  const example = template.examples?.[exampleIndex];
+
+  if (!example || (params.length === 1 && example.title)) {
+    return;
+  }
+
+  const sourceIdParams = getExampleSourceIdParams(params, example);
+  await Promise.all(sourceIdParams.map(({ sourceId }) => loadExampleDisplayName(graph, sourceId)));
+}
+
 interface QueryQuestionProps {
   graph: string;
   template: QueryTemplate;
@@ -46,6 +135,73 @@ export default function QueryQuestion({
   const params = template.params || [];
   const examples = template.examples || [];
   const currentExample: Example | undefined = examples[exampleIndex ?? 0];
+  const [exampleDisplayValues, setExampleDisplayValues] = useState<Record<string, string>>(() =>
+    getCachedExampleDisplayValues(graph, params, currentExample)
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const cachedDisplayValues = getCachedExampleDisplayValues(graph, params, currentExample);
+    setExampleDisplayValues(cachedDisplayValues);
+
+    if (!currentExample || (params.length === 1 && currentExample.title)) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const sourceIdParams = getExampleSourceIdParams(params, currentExample)
+      .filter(({ paramId }) => !cachedDisplayValues[paramId]);
+
+    if (sourceIdParams.length === 0) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    Promise.all(
+      sourceIdParams.map(async ({ paramId, sourceId }) => ({
+        paramId,
+        displayValue: await loadExampleDisplayName(graph, sourceId),
+      }))
+    ).then((entries) => {
+      if (cancelled) {
+        return;
+      }
+
+      const nextDisplayValues: Record<string, string> = { ...cachedDisplayValues };
+      for (const entry of entries) {
+        if (entry.displayValue) {
+          nextDisplayValues[entry.paramId] = entry.displayValue;
+        }
+      }
+      setExampleDisplayValues(nextDisplayValues);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [graph, currentExample, params]);
+
+  const getExampleDisplayValue = useCallback(
+    (paramId: string): string | null => {
+      if (!currentExample) {
+        return null;
+      }
+
+      if (params.length === 1 && currentExample.title) {
+        return currentExample.title;
+      }
+
+      const param = params.find((p) => p.param_id === paramId);
+      if (param?.param_type === "SourceId") {
+        return exampleDisplayValues[paramId] ?? null;
+      }
+
+      return currentExample.params?.[paramId] ?? null;
+    },
+    [currentExample, exampleDisplayValues, params]
+  );
 
   // Parse question into segments: text parts, param placeholders {id}, and result refs [text]{col_id}
   const segments = useMemo(() => {
@@ -83,7 +239,7 @@ export default function QueryQuestion({
           }
           // param: show example value or placeholder
           const paramId = seg.value;
-          const exampleValue = currentExample?.title || currentExample?.params?.[paramId];
+          const exampleValue = getExampleDisplayValue(paramId);
           const param = params.find((p) => p.param_id === paramId);
           const display = exampleValue || param?.param_name || paramId;
           return <span key={i} className="font-semibold text-blue-600">{display}</span>;
@@ -244,9 +400,9 @@ export default function QueryQuestion({
   }, [buildUrlParams, navigate, graph, template.id]);
 
   const getPlaceholder = (paramId: string): string => {
-    if (currentExample?.params?.[paramId]) {
-      // Resolve the example value to a human-readable name
-      return currentExample.title || currentExample.params[paramId];
+    const exampleDisplayValue = getExampleDisplayValue(paramId);
+    if (exampleDisplayValue) {
+      return exampleDisplayValue;
     }
     const param = params.find((p) => p.param_id === paramId);
     return param?.param_name || paramId;

@@ -1,67 +1,111 @@
-import { Box, Checkbox, FormControlLabel, FormGroup, Paper, Typography } from "@mui/material";
+import { Box, Button, Checkbox, Divider, FormControlLabel, FormGroup, Paper, Typography } from "@mui/material";
 import QueryTopic from "../../model/QueryTopic";
+import InputBadge from "./InputBadge";
+import OutputBadge from "./OutputBadge";
 
 export interface QueryFacetSelection {
   selectedTopics: Set<string>;
+  selectedInputs: Set<string>;
+  selectedOutputs: Set<string>;
 }
 
 export default function QueryFacets({
   topics,
+  availableInputs,
+  availableOutputs,
   selectedTopics,
-  onSelectionChange
+  selectedInputs,
+  selectedOutputs,
+  onTopicsChange,
+  onInputsChange,
+  onOutputsChange
 }: {
   topics: QueryTopic[];
+  availableInputs: string[];
+  availableOutputs: string[];
   selectedTopics: Set<string>;
-  onSelectionChange: (selected: Set<string>) => void;
+  selectedInputs: Set<string>;
+  selectedOutputs: Set<string>;
+  onTopicsChange: (selected: Set<string>) => void;
+  onInputsChange: (selected: Set<string>) => void;
+  onOutputsChange: (selected: Set<string>) => void;
 }) {
-  // Group topics by type
   const topicsByType: Record<string, QueryTopic[]> = {};
-  topics.forEach(topic => {
+  topics.forEach((topic) => {
     if (!topicsByType[topic.type]) {
       topicsByType[topic.type] = [];
     }
     topicsByType[topic.type].push(topic);
   });
 
-  // Sort topics alphabetically within each type
-  Object.values(topicsByType).forEach(topics => {
-    topics.sort((a, b) => a.name.localeCompare(b.name));
+  Object.values(topicsByType).forEach((groupedTopics) => {
+    groupedTopics.sort((a, b) => a.name.localeCompare(b.name));
   });
 
-  const handleToggle = (topicId: string) => {
+  const handleTopicToggle = (topicId: string) => {
     const newSelection = new Set(selectedTopics);
     if (newSelection.has(topicId)) {
       newSelection.delete(topicId);
     } else {
       newSelection.add(topicId);
     }
-    onSelectionChange(newSelection);
+    onTopicsChange(newSelection);
   };
 
-  const handleTypeToggle = (type: string) => {
+  const handleTopicTypeToggle = (type: string) => {
     const typeTopics = topicsByType[type];
-    const allSelected = typeTopics.every(t => selectedTopics.has(t.id));
+    const allSelected = typeTopics.every((topic) => selectedTopics.has(topic.id));
     const newSelection = new Set(selectedTopics);
-    
+
     if (allSelected) {
-      // Unselect all of this type
-      typeTopics.forEach(t => newSelection.delete(t.id));
+      typeTopics.forEach((topic) => newSelection.delete(topic.id));
     } else {
-      // Select all of this type
-      typeTopics.forEach(t => newSelection.add(t.id));
+      typeTopics.forEach((topic) => newSelection.add(topic.id));
     }
-    onSelectionChange(newSelection);
+
+    onTopicsChange(newSelection);
   };
+
+  const toggleValue = (
+    value: string,
+    selected: Set<string>,
+    onChange: (selected: Set<string>) => void
+  ) => {
+    const newSelection = new Set(selected);
+    if (newSelection.has(value)) {
+      newSelection.delete(value);
+    } else {
+      newSelection.add(value);
+    }
+    onChange(newSelection);
+  };
+
+  const clearAllFilters = () => {
+    onTopicsChange(new Set());
+    onInputsChange(new Set());
+    onOutputsChange(new Set());
+  };
+
+  const hasActiveFilters = selectedTopics.size > 0 || selectedInputs.size > 0 || selectedOutputs.size > 0;
 
   return (
     <Paper elevation={1} sx={{ p: 2 }}>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Filter by Topic
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+        <Typography variant="h6">Filters</Typography>
+        {hasActiveFilters && (
+          <Button size="small" onClick={clearAllFilters}>
+            Clear all
+          </Button>
+        )}
+      </Box>
+
+      <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+        Topics
       </Typography>
       {Object.entries(topicsByType).map(([type, typeTopics]) => {
-        const allSelected = typeTopics.every(t => selectedTopics.has(t.id));
-        const someSelected = typeTopics.some(t => selectedTopics.has(t.id));
-        
+        const allSelected = typeTopics.every((topic) => selectedTopics.has(topic.id));
+        const someSelected = typeTopics.some((topic) => selectedTopics.has(topic.id));
+
         return (
           <Box key={type} sx={{ mb: 2 }}>
             <FormControlLabel
@@ -69,23 +113,23 @@ export default function QueryFacets({
                 <Checkbox
                   checked={allSelected}
                   indeterminate={someSelected && !allSelected}
-                  onChange={() => handleTypeToggle(type)}
+                  onChange={() => handleTopicTypeToggle(type)}
                 />
               }
               label={
-                <Typography variant="subtitle1" fontWeight="bold">
+                <Typography variant="subtitle2" fontWeight="bold">
                   {type}
                 </Typography>
               }
             />
             <FormGroup sx={{ ml: 3 }}>
-              {typeTopics.map(topic => (
+              {typeTopics.map((topic) => (
                 <FormControlLabel
                   key={topic.id}
                   control={
                     <Checkbox
                       checked={selectedTopics.has(topic.id)}
-                      onChange={() => handleToggle(topic.id)}
+                      onChange={() => handleTopicToggle(topic.id)}
                       size="small"
                     />
                   }
@@ -96,6 +140,48 @@ export default function QueryFacets({
           </Box>
         );
       })}
+
+      <Divider sx={{ my: 2 }} />
+
+      <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+        Inputs
+      </Typography>
+      <FormGroup>
+        {availableInputs.map((inputId) => (
+          <FormControlLabel
+            key={inputId}
+            control={
+              <Checkbox
+                checked={selectedInputs.has(inputId)}
+                onChange={() => toggleValue(inputId, selectedInputs, onInputsChange)}
+                size="small"
+              />
+            }
+            label={<InputBadge size="xs">{inputId}</InputBadge>}
+          />
+        ))}
+      </FormGroup>
+
+      <Divider sx={{ my: 2 }} />
+
+      <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+        Outputs
+      </Typography>
+      <FormGroup>
+        {availableOutputs.map((outputId) => (
+          <FormControlLabel
+            key={outputId}
+            control={
+              <Checkbox
+                checked={selectedOutputs.has(outputId)}
+                onChange={() => toggleValue(outputId, selectedOutputs, onOutputsChange)}
+                size="small"
+              />
+            }
+            label={<OutputBadge size="xs">{outputId}</OutputBadge>}
+          />
+        ))}
+      </FormGroup>
     </Paper>
   );
 }
