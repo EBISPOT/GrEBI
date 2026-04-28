@@ -15,19 +15,7 @@ GrEBI is designed for graphs which have very large numbers of edges (> 1 billion
 
 ## Using the GrEBI API
 
-The GrEBI REST API is served by a Spring Boot application on port **8090**.
-
-```
-http://localhost:8090/api
-```
-
 ### Endpoints
-
-#### Health check
-
-```bash
-curl http://localhost:8090/api/health
-```
 
 #### List available graphs
 
