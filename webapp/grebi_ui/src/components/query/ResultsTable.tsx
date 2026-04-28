@@ -97,6 +97,9 @@ export default function ResultsTable({ graph, queryId, params, resultColumns }: 
           </div>
         );
       } else {
+        if (val === undefined || val === null || val === '') {
+          return '-';
+        }
         return String(val);
       }
     }
