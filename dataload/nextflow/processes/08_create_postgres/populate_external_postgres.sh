@@ -90,10 +90,13 @@ for SG in "${SUBGRAPHS[@]}"; do
         xargs -0 -P $NPROC -n1 bash -c "set -e; _pg_import_binary \"nodes_${SG}\" \"\$1\"" _
 
     echo "Creating node indexes for $SG in parallel..."
+    $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_nodeId\" ON \"nodes_${SG}\" USING btree (\"grebi:nodeId\");" &
+    $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_curie\" ON \"nodes_${SG}\" USING btree (\"ols:curie\");" &
     $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_name\" ON \"nodes_${SG}\" USING btree (\"grebi:name\");" &
     $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_name_trgm\" ON \"nodes_${SG}\" USING gin (\"grebi:name\" gin_trgm_ops);" &
     $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_type_gin\" ON \"nodes_${SG}\" USING gin (\"grebi:type\");" &
     $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_datasources_gin\" ON \"nodes_${SG}\" USING gin (\"grebi:datasources\");" &
+    $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_sourceIds_gin\" ON \"nodes_${SG}\" USING gin (\"grebi:sourceIds\");" &
     for COL_NAME in $(grep '^"embedding:' "$NODES_COLS_FILE" | sed 's/^"\([^"]*\)".*/\1/'); do
         SAFE_MODEL=$(echo "$COL_NAME" | sed 's/embedding://' | tr -- '-.' '__')
         $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_embedding_${SAFE_MODEL}\" ON \"nodes_${SG}\" USING hnsw (\"${COL_NAME}\" vector_cosine_ops);" &

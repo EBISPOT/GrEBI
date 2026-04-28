@@ -928,6 +928,23 @@ public class GrebiPostgresClient {
         return conditions;
     }
 
+    private static boolean hasSingleFilterValue(Map<String, List<String>> filters, String key) {
+        if (filters == null) {
+            return false;
+        }
+        var values = filters.get(key);
+        return values != null && values.size() == 1 && values.get(0) != null && !values.get(0).isBlank();
+    }
+
+    private static boolean isExactIdentifierLookup(Map<String, List<String>> filters) {
+        if (filters == null || filters.size() != 1) {
+            return false;
+        }
+        return hasSingleFilterValue(filters, "grebi:sourceIds")
+                || hasSingleFilterValue(filters, "grebi:nodeId")
+                || hasSingleFilterValue(filters, "ols:curie");
+    }
+
     public NodeQueryResult searchNodes(String graph, String q,
                                         Map<String, List<String>> filters,
                                         int offset, int limit) {
@@ -976,17 +993,22 @@ public class GrebiPostgresClient {
                     .from(tbl)
                     .where(conditions);
 
-            List<OrderField<?>> orderBy;
-            if (q != null && !q.isBlank()) {
-                orderBy = List.of(
-                    field("similarity({0}, {1})", Double.class, nameField, val(q)).desc()
-                );
-            } else {
-                orderBy = List.of(nameField.asc());
-            }
+            boolean skipNameOrdering = (q == null || q.isBlank()) && isExactIdentifierLookup(filters);
+
+            // For exact identifier lookups, ORDER BY name LIMIT 1 can trigger a pathological
+            // plan that walks the name index and filters millions of rows instead of using the
+            // identifier predicate first. These lookups are effectively point queries, so we can
+            // safely skip the alphabetical ordering and let PostgreSQL use the selective index.
+            var fetched = q != null && !q.isBlank()
+                    ? select.orderBy(
+                            field("similarity({0}, {1})", Double.class, nameField, val(q)).desc()
+                      ).limit(limit).offset(offset).fetch()
+                    : skipNameOrdering
+                        ? select.limit(limit).offset(offset).fetch()
+                        : select.orderBy(nameField.asc()).limit(limit).offset(offset).fetch();
 
             List<Map<String, Object>> results = new ArrayList<>();
-            for (var record : select.orderBy(orderBy).limit(limit).offset(offset).fetch()) {
+            for (var record : fetched) {
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("grebi:nodeId", record.get(nodeIdField));
                 row.put("grebi:name", record.get(nameField));
