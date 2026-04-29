@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Generate a bash script that runs the GrEBI combined Docker image.
+"""Generate a bash script that runs the GrEBI combined Docker image for development.
 
 The script is meant to be bundled into the release tarball so that users can
-simply extract the tarball and run ``./grebi.sh`` to get a fully working
-GrEBI stack.
+simply extract the tarball and run ``./grebi_dev.sh`` to get a fully working
+GrEBI stack for development.
 
 Usage:
-    python3 generate_run_script.py --subgraph <name> --image <docker_image> -o grebi.sh
+    python3 generate_run_script.py --subgraph <name> --image <docker_image> -o grebi_dev.sh
 """
 
 import argparse
@@ -21,7 +21,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         set -euo pipefail
 
         # -------------------------------------------------------------------
-        # grebi.sh — start the GrEBI stack for subgraphs: {subgraphs}
+        # grebi_dev.sh — start the GrEBI stack for subgraphs: {subgraphs}
         #
         # Extract the release tarball and run this script from the extracted
         # directory.  All databases are expected to be in the same directory
@@ -30,11 +30,12 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         # Requirements: Docker or Singularity/Apptainer
         #
         # Usage:
-        #   ./grebi.sh                              # start all services
-        #   ./grebi.sh api postgres                 # start only named services
-        #   ./grebi.sh -api -ui                      # start all except api and ui
-        #   ./grebi.sh api -ui                       # start only api (-ui ignored)
-        #   ./grebi.sh bash                          # open an interactive shell
+        #   ./grebi_dev.sh                              # start all services
+        #   ./grebi_dev.sh api postgres                 # start only named services
+        #   ./grebi_dev.sh -api -ui                     # start all except api and ui
+        #   ./grebi_dev.sh api -ui                      # start only api (-ui ignored)
+        #   ./grebi_dev.sh bash                         # open an interactive shell
+        #   ./grebi_dev.sh --bind-address 0.0.0.0       # publish Docker ports on all interfaces
         #
         # Prefix a service name with - to exclude it.  Exclusions only take
         # effect when no positive (include) services are given.
@@ -48,8 +49,12 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         # without neo4j, it uses embedded mode instead.
         #
         # Override container runtime:
-        #   GREBI_RUNTIME=singularity ./grebi.sh
-        #   GREBI_RUNTIME=docker ./grebi.sh
+        #   GREBI_RUNTIME=singularity ./grebi_dev.sh
+        #   GREBI_RUNTIME=docker ./grebi_dev.sh
+        #
+        # Docker port bind address defaults to 127.0.0.1. Override it with:
+        #   ./grebi_dev.sh --bind-address 0.0.0.0
+        #   GREBI_BIND_ADDRESS=0.0.0.0 ./grebi_dev.sh
         #
         # Ports exposed on the host (Docker only — Singularity uses host networking):
         #   7474  — Neo4j Browser
@@ -70,15 +75,31 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         # Parse arguments: "bash" and "test" are modes; anything else is a service name.
         # A leading dash (e.g. -api) marks a service for exclusion.
         MODE="run"
+        BIND_ADDRESS="${{GREBI_BIND_ADDRESS:-127.0.0.1}}"
         INCLUDES=()
         EXCLUDES=()
-        for arg in "$@"; do
+        while [ $# -gt 0 ]; do
+            arg="$1"
+            shift
             case "$arg" in
-                bash|test) MODE="$arg" ;;
-                -*)        EXCLUDES+=("${{arg#-}}") ;;
-                *)         INCLUDES+=("$arg") ;;
+                --bind-address)
+                    if [ $# -eq 0 ]; then
+                        echo "ERROR: --bind-address requires a value"
+                        exit 1
+                    fi
+                    BIND_ADDRESS="$1"
+                    shift
+                    ;;
+                --bind-address=*) BIND_ADDRESS="${{arg#*=}}" ;;
+                bash|test)        MODE="$arg" ;;
+                -*)               EXCLUDES+=("${{arg#-}}") ;;
+                *)                INCLUDES+=("$arg") ;;
             esac
         done
+        if [ -z "$BIND_ADDRESS" ]; then
+            echo "ERROR: bind address may not be empty"
+            exit 1
+        fi
 
         # Validate service names (both includes and excludes)
         for svc in "${{INCLUDES[@]+${{INCLUDES[@]}}}}" "${{EXCLUDES[@]+${{EXCLUDES[@]}}}}"; do
@@ -181,6 +202,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
 
         # Stop any existing GrEBI containers using the same image
         if [ "$RUNTIME" = "docker" ]; then
+            echo "Docker bind address: $BIND_ADDRESS"
             OLD=$(docker ps -q --filter "ancestor=$IMAGE" 2>/dev/null)
             if [ -n "$OLD" ]; then
                 echo "Stopping previous GrEBI container(s)..."
@@ -224,13 +246,13 @@ def generate_run_script(subgraphs: str, image: str) -> str:
             docker run --rm -it \\
                 -u "$(id -u):$(id -g)" \\
                 -v "$DATA_DIR:/data" \\
-                -p 7474:7474 \\
-                -p 7687:7687 \\
-                -p 8080:8080 \\
-                -p 8085:8085 \\
-                -p 8082:8082 \\
-                -p 8090:8090 \\
-                -p 5432:5432 \\
+                -p "$BIND_ADDRESS:7474:7474" \\
+                -p "$BIND_ADDRESS:7687:7687" \\
+                -p "$BIND_ADDRESS:8080:8080" \\
+                -p "$BIND_ADDRESS:8085:8085" \\
+                -p "$BIND_ADDRESS:8082:8082" \\
+                -p "$BIND_ADDRESS:8090:8090" \\
+                -p "$BIND_ADDRESS:5432:5432" \\
                 $(printf -- '-e %s ' "${{ENV_VARS[@]}}") \\
                 -w /data \\
                 "$IMAGE" /opt/entrypoint.sh "$MODE"
