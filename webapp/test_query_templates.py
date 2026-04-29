@@ -148,7 +148,7 @@ def get_available_graphs(api_url: str) -> List[str]:
 def load_query_templates(templates_dir: Path) -> List[Dict[str, Any]]:
     templates = []
     
-    for template_file in templates_dir.glob("*.yaml"):
+    for template_file in sorted(templates_dir.rglob("*.yaml")):
         if template_file.name.startswith("_"):
             continue
             
@@ -156,7 +156,8 @@ def load_query_templates(templates_dir: Path) -> List[Dict[str, Any]]:
             with open(template_file, 'r') as f:
                 template = yaml.safe_load(f)
                 if template and 'examples' in template:
-                    template['_file'] = template_file.name
+                    template['_file'] = str(template_file.relative_to(templates_dir))
+                    template['_query_id'] = template_file.stem
                     templates.append(template)
         except Exception as e:
             print_colored(f"Warning: Failed to load {template_file}: {e}", Colors.YELLOW)
@@ -215,7 +216,7 @@ def test_query_templates(
     total = 0
     
     for template in templates:
-        query_id = template['_file'].replace('.yaml', '')
+        query_id = template['_query_id']
         title = template.get('title', query_id)
         examples = template.get('examples', [])
         template_graphs = template.get('graphs', [])
