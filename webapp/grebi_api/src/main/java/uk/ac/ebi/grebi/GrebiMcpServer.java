@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -251,6 +250,7 @@ public class GrebiMcpServer {
         var stats = cypher != null ? cypher.getStats() : null;
 
         Gson gson = new Gson();
+        ResourceLimits limits = ResourceLimits.get();
 
 
         transportProvider =
@@ -351,10 +351,13 @@ public class GrebiMcpServer {
             ));
             paramProps.put("pageNum",  Map.of(
                 "type", "integer",
+                "minimum", 0,
                 "description", "Page number (0-based)"
             ));
             paramProps.put("pageSize", Map.of(
                 "type", "integer",
+                "minimum", 1,
+                "maximum", limits.maxPageSize(),
                 "description", "Number of results per page"
             ));
 
@@ -400,12 +403,13 @@ public class GrebiMcpServer {
                     .build(),
                 null,
                 (exchange, request) -> {
+                    limits.checkRateLimit("mcp:tools");
 
                     var graph = (String) request.arguments().get("graph");
                     var sortBy = (String) request.arguments().get("sortBy");
                     var sortDir = (String) request.arguments().get("sortDir");
-                    var pageNum = (Integer) request.arguments().get("pageNum");
-                    var pageSize = (Integer) request.arguments().get("pageSize");
+                    var pageNum = getIntArg(request.arguments(), "pageNum", 0);
+                    var pageSize = getIntArg(request.arguments(), "pageSize", ResourceLimits.DEFAULT_PAGE_SIZE);
 
                     if(!graphs.contains(graph)) {
                         return Mono.error(new RuntimeException("Unknown graph " + graph));
@@ -419,7 +423,7 @@ public class GrebiMcpServer {
                         return Mono.error(new RuntimeException("Unknown sort column " + sortBy));
                     }
 
-                    var page = PageRequest.of(pageNum, pageSize,
+                    var page = limits.pageRequest(pageNum, pageSize,
                             Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
 
                     Map<String,List<String>> params = new LinkedHashMap<>();
@@ -427,8 +431,11 @@ public class GrebiMcpServer {
                         if(List.of("graph", "sortBy", "sortDir", "pageNum", "pageSize").contains(p.getKey())) {
                             continue;
                         }
-                        params.put(p.getKey(), List.of(p.getValue().toString()));
+                        var value = p.getValue() == null ? "" : p.getValue().toString();
+                        limits.validateText(value, p.getKey());
+                        params.put(p.getKey(), List.of(value));
                     }
+                    limits.validateQueryParams(params);
 
                     Page<Map<String,Object>> res = cypher.runQueryFromTemplatePaginated(graph, qt, params, false, page);
 
@@ -492,10 +499,13 @@ public class GrebiMcpServer {
         ));
         searchNodesProps.put("pageNum", Map.of(
             "type", "integer",
+            "minimum", 0,
             "description", "Page number (0-based)"
         ));
         searchNodesProps.put("pageSize", Map.of(
             "type", "integer",
+            "minimum", 1,
+            "maximum", limits.maxPageSize(),
             "description", "Number of results per page"
         ));
 
@@ -508,16 +518,19 @@ public class GrebiMcpServer {
                 .build(),
             null,
             (exchange, request) -> {
+                limits.checkRateLimit("mcp:tools");
                 var graph = requireStringArg(request.arguments(), "graph");
                 validateGraph(graphs, graph);
 
                 var q = getStringArg(request.arguments(), "q", null);
                 var resolve = getBooleanArg(request.arguments(), "resolve", true);
                 var pageNum = getIntArg(request.arguments(), "pageNum", 0);
-                var pageSize = getIntArg(request.arguments(), "pageSize", 10);
+                var pageSize = getIntArg(request.arguments(), "pageSize", ResourceLimits.DEFAULT_PAGE_SIZE);
                 var filters = getFiltersArg(request.arguments(), "filters");
+                limits.validateText(q, "q");
+                limits.validateQueryParams(filters);
 
-                var page = PageRequest.of(pageNum, pageSize);
+                var page = limits.pageRequest(pageNum, pageSize);
                 var result = pagedResult(postgres.searchNodesPaginated(graph, q, filters, resolve, page));
                 return toolResult(gson, result, pagedRowsOutputSchema);
             }
@@ -542,9 +555,11 @@ public class GrebiMcpServer {
                 .build(),
             null,
             (exchange, request) -> {
+                limits.checkRateLimit("mcp:tools");
                 var graph = requireStringArg(request.arguments(), "graph");
                 var nodeId = requireStringArg(request.arguments(), "nodeId");
                 validateGraph(graphs, graph);
+                limits.validateText(nodeId, "nodeId");
 
                 var resolved = postgres.getPgClient().resolveToList(graph, List.of(nodeId));
                 var node = resolved.isEmpty() ? null : resolved.get(0);
@@ -579,10 +594,12 @@ public class GrebiMcpServer {
                 .build(),
             null,
             (exchange, request) -> {
+                limits.checkRateLimit("mcp:tools");
                 var graph = requireStringArg(request.arguments(), "graph");
                 var nodeId = requireStringArg(request.arguments(), "nodeId");
                 var direction = getStringArg(request.arguments(), "direction", "both");
                 validateGraph(graphs, graph);
+                limits.validateText(nodeId, "nodeId");
 
                 Object counts;
                 switch (direction) {
@@ -629,10 +646,13 @@ public class GrebiMcpServer {
         ));
         listNodeEdgesProps.put("pageNum", Map.of(
             "type", "integer",
+            "minimum", 0,
             "description", "Page number (0-based)"
         ));
         listNodeEdgesProps.put("pageSize", Map.of(
             "type", "integer",
+            "minimum", 1,
+            "maximum", limits.maxPageSize(),
             "description", "Number of results per page"
         ));
 
@@ -645,6 +665,7 @@ public class GrebiMcpServer {
                 .build(),
             null,
             (exchange, request) -> {
+                limits.checkRateLimit("mcp:tools");
                 var graph = requireStringArg(request.arguments(), "graph");
                 var nodeId = requireStringArg(request.arguments(), "nodeId");
                 var direction = requireStringArg(request.arguments(), "direction");
@@ -652,9 +673,12 @@ public class GrebiMcpServer {
                 var sortBy = getStringArg(request.arguments(), "sortBy", "grebi:type");
                 var sortDir = getStringArg(request.arguments(), "sortDir", "asc");
                 var pageNum = getIntArg(request.arguments(), "pageNum", 0);
-                var pageSize = getIntArg(request.arguments(), "pageSize", 10);
+                var pageSize = getIntArg(request.arguments(), "pageSize", ResourceLimits.DEFAULT_PAGE_SIZE);
                 var filters = getFiltersArg(request.arguments(), "filters");
                 validateGraph(graphs, graph);
+                limits.validateText(nodeId, "nodeId");
+                limits.validateText(sortBy, "sortBy");
+                limits.validateQueryParams(filters);
 
                 if (!List.of("incoming", "outgoing").contains(direction)) {
                     return Mono.error(new RuntimeException("Unknown direction " + direction));
@@ -664,7 +688,7 @@ public class GrebiMcpServer {
                 }
 
                 var filterField = direction.equals("incoming") ? "grebi:toNodeId" : "grebi:fromNodeId";
-                var page = PageRequest.of(
+                var page = limits.pageRequest(
                     pageNum,
                     pageSize,
                     Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy)
@@ -697,9 +721,11 @@ public class GrebiMcpServer {
                 .build(),
             null,
             (exchange, request) -> {
+                limits.checkRateLimit("mcp:tools");
                 var graph = requireStringArg(request.arguments(), "graph");
                 var edgeId = requireStringArg(request.arguments(), "edgeId");
                 validateGraph(graphs, graph);
+                limits.validateText(edgeId, "edgeId");
 
                 var cleanEdgeId = stripGraphPrefix(graph, edgeId);
                 var resolved = postgres.getPgClient().resolveToMap(graph, List.of(cleanEdgeId));

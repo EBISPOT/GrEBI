@@ -88,8 +88,8 @@ RUN mkdir -p /etc/postgresql-common && \
     rm -rf /var/lib/apt/lists/*
 ENV PATH="$PATH:/usr/lib/postgresql/18/bin"
 
-# ---- Node.js 22 LTS + Caddy + Docker CLI (single apt layer) ----
-RUN curl -sL https://deb.nodesource.com/setup_22.x | bash - && \
+# ---- Node.js 24 LTS + Caddy + Docker CLI (single apt layer) ----
+RUN curl -sL https://deb.nodesource.com/setup_24.x | bash - && \
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && \
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list && \
     install -m 0755 -d /etc/apt/keyrings && \

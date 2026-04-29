@@ -4,7 +4,7 @@ FROM ubuntu:22.04
 RUN apt update && apt install -y curl gpg
 
 # node
-RUN curl -sL https://deb.nodesource.com/setup_18.x | bash
+RUN curl -sL https://deb.nodesource.com/setup_24.x | bash
 
 # caddy
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
@@ -29,4 +29,3 @@ COPY webapp/grebi_ui /opt/grebi_ui
 RUN chmod +x /opt/grebi_ui/entrypoint.dockersh
 
 CMD ["/opt/grebi_ui/entrypoint.dockersh"]
-

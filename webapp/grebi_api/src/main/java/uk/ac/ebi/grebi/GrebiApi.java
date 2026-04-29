@@ -12,6 +12,7 @@ import io.javalin.http.HttpResponseException;
 import io.javalin.http.NotFoundResponse;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,7 +24,6 @@ import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportPro
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.GraphOrder;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
@@ -124,6 +124,7 @@ public class GrebiApi {
         var port = Integer.parseInt(Objects.requireNonNullElse(System.getenv("GREBI_PORT"), "8090"));
 
         Gson gson = new Gson();
+        ResourceLimits limits = ResourceLimits.get();
 
         GrebiMcpServer mcpServer = new GrebiMcpServer(
             cypher, postgres, metadata, graphs, queryTemplates
@@ -131,6 +132,7 @@ public class GrebiApi {
 
         Javalin.create(config -> {
                     config.http.gzipOnlyCompression();
+                    config.http.maxRequestSize = limits.maxRequestBodyBytes();
                     config.jetty.modifyServletContextHandler(ctx -> {
                         var holder = new ServletHolder(mcpServer.getTransportProvider());
                         holder.setAsyncSupported(true);
@@ -144,6 +146,11 @@ public class GrebiApi {
                     if(config.router.contextPath == null) {
                         config.router.contextPath = "";
                     }
+                })
+                .before(ctx -> {
+                    limits.checkRateLimit("http:" + ctx.ip());
+                    limits.validateQueryString(ctx.queryString());
+                    limits.validateQueryParams(ctx.queryParamMap());
                 })
                 .get("/api/health", ctx -> {
                     ctx.contentType("application/json");
@@ -275,6 +282,7 @@ public class GrebiApi {
                 })
                 .get("/api/v1/graphs/{graph}/materialised_queries/{queryid}", ctx -> {
                     var searchText = ctx.queryParam("q");
+                    limits.validateText(searchText, "q");
 
                     Map<String, List<String>> filters = new LinkedHashMap<>();
                     List<String> facetFields = new ArrayList<>();
@@ -294,15 +302,7 @@ public class GrebiApi {
                     for(var facetField : ctx.queryParams("facet")) {
                         facetFields.add(facetField);
                     }
-                    var page_num = ctx.queryParam("page");
-                    if(page_num == null) {
-                        page_num = "0";
-                    }
-                    var size = ctx.queryParam("size");
-                    if(size == null) {
-                        size = "10";
-                    }
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
+                    var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"));
                     var res = postgres.searchMaterialisedQueryResultsPaginated(
                             ctx.pathParam("graph"), ctx.pathParam("queryid"),
                             searchText, filters, facetFields, page);
@@ -359,9 +359,7 @@ public class GrebiApi {
                     var template = getQueryTemplateOrThrow(queryTemplates, graph, templateId);
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), template.result_columns.get(0).column_id);
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
-                    var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
-                    var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size),
+                    var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"),
                             Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
 
                     ctx.contentType("application/json");
@@ -412,10 +410,7 @@ public class GrebiApi {
                         null,
                         filters,
                         resolve,
-                        PageRequest.of(
-                            Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("page"), "0")),
-                            Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("size"), "10"))
-                        )
+                        limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"))
                     );
 
                     ctx.json(res);
@@ -460,22 +455,23 @@ public class GrebiApi {
                         ctx.result("{}");
                         return;
                     }
-                    var body = ctx.body();
+                    var bodyBytes = ctx.bodyAsBytes();
+                    limits.validateRequestBody(bodyBytes);
+                    var body = new String(bodyBytes, StandardCharsets.UTF_8);
                     var items = gson.fromJson(body, GrebiCypherRepo.DirectionAndEdgeType[].class);
                     if (items == null || items.length == 0) {
                         ctx.result("{}");
                         return;
                     }
+                    limits.validateResolveSingleEdgesCount(items.length);
                     var result = cypher.resolveSingleEdges(ctx.pathParam("graph"), nodeId, List.of(items));
                     ctx.result(gson.toJson(result));
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edges", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
-                    var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
-                    var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), "grebi:type");
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size),
+                    var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"),
                             Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
 
                     Map<String, List<String>> extraFilters = new LinkedHashMap<>();
@@ -497,11 +493,9 @@ public class GrebiApi {
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edges", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
-                    var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
-                    var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), "grebi:type");
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size),
+                    var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"),
                             Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
 
                     Map<String, List<String>> extraFilters = new LinkedHashMap<>();
@@ -523,11 +517,9 @@ public class GrebiApi {
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edge_refs", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
-                    var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
-                    var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), "grebi:type");
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size),
+                    var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"),
                             Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
 
                     Map<String, List<String>> extraFilters = new LinkedHashMap<>();
@@ -549,11 +541,9 @@ public class GrebiApi {
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edge_refs", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
-                    var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
-                    var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), "grebi:type");
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size),
+                    var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"),
                             Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
 
                     Map<String, List<String>> extraFilters = new LinkedHashMap<>();
@@ -589,13 +579,14 @@ public class GrebiApi {
                     var graph = ctx.pathParam("graph");
                     var q = ctx.queryParam("q");
                     var model = ctx.queryParam("model");
-                    var n = Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("n"), "10"));
+                    var n = limits.vectorLimit(ctx.queryParam("n"));
                     var resolve = Boolean.parseBoolean(Objects.requireNonNullElse(ctx.queryParam("resolve"), "false"));
 
                     if (q == null || q.isBlank()) {
                         ctx.status(400).result("{\"error\":\"q parameter is required\"}");
                         return;
                     }
+                    limits.validateText(q, "q");
                     if (model == null || model.isBlank()) {
                         ctx.status(400).result("{\"error\":\"model parameter is required\"}");
                         return;
@@ -635,7 +626,7 @@ public class GrebiApi {
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/similar", ctx -> {
                     var graph = ctx.pathParam("graph");
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
-                    var n = Integer.parseInt(Objects.requireNonNullElse(ctx.queryParam("n"), "10"));
+                    var n = limits.vectorLimit(ctx.queryParam("n"));
                     var modelParam = ctx.queryParam("model");
                     String model;
                     if (modelParam != null && !modelParam.isBlank()) {
@@ -662,11 +653,9 @@ public class GrebiApi {
                     ctx.result(gson.toJson(results));
                 })
                 .get("/api/v1/graphs/{graph}/edges", ctx -> {
-                    var page_num = Objects.requireNonNullElse(ctx.queryParam("page"), "0");
-                    var size = Objects.requireNonNullElse(ctx.queryParam("size"), "10");
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), "grebi:type");
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size),
+                    var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"),
                             Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy));
 
                     Map<String, List<String>> filters = new LinkedHashMap<>();
@@ -731,6 +720,7 @@ public class GrebiApi {
                 })
                 .get("/api/v1/graphs/{graph}/search", ctx -> {
                     var searchText = ctx.queryParam("q");
+                    limits.validateText(searchText, "q");
 
                     Map<String, List<String>> filters = new LinkedHashMap<>();
                     for(var param : ctx.queryParamMap().entrySet()) {
@@ -747,24 +737,22 @@ public class GrebiApi {
                         }
                         filters.put(param.getKey(), param.getValue());
                     }
-                    var page_num = ctx.queryParam("page");
-                    if(page_num == null) {
-                        page_num = "0";
-                    }
-                    var size = ctx.queryParam("size");
-                    if(size == null) {
-                        size = "10";
-                    }
                     var resolve = ! "false".equals(ctx.queryParam("resolve"));
-                    var page = PageRequest.of(Integer.parseInt(page_num), Integer.parseInt(size));
+                    var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"));
                     var res = postgres.searchNodesPaginated(ctx.pathParam("graph"), searchText, filters, resolve, page);
                     ctx.contentType("application/json");
                     ctx.json(res);
                 })
                 .get("/api/v1/graphs/{graph}/suggest", ctx -> {
+                    limits.validateText(ctx.queryParam("q"), "q");
                     var res = postgres.autocomplete(ctx.pathParam("graph"), ctx.queryParam("q"));
                     ctx.contentType("application/json");
                     ctx.json(res);
+                })
+                .exception(ResourceLimits.ResourceLimitException.class, (e, ctx) -> {
+                    ctx.status(e.statusCode());
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(Map.of("error", e.getMessage())));
                 })
                 .exception(HttpResponseException.class, (e, ctx) -> {
                     ctx.status(e.getStatus());

@@ -8,6 +8,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.reflect.TypeToken;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import uk.ac.ebi.grebi.ResourceLimits;
 import org.jooq.*;
 import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
@@ -166,6 +167,7 @@ public class GrebiPostgresClient {
             config.setMaximumPoolSize(16);
             config.setMinimumIdle(0);
             config.setAutoCommit(true);
+            config.setConnectionInitSql("SET statement_timeout TO " + ResourceLimits.get().queryTimeoutMillis());
             config.setPoolName("grebi-postgres");
             config.setInitializationFailTimeout(-1);
             config.setConnectionTimeout(30_000);

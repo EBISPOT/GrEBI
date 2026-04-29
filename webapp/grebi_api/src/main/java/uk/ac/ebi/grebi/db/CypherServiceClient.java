@@ -8,8 +8,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Consumer;
+
+import uk.ac.ebi.grebi.ResourceLimits;
 
 /**
  * HTTP client for the grebi_cypher_service.
@@ -20,10 +23,14 @@ public class CypherServiceClient {
     private final String baseUrl;
     private final HttpClient httpClient;
     private final Gson gson = new Gson();
+    private final Duration queryTimeout;
 
     public CypherServiceClient(String baseUrl) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        this.httpClient = HttpClient.newHttpClient();
+        this.queryTimeout = Duration.ofSeconds(ResourceLimits.get().queryTimeoutSeconds());
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
     }
 
     public static String getCypherServiceUrl() {
@@ -39,6 +46,7 @@ public class CypherServiceClient {
     public Set<String> getGraphs() throws IOException {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/"))
+                .timeout(queryTimeout)
                 .GET()
                 .build();
         try {
@@ -61,7 +69,7 @@ public class CypherServiceClient {
     public List<Map<String, Object>> query(String graph, String cypher, Map<String, Object> params)
             throws IOException {
         List<Map<String, Object>> records = new ArrayList<>();
-        streamQuery(graph, cypher, params, records::add);
+        streamQuery(graph, cypher, params, records::add, true);
         return records;
     }
 
@@ -73,13 +81,22 @@ public class CypherServiceClient {
     @SuppressWarnings("unchecked")
     public void streamQuery(String graph, String cypher, Map<String, Object> params,
                             Consumer<Map<String, Object>> consumer) throws IOException {
+        streamQuery(graph, cypher, params, consumer, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void streamQuery(String graph, String cypher, Map<String, Object> params,
+                             Consumer<Map<String, Object>> consumer, boolean applyQueryTimeout) throws IOException {
         String body = gson.toJson(Map.of("query", cypher, "params", params));
 
-        HttpRequest req = HttpRequest.newBuilder()
+        var requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/" + graph))
                 .POST(HttpRequest.BodyPublishers.ofString(body))
-                .header("Content-Type", "application/json")
-                .build();
+                .header("Content-Type", "application/json");
+        if (applyQueryTimeout) {
+            requestBuilder.timeout(queryTimeout);
+        }
+        HttpRequest req = requestBuilder.build();
 
         HttpResponse<InputStream> resp;
         try {
