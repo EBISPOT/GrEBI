@@ -1,0 +1,88 @@
+title: GWAS trait to mouse models via embedding similarity
+question: What mouse gene models share phenotypes semantically similar to {trait_id}, with human orthologs also associated with this GWAS trait?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+  - impc
+cypher_match_fragment: |-
+  MATCH (trait)-[:sourceId]->(:Id {id: $trait_id})
+  MATCH (trait)-[emb:`ols_top_k:matches`]->(any_term)
+  WITH trait, emb, any_term, toFloat(emb.`ols_top_k:distance`[0]) AS emb_dist
+  ORDER BY emb_dist ASC LIMIT toInteger($n_embedding_candidates)
+  WITH trait, emb_dist, any_term
+  WHERE "OLS.mp" IN any_term.`grebi:datasources`
+  WITH trait, any_term AS mp_phenotype, emb_dist
+  ORDER BY emb_dist ASC LIMIT toInteger($n_top_mp_hits)
+  MATCH (mouse_gene:`impc:MouseGene`)-[:`biolink:has_phenotype`]->(mp_phenotype)
+  MATCH (mouse_gene)-[:`impc:humanGeneOrthologues`]->(human_gene:`hgnc:Gene`)
+  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
+  MATCH (snp)-[:`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`]->(human_gene)
+  WITH
+    trait, mp_phenotype, emb_dist AS embedding_distance, mouse_gene, human_gene, snp,
+    [id IN assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
+    assoc.`gwas:p_value`[0] AS p_value,
+    assoc.`gwas:or_or_beta`[0] AS or_or_beta,
+    assoc.edge_id AS edge_id
+cypher_return_fragment: |-
+  RETURN DISTINCT
+    trait { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(trait) } AS trait,
+    mp_phenotype { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(mp_phenotype) } AS mp_phenotype,
+    embedding_distance,
+    mouse_gene { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(mouse_gene) } AS mouse_gene,
+    human_gene { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(human_gene) } AS human_gene,
+    snp { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(snp) } AS snp,
+    study_id,
+    p_value,
+    or_or_beta,
+    edge_id
+cypher_count_fragment: |-
+  WITH DISTINCT trait, mp_phenotype, mouse_gene, human_gene, snp, edge_id
+  RETURN count(*) AS count
+params:
+  - param_id: trait_id
+    param_name: GWAS Trait (EFO term)
+    param_type: SourceId
+  - param_id: n_embedding_candidates
+    param_name: Number of closest embedding matches to consider (across all ontologies)
+    param_type: float
+    param_default: '50'
+  - param_id: n_top_mp_hits
+    param_name: Number of top MP phenotype matches to expand into mouse models
+    param_type: float
+    param_default: '5'
+result_columns:
+  - column_id: trait
+    column_type: GraphNodeId
+  - column_id: mp_phenotype
+    column_type: GraphNodeId
+  - column_id: embedding_distance
+    column_type: float
+  - column_id: mouse_gene
+    column_type: GraphNodeId
+  - column_id: human_gene
+    column_type: GraphNodeId
+  - column_id: snp
+    column_type: GraphNodeId
+  - column_id: study_id
+    column_type: string
+    optional: true
+  - column_id: p_value
+    column_type: string
+    optional: true
+  - column_id: or_or_beta
+    column_type: float
+    optional: true
+  - column_id: edge_id
+    column_type: EdgeId
+examples:
+  - title: Platelet count (TYK2)
+    params:
+      trait_id: efo:0004309
+      n_embedding_candidates: '50'
+      n_top_mp_hits: '5'
+  - title: LDL cholesterol measurement
+    params:
+      trait_id: efo:0004611
+      n_embedding_candidates: '50'
+      n_top_mp_hits: '5'
