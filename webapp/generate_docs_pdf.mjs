@@ -428,13 +428,21 @@ async function main() {
     );
   }
 
+  // Strip HTML tags iteratively so nested-like sequences (e.g. "<scr<script>ipt>")
+  // can't reintroduce a tag after a single pass.
+  function stripTags(s) {
+    let prev;
+    do { prev = s; s = s.replace(/<[^>]+>/g, ""); } while (s !== prev);
+    return s;
+  }
+
   // Add IDs to headings (marked doesn't generate them by default)
   let headingCounter = 0;
   const rawHtml = highlightCodeBlocks(marked.parse(fullMd));
   const withIds = rawHtml.replace(
     /<h([1-6])>(.*?)<\/h[1-6]>/gi,
     (_, level, text) => {
-      const id = `h-${headingCounter++}-${text.replace(/<[^>]+>/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+      const id = `h-${headingCounter++}-${stripTags(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
       return `<h${level} id="${id}">${text}</h${level}>`;
     }
   );
@@ -442,7 +450,7 @@ async function main() {
   // Build a TOC from h1/h2/h3 and number the headings
   const tocEntries = [];
   withIds.replace(/<h([123])\s+id="([^"]*)"[^>]*>(.*?)<\/h[123]>/gi, (_, level, id, text) => {
-    tocEntries.push({ level: parseInt(level), id, text: text.replace(/<[^>]+>/g, "") });
+    tocEntries.push({ level: parseInt(level), id, text: stripTags(text) });
   });
 
   // Assign section numbers (1, 1.1, 1.1.1, etc.)

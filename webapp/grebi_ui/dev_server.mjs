@@ -5,6 +5,7 @@ import urlJoin from 'url-join'
 import nocache from 'nocache'
 import livereload from 'livereload'
 import connectLivereload from 'connect-livereload'
+import rateLimit from 'express-rate-limit'
 
 // Live-reload: watch dist/ for changes and notify the browser
 const lrServer = livereload.createServer({ delay: 300 })
@@ -15,6 +16,7 @@ let server = express()
 server.use(connectLivereload())
 server.use(nocache())
 server.set('etag', false)
+server.use(rateLimit({ windowMs: 60 * 1000, max: 1000 }))
 
 if(process.env.GREBI_DEV_BACKEND_PROXY_URL === undefined) {
     throw new Error('please set GREBI_DEV_BACKEND_PROXY_URL before running dev server')
