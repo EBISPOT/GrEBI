@@ -415,9 +415,13 @@ async function main() {
         const grammar = Prism.languages[prismLang];
         if (!grammar) return `<pre><code>${code}</code></pre>`;
         // Decode HTML entities that marked escaped
+        // Important: decode '&amp;' last to avoid double-unescaping (e.g. '&amp;lt;' -> '&lt;', not '<')
         const decoded = code
-          .replace(/&amp;/g, "&").replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&amp;/g, "&");
         const highlighted = Prism.highlight(decoded, grammar, prismLang);
         return `<pre class="language-${prismLang}"><code class="language-${prismLang}">${highlighted}</code></pre>`;
       }
