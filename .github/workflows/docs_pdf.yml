@@ -11,6 +11,9 @@ on:
       - '.github/workflows/docs_pdf.yml'
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build-docs-pdf:
     runs-on: ubuntu-latest
