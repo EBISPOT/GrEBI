@@ -425,7 +425,10 @@ def buildMergeArgs(assigned) {
 
 def sortAssignedEntries(assigned) {
     def entries = assigned instanceof List ? assigned : [assigned]
-    entries.sort { a, b ->
+    // toSorted returns a new list; an in-place .sort mutates the Nextflow-owned
+    // channel list, which is shared across parallel operators and triggers a
+    // ConcurrentModificationException.
+    entries.toSorted { a, b ->
         def left = "${a[0]}\u0000${a[1]}"
         def right = "${b[0]}\u0000${b[1]}"
         left <=> right
@@ -434,7 +437,9 @@ def sortAssignedEntries(assigned) {
 
 def sortPaths(paths) {
     def values = paths instanceof List ? paths : [paths]
-    values.sort { a, b -> basename(a.toString()) <=> basename(b.toString()) }
+    // Non-mutating sort: see sortAssignedEntries — avoids mutating the shared
+    // Nextflow channel list (ConcurrentModificationException under parallelism).
+    values.toSorted { a, b -> basename(a.toString()) <=> basename(b.toString()) }
 }
 
 def mergedShardId(pathLike) {

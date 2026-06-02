@@ -6,6 +6,9 @@
 FROM --platform=$BUILDPLATFORM rust:1.90.0-bullseye AS rust-builder
 ARG TARGETPLATFORM
 
+# Retry transient apt mirror errors instead of aborting the build.
+RUN printf 'Acquire::Retries "5";\n' > /etc/apt/apt.conf.d/99-grebi-retries
+
 # Install cross-compilation toolchain for arm64 when needed
 RUN apt-get update -y && apt-get install -y cmake && \
     case "$TARGETPLATFORM" in \
@@ -52,6 +55,13 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 # Stage 2 — Runtime image
 ###############################################################################
 FROM rust:1.90.0-bullseye
+
+# Make apt resilient to transient mirror errors. The multi-arch build emulates
+# arm64 under QEMU and downloads ~250 MB in this layer; it was intermittently
+# failing with "Connection reset by peer" while fetching a .deb. Retry instead
+# of aborting the whole build. Applies to every apt-get in this stage.
+RUN printf 'Acquire::Retries "5";\nAcquire::http::Timeout "60";\nAcquire::https::Timeout "60";\n' \
+    > /etc/apt/apt.conf.d/99-grebi-retries
 
 # ---- System packages (single apt-get layer) ----
 RUN apt-get update -y && apt-get install -y \
