@@ -16,7 +16,7 @@ cypher_return_fragment: |-
   RETURN DISTINCT
       reported_trait,
       trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
-      study.`grebi:name`[0] AS study_name,
+      study_id AS study_accession,
       study.`gwas:pubmedid`[0] AS pubmed_id,
       edge_id
 cypher_count_fragment: |-
@@ -31,7 +31,7 @@ result_columns:
     column_type: string
   - column_id: trait
     column_type: GraphNodeId
-  - column_id: study_name
+  - column_id: study_accession
     column_type: string
   - column_id: pubmed_id
     column_type: string

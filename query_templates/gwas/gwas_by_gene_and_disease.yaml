@@ -17,6 +17,8 @@ cypher_match_fragment: |-
       trait,
       snp,
       [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
+      assoc.`gwas:strongest_snp_risk_allele`[0] AS effect_allele,
+      assoc.`gwas:p_value`[0] AS p_value,
       assoc.`gwas:or_or_beta`[0] AS or_or_beta,
       assoc.edge_id AS edge_id
   MATCH
@@ -26,9 +28,11 @@ cypher_return_fragment: |-
       disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
       trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
       snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
+      effect_allele,
       gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
-      study.`grebi:name`[0] AS study_name,
+      study_id AS study_accession,
       study.`gwas:pubmedid`[0] AS pubmed_id,
+      p_value,
       or_or_beta,
       edge_id
 cypher_count_fragment: |-
@@ -52,9 +56,13 @@ result_columns:
     column_type: GraphNodeId
   - column_id: snp
     column_type: GraphNodeId
+  - column_id: effect_allele
+    column_type: string
   - column_id: gene
     column_type: GraphNodeId
-  - column_id: study_name
+  - column_id: study_accession
+    column_type: string
+  - column_id: p_value
     column_type: string
   - column_id: pubmed_id
     column_type: string
