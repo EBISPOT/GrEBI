@@ -12,33 +12,37 @@ cypher_match_fragment: |-
   MATCH (disease)<-[:`biolink:broad_match`*0..1]-(specific_disease)
   WITH DISTINCT specific_disease
 
-  // branch 1: gene <- specific_disease
-  OPTIONAL MATCH (specific_disease)<-[r1:(
-    `biolink:gene_to_disease_association`|
-    `ncit:Gene_Associated_With_Disease`|
-    `biolink:has_phenotype`
-    )]-(g1:`biolink:GeneOrGeneProduct`)
-  WITH specific_disease, collect(DISTINCT {gene: g1, r: r1}) AS rows
-
-  // branch 2: specific_disease -> gene
-  OPTIONAL MATCH (specific_disease)-[r2:`ncit:Disease_Mapped_To_Gene`]->(g2)
-  WITH specific_disease, rows, collect(DISTINCT {gene: g2, r: r2}) AS add2
-  WITH specific_disease, rows + add2 AS rows
-
-  // branch 3: GWAS associations with variants mapped to the gene
-  OPTIONAL MATCH (snp:`gwas:SNP`)-[r3:`gwas:associated_with`]->(specific_disease)
-  OPTIONAL MATCH (g3)<-[:(
-    `gwas:mapped_gene`|
-    `gwas:snp_gene_ids`|
-    `gwas:upstream_gene_id`|
-    `gwas:downstream_gene_id`
-  )]-(snp)
-  WITH specific_disease, rows, collect(DISTINCT {gene: g3, r: r3}) AS add3
-  WITH specific_disease, rows + add3 AS rows
-
-  // turn collected rows back into rows
-  UNWIND [row IN rows WHERE row.gene IS NOT NULL AND row.r IS NOT NULL] AS row
-  WITH specific_disease, row.gene AS gene, row.r AS r
+  // Gather genes from three sources via a UNION subquery. This streams rows
+  // directly instead of materialising large collect()'d lists-of-maps on the
+  // heap and re-expanding them with UNWIND, which made this query an order of
+  // magnitude slower (e.g. Crohn disease: ~90s -> ~1.5s).
+  CALL {
+    // branch 1: gene <- specific_disease
+    WITH specific_disease
+    MATCH (specific_disease)<-[r:(
+      `biolink:gene_to_disease_association`|
+      `ncit:Gene_Associated_With_Disease`|
+      `biolink:has_phenotype`
+      )]-(gene:`biolink:GeneOrGeneProduct`)
+    RETURN gene, r
+  UNION ALL
+    // branch 2: specific_disease -> gene
+    WITH specific_disease
+    MATCH (specific_disease)-[r:`ncit:Disease_Mapped_To_Gene`]->(gene)
+    RETURN gene, r
+  UNION ALL
+    // branch 3: GWAS associations with variants mapped to the gene
+    WITH specific_disease
+    MATCH (snp:`gwas:SNP`)-[r:`gwas:associated_with`]->(specific_disease)
+    MATCH (gene)<-[:(
+      `gwas:mapped_gene`|
+      `gwas:snp_gene_ids`|
+      `gwas:upstream_gene_id`|
+      `gwas:downstream_gene_id`
+    )]-(snp)
+    RETURN gene, r
+  }
+  WITH specific_disease, gene, r
   WHERE NONE(x IN r.`grebi:datasources` WHERE x = 'CTD')
 cypher_return_fragment: |-
   RETURN DISTINCT

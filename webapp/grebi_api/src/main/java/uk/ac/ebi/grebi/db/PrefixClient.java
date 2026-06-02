@@ -19,6 +19,13 @@ public class PrefixClient {
 
     static final String PREFIX_HOST = System.getenv("GREBI_PREFIX_HOST");
 
+    // A single pooled, thread-safe client reused across all calls; building a new
+    // HttpClient (and connection manager) per call was a per-request setup cost.
+    private static final HttpClient HTTP_CLIENT = HttpClientBuilder.create().build();
+    private static final Gson GSON = new Gson();
+    private static final TypeToken<Map<String, List<String>>> RESPONSE_TYPE =
+        new TypeToken<Map<String, List<String>>>() {};
+
 
     public static String getPrefixHost() {
         if (PREFIX_HOST != null)
@@ -28,22 +35,20 @@ public class PrefixClient {
 
     public List<String> reprefix(List<String> strs) {
         try {
-            HttpClient httpClient = HttpClientBuilder.create().build();
             HttpPost request = new HttpPost(getPrefixHost() + "/reprefix");
-            
+
             Map<String, List<String>> requestBody = Map.of("iris_or_curies", strs);
-            String json = new Gson().toJson(requestBody);
+            String json = GSON.toJson(requestBody);
             StringEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
             request.setEntity(entity);
-            
-            HttpResponse response = httpClient.execute(request);
+
+            HttpResponse response = HTTP_CLIENT.execute(request);
             HttpEntity responseEntity = response.getEntity();
             String responseString = EntityUtils.toString(responseEntity, "UTF-8");
-            
-            TypeToken<Map<String, List<String>>> typeToken = new TypeToken<Map<String, List<String>>>() {};
-            Map<String, List<String>> responseMap = new Gson().fromJson(responseString, typeToken.getType());
+
+            Map<String, List<String>> responseMap = GSON.fromJson(responseString, RESPONSE_TYPE.getType());
             return responseMap.get("curies");
-            
+
         } catch (IOException e) {
             throw new RuntimeException("Failed to reprefix: " + strs, e);
         }

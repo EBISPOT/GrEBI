@@ -29,7 +29,6 @@ import uk.ac.ebi.grebi.GraphOrder;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 import uk.ac.ebi.grebi.repo.QueryTemplate;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
-import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 import uk.ac.ebi.grebi.db.PrefixClient;
 import uk.ac.ebi.grebi.db.EmbeddingServiceClient;
 import uk.ac.ebi.grebi.repo.GrebiPostgresRepo;
@@ -420,7 +419,7 @@ public class GrebiApi {
 
                     String nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
 
-                    var pgClient = new GrebiPostgresClient();
+                    var pgClient = postgres.getPgClient();
                     var resolved = pgClient.resolveToList(ctx.pathParam("graph"), List.of(nodeId));
                     var res = resolved.isEmpty() ? null : resolved.get(0);
 
@@ -603,7 +602,7 @@ public class GrebiApi {
 
                     if (resolve) {
                         var nodeIds = vectorResults.stream().map(r -> r.nodeId).toList();
-                        var pgClient = new GrebiPostgresClient();
+                        var pgClient = postgres.getPgClient();
                         var resolvedMap = pgClient.resolveToMap(graph, nodeIds);
                         var results = new java.util.ArrayList<Map<String, Object>>();
                         for (var vr : vectorResults) {
@@ -679,7 +678,7 @@ public class GrebiApi {
                     var graph = ctx.pathParam("graph");
                     // Edge IDs from Neo4j are graph-prefixed, but the resolver stores them without
                     var edgeId = rawEdgeId.startsWith(graph + ":") ? rawEdgeId.substring(graph.length() + 1) : rawEdgeId;
-                    var pgClient = new GrebiPostgresClient();
+                    var pgClient = postgres.getPgClient();
                     var resolved = pgClient.resolveToMap(graph, List.of(edgeId));
                     var edge = resolved.get(edgeId);
                     if (edge == null) {

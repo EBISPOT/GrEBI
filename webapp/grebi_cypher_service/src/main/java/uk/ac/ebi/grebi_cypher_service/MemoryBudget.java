@@ -29,10 +29,18 @@ class MemoryBudget {
         long dbmsOverheadMb = 256L * numDbmsInstances;
         long osReserveMb = 512;
 
-        long budget = totalMemoryMb - jvmHeapMb - dbmsOverheadMb - osReserveMb;
+        // The JVM commits memory beyond -Xmx: Metaspace, code cache, thread stacks,
+        // direct/NIO buffers and GC structures. The old formula ignored this, so
+        // pageCache + heap + nonHeap could exceed the cgroup limit and OOM-kill the
+        // pod. Reserve a realistic non-heap allowance (configurable).
+        long nonHeapReserveMb = Long.parseLong(
+            System.getenv().getOrDefault("GREBI_JVM_NONHEAP_RESERVE_MB", "1536"));
+
+        long budget = totalMemoryMb - jvmHeapMb - nonHeapReserveMb - dbmsOverheadMb - osReserveMb;
 
         System.out.println("Memory layout: total=" + totalMemoryMb + "MB, jvmHeap=" + jvmHeapMb
-                + "MB, dbmsOverhead=" + dbmsOverheadMb + "MB (" + numDbmsInstances + " instances)"
+                + "MB, jvmNonHeapReserve=" + nonHeapReserveMb + "MB"
+                + ", dbmsOverhead=" + dbmsOverheadMb + "MB (" + numDbmsInstances + " instances)"
                 + ", osReserve=" + osReserveMb + "MB, pageCacheBudget=" + budget + "MB");
 
         return Math.max(64, budget);

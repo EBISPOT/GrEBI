@@ -27,9 +27,21 @@ public class GrebiCypherRepo {
     CypherServiceClient cypherClient;
     Set<String> graphs;
 
+    private static final boolean DEBUG_QUERIES =
+        "true".equalsIgnoreCase(System.getenv("GREBI_DEBUG_QUERIES"));
+
     GrebiPostgresClient pgClient = new GrebiPostgresClient();
     Gson gson = new Gson();
     PrefixClient prefixClient = new PrefixClient();
+
+    // Dedicated pool so the (potentially slow) count query can run concurrently
+    // with the data query without contending for the shared ForkJoinPool.
+    private final java.util.concurrent.ExecutorService queryExecutor =
+        java.util.concurrent.Executors.newCachedThreadPool(r -> {
+            var t = new Thread(r, "grebi-cypher-count");
+            t.setDaemon(true);
+            return t;
+        });
 
     public GrebiCypherRepo() throws IOException {
         cypherClient = new CypherServiceClient(CypherServiceClient.getCypherServiceUrl());
@@ -498,15 +510,36 @@ public class GrebiCypherRepo {
         query = query + "\nSKIP " + pageable.getOffset()
                 + "\nLIMIT " + pageable.getPageSize();
 
-        System.err.println("Running query: " + query + "\nWith parameters: " + paramMap + "\nCount query: " + countQuery);
+        if (DEBUG_QUERIES) {
+            System.err.println("Running query: " + query + "\nWith parameters: " + paramMap + "\nCount query: " + countQuery);
+        }
+
+        // Run the data and (unbounded) count queries concurrently rather than
+        // sequentially — for high-fan-out templates the count is as expensive as
+        // the data query, so serialising them roughly doubled wall-clock latency.
+        final String fCountQuery = countQuery;
+        final Map<String, Object> fParamMap = paramMap;
+        CompletableFuture<List<Map<String, Object>>> countFuture =
+            CompletableFuture.supplyAsync(() -> {
+                try {
+                    return cypherClient.query(graph, fCountQuery, fParamMap);
+                } catch (IOException e) {
+                    throw new java.util.concurrent.CompletionException(e);
+                }
+            }, queryExecutor);
 
         List<Map<String, Object>> records;
         List<Map<String, Object>> countRecords;
         try {
             records = cypherClient.query(graph, query, paramMap);
-            countRecords = cypherClient.query(graph, countQuery, paramMap);
         } catch (IOException e) {
+            countFuture.cancel(true);
             throw new RuntimeException("Failed to run query template", e);
+        }
+        try {
+            countRecords = countFuture.join();
+        } catch (java.util.concurrent.CompletionException e) {
+            throw new RuntimeException("Failed to run count query", e.getCause());
         }
         
         if(countRecords.isEmpty() || countRecords.get(0).get("count") == null) {

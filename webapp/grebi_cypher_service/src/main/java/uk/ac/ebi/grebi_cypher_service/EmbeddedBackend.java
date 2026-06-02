@@ -1,5 +1,6 @@
 package uk.ac.ebi.grebi_cypher_service;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -7,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 class EmbeddedBackend implements CypherBackend {
 
@@ -14,6 +16,12 @@ class EmbeddedBackend implements CypherBackend {
     private final org.neo4j.graphdb.GraphDatabaseService db;
     private final String graph;
     private final Path cleanHome;
+
+    // Server-side query timeout. A client-side HTTP timeout does NOT cancel the
+    // embedded Neo4j transaction, so a runaway query would otherwise keep burning
+    // a CPU and growing heap indefinitely. Default 120s; override via env.
+    private static final long QUERY_TIMEOUT_SECONDS =
+        Long.parseLong(System.getenv().getOrDefault("GREBI_QUERY_TIMEOUT_SECONDS", "120"));
 
     EmbeddedBackend(Path homeDir, long pageCacheMb) {
         System.out.println("Opening embedded Neo4j database at " + homeDir
@@ -37,6 +45,15 @@ class EmbeddedBackend implements CypherBackend {
             builder.setConfig(
                 org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory,
                 pageCacheMb * 1024 * 1024);
+        }
+        // Per-transaction heap guard so a single pathological query (large
+        // collect()/cartesian product) is aborted instead of OOM-killing the pod.
+        // 0 = unlimited. Default 2 GB; override via env.
+        long txMaxMb = Long.parseLong(System.getenv().getOrDefault("GREBI_TX_MAX_MB", "2048"));
+        if (txMaxMb > 0) {
+            builder.setConfig(
+                org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size,
+                txMaxMb * 1024 * 1024);
         }
         dbms = builder.build();
         db = dbms.database("neo4j");
@@ -71,8 +88,14 @@ class EmbeddedBackend implements CypherBackend {
     }
 
     @Override
-    public void streamQuery(String query, Map<String, Object> params, OutputStream out) throws Exception {
-        try (org.neo4j.graphdb.Transaction tx = db.beginTx()) {
+    public void streamQuery(String query, Map<String, Object> params, OutputStream rawOut) throws Exception {
+        // Buffer output instead of flushing per record: a per-row flush forced a
+        // syscall (and a chunked-transfer chunk) for every result row. The buffer
+        // still flushes progressively to the socket as it fills, so memory stays
+        // bounded and the client receives data incrementally.
+        BufferedOutputStream out = new BufferedOutputStream(rawOut, 64 * 1024);
+        try (org.neo4j.graphdb.Transaction tx =
+                 db.beginTx(QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
             org.neo4j.graphdb.Result result = tx.execute(query, params);
             while (result.hasNext()) {
                 Map<String, Object> record = result.next();
@@ -82,9 +105,10 @@ class EmbeddedBackend implements CypherBackend {
                 }
                 out.write(GrebiCypherSvc.gson.toJson(serialized).getBytes(StandardCharsets.UTF_8));
                 out.write('\n');
-                out.flush();
             }
             tx.commit();
+        } finally {
+            out.flush();
         }
     }
 

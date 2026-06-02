@@ -47,7 +47,18 @@ public class GrebiCypherSvc {
 
         int port = Integer.parseInt(System.getenv().getOrDefault("GREBI_CYPHER_PORT", "8085"));
 
+        // Bound concurrency to the real CPU budget. Jetty's default ~250 worker
+        // threads would let hundreds of embedded-Neo4j queries run at once on only
+        // a couple of cores, thrashing the page cache and GC. Size the pool to a
+        // small multiple of available processors so heavy queries queue instead.
+        int cores = Runtime.getRuntime().availableProcessors();
+        int maxThreads = Integer.parseInt(
+            System.getenv().getOrDefault("GREBI_MAX_THREADS", String.valueOf(Math.max(8, cores * 2))));
+        var threadPool = new org.eclipse.jetty.util.thread.QueuedThreadPool(maxThreads, 2);
+        threadPool.setName("grebi-cypher");
+
         Javalin app = Javalin.create(config -> {
+            config.jetty.threadPool = threadPool;
         }).start("0.0.0.0", port);
 
         app.get("/health", ctx -> {

@@ -7,32 +7,35 @@ topics:
 cypher_match_fragment: |-
   MATCH (gene)-[:sourceId]->(:Id {id: $gene_id})
 
-  // branch 1: gene -> disease
-  OPTIONAL MATCH (gene)-[r1:(
-    `biolink:gene_to_disease_association`|
-    `ncit:Gene_Associated_With_Disease`|
-    `biolink:has_phenotype`
-    )]->(d1)
-  WITH gene, collect(DISTINCT {disease: d1, r: r1}) AS rows
-
-  // branch 2: disease -> gene
-  OPTIONAL MATCH (d2)-[r2:`ncit:Disease_Mapped_To_Gene`]->(gene)
-  WITH gene, rows, collect(DISTINCT {disease: d2, r: r2}) AS add2
-  WITH gene, rows + add2 AS rows
-
-  // branch 3: GWAS associations with variants mapped to the gene
-  OPTIONAL MATCH (gene)<-[:(
-    `gwas:mapped_gene`|
-    `gwas:snp_gene_ids`|
-    `gwas:upstream_gene_id`|
-    `gwas:downstream_gene_id`
-  )]-(snp:`gwas:SNP`)-[r3:`gwas:associated_with`]->(d3)
-  WITH gene, rows, collect(DISTINCT {disease: d3, r: r3}) AS add3
-  WITH gene, rows + add3 AS rows
-
-  // turn collected rows back into rows
-  UNWIND [row IN rows WHERE row.disease IS NOT NULL AND row.r IS NOT NULL] AS row
-  WITH gene, row.disease AS disease, row.r AS r
+  // Gather diseases from three sources via a UNION subquery. This streams rows
+  // directly instead of materialising large collect()'d lists-of-maps on the
+  // heap and re-expanding them with UNWIND, which was substantially slower.
+  CALL {
+    // branch 1: gene -> disease
+    WITH gene
+    MATCH (gene)-[r:(
+      `biolink:gene_to_disease_association`|
+      `ncit:Gene_Associated_With_Disease`|
+      `biolink:has_phenotype`
+      )]->(disease)
+    RETURN disease, r
+  UNION ALL
+    // branch 2: disease -> gene
+    WITH gene
+    MATCH (disease)-[r:`ncit:Disease_Mapped_To_Gene`]->(gene)
+    RETURN disease, r
+  UNION ALL
+    // branch 3: GWAS associations with variants mapped to the gene
+    WITH gene
+    MATCH (gene)<-[:(
+      `gwas:mapped_gene`|
+      `gwas:snp_gene_ids`|
+      `gwas:upstream_gene_id`|
+      `gwas:downstream_gene_id`
+    )]-(snp:`gwas:SNP`)-[r:`gwas:associated_with`]->(disease)
+    RETURN disease, r
+  }
+  WITH gene, disease, r
   WHERE disease:`biolink:Disease`
     AND NONE(source_id IN disease.id WHERE source_id = 'mondo:0000001')
     AND NONE(x IN r.`grebi:datasources` WHERE x = 'CTD')

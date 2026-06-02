@@ -41,16 +41,31 @@ spec:
           resources:
             requests:
               memory: 38Gi
-              cpu: 2
+              cpu: 4
             limits:
               memory: 38Gi
-              cpu: 2
+              cpu: 4
           env:
             - name: GREBI_NEO4J_DATA_SEARCH_PATH
               value: /data_import/neo4j
             - name: GREBI_CYPHER_PORT
               value: "8085"
+            # Embedded Neo4j is a thin streaming proxy on the JVM side; query speed
+            # is dominated by the off-heap page cache, not the heap. Cap the heap
+            # small (was ~27Gi via MaxRAMPercentage=70) and hand the freed RAM to the
+            # page cache. ActiveProcessorCount pins the JVM/GC/Neo4j pools to the real
+            # CPU limit (the container otherwise sees all 8 host cores).
             - name: JDK_JAVA_OPTIONS
-              value: "--add-modules jdk.incubator.vector -XX:InitialRAMPercentage=50.0 -XX:MaxRAMPercentage=70.0"
+              value: "--add-modules jdk.incubator.vector -Xms8g -Xmx8g -XX:ActiveProcessorCount=4"
+            # Explicit page-cache budget (MB). With an 8Gi heap this leaves a safe
+            # margin for JVM non-heap + OS under the 38Gi limit, while ~2.5x'ing the
+            # cache vs the previous ~10.6Gi.
+            - name: GREBI_PAGE_CACHE_MB
+              value: "26000"
+            # Abort a single runaway query rather than pegging a CPU / OOM-killing.
+            - name: GREBI_QUERY_TIMEOUT_SECONDS
+              value: "120"
+            - name: GREBI_TX_MAX_MB
+              value: "2048"
           ports:
             - containerPort: 8085
