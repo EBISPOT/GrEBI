@@ -7,10 +7,18 @@ topics:
   - cl
 cypher_match_fragment: |-
   MATCH (gene)-[:sourceId]->(:Id {id: $gene_id })
-  MATCH (cl_term)-[:sourceId]->(:Id {id: $cell_type_id })
-  MATCH (cl_term)<-[r:(`ro:characteristic_of`|`ro:characteristic_of_part_of`|`iao:is_about`|`biolink:has_participant`|`biolink:disease_has_location`|`efo:has_disease_location`)]-(trait)
-  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
-  MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+  MATCH (cl_root)-[:sourceId]->(:Id {id: $cell_type_id })
+  // drive from the (selective) gene first, then test cell-type membership as a
+  // semi-join below — enumerating the cell-type subtree first is orders of
+  // magnitude slower for high-level cell types (e.g. leukocyte)
+  MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp:`gwas:SNP`)
+  MATCH (snp)-[assoc:`gwas:associated_with`]->(trait)
+  // include superclasses of the trait (e.g. roll basal cell carcinoma up to keratinocyte carcinoma)
+  MATCH (trait)-[:(`biolink:subclass_of`|`biolink:broad_match`)*0..1]->(matched_trait)
+  MATCH (matched_trait)-[:(`ro:characteristic_of`|`ro:characteristic_of_part_of`|`iao:is_about`|`biolink:has_participant`|`biolink:disease_has_location`|`efo:has_disease_location`)]->(cl_term)
+  // cl_term must be the requested cell type or a subclass of it. broad_match is a
+  // pre-computed transitive closure, so a single hop suffices (no recursion needed)
+  WHERE cl_term = cl_root OR (cl_term)-[:`biolink:subclass_of`|`biolink:broad_match`]->(cl_root)
   WITH
       gene,
       cl_term,

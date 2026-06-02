@@ -6,8 +6,12 @@ topics:
   - gwas_catalog
   - uberon
 cypher_match_fragment: |-
-  MATCH (location)-[:sourceId]->(:Id {id: $location_id })
-  MATCH (location)<-[r:(`ro:characteristic_of`|`ro:characteristic_of_part_of`|`iao:is_about`|`biolink:has_participant`|`biolink:disease_has_location`|`efo:has_disease_location`)]-(trait)
+  MATCH (location_root)-[:sourceId]->(:Id {id: $location_id })
+  // include subclasses of the requested anatomical location
+  MATCH (location)-[:(`biolink:subclass_of`|`biolink:broad_match`)*0..1]->(location_root)
+  MATCH (location)<-[r:(`ro:characteristic_of`|`ro:characteristic_of_part_of`|`iao:is_about`|`biolink:has_participant`|`biolink:disease_has_location`|`efo:has_disease_location`)]-(matched_trait)
+  // include subclasses of the matched trait
+  MATCH (trait)-[:(`biolink:subclass_of`|`biolink:broad_match`)*0..1]->(matched_trait)
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
   OPTIONAL MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
   WITH
