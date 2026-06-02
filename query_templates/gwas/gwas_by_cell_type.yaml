@@ -1,5 +1,5 @@
 title: Search GWAS Catalog by cell type
-question: What GWAS studies have [traits]{trait} characteristic of {cell_type_id}?
+question: What GWAS studies have [traits]{trait} affecting cells of type {cell_type_id}?
 graphs:
   - ebi_monarch_xspecies
 topics:
