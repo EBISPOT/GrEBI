@@ -37,14 +37,15 @@ export default function EbiHomePage() {
   let activeNodeKeyRef = useRef<string | null>(null);
   const graphMetadataLoaded = graphs !== null && Object.keys(graphNames).length === graphs.length;
 
-function navigateToGraph(sg: string) {
+function selectGraph(sg: string) {
   let currentUrl = loc.pathname;
-    setGraph(sg);
+  setGraph(sg);
+  // On a graph-specific page, swap the graph in the URL. On the homepage
+  // (no graph in the URL) just update the selected graph and stay put, so
+  // the search box and examples target the chosen graph.
   if(currentUrl.indexOf("graphs/") !== -1) {
     let newUrl = currentUrl.replace(/graphs\/[^/]+/, `graphs/${sg}`);
     navigate(newUrl);
-  } else {
-    navigate(`/graphs/${sg}`);
   }
 }
 
@@ -230,7 +231,7 @@ function navigateToGraph(sg: string) {
                                 <tr
                                   key={sg}
                                   className={`hover:bg-blue-50 cursor-pointer transition-colors ${sg === graph ? "bg-blue-50/50" : i % 2 === 1 ? "bg-gray-50" : ""}`}
-                                  onClick={() => navigateToGraph(sg)}
+                                  onClick={() => selectGraph(sg)}
                                 >
                                   <td className="py-2 px-3 font-mono text-gray-700 align-top">
                                     <label className="flex items-start gap-2 min-w-0 cursor-pointer">
@@ -238,7 +239,7 @@ function navigateToGraph(sg: string) {
                                         type="radio"
                                         name="graph"
                                         checked={sg === graph}
-                                        onChange={() => navigateToGraph(sg)}
+                                        onChange={() => selectGraph(sg)}
                                         className="mt-0.5 shrink-0"
                                       />
                                       <span className="block break-all leading-snug" title={sg}>
