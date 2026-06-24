@@ -24,12 +24,10 @@ RUN cargo build --release && \
     cp target/release/grebi_reprefix /usr/local/bin/grebi_reprefix
 
 ###############################################################################
-# Stage 3 — Slim JRE runtime (no Maven/build toolchain), non-root
+# Stage 3 — JRE runtime on Red Hat UBI9 (ships as the image's non-root user)
 ###############################################################################
-FROM eclipse-temurin:17-jre
-RUN groupadd -r grebi && useradd -r -g grebi -d /opt grebi
+FROM registry.access.redhat.com/ubi9/openjdk-17-runtime:latest
 COPY --from=builder /opt/target/grebi-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi.jar
 COPY --from=rust-builder /usr/local/bin/grebi_reprefix /usr/local/bin/grebi_reprefix
-USER grebi
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/opt/grebi.jar"]

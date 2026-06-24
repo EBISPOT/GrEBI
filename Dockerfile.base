@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 #
-# PoC: grebi_base on Red Hat UBI9-minimal (glibc, no perl, 0-CVE base).
+# grebi_base: the heavy, rarely-changing runtime layers (PostgreSQL, Node, Java,
+# Maven, Neo4j, Nextflow, Caddy, docker-cli) shared by the combined image, built
+# on Red Hat UBI9-minimal (glibc). Published on demand by .github/workflows/base.yml.
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 # Core userland the entrypoint + services need (ubi-minimal is very bare).
