@@ -1,0 +1,18 @@
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/SAST-IaC.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Security/Container-Scanning.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+variables:
+  GITLAB_ADVANCED_SAST_ENABLED: 'true'
+
+container_scanning:
+  parallel:
+    matrix:
+      - CS_IMAGE: ghcr.io/ebispot/grebi_api:$CI_COMMIT_REF_NAME
+      - CS_IMAGE: ghcr.io/ebispot/grebi_prefix_service:$CI_COMMIT_REF_NAME
+      - CS_IMAGE: ghcr.io/ebispot/grebi_ui:$CI_COMMIT_REF_NAME
+      - CS_IMAGE: ghcr.io/ebispot/grebi_cypher_service:$CI_COMMIT_REF_NAME
+      - CS_IMAGE: ghcr.io/ebispot/grebi_combined:$CI_COMMIT_REF_NAME
