@@ -37,6 +37,17 @@ jobs:
 
       - name: Run pipeline with docs generation
         run: |
+          # The pipeline's Nextflow work dir and the Postgres data directory it
+          # builds live under ./tmp, which sits on the runner's root filesystem
+          # (~28 GB free) — too small for the Postgres index build, which fails
+          # with "No space left on device". Relocate the scratch onto the much
+          # larger /mnt partition (~70 GB). dataload_local.sh readlink-resolves
+          # ./tmp and bind-mounts the resolved path into every container, so the
+          # symlink is transparent to the pipeline.
+          sudo mkdir -p /mnt/grebi-tmp
+          sudo chown "$(id -u):$(id -g)" /mnt/grebi-tmp
+          rm -rf tmp
+          ln -s /mnt/grebi-tmp tmp
           export GREBI_SUBGRAPHS=dismech
           export GREBI_NF_CONFIG=dataload/nextflow/local_4g_nextflow.config
           export GREBI_NF_EXTRA_ARGS="--make_docs true"
