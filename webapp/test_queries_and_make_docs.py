@@ -39,8 +39,9 @@ def main():
     )
     parser.add_argument(
         "--output",
-        default="grebi-docs.pdf",
-        help="Output PDF filename (default: grebi-docs.pdf)",
+        default="grebi-docs.html",
+        help="Output HTML filename (default: grebi-docs.html). PDF rendering "
+        "is performed separately by render_pdf.mjs.",
     )
     args = parser.parse_args()
 
@@ -82,12 +83,14 @@ def main():
 
     test_exit = 0 if (total == 0 or passed == total) else 1
 
-    # ── Phase 2: Generate docs PDF (only if --make-docs) ─────────────
+    # ── Phase 2: Generate docs HTML (only if --make-docs) ────────────
+    # PDF rendering is a separate Nextflow step (render_docs_pdf) so chromium
+    # stays out of the GrEBI images.
     docs_exit = 0
     if args.make_docs:
         print()
         print("=" * 80)
-        print("Phase 2: Documentation PDF Generation")
+        print("Phase 2: Documentation HTML Generation")
         print("=" * 80)
 
         gen_script = script_dir / "generate_docs_pdf.mjs"

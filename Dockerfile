@@ -77,13 +77,7 @@ RUN apt-get update -y && apt-get install -y \
     rsync \
     gnupg \
     lsb-release \
-    chromium \
-    fonts-liberation \
-    fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
-
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # ---- PostgreSQL 18 ----
 # Prevent initdb from running during apt install (segfaults under QEMU);
@@ -212,7 +206,7 @@ COPY webapp/generate_docs_pdf.mjs /opt/generate_docs_pdf.mjs
 COPY webapp/api2code.mjs /opt/api2code.mjs
 COPY webapp/query2code.mjs /opt/query2code.mjs
 RUN --mount=type=cache,target=/root/.npm \
-    cd /opt && npm install js-yaml marked puppeteer
+    cd /opt && npm install js-yaml marked
 COPY docs /opt/docs
 COPY tests/export_neo4j.py /opt/export_neo4j.py
 COPY tests/export_postgres.py /opt/export_postgres.py

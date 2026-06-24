@@ -30,6 +30,7 @@ include { results_to_csv } from './processes/07_run_queries/results_to_csv'
 include { link_results } from './processes/07_run_queries/link_results'
 include { add_query_metadatas_to_graph_metadata } from './processes/07_run_queries/add_query_metadatas_to_graph_metadata'
 include { test_query_templates } from './processes/09_integration_tests/test_query_templates'
+include { render_docs_pdf } from './processes/09_integration_tests/render_docs_pdf'
 include { construct_release } from './processes/10_package_release/construct_release'
 include { package_release } from './processes/10_package_release/package_release'
 
@@ -405,6 +406,15 @@ workflow {
         Channel.value(params.integration_pg_work_mem),
         Channel.value(params.integration_pg_maintenance_work_mem),
         Channel.value(params.integration_pg_max_wal_size)
+    )
+
+    // === RENDER DOCS PDF ===
+    // Only fires when --make_docs produced grebi-docs.html. Runs in the
+    // upstream puppeteer image so chromium stays out of the GrEBI images.
+    render_docs_pdf(
+        test_query_templates.out.docs_html,
+        Channel.fromPath("${params.grebi_home}/webapp/render_pdf.mjs"),
+        Channel.value(params.out)
     )
 }
 

@@ -20,10 +20,10 @@ process test_query_templates {
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("integration_test_results.txt"), optional: true
-    path("grebi-docs.pdf"), optional: true
-    path("*_snapshot_*.jsonl"), optional: true
-    stdout
+    path("integration_test_results.txt"), optional: true, emit: results
+    path("grebi-docs.html"), optional: true, emit: docs_html
+    path("*_snapshot_*.jsonl"), optional: true, emit: snapshots
+    stdout emit: log
 
     script:
     """
@@ -75,7 +75,7 @@ process test_query_templates {
 
     # Copy snapshot files to parent dir for Nextflow publishDir
     cp -f *_snapshot_*.jsonl ../ 2>/dev/null || true
-    cp -f grebi-docs.pdf ../ 2>/dev/null || true
+    cp -f grebi-docs.html ../ 2>/dev/null || true
 
     exit \$EXIT_CODE
     """

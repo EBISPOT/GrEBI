@@ -160,7 +160,7 @@ case "$MODE" in
         # ---------------------------------------------------------------
         MAKE_DOCS_ARG=""
         if [ "${GREBI_MAKE_DOCS:-}" = "true" ]; then
-            MAKE_DOCS_ARG="--make-docs --docs-dir /opt/docs --output grebi-docs.pdf"
+            MAKE_DOCS_ARG="--make-docs --docs-dir /opt/docs --output grebi-docs.html"
         fi
 
         set +e

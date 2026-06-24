@@ -55,7 +55,7 @@ function parseArgs() {
   const opts = {
     apiUrl: "http://localhost:8090",
     docsDir: process.env.GREBI_DOCS_PATH || "/opt/docs",
-    output: "grebi-docs.pdf",
+    output: "grebi-docs.html",
   };
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--api-url" && args[i + 1]) opts.apiUrl = args[++i];
@@ -392,10 +392,9 @@ async function main() {
   content = resolveImages(content, opts.docsDir);
 
   const fullMd = content;
-  console.log(`\nGenerating PDF: ${opts.output}`);
+  console.log(`\nRendering documentation HTML`);
 
   const { marked } = await import(require.resolve("marked"));
-  const puppeteer = (await import(require.resolve("puppeteer"))).default;
 
   // Load PrismJS for syntax highlighting (same as the frontend)
   const Prism = require("prismjs");
@@ -561,26 +560,11 @@ async function main() {
 
   const finalHtml = convertReferences(html, pubmed.cache);
 
-  const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox"] });
-  try {
-    const page = await browser.newPage();
-    await page.setViewport({ width: 794, height: 1123 });  // A4 at 96dpi
-    await page.setContent(finalHtml, { waitUntil: "networkidle0" });
-    await page.pdf({
-      path: opts.output,
-      format: "A4",
-      margin: { top: "0.75in", bottom: "0.75in", left: "0.75in", right: "0.75in" },
-      printBackground: true,
-      outline: true,
-      tagged: true,
-      displayHeaderFooter: true,
-      headerTemplate: '<span></span>',
-      footerTemplate: '<div style="width:100%;text-align:center;font-size:9px;color:#999;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
-    });
-    console.log(`PDF generated: ${opts.output}`);
-  } finally {
-    await browser.close();
-  }
+  // The HTML embeds all images/CSS as data URIs, so it is fully self-contained.
+  // PDF rendering is performed separately by render_pdf.mjs (in the upstream
+  // puppeteer image), keeping chromium out of the GrEBI images.
+  fs.writeFileSync(opts.output, finalHtml);
+  console.log(`HTML written: ${opts.output}`);
 }
 
 main();
