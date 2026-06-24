@@ -1,0 +1,128 @@
+# syntax=docker/dockerfile:1
+#
+# grebi_base — the heavy, rarely-changing runtime layers shared by the combined
+# image. Built separately (.github/workflows/base.yml, on demand) and published
+# as ghcr.io/ebispot/grebi_base, so day-to-day combined builds skip ~1 GB of
+# downloads (PostgreSQL, Node, Java, Maven, Neo4j, Nextflow, ...).
+#
+# Nothing here is compiled from the repo (no COPY of app sources). When you bump
+# any version below, that's the "on demand" trigger: editing this file rebuilds
+# the base via the paths filter in base.yml.
+
+# Slim Debian base: the Rust toolchain is not needed at runtime (binaries are
+# copied from the rust-builder stage in the combined Dockerfile), and the
+# previous rust:*-bullseye base (built on the full buildpack-deps) dragged in
+# ImageMagick, binutils, linux-libc-dev and many -dev/-headers packages that
+# this image never uses.
+FROM debian:bullseye-slim
+
+# Make apt resilient to transient mirror errors. The multi-arch build emulates
+# arm64 under QEMU and downloads ~250 MB in this layer; it was intermittently
+# failing with "Connection reset by peer" while fetching a .deb. Retry instead
+# of aborting the whole build. Applies to every apt-get in this stage.
+RUN printf 'Acquire::Retries "5";\nAcquire::http::Timeout "60";\nAcquire::https::Timeout "60";\n' \
+    > /etc/apt/apt.conf.d/99-grebi-retries
+
+# ---- System packages (single apt-get layer) ----
+# Note: no cmake/clang here — nothing is compiled in this stage (the Rust
+# binaries come from the builder stage; the Java jars build with the JDK+Maven
+# below; npm/pip use prebuilt artifacts). ca-certificates is required for the
+# HTTPS curl/apt fetches below (the slim base does not ship it).
+# --no-install-recommends: python3-pip otherwise recommends build-essential,
+# which drags gcc, binutils and linux-libc-dev (none of which we use) back in.
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gpg \
+    gnupg \
+    pigz \
+    jq \
+    python3-pip \
+    supervisor \
+    procps \
+    psmisc \
+    rsync \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- PostgreSQL 18 ----
+# Prevent initdb from running during apt install (segfaults under QEMU);
+# the cluster is created at runtime instead.
+RUN mkdir -p /etc/postgresql-common && \
+    echo 'create_main_cluster = false' > /etc/postgresql-common/createcluster.conf && \
+    echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    apt-get update -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confold" \
+        postgresql-18 postgresql-client-18 postgresql-18-pgvector && \
+    rm -rf /var/lib/apt/lists/*
+ENV PATH="$PATH:/usr/lib/postgresql/18/bin"
+
+# ---- Node.js 24 LTS + Caddy + Docker CLI (single apt layer) ----
+RUN curl -sL https://deb.nodesource.com/setup_24.x | bash - && \
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && \
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list && \
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    chmod a+r /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && apt-get install -y \
+      nodejs \
+      caddy \
+      docker-ce-cli=5:29.1.3-1~debian.11~bullseye \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- Python packages ----
+RUN pip3 install \
+    requests \
+    pyyaml \
+    pandas \
+    tabulate \
+    openpyxl \
+    py2neo
+
+# ---- Java 21 (Amazon Corretto) ----
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        JAVA_ARCH="x64"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        JAVA_ARCH="aarch64"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    curl -L https://corretto.aws/downloads/resources/21.0.6.7.1/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH}.tar.gz | tar -C /opt -xzf - && \
+    ln -s /opt/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH} /opt/java
+ENV JAVA_HOME="/opt/java"
+ENV PATH="$PATH:/opt/java/bin"
+
+# ---- Maven ----
+RUN mkdir -p /opt/maven && \
+    curl https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz | tar -xz --strip-components=1 -C /opt/maven
+ENV PATH="$PATH:/opt/maven/bin"
+
+# ---- Neo4j 2026.05.0 ----
+# Must stay in sync with the embedded Neo4j in webapp/grebi_cypher_service/pom.xml
+# and the standalone image in docker_envs/Dockerfile.neo4j_with_extras.
+RUN mkdir /opt/neo4j && \
+    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2026.05.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j && \
+    echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
+    echo "dbms.usage_report.enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
+    echo "db.recovery.fail_on_missing_files=false" >> /opt/neo4j/conf/neo4j.conf && \
+    sed -i '/^server\.directories\.logs=/d' /opt/neo4j/conf/neo4j.conf
+ENV PATH="$PATH:/opt/neo4j/bin"
+
+# ---- Nextflow ----
+ENV NEXTFLOW_VERSION=24.10.5
+ENV NXF_VER=${NEXTFLOW_VERSION}
+RUN curl -fsSL https://get.nextflow.io | bash && \
+    mv nextflow /usr/local/bin/ && \
+    chmod +x /usr/local/bin/nextflow
+
+# ---- Permissions & directories ----
+RUN chmod a+w /etc/passwd /etc/group && \
+    mkdir -p /opt/grebi/data/neo4j \
+             /opt/grebi/data/postgres \
+             /opt/grebi/data/prefix_maps \
+             /var/run/postgresql && \
+    chmod 777 /var/run/postgresql

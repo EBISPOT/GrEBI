@@ -1,15 +1,26 @@
 # syntax=docker/dockerfile:1
 
+# Base image carrying the heavy runtime layers (built by base.yml, on demand).
+# Override to build against a locally-built base, e.g.
+#   docker build --build-arg BASE_IMAGE=grebi_base:local ...
+ARG BASE_IMAGE=ghcr.io/ebispot/grebi_base:dev
+
 ###############################################################################
 # Stage 1 — Cross-compile Rust binaries (runs natively on the builder arch)
+#
+# cargo-chef splits dependency compilation from the app build: the large, slow
+# dependency layer (arrow/parquet et al.) is cooked separately and keyed on
+# Cargo.lock + manifests, so the GHA layer cache reuses it across builds and it
+# only recompiles when dependencies actually change — not on every source edit.
 ###############################################################################
-FROM --platform=$BUILDPLATFORM rust:1.90.0-bullseye AS rust-builder
+FROM --platform=$BUILDPLATFORM rust:1.90.0-bullseye AS chef
 ARG TARGETPLATFORM
 
 # Retry transient apt mirror errors instead of aborting the build.
 RUN printf 'Acquire::Retries "5";\n' > /etc/apt/apt.conf.d/99-grebi-retries
 
-# Install cross-compilation toolchain for arm64 when needed
+# cmake is needed by some crates; the arm64 cross toolchain lets the native
+# (amd64) builder link aarch64 binaries.
 RUN apt-get update -y && apt-get install -y cmake && \
     case "$TARGETPLATFORM" in \
       "linux/arm64") \
@@ -18,15 +29,33 @@ RUN apt-get update -y && apt-get install -y cmake && \
     esac && \
     rm -rf /var/lib/apt/lists/*
 
-# Build dataload binaries
+RUN cargo install cargo-chef --locked
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+
+# ---- Plan: derive the dependency recipe for the dataload workspace ----
+FROM chef AS planner
 COPY dataload /opt/grebi_dataload
 WORKDIR /opt/grebi_dataload
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/opt/grebi_dataload/target \
-    case "$TARGETPLATFORM" in \
+RUN cargo chef prepare --recipe-path /recipe.json
+
+# ---- Build: cook deps (cached layer), then compile the binaries ----
+FROM chef AS rust-builder
+ARG TARGETPLATFORM
+WORKDIR /opt/grebi_dataload
+
+# Cook ONLY the dependencies. This layer is keyed on recipe.json, so it is reused
+# across builds until the dependency set changes — the expensive arrow/parquet
+# compile no longer happens on every push.
+COPY --from=planner /recipe.json recipe.json
+RUN case "$TARGETPLATFORM" in \
+      "linux/arm64") cargo chef cook --release --target aarch64-unknown-linux-gnu --recipe-path recipe.json ;; \
+      *)             cargo chef cook --release --recipe-path recipe.json ;; \
+    esac
+
+# Compile the actual dataload binaries (dependencies already built above).
+COPY dataload /opt/grebi_dataload
+RUN case "$TARGETPLATFORM" in \
       "linux/arm64") \
-        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc && \
         cargo build --release --target aarch64-unknown-linux-gnu && \
         cp target/aarch64-unknown-linux-gnu/release/grebi_* /usr/local/bin/ 2>/dev/null || true ;; \
       *) \
@@ -34,17 +63,13 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
         cp target/release/grebi_* /usr/local/bin/ 2>/dev/null || true ;; \
     esac
 
-# Build grebi_reprefix (needs grebi_shared via relative path ../../dataload/grebi_shared).
+# Build grebi_reprefix (tiny: serde_json + grebi_shared via ../../dataload/grebi_shared).
 # The Java backend spawns this binary over stdio to normalise prefixes.
 COPY dataload/grebi_shared /dataload/grebi_shared
 COPY webapp/grebi_reprefix /webapp/grebi_reprefix
 WORKDIR /webapp/grebi_reprefix
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/webapp/grebi_reprefix/target \
-    case "$TARGETPLATFORM" in \
+RUN case "$TARGETPLATFORM" in \
       "linux/arm64") \
-        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc && \
         cargo build --release --target aarch64-unknown-linux-gnu && \
         cp target/aarch64-unknown-linux-gnu/release/grebi_reprefix /usr/local/bin/ ;; \
       *) \
@@ -53,124 +78,36 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     esac
 
 ###############################################################################
-# Stage 2 — Runtime image
+# Stage 2a/2b — Build the Java jars (deps cached via dependency:go-offline)
+#
+# The Maven analogue of cargo-chef: resolve dependencies in a layer keyed only
+# on the pom, so the (large, esp. embedded-Neo4j) dependency download is cached
+# by the GHA layer cache and only re-runs when the pom changes. Doing this in
+# builder stages keeps the hundreds-of-MB .m2 out of the final runtime image.
 ###############################################################################
-# Slim Debian base: the Rust toolchain is not needed at runtime (binaries are
-# copied from the rust-builder stage above), and the previous rust:*-bullseye
-# base (built on the full buildpack-deps) dragged in ImageMagick, binutils,
-# linux-libc-dev and many -dev/-headers packages that this image never uses.
-FROM debian:bullseye-slim
+FROM ${BASE_IMAGE} AS api-builder
+WORKDIR /opt/grebi_api
+COPY webapp/grebi_api/pom.xml .
+RUN mvn -B dependency:go-offline
+COPY webapp/grebi_api .
+RUN mvn -B clean package assembly:single -DskipTests
 
-# Make apt resilient to transient mirror errors. The multi-arch build emulates
-# arm64 under QEMU and downloads ~250 MB in this layer; it was intermittently
-# failing with "Connection reset by peer" while fetching a .deb. Retry instead
-# of aborting the whole build. Applies to every apt-get in this stage.
-RUN printf 'Acquire::Retries "5";\nAcquire::http::Timeout "60";\nAcquire::https::Timeout "60";\n' \
-    > /etc/apt/apt.conf.d/99-grebi-retries
+FROM ${BASE_IMAGE} AS cypher-builder
+WORKDIR /opt/grebi_cypher_service
+COPY webapp/grebi_cypher_service/pom.xml .
+RUN mvn -B dependency:go-offline
+COPY webapp/grebi_cypher_service .
+RUN mvn -B clean package -DskipTests
 
-# ---- System packages (single apt-get layer) ----
-# Note: no cmake/clang here — nothing is compiled in this stage (the Rust
-# binaries come from the builder stage; the Java jars build with the JDK+Maven
-# below; npm/pip use prebuilt artifacts). ca-certificates is required for the
-# HTTPS curl/apt fetches below (the slim base does not ship it).
-# --no-install-recommends: python3-pip otherwise recommends build-essential,
-# which drags gcc, binutils and linux-libc-dev (none of which we use) back in.
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    gpg \
-    gnupg \
-    pigz \
-    jq \
-    python3-pip \
-    supervisor \
-    procps \
-    psmisc \
-    rsync \
-    lsb-release \
-    && rm -rf /var/lib/apt/lists/*
-
-# ---- PostgreSQL 18 ----
-# Prevent initdb from running during apt install (segfaults under QEMU);
-# the cluster is created at runtime instead.
-RUN mkdir -p /etc/postgresql-common && \
-    echo 'create_main_cluster = false' > /etc/postgresql-common/createcluster.conf && \
-    echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
-    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
-    apt-get update -y && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confold" \
-        postgresql-18 postgresql-client-18 postgresql-18-pgvector && \
-    rm -rf /var/lib/apt/lists/*
-ENV PATH="$PATH:/usr/lib/postgresql/18/bin"
-
-# ---- Node.js 24 LTS + Caddy + Docker CLI (single apt layer) ----
-RUN curl -sL https://deb.nodesource.com/setup_24.x | bash - && \
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && \
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list && \
-    install -m 0755 -d /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
-    chmod a+r /etc/apt/keyrings/docker.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
-    apt-get update && apt-get install -y \
-      nodejs \
-      caddy \
-      docker-ce-cli=5:29.1.3-1~debian.11~bullseye \
-    && rm -rf /var/lib/apt/lists/*
-
-# ---- Python packages ----
-RUN pip3 install \
-    requests \
-    pyyaml \
-    pandas \
-    tabulate \
-    openpyxl \
-    py2neo
-
-# ---- Java 21 (Amazon Corretto) ----
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then \
-        JAVA_ARCH="x64"; \
-    elif [ "$ARCH" = "aarch64" ]; then \
-        JAVA_ARCH="aarch64"; \
-    else \
-        echo "Unsupported architecture: $ARCH" && exit 1; \
-    fi && \
-    curl -L https://corretto.aws/downloads/resources/21.0.6.7.1/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH}.tar.gz | tar -C /opt -xzf - && \
-    ln -s /opt/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH} /opt/java
-ENV JAVA_HOME="/opt/java"
-ENV PATH="$PATH:/opt/java/bin"
-
-# ---- Maven ----
-RUN mkdir -p /opt/maven && \
-    curl https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz | tar -xz --strip-components=1 -C /opt/maven
-ENV PATH="$PATH:/opt/maven/bin"
-
-# ---- Neo4j 2026.05.0 ----
-# Must stay in sync with the embedded Neo4j in webapp/grebi_cypher_service/pom.xml
-# and the standalone image in docker_envs/Dockerfile.neo4j_with_extras.
-RUN mkdir /opt/neo4j && \
-    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2026.05.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j && \
-    echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
-    echo "dbms.usage_report.enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
-    echo "db.recovery.fail_on_missing_files=false" >> /opt/neo4j/conf/neo4j.conf && \
-    sed -i '/^server\.directories\.logs=/d' /opt/neo4j/conf/neo4j.conf
-ENV PATH="$PATH:/opt/neo4j/bin"
-
-# ---- Nextflow ----
-ENV NEXTFLOW_VERSION=24.10.5
-ENV NXF_VER=${NEXTFLOW_VERSION}
-RUN curl -fsSL https://get.nextflow.io | bash && \
-    mv nextflow /usr/local/bin/ && \
-    chmod +x /usr/local/bin/nextflow
-
-# ---- Permissions & directories ----
-RUN chmod a+w /etc/passwd /etc/group && \
-    mkdir -p /opt/grebi/data/neo4j \
-             /opt/grebi/data/postgres \
-             /opt/grebi/data/prefix_maps \
-             /var/run/postgresql && \
-    chmod 777 /var/run/postgresql
+###############################################################################
+# Stage 2 — Runtime image (built FROM the on-demand grebi_base image)
+#
+# grebi_base carries the heavy, rarely-changing layers (Debian packages,
+# PostgreSQL, Node/Caddy/Docker-CLI, Java, Maven, Neo4j, Nextflow). It is built
+# separately by .github/workflows/base.yml and only rebuilt when Dockerfile.base
+# changes — so day-to-day combined builds skip ~1 GB of downloads.
+###############################################################################
+FROM ${BASE_IMAGE}
 
 # ---- Copy pre-built Rust binaries from cross-compile stage ----
 # (grebi_reprefix is included in the grebi_* glob and is spawned by grebi_api)
@@ -183,19 +120,9 @@ COPY dataload/prefix_maps /opt/grebi/data/prefix_maps
 # Copy full dataload directory (scripts, prefix_maps, python utils needed at runtime by Nextflow processes)
 COPY dataload /opt/grebi_dataload
 
-# ---- Build grebi_api (Java) ----
-COPY webapp/grebi_api /opt/grebi_api
-WORKDIR /opt/grebi_api
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn clean package assembly:single -DskipTests && \
-    cp target/grebi-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_api.jar
-
-# ---- Build grebi_cypher_service (Java) ----
-COPY webapp/grebi_cypher_service /opt/grebi_cypher_service
-WORKDIR /opt/grebi_cypher_service
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn clean package -DskipTests && \
-    cp target/grebi_cypher_service-1.0-SNAPSHOT.jar /opt/grebi_cypher_service.jar
+# ---- Java service jars (built in the cached builder stages above) ----
+COPY --from=api-builder /opt/grebi_api/target/grebi-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi_api.jar
+COPY --from=cypher-builder /opt/grebi_cypher_service/target/grebi_cypher_service-1.0-SNAPSHOT.jar /opt/grebi_cypher_service.jar
 
 # ---- Build grebi_ui (Node) ----
 COPY docs /opt/grebi_ui/docs
