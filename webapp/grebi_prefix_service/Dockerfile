@@ -26,6 +26,11 @@ WORKDIR /app
 COPY --from=builder /usr/local/bin/grebi_prefix_service /usr/local/bin/grebi_prefix_service
 COPY --from=builder /app/prefix_maps ./prefix_maps
 
+# Run as a non-root user. The binary and prefix maps are world-readable, and the
+# service only reads its prefix map (read-only), so any uid works.
+RUN groupadd -r grebi && useradd -r -g grebi -d /app grebi
+USER grebi
+
 ENV ROCKET_ADDRESS=0.0.0.0
 ENV ROCKET_PORT=8082
 

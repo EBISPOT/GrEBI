@@ -23,10 +23,14 @@ spec:
                     operator: In
                     values:
                     - hh-rke-wp-webadmin-58-worker-{{.Values.neo_worker_n}}.caas.ebi.ac.uk
+      automountServiceAccountToken: false
       securityContext:
         runAsUser: 5533
         runAsGroup: 1279
         fsGroup: 5533
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
         - name: {{ .Release.Name }}-import
           persistentVolumeClaim:
@@ -35,6 +39,11 @@ spec:
         - name: cypher-service
           image: ghcr.io/ebispot/grebi_cypher_service:{{.Values.imageTag}}
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - mountPath: "/data_import"
               name: {{ .Release.Name }}-import

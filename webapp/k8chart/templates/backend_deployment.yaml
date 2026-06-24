@@ -15,6 +15,11 @@ spec:
         app: {{ .Release.Name }}-backend
     spec:
       {{- $postgresSecretName := include "grebi.postgresSecretName" . }}
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
         - name: {{ .Release.Name }}-import
           persistentVolumeClaim:
@@ -23,6 +28,11 @@ spec:
         - name: web
           image: ghcr.io/ebispot/grebi_api:{{.Values.imageTag}}
           imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - mountPath: "/data_import"
               name: {{ .Release.Name }}-import
