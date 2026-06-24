@@ -54,7 +54,11 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 ###############################################################################
 # Stage 2 — Runtime image
 ###############################################################################
-FROM rust:1.90.0-bullseye
+# Slim Debian base: the Rust toolchain is not needed at runtime (binaries are
+# copied from the rust-builder stage above), and the previous rust:*-bullseye
+# base (built on the full buildpack-deps) dragged in ImageMagick, binutils,
+# linux-libc-dev and many -dev/-headers packages that this image never uses.
+FROM debian:bullseye-slim
 
 # Make apt resilient to transient mirror errors. The multi-arch build emulates
 # arm64 under QEMU and downloads ~250 MB in this layer; it was intermittently
@@ -64,18 +68,24 @@ RUN printf 'Acquire::Retries "5";\nAcquire::http::Timeout "60";\nAcquire::https:
     > /etc/apt/apt.conf.d/99-grebi-retries
 
 # ---- System packages (single apt-get layer) ----
-RUN apt-get update -y && apt-get install -y \
+# Note: no cmake/clang here — nothing is compiled in this stage (the Rust
+# binaries come from the builder stage; the Java jars build with the JDK+Maven
+# below; npm/pip use prebuilt artifacts). ca-certificates is required for the
+# HTTPS curl/apt fetches below (the slim base does not ship it).
+# --no-install-recommends: python3-pip otherwise recommends build-essential,
+# which drags gcc, binutils and linux-libc-dev (none of which we use) back in.
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    ca-certificates \
     curl \
     gpg \
-    cmake \
-    clang \
+    gnupg \
     pigz \
     jq \
     python3-pip \
     supervisor \
     procps \
+    psmisc \
     rsync \
-    gnupg \
     lsb-release \
     && rm -rf /var/lib/apt/lists/*
 
