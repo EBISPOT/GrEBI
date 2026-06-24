@@ -1,16 +1,20 @@
 name: Build & publish GrEBI images
 
+# Each image is built per-architecture on a NATIVE runner (amd64 on ubuntu-latest,
+# arm64 on ubuntu-24.04-arm) and pushed by digest; a merge job then assembles the
+# multi-arch manifest. This avoids QEMU emulation, which was ~20x slower for the
+# Rust/Maven builds and the source of intermittent cargo cache corruption.
+
 on:
   push:
     branches: [ "dev", "stable" ]
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push-image:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
@@ -18,22 +22,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: api
-            image: ghcr.io/ebispot/grebi_api
-            context: .
-            file: webapp/grebi_api/Dockerfile
-          - name: ui
-            image: ghcr.io/ebispot/grebi_ui
-            context: .
-            file: webapp/grebi_ui/Dockerfile
-          - name: cypher
-            image: ghcr.io/ebispot/grebi_cypher_service
-            context: webapp/grebi_cypher_service
-            file: webapp/grebi_cypher_service/Dockerfile
-          - name: combined
-            image: ghcr.io/ebispot/grebi_combined
-            context: .
-            file: Dockerfile
+          - { name: api,      image: ghcr.io/ebispot/grebi_api,            context: ., file: webapp/grebi_api/Dockerfile,            arch: amd64, platform: linux/amd64, runner: ubuntu-latest }
+          - { name: api,      image: ghcr.io/ebispot/grebi_api,            context: ., file: webapp/grebi_api/Dockerfile,            arch: arm64, platform: linux/arm64, runner: ubuntu-24.04-arm }
+          - { name: ui,       image: ghcr.io/ebispot/grebi_ui,             context: ., file: webapp/grebi_ui/Dockerfile,             arch: amd64, platform: linux/amd64, runner: ubuntu-latest }
+          - { name: ui,       image: ghcr.io/ebispot/grebi_ui,             context: ., file: webapp/grebi_ui/Dockerfile,             arch: arm64, platform: linux/arm64, runner: ubuntu-24.04-arm }
+          - { name: cypher,   image: ghcr.io/ebispot/grebi_cypher_service, context: webapp/grebi_cypher_service, file: webapp/grebi_cypher_service/Dockerfile, arch: amd64, platform: linux/amd64, runner: ubuntu-latest }
+          - { name: cypher,   image: ghcr.io/ebispot/grebi_cypher_service, context: webapp/grebi_cypher_service, file: webapp/grebi_cypher_service/Dockerfile, arch: arm64, platform: linux/arm64, runner: ubuntu-24.04-arm }
+          - { name: combined, image: ghcr.io/ebispot/grebi_combined,       context: ., file: Dockerfile,                             arch: amd64, platform: linux/amd64, runner: ubuntu-latest }
+          - { name: combined, image: ghcr.io/ebispot/grebi_combined,       context: ., file: Dockerfile,                             arch: arm64, platform: linux/arm64, runner: ubuntu-24.04-arm }
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,15 +44,67 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push ${{ matrix.name }} image
+      - name: Build and push ${{ matrix.name }} (${{ matrix.arch }}) by digest
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ matrix.image }}:${{ github.sha }}
-            ${{ matrix.image }}:${{ github.ref_name }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=${{ matrix.name }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}-${{ matrix.arch }}
+          outputs: type=image,name=${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.name }}-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: api,      image: ghcr.io/ebispot/grebi_api }
+          - { name: ui,       image: ghcr.io/ebispot/grebi_ui }
+          - { name: cypher,   image: ghcr.io/ebispot/grebi_cypher_service }
+          - { name: combined, image: ghcr.io/ebispot/grebi_combined }
+    steps:
+      - name: Download digests for ${{ matrix.name }}
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-${{ matrix.name }}-*
+          merge-multiple: true
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create and push multi-arch manifest
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            -t ${{ matrix.image }}:${{ github.ref_name }} \
+            -t ${{ matrix.image }}:${{ github.sha }} \
+            $(printf '${{ matrix.image }}@sha256:%s ' *)

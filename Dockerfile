@@ -6,31 +6,23 @@
 ARG BASE_IMAGE=ghcr.io/ebispot/grebi_base:dev
 
 ###############################################################################
-# Stage 1 — Cross-compile Rust binaries (runs natively on the builder arch)
+# Stage 1 — Compile the Rust binaries (natively; CI builds each arch on a
+# native runner, so no cross-compilation is needed).
 #
 # cargo-chef splits dependency compilation from the app build: the large, slow
 # dependency layer (arrow/parquet et al.) is cooked separately and keyed on
 # Cargo.lock + manifests, so the GHA layer cache reuses it across builds and it
 # only recompiles when dependencies actually change — not on every source edit.
 ###############################################################################
-FROM --platform=$BUILDPLATFORM rust:1.90.0-bullseye AS chef
-ARG TARGETPLATFORM
+FROM rust:1.90.0-bullseye AS chef
 
 # Retry transient apt mirror errors instead of aborting the build.
 RUN printf 'Acquire::Retries "5";\n' > /etc/apt/apt.conf.d/99-grebi-retries
 
-# cmake is needed by some crates; the arm64 cross toolchain lets the native
-# (amd64) builder link aarch64 binaries.
-RUN apt-get update -y && apt-get install -y cmake && \
-    case "$TARGETPLATFORM" in \
-      "linux/arm64") \
-        apt-get install -y gcc-aarch64-linux-gnu && \
-        rustup target add aarch64-unknown-linux-gnu ;; \
-    esac && \
-    rm -rf /var/lib/apt/lists/*
+# cmake is needed by some crates.
+RUN apt-get update -y && apt-get install -y cmake && rm -rf /var/lib/apt/lists/*
 
 RUN cargo install cargo-chef --locked
-ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 
 # ---- Plan: derive the dependency recipe for the dataload workspace ----
 FROM chef AS planner
@@ -40,42 +32,26 @@ RUN cargo chef prepare --recipe-path /recipe.json
 
 # ---- Build: cook deps (cached layer), then compile the binaries ----
 FROM chef AS rust-builder
-ARG TARGETPLATFORM
 WORKDIR /opt/grebi_dataload
 
 # Cook ONLY the dependencies. This layer is keyed on recipe.json, so it is reused
 # across builds until the dependency set changes — the expensive arrow/parquet
 # compile no longer happens on every push.
 COPY --from=planner /recipe.json recipe.json
-RUN case "$TARGETPLATFORM" in \
-      "linux/arm64") cargo chef cook --release --target aarch64-unknown-linux-gnu --recipe-path recipe.json ;; \
-      *)             cargo chef cook --release --recipe-path recipe.json ;; \
-    esac
+RUN cargo chef cook --release --recipe-path recipe.json
 
 # Compile the actual dataload binaries (dependencies already built above).
 COPY dataload /opt/grebi_dataload
-RUN case "$TARGETPLATFORM" in \
-      "linux/arm64") \
-        cargo build --release --target aarch64-unknown-linux-gnu && \
-        cp target/aarch64-unknown-linux-gnu/release/grebi_* /usr/local/bin/ 2>/dev/null || true ;; \
-      *) \
-        cargo build --release && \
-        cp target/release/grebi_* /usr/local/bin/ 2>/dev/null || true ;; \
-    esac
+RUN cargo build --release && \
+    cp target/release/grebi_* /usr/local/bin/ 2>/dev/null || true
 
 # Build grebi_reprefix (tiny: serde_json + grebi_shared via ../../dataload/grebi_shared).
 # The Java backend spawns this binary over stdio to normalise prefixes.
 COPY dataload/grebi_shared /dataload/grebi_shared
 COPY webapp/grebi_reprefix /webapp/grebi_reprefix
 WORKDIR /webapp/grebi_reprefix
-RUN case "$TARGETPLATFORM" in \
-      "linux/arm64") \
-        cargo build --release --target aarch64-unknown-linux-gnu && \
-        cp target/aarch64-unknown-linux-gnu/release/grebi_reprefix /usr/local/bin/ ;; \
-      *) \
-        cargo build --release && \
-        cp target/release/grebi_reprefix /usr/local/bin/ ;; \
-    esac
+RUN cargo build --release && \
+    cp target/release/grebi_reprefix /usr/local/bin/
 
 ###############################################################################
 # Stage 2a/2b — Build the Java jars (deps cached via dependency:go-offline)
