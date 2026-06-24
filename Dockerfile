@@ -34,21 +34,22 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
         cp target/release/grebi_* /usr/local/bin/ 2>/dev/null || true ;; \
     esac
 
-# Build prefix service (needs grebi_shared via relative path ../../dataload/grebi_shared)
+# Build grebi_reprefix (needs grebi_shared via relative path ../../dataload/grebi_shared).
+# The Java backend spawns this binary over stdio to normalise prefixes.
 COPY dataload/grebi_shared /dataload/grebi_shared
-COPY webapp/grebi_prefix_service /webapp/grebi_prefix_service
-WORKDIR /webapp/grebi_prefix_service
+COPY webapp/grebi_reprefix /webapp/grebi_reprefix
+WORKDIR /webapp/grebi_reprefix
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/webapp/grebi_prefix_service/target \
+    --mount=type=cache,target=/webapp/grebi_reprefix/target \
     case "$TARGETPLATFORM" in \
       "linux/arm64") \
         export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc && \
         cargo build --release --target aarch64-unknown-linux-gnu && \
-        cp target/aarch64-unknown-linux-gnu/release/grebi_prefix_service /usr/local/bin/ ;; \
+        cp target/aarch64-unknown-linux-gnu/release/grebi_reprefix /usr/local/bin/ ;; \
       *) \
         cargo build --release && \
-        cp target/release/grebi_prefix_service /usr/local/bin/ ;; \
+        cp target/release/grebi_reprefix /usr/local/bin/ ;; \
     esac
 
 ###############################################################################
@@ -172,8 +173,8 @@ RUN chmod a+w /etc/passwd /etc/group && \
     chmod 777 /var/run/postgresql
 
 # ---- Copy pre-built Rust binaries from cross-compile stage ----
+# (grebi_reprefix is included in the grebi_* glob and is spawned by grebi_api)
 COPY --from=rust-builder /usr/local/bin/grebi_* /usr/local/bin/
-COPY --from=rust-builder /usr/local/bin/grebi_prefix_service /usr/local/bin/
 ENV PATH="$PATH:/usr/local/bin"
 
 # Copy prefix maps

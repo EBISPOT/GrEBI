@@ -11,7 +11,7 @@ import org.springframework.data.domain.Sort;
 
 import uk.ac.ebi.grebi.GrebiApi;
 import uk.ac.ebi.grebi.db.CypherServiceClient;
-import uk.ac.ebi.grebi.db.PrefixClient;
+import uk.ac.ebi.grebi.db.PrefixService;
 import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 import uk.ac.ebi.grebi.repo.QueryTemplate;
 
@@ -32,7 +32,7 @@ public class GrebiCypherRepo {
 
     GrebiPostgresClient pgClient = new GrebiPostgresClient();
     Gson gson = new Gson();
-    PrefixClient prefixClient = new PrefixClient();
+    PrefixService prefixClient = PrefixService.get();
 
     // Dedicated pool so the (potentially slow) count query can run concurrently
     // with the data query without contending for the shared ForkJoinPool.

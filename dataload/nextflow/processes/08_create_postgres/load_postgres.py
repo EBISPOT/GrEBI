@@ -340,6 +340,28 @@ def load_all(
         run_psql(create_meta, "graph_metadata", psql_base)
 
     run_psql("ANALYZE graph_metadata;", "analyze_metadata", psql_base)
+
+    # --- PREFIX MAP TABLE ---
+    # The runtime prefix-normalisation helper (grebi_reprefix, spawned by the
+    # Java backend) reads its prefix map from this table instead of an NFS file.
+    # Stored as a single BYTEA blob holding the whole prefix_map_normalise.json,
+    # mirroring how OLS stores its PCA models in postgres.
+    print("=== Loading prefix map ===", flush=True)
+    prefix_map_path = os.environ.get(
+        "GREBI_PREFIX_MAP_PATH",
+        "/opt/grebi_dataload/prefix_maps/prefix_map_normalise.json",
+    )
+    prefix_map_hex = Path(prefix_map_path).read_bytes().hex()
+    drop_prefix_map = 'DROP TABLE IF EXISTS grebi_prefix_map CASCADE;\n' if drop_existing else ""
+    run_psql(
+        f"{drop_prefix_map}"
+        "CREATE TABLE grebi_prefix_map (name TEXT PRIMARY KEY, data BYTEA NOT NULL);\n"
+        "DELETE FROM grebi_prefix_map WHERE name = 'prefix_map_normalise';\n"
+        f"INSERT INTO grebi_prefix_map (name, data) VALUES ('prefix_map_normalise', '\\x{prefix_map_hex}');",
+        "grebi_prefix_map",
+        psql_base,
+    )
+
     print("=== All data loaded ===", flush=True)
 
 

@@ -402,17 +402,20 @@ The GrEBI pipeline maps all of these to their **canonical CURIE** form and
 groups them into a single clique. See the Data Model section for how
 cliques work.
 
-### Prefix service
+### Prefix normalisation
 
-The GrEBI stack includes a **prefix service** that resolves CURIEs to full
-IRIs and vice-versa:
+The prefix map is stored in PostgreSQL (the `grebi_prefix_map` table, populated
+during the dataload). The backend normalises IRIs/CURIEs to their canonical
+CURIE form by spawning the bundled native `grebi_reprefix` helper over stdio
+(loading the map from postgres on first use), so there is no separate prefix
+service to deploy. It is exposed through the API:
 
 ```bash
-curl "http://localhost:8082/curie_to_iri?curie=hgnc:1100"
+curl "http://localhost:8090/api/v1/normalise_curies?iris_or_curies=http://purl.uniprot.org/ensembl/ENSG00000012048"
 ```
 
 ```json
-{"iri": "https://identifiers.org/hgnc:1100"}
+{"curies": ["ensembl:ENSG00000012048"]}
 ```
 
 

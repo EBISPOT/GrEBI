@@ -41,8 +41,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         # effect when no positive (include) services are given.
         #
         # Valid service names:
-        #   api  cypher_service  neo4j  postgres
-        #   prefix_service  ui
+        #   api  cypher_service  neo4j  postgres  ui
         #
         # By default neo4j runs as a standalone server and cypher_service
         # connects to it via bolt.  If you explicitly list cypher_service
@@ -70,7 +69,7 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
         DATA_DIR="${{GREBI_DATA_DIR:-$SCRIPT_DIR}}"
 
-        ALL_SERVICES="api cypher_service neo4j postgres prefix_service ui"
+        ALL_SERVICES="api cypher_service neo4j postgres ui"
 
         # Parse arguments: "bash" and "test" are modes; anything else is a service name.
         # A leading dash (e.g. -api) marks a service for exclusion.
@@ -225,7 +224,6 @@ def generate_run_script(subgraphs: str, image: str) -> str:
         svc_enabled api              && echo "  API:            http://localhost:8090"
         svc_enabled cypher_service   && echo "  Cypher Service: http://localhost:8085"
         svc_enabled postgres         && echo "  PostgreSQL:     localhost:5432"
-        svc_enabled prefix_service   && echo "  Prefix:         http://localhost:8082"
         echo ""
 
         ENV_VARS=(
@@ -250,7 +248,6 @@ def generate_run_script(subgraphs: str, image: str) -> str:
                 -p "$BIND_ADDRESS:7687:7687" \\
                 -p "$BIND_ADDRESS:8080:8080" \\
                 -p "$BIND_ADDRESS:8085:8085" \\
-                -p "$BIND_ADDRESS:8082:8082" \\
                 -p "$BIND_ADDRESS:8090:8090" \\
                 -p "$BIND_ADDRESS:5432:5432" \\
                 $(printf -- '-e %s ' "${{ENV_VARS[@]}}") \\

@@ -12,7 +12,6 @@ container_scanning:
   parallel:
     matrix:
       - CS_IMAGE: ghcr.io/ebispot/grebi_api:$CI_COMMIT_REF_NAME
-      - CS_IMAGE: ghcr.io/ebispot/grebi_prefix_service:$CI_COMMIT_REF_NAME
       - CS_IMAGE: ghcr.io/ebispot/grebi_ui:$CI_COMMIT_REF_NAME
       - CS_IMAGE: ghcr.io/ebispot/grebi_cypher_service:$CI_COMMIT_REF_NAME
       - CS_IMAGE: ghcr.io/ebispot/grebi_combined:$CI_COMMIT_REF_NAME

@@ -20,12 +20,8 @@ jobs:
         include:
           - name: api
             image: ghcr.io/ebispot/grebi_api
-            context: webapp/grebi_api
-            file: webapp/grebi_api/Dockerfile
-          - name: prefix
-            image: ghcr.io/ebispot/grebi_prefix_service
             context: .
-            file: webapp/grebi_prefix_service/Dockerfile
+            file: webapp/grebi_api/Dockerfile
           - name: ui
             image: ghcr.io/ebispot/grebi_ui
             context: .

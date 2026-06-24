@@ -29,7 +29,7 @@ import uk.ac.ebi.grebi.GraphOrder;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 import uk.ac.ebi.grebi.repo.QueryTemplate;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
-import uk.ac.ebi.grebi.db.PrefixClient;
+import uk.ac.ebi.grebi.db.PrefixService;
 import uk.ac.ebi.grebi.db.EmbeddingServiceClient;
 import uk.ac.ebi.grebi.repo.GrebiPostgresRepo;
 import uk.ac.ebi.grebi.repo.GrebiMetadataRepo;
@@ -713,8 +713,7 @@ public class GrebiApi {
                     var iris_or_curies = ctx.queryParams("iris_or_curies");
                     ctx.contentType("application/json");
 
-                    var prefixClient = new PrefixClient();
-                    var res = prefixClient.reprefix(iris_or_curies);
+                    var res = PrefixService.get().reprefix(iris_or_curies);
                     ctx.result(gson.toJson(Map.of("curies", res)));
                 })
                 .get("/api/v1/graphs/{graph}/search", ctx -> {
