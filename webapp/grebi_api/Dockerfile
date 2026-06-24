@@ -29,5 +29,7 @@ RUN cargo build --release && \
 FROM registry.access.redhat.com/ubi9/openjdk-17-runtime:latest
 COPY --from=builder /opt/target/grebi-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi.jar
 COPY --from=rust-builder /usr/local/bin/grebi_reprefix /usr/local/bin/grebi_reprefix
+# Non-root (185 = the image's built-in 'default' user); explicit so scanners see it.
+USER 185
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/opt/grebi.jar"]

@@ -14,6 +14,9 @@ RUN mvn clean package -DskipTests
 ###############################################################################
 FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
 COPY --from=builder /opt/target/grebi_cypher_service-1.0-SNAPSHOT.jar /opt/grebi_cypher_service.jar
+# Non-root (185 = the image's built-in 'default' user); explicit so scanners see it.
+# In k8s this is overridden by runAsUser 5533 for NFS access.
+USER 185
 EXPOSE 8085
 ENV GREBI_CYPHER_PORT=8085
 ENTRYPOINT ["java", "--add-modules", "jdk.incubator.vector", "-jar", "/opt/grebi_cypher_service.jar"]
