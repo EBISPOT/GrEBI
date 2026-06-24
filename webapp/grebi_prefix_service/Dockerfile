@@ -1,4 +1,7 @@
-FROM rust:1.90.0-bullseye
+###############################################################################
+# Stage 1 — Build the Rust binary
+###############################################################################
+FROM rust:1.90.0-bullseye AS builder
 
 WORKDIR /app
 
@@ -10,6 +13,18 @@ WORKDIR /app/webapp/grebi_prefix_service
 
 RUN cargo build --release && \
     mv target/release/grebi_prefix_service /usr/local/bin/grebi_prefix_service
+
+###############################################################################
+# Stage 2 — Minimal runtime image (just the binary + data)
+###############################################################################
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# The binary is a self-contained, glibc-linked Rust executable; it needs no
+# build toolchain at runtime. Copy only the binary and the prefix maps.
+COPY --from=builder /usr/local/bin/grebi_prefix_service /usr/local/bin/grebi_prefix_service
+COPY --from=builder /app/prefix_maps ./prefix_maps
 
 ENV ROCKET_ADDRESS=0.0.0.0
 ENV ROCKET_PORT=8082
