@@ -3,7 +3,7 @@
 # Red Hat UBI9-minimal + Node 24 (NodeSource EL9) + Caddy (static binary).
 # Node is needed at runtime: the entrypoint runs the frontend build
 # (npm run build) before serving with Caddy. bash is needed by entrypoint.dockersh.
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.8
 
 RUN printf '%s\n' \
       '[nodesource-nodejs]' \

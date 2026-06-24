@@ -12,7 +12,7 @@ RUN mvn clean package -DskipTests
 # Stage 2 — JRE runtime on Red Hat UBI9 (ships as the image's non-root user)
 # ubi9/openjdk-21-runtime includes jdk.incubator.vector, required by embedded Neo4j.
 ###############################################################################
-FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:1.24
 COPY --from=builder /opt/target/grebi_cypher_service-1.0-SNAPSHOT.jar /opt/grebi_cypher_service.jar
 # Non-root (185 = the image's built-in 'default' user); explicit so scanners see it.
 # In k8s this is overridden by runAsUser 5533 for NFS access.

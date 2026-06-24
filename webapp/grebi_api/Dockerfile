@@ -26,7 +26,7 @@ RUN cargo build --release && \
 ###############################################################################
 # Stage 3 — JRE runtime on Red Hat UBI9 (ships as the image's non-root user)
 ###############################################################################
-FROM registry.access.redhat.com/ubi9/openjdk-17-runtime:latest
+FROM registry.access.redhat.com/ubi9/openjdk-17-runtime:1.24
 COPY --from=builder /opt/target/grebi-1.0-SNAPSHOT-jar-with-dependencies.jar /opt/grebi.jar
 COPY --from=rust-builder /usr/local/bin/grebi_reprefix /usr/local/bin/grebi_reprefix
 # Non-root (185 = the image's built-in 'default' user); explicit so scanners see it.
