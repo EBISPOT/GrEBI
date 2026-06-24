@@ -59,9 +59,9 @@ public class GrebiCypherSvc {
 
         Javalin app = Javalin.create(config -> {
             config.jetty.threadPool = threadPool;
-        }).start("0.0.0.0", port);
 
-        app.get("/health", ctx -> {
+            // Javalin 7: routes are registered in the config block (before start).
+            config.routes.get("/health", ctx -> {
             ctx.contentType("application/json");
             if (ready) {
                 ctx.result("{\"status\":\"ok\"}");
@@ -71,12 +71,12 @@ public class GrebiCypherSvc {
             }
         });
 
-        app.get("/", ctx -> {
+            config.routes.get("/", ctx -> {
             ctx.contentType("application/json");
             ctx.result(gson.toJson(backends.keySet()));
         });
 
-        app.post("/{graph}", ctx -> {
+            config.routes.post("/{graph}", ctx -> {
             String graph = ctx.pathParam("graph");
             CypherBackend backend = backends.get(graph);
             if (backend == null) {
@@ -117,7 +117,8 @@ public class GrebiCypherSvc {
                 out.write('\n');
                 out.flush();
             }
-        });
+            });
+        }).start("0.0.0.0", port);
 
         // --- Shutdown hook ---------------------------------------------------
 

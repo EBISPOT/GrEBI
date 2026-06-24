@@ -1,6 +1,7 @@
 package uk.ac.ebi.grebi;
 
 import io.javalin.Javalin;
+import io.javalin.compression.CompressionStrategy;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -25,14 +26,17 @@ class GrebiApiCompressionTest {
     @Test
     void gzipCompressionStillWorksAndIdentityRequestsStaySuccessful() throws Exception {
         var port = findFreePort();
-        var app = Javalin.create(config -> config.http.gzipOnlyCompression())
-            .get("/payload", ctx -> {
-                ctx.contentType("application/json");
-                ctx.result(LARGE_JSON);
-            })
-            .get("/events", ctx -> {
-                ctx.contentType("text/event-stream");
-                ctx.result("data: hello\n\n");
+        var app = Javalin.create(config -> {
+                config.http.compressionStrategy = CompressionStrategy.GZIP;
+                config.routes
+                    .get("/payload", ctx -> {
+                        ctx.contentType("application/json");
+                        ctx.result(LARGE_JSON);
+                    })
+                    .get("/events", ctx -> {
+                        ctx.contentType("text/event-stream");
+                        ctx.result("data: hello\n\n");
+                    });
             })
             .start("127.0.0.1", port);
 

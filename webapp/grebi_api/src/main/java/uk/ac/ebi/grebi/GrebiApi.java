@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.internal.LinkedTreeMap;
 import io.javalin.Javalin;
+import io.javalin.compression.CompressionStrategy;
 import io.javalin.http.HttpResponseException;
 import io.javalin.http.NotFoundResponse;
 
@@ -23,7 +24,7 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.GraphOrder;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
@@ -130,7 +131,7 @@ public class GrebiApi {
         );
 
         Javalin.create(config -> {
-                    config.http.gzipOnlyCompression();
+                    config.http.compressionStrategy = CompressionStrategy.GZIP;
                     config.http.maxRequestSize = limits.maxRequestBodyBytes();
                     config.jetty.modifyServletContextHandler(ctx -> {
                         var holder = new ServletHolder(mcpServer.getTransportProvider());
@@ -145,7 +146,9 @@ public class GrebiApi {
                     if(config.router.contextPath == null) {
                         config.router.contextPath = "";
                     }
-                })
+
+                    // Javalin 7: routes are registered in the config block via config.routes
+                    config.routes
                 .before(ctx -> {
                     limits.checkRateLimit("http:" + ctx.ip());
                     limits.validateQueryString(ctx.queryString());
@@ -762,6 +765,7 @@ public class GrebiApi {
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(Map.of("error", e.getMessage())));
                     e.printStackTrace();
+                });
                 })
                 .start("0.0.0.0", port);
     }

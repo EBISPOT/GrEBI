@@ -19,20 +19,13 @@
   </properties>
 
   <!-- Pin patched versions of transitive dependencies (jackson via javalin/jooq,
-       jetty via javalin, spring via spring-data-commons). -->
+       spring via spring-data-commons). Jetty is left to javalin 7 (jetty 12). -->
   <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>2.21.4</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-bom</artifactId>
-        <version>11.0.25</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -50,7 +43,7 @@
       <dependency>
         <groupId>io.javalin</groupId>
         <artifactId>javalin</artifactId>
-        <version>6.7.0</version>
+        <version>7.2.2</version>
       </dependency>
       <!-- neo4j-cypher-dsl: generates Cypher strings only, no runtime Neo4j dependency -->
       <dependency>
