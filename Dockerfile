@@ -145,9 +145,11 @@ RUN mkdir -p /opt/maven && \
     curl https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz | tar -xz --strip-components=1 -C /opt/maven
 ENV PATH="$PATH:/opt/maven/bin"
 
-# ---- Neo4j 2025.03.0 ----
+# ---- Neo4j 2026.05.0 ----
+# Must stay in sync with the embedded Neo4j in webapp/grebi_cypher_service/pom.xml
+# and the standalone image in docker_envs/Dockerfile.neo4j_with_extras.
 RUN mkdir /opt/neo4j && \
-    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2025.03.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j && \
+    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2026.05.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j && \
     echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
     echo "dbms.usage_report.enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
     echo "db.recovery.fail_on_missing_files=false" >> /opt/neo4j/conf/neo4j.conf && \

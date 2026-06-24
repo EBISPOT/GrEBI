@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arrow = "54"
-arrow-json = "54"
-parquet = { version = "54", features = ["arrow"] }
+arrow = "59"
+arrow-json = "59"
+parquet = { version = "59", features = ["arrow"] }
 bytes = "1"
 

@@ -1,5 +1,5 @@
 
-FROM neo4j:2025.03.0-community
+FROM neo4j:2026.05.0-community
 
 RUN apt-get update && apt-get install -y python python3-pip sqlite3 rsync
 RUN pip install pandas py2neo pyyaml
