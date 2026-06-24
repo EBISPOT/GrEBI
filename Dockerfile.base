@@ -14,7 +14,7 @@
 # previous rust:*-bullseye base (built on the full buildpack-deps) dragged in
 # ImageMagick, binutils, linux-libc-dev and many -dev/-headers packages that
 # this image never uses.
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Make apt resilient to transient mirror errors. The multi-arch build emulates
 # arm64 under QEMU and downloads ~250 MB in this layer; it was intermittently
@@ -50,7 +50,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
 # the cluster is created at runtime instead.
 RUN mkdir -p /etc/postgresql-common && \
     echo 'create_main_cluster = false' > /etc/postgresql-common/createcluster.conf && \
-    echo "deb http://apt.postgresql.org/pub/repos/apt bullseye-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    echo "deb http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
     curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     apt-get update -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confold" \
@@ -67,14 +67,16 @@ RUN curl -sL https://deb.nodesource.com/setup_24.x | bash - && \
     chmod a+r /etc/apt/keyrings/docker.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
     $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
-    apt-get update && apt-get install -y \
+    apt-get update && apt-get install -y --no-install-recommends \
       nodejs \
       caddy \
-      docker-ce-cli=5:29.1.3-1~debian.11~bullseye \
+      docker-ce-cli=5:29.6.0-1~debian.12~bookworm \
     && rm -rf /var/lib/apt/lists/*
 
 # ---- Python packages ----
-RUN pip3 install \
+# bookworm marks the system Python as externally-managed (PEP 668); these run in
+# the container's system interpreter by design, so allow it.
+RUN pip3 install --break-system-packages \
     requests \
     pyyaml \
     pandas \
@@ -126,3 +128,14 @@ RUN chmod a+w /etc/passwd /etc/group && \
              /opt/grebi/data/prefix_maps \
              /var/run/postgresql && \
     chmod 777 /var/run/postgresql
+
+# Drop the MTA + cron pulled in transitively as apt Recommends (postgres/common).
+# They are never used in this container and only add CVEs to scans.
+RUN apt-get purge -y exim4-base exim4-config exim4-daemon-light cron 2>/dev/null || true
+
+# Non-root user. Images built FROM this base reset to root for their build steps
+# and ship as non-root. This also satisfies the "missing USER" scanner check on
+# the base image itself. /etc/passwd is world-writable (above) so an injected
+# runtime uid (docker -u / k8s runAsUser) can still resolve itself.
+RUN groupadd -r grebi && useradd -r -g grebi -d /opt grebi
+USER grebi

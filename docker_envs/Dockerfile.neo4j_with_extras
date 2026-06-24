@@ -1,6 +1,10 @@
-
 FROM neo4j:2026.05.0-community
 
-RUN apt-get update && apt-get install -y python python3-pip sqlite3 rsync
-RUN pip install pandas py2neo pyyaml
+# Base is Debian 12 (bookworm): python2 is gone, and pip is externally managed.
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip sqlite3 rsync && \
+    rm -rf /var/lib/apt/lists/*
+RUN pip install --break-system-packages pandas py2neo pyyaml
 
+# Ship as the image's non-root neo4j user.
+USER neo4j

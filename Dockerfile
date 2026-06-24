@@ -62,6 +62,7 @@ RUN cargo build --release && \
 # builder stages keeps the hundreds-of-MB .m2 out of the final runtime image.
 ###############################################################################
 FROM ${BASE_IMAGE} AS api-builder
+USER root
 WORKDIR /opt/grebi_api
 COPY webapp/grebi_api/pom.xml .
 RUN mvn -B dependency:go-offline
@@ -69,6 +70,7 @@ COPY webapp/grebi_api .
 RUN mvn -B clean package assembly:single -DskipTests
 
 FROM ${BASE_IMAGE} AS cypher-builder
+USER root
 WORKDIR /opt/grebi_cypher_service
 COPY webapp/grebi_cypher_service/pom.xml .
 RUN mvn -B dependency:go-offline
@@ -84,6 +86,8 @@ RUN mvn -B clean package -DskipTests
 # changes — so day-to-day combined builds skip ~1 GB of downloads.
 ###############################################################################
 FROM ${BASE_IMAGE}
+# Reset to root for the build/COPY steps below (base ships as non-root).
+USER root
 
 # ---- Copy pre-built Rust binaries from cross-compile stage ----
 # (grebi_reprefix is included in the grebi_* glob and is spawned by grebi_api)
@@ -133,3 +137,8 @@ COPY webapp/combined_entrypoint.sh /opt/entrypoint.sh
 RUN chmod +x /opt/entrypoint.sh
 
 WORKDIR /opt
+
+# Ship as non-root. At runtime this is overridden by the injected uid
+# (docker -u $HOST_UID via Nextflow; k8s runAsUser); the entrypoint resolves
+# whatever uid it runs as against the world-writable /etc/passwd.
+USER grebi
