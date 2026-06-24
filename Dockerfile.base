@@ -1,98 +1,58 @@
 # syntax=docker/dockerfile:1
 #
-# grebi_base — the heavy, rarely-changing runtime layers shared by the combined
-# image. Built separately (.github/workflows/base.yml, on demand) and published
-# as ghcr.io/ebispot/grebi_base, so day-to-day combined builds skip ~1 GB of
-# downloads (PostgreSQL, Node, Java, Maven, Neo4j, Nextflow, ...).
-#
-# Nothing here is compiled from the repo (no COPY of app sources). When you bump
-# any version below, that's the "on demand" trigger: editing this file rebuilds
-# the base via the paths filter in base.yml.
+# PoC: grebi_base on Red Hat UBI9-minimal (glibc, no perl, 0-CVE base).
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
-# Slim Debian base: the Rust toolchain is not needed at runtime (binaries are
-# copied from the rust-builder stage in the combined Dockerfile), and the
-# previous rust:*-bullseye base (built on the full buildpack-deps) dragged in
-# ImageMagick, binutils, linux-libc-dev and many -dev/-headers packages that
-# this image never uses.
-FROM debian:bookworm-slim
+# Core userland the entrypoint + services need (ubi-minimal is very bare).
+# shadow-utils -> useradd/groupadd; glibc-common -> getent; coreutils/findutils,
+# bash, tar/gzip for the tarball installs below.
+# Note: curl-minimal + coreutils-single are already in ubi-minimal; do not pull
+# the full curl (it conflicts with curl-minimal).
+RUN microdnf install -y --setopt=install_weak_deps=0 \
+      bash findutils glibc-common shadow-utils \
+      ca-certificates gzip tar gnupg2 rsync procps-ng \
+      python3 python3-pip \
+    && microdnf clean all
 
-# Make apt resilient to transient mirror errors. The multi-arch build emulates
-# arm64 under QEMU and downloads ~250 MB in this layer; it was intermittently
-# failing with "Connection reset by peer" while fetching a .deb. Retry instead
-# of aborting the whole build. Applies to every apt-get in this stage.
-RUN printf 'Acquire::Retries "5";\nAcquire::http::Timeout "60";\nAcquire::https::Timeout "60";\n' \
-    > /etc/apt/apt.conf.d/99-grebi-retries
+# EPEL for jq / pigz / psmisc (not in the UBI repos).
+RUN rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
+    microdnf install -y --setopt=install_weak_deps=0 jq pigz psmisc && \
+    microdnf clean all
 
-# ---- System packages (single apt-get layer) ----
-# Note: no cmake/clang here — nothing is compiled in this stage (the Rust
-# binaries come from the builder stage; the Java jars build with the JDK+Maven
-# below; npm/pip use prebuilt artifacts). ca-certificates is required for the
-# HTTPS curl/apt fetches below (the slim base does not ship it).
-# --no-install-recommends: python3-pip otherwise recommends build-essential,
-# which drags gcc, binutils and linux-libc-dev (none of which we use) back in.
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    gpg \
-    gnupg \
-    pigz \
-    jq \
-    python3-pip \
-    supervisor \
-    procps \
-    psmisc \
-    rsync \
-    lsb-release \
-    && rm -rf /var/lib/apt/lists/*
+# ---- PostgreSQL 18 (pgdg) ----
+RUN rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(uname -m)/pgdg-redhat-repo-latest.noarch.rpm" && \
+    microdnf install -y --setopt=install_weak_deps=0 postgresql18-server postgresql18-contrib && \
+    microdnf clean all
+ENV PATH="$PATH:/usr/pgsql-18/bin"
 
-# ---- PostgreSQL 18 ----
-# Prevent initdb from running during apt install (segfaults under QEMU);
-# the cluster is created at runtime instead.
-RUN mkdir -p /etc/postgresql-common && \
-    echo 'create_main_cluster = false' > /etc/postgresql-common/createcluster.conf && \
-    echo "deb http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
-    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
-    apt-get update -y && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confold" \
-        postgresql-18 postgresql-client-18 postgresql-18-pgvector && \
-    rm -rf /var/lib/apt/lists/*
-ENV PATH="$PATH:/usr/lib/postgresql/18/bin"
+# ---- Node.js 24 (NodeSource RPM repo) ----
+RUN printf '%s\n' \
+      '[nodesource-nodejs]' \
+      'name=Node.js 24.x' \
+      'baseurl=https://rpm.nodesource.com/pub_24.x/nodistro/nodejs/$basearch' \
+      'enabled=1' 'gpgcheck=0' > /etc/yum.repos.d/nodesource.repo && \
+    microdnf install -y --setopt=install_weak_deps=0 nodejs && microdnf clean all
 
-# ---- Node.js 24 LTS + Caddy + Docker CLI (single apt layer) ----
-RUN curl -sL https://deb.nodesource.com/setup_24.x | bash - && \
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && \
-    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list && \
-    install -m 0755 -d /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
-    chmod a+r /etc/apt/keyrings/docker.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
-    apt-get update && apt-get install -y --no-install-recommends \
-      nodejs \
-      caddy \
-      docker-ce-cli=5:29.6.0-1~debian.12~bookworm \
-    && rm -rf /var/lib/apt/lists/*
+# ---- Docker CLI (Docker's EL9 repo; no buildx/compose plugins) ----
+RUN printf '%s\n' \
+      '[docker-ce-stable]' \
+      'name=Docker CE Stable' \
+      'baseurl=https://download.docker.com/linux/rhel/9/$basearch/stable' \
+      'enabled=1' 'gpgcheck=0' > /etc/yum.repos.d/docker-ce.repo && \
+    microdnf install -y --setopt=install_weak_deps=0 docker-ce-cli && microdnf clean all
 
-# ---- Python packages ----
-# bookworm marks the system Python as externally-managed (PEP 668); these run in
-# the container's system interpreter by design, so allow it.
-RUN pip3 install --break-system-packages \
-    requests \
-    pyyaml \
-    pandas \
-    tabulate \
-    openpyxl \
-    py2neo
+# ---- Caddy (static upstream binary; arch-aware) ----
+RUN arch="$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/')" && \
+    curl -L "https://caddyserver.com/api/download?os=linux&arch=${arch}" -o /usr/bin/caddy && \
+    chmod +x /usr/bin/caddy
 
-# ---- Java 21 (Amazon Corretto) ----
+# ---- Python packages (+ supervisor via pip; not in RHEL repos) ----
+RUN pip3 install --no-cache-dir \
+    requests pyyaml pandas tabulate openpyxl py2neo supervisor
+
+# ---- Java 21 (Amazon Corretto tarball) ----
 RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then \
-        JAVA_ARCH="x64"; \
-    elif [ "$ARCH" = "aarch64" ]; then \
-        JAVA_ARCH="aarch64"; \
-    else \
-        echo "Unsupported architecture: $ARCH" && exit 1; \
-    fi && \
+    if [ "$ARCH" = "x86_64" ]; then JAVA_ARCH="x64"; else JAVA_ARCH="aarch64"; fi && \
     curl -L https://corretto.aws/downloads/resources/21.0.6.7.1/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH}.tar.gz | tar -C /opt -xzf - && \
     ln -s /opt/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH} /opt/java
 ENV JAVA_HOME="/opt/java"
@@ -104,8 +64,6 @@ RUN mkdir -p /opt/maven && \
 ENV PATH="$PATH:/opt/maven/bin"
 
 # ---- Neo4j 2026.05.0 ----
-# Must stay in sync with the embedded Neo4j in webapp/grebi_cypher_service/pom.xml
-# and the standalone image in docker_envs/Dockerfile.neo4j_with_extras.
 RUN mkdir /opt/neo4j && \
     curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2026.05.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j && \
     echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
@@ -118,24 +76,11 @@ ENV PATH="$PATH:/opt/neo4j/bin"
 ENV NEXTFLOW_VERSION=24.10.5
 ENV NXF_VER=${NEXTFLOW_VERSION}
 RUN curl -fsSL https://get.nextflow.io | bash && \
-    mv nextflow /usr/local/bin/ && \
-    chmod +x /usr/local/bin/nextflow
+    mv nextflow /usr/local/bin/ && chmod +x /usr/local/bin/nextflow
 
-# ---- Permissions & directories ----
+# ---- Permissions, dirs, non-root user ----
 RUN chmod a+w /etc/passwd /etc/group && \
-    mkdir -p /opt/grebi/data/neo4j \
-             /opt/grebi/data/postgres \
-             /opt/grebi/data/prefix_maps \
-             /var/run/postgresql && \
-    chmod 777 /var/run/postgresql
-
-# Drop the MTA + cron pulled in transitively as apt Recommends (postgres/common).
-# They are never used in this container and only add CVEs to scans.
-RUN apt-get purge -y exim4-base exim4-config exim4-daemon-light cron 2>/dev/null || true
-
-# Non-root user. Images built FROM this base reset to root for their build steps
-# and ship as non-root. This also satisfies the "missing USER" scanner check on
-# the base image itself. /etc/passwd is world-writable (above) so an injected
-# runtime uid (docker -u / k8s runAsUser) can still resolve itself.
-RUN groupadd -r grebi && useradd -r -g grebi -d /opt grebi
+    mkdir -p /opt/grebi/data/neo4j /opt/grebi/data/postgres /opt/grebi/data/prefix_maps /var/run/postgresql && \
+    chmod 777 /var/run/postgresql && \
+    groupadd -r grebi && useradd -r -g grebi -d /opt grebi
 USER grebi
