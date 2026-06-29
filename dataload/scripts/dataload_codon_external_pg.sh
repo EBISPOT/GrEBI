@@ -10,10 +10,10 @@ if [ -z "$PGPASSWORD" ]; then
   exit 1
 fi
 
-export GREBI_HOME=/nfs/production/parkinso/spot/grebi
+export GREBI_HOME=${GREBI_HOME:-/nfs/production/parkinso/spot/grebi}
 export GREBI_DATALOAD_HOME=$GREBI_HOME/dataload
 export GREBI_QUERY_YAMLS_PATH=$GREBI_HOME/materialised_queries
-export GREBI_NOBACKUP=/hps/nobackup/parkinso/spot/grebi
+export GREBI_NOBACKUP=${GREBI_NOBACKUP:-/hps/nobackup/parkinso/spot/grebi}
 export GREBI_OUT_DIR=$GREBI_NOBACKUP/out
 export GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-$GREBI_NOBACKUP/downloads}
 export GREBI_IS_EBI=true
@@ -26,10 +26,10 @@ export NXF_SINGULARITY_CACHEDIR=$GREBI_NOBACKUP/NXF_SINGULARITY_CACHEDIR
 module load nextflow/24.10.3
 
 # External PostgreSQL connection
-export PGHOST=pgsql-hlvm-138
-export PGPORT=5432
-export PGDATABASE=spotefoexp
-export PGUSER=spot
+export PGHOST=${PGHOST:-pgsql-hlvm-138}
+export PGPORT=${PGPORT:-5432}
+export PGDATABASE=${PGDATABASE:-spotefoexp}
+export PGUSER=${PGUSER:-spot}
 # PGPASSWORD is set by the caller
 
 export REPORTS_DIR=$GREBI_OUT_DIR/reports

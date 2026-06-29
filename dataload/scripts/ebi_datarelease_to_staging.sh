@@ -17,7 +17,7 @@ if [ ! -d "$DATARELEASE_PATH" ]; then
   exit 1
 fi
 
-STAGING_PATH=/nfs/public/rw/ontoapps/grebi/staging
+STAGING_PATH=${GREBI_PUBLIC_DIR:-/nfs/public/rw/ontoapps/grebi}/staging
 
 if [ ! -d "$STAGING_PATH" ]; then
   echo "Staging path $STAGING_PATH does not exist"

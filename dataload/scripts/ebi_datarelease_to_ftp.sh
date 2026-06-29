@@ -15,8 +15,9 @@ VERSION=$(date +"%Y-%b-%d")
 
 ./check_datarelease.sh $DATARELEASE_PATH
 
-FTP_PATH=/nfs/ftp/public/databases/spot/kg/$VERSION
-LATEST_PATH=/nfs/ftp/public/databases/spot/kg/latest
+FTP_BASE=${GREBI_FTP_DIR:-/nfs/ftp/public/databases/spot/kg}
+FTP_PATH=$FTP_BASE/$VERSION
+LATEST_PATH=$FTP_BASE/latest
 
 echo "Copying archives from $DATARELEASE_PATH to $FTP_PATH"
 
