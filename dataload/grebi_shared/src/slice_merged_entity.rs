@@ -29,6 +29,7 @@ pub struct SlicedEntity<'a> {
     pub props:Vec<SlicedProperty<'a>>,
     pub _refs:Option<&'a [u8]>,
     pub display_type:Option<&'a [u8]>,
+    pub curie:Option<&'a [u8]>,
     pub model_id_to_embedding_vector:BTreeMap<&'a [u8], &'a [u8]>
 }
 
@@ -42,6 +43,7 @@ impl<'a> SlicedEntity<'a> {
         let mut entity_datasources:Vec<&[u8]> = Vec::new();
         let mut entity_source_ids:Vec<&[u8]> = Vec::new();
         let mut display_type:Option<&[u8]> = None;
+        let mut curie:Option<&[u8]> = None;
         let mut _refs:Option<&[u8]> = None;
         let mut model_id_to_embedding_vector:BTreeMap<&'a [u8], &'a [u8]> = BTreeMap::new();
         
@@ -82,6 +84,13 @@ impl<'a> SlicedEntity<'a> {
 
             if prop_key == b"grebi:displayType" {
                 display_type = Some(&parser.value());
+                continue;
+            }
+
+            if prop_key == b"grebi:curie" {
+                // Derived in the link stage (like grebi:displayType): a single
+                // bare-string scalar, not a reified property array.
+                curie = Some(parser.string());
                 continue;
             }
 
@@ -145,7 +154,7 @@ impl<'a> SlicedEntity<'a> {
         }
         parser.end_object();
 
-        return SlicedEntity { id, datasources: entity_datasources, source_ids: entity_source_ids, subgraph, props, display_type, model_id_to_embedding_vector, _refs };
+        return SlicedEntity { id, datasources: entity_datasources, source_ids: entity_source_ids, subgraph, props, display_type, curie, model_id_to_embedding_vector, _refs };
 
     }
 

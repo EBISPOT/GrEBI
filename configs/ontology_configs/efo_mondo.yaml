@@ -1,0 +1,34 @@
+# A first-class "ontology set": the ontologies that owlmake's `om ubergraph`
+# merges, reasons over, and materialises into a single ubergraph. This is the
+# new, OWL-native alternative to pulling each ontology from OLS — distinct from a
+# datasource (an "ingest"), but really just preprocessed: the preprocess phase
+# turns this set into one ubergraph.nq, which is then ingested by the
+# configs/datasource_configs/ontologies/*.yaml datasources.
+#
+# This pilot set (EFO + MONDO) is deliberately small so it builds on modest
+# hardware. The motivating case is EFO: it is NOT an OBO Foundry ontology, so it
+# can never appear in the RENCI Ubergraph download — building our own ubergraph
+# is the only way to give EFO the same materialised relation graph the OBO
+# ontologies get. The set is expected to grow towards the full OLS ontology set
+# (which will need HPC for the merged reasoning step).
+id: efo_mondo
+description: "Pilot owlmake-built ubergraph: EFO + MONDO."
+
+# Skip om ubergraph's network-only extras (biolink model, phenopposites,
+# obo_prefixes) for a hermetic, faster pilot build. Set to false to include them.
+offline: true
+
+# Each ontology is loaded from OWL. `sources` are tried in order (local
+# paths/EBI mirrors first, then public PURLs) exactly like a datasource download.
+ontologies:
+  # `iri` is each ontology's declared Ontology(<...>) IRI — what owlmake stamps as
+  # the rdfs:isDefinedBy target on its terms. The ingest maps it to the per-ontology
+  # datasource Ontologies.<id>. Must match the OWL's ontology IRI exactly.
+  - id: efo
+    iri: http://www.ebi.ac.uk/efo/efo.owl
+    sources:
+      - https://www.ebi.ac.uk/efo/efo.owl
+  - id: mondo
+    iri: http://purl.obolibrary.org/obo/mondo.owl
+    sources:
+      - http://purl.obolibrary.org/obo/mondo.owl

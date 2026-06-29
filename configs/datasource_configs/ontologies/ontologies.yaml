@@ -1,0 +1,22 @@
+# Term annotations + asserted/inferred axioms from the owlmake-built ubergraph
+# (its merged, reasoned `ontology` named graph). This is the OWL-native
+# replacement for the per-ontology OLS ingests: rdfs:label, synonyms, IAO
+# definitions, rdfs:subClassOf, etc. all normalise via the existing dual-vocab
+# equivalence groups in configs/subgraph_configs/src/shared.py.
+#
+# from_ubergraph: this datasource is not downloaded; it is fed by the in-pipeline
+# `om ubergraph` build of the subgraph's ontology_sets (see build_ubergraph.nf).
+# The --rdf-graph IRI must match the --graph-prefix the build passes to om.
+id: Ontologies
+enabled: true
+from_ubergraph: true
+description: "Merged, reasoned ontology graph (labels, synonyms, definitions, axioms) from the owlmake-built ubergraph of the configured ontology set."
+ingests:
+  - memory: "32 GB"
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_rdf2jsonl
+        --rdf-type rdf_quads_nq
+        --rdf-graph "https://w3id.org/owlmake/ubergraph/ontology"
+        --rdf-types-are-grebi-types
+        --datasource-from-isdefinedby "${GREBI_INGEST_FILENAME%.nq.gz}.datasource_map.json"'

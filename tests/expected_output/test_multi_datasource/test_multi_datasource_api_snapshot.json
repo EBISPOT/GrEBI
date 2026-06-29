@@ -111,6 +111,7 @@
             ]
           }
         },
+        "grebi:curie": "ex:chemical1",
         "grebi:datasources": [
           "TestMultiDatasourceB"
         ],
@@ -284,6 +285,7 @@
             ]
           }
         },
+        "grebi:curie": "ex:disease1",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -457,6 +459,7 @@
             ]
           }
         },
+        "grebi:curie": "ex:pathway1",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -650,6 +653,7 @@
             }
           }
         ],
+        "grebi:curie": "ex:protein1",
         "grebi:datasources": [
           "TestMultiDatasourceA",
           "TestMultiDatasourceB"
@@ -1026,6 +1030,7 @@
             }
           }
         ],
+        "grebi:curie": "hgnc:11603",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -1266,6 +1271,7 @@
             ]
           }
         },
+        "grebi:curie": "mondo:0005002",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -1349,6 +1355,7 @@
             ]
           }
         },
+        "grebi:curie": "ex:chemical1",
         "grebi:datasources": [
           "TestMultiDatasourceB"
         ],
@@ -1407,6 +1414,7 @@
             ]
           }
         },
+        "grebi:curie": "ex:disease1",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -1465,6 +1473,7 @@
             ]
           }
         },
+        "grebi:curie": "ex:pathway1",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -1614,6 +1623,7 @@
             }
           }
         ],
+        "grebi:curie": "ex:protein1",
         "grebi:datasources": [
           "TestMultiDatasourceA",
           "TestMultiDatasourceB"
@@ -1738,6 +1748,7 @@
             }
           }
         ],
+        "grebi:curie": "hgnc:11603",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -1796,6 +1807,7 @@
             ]
           }
         },
+        "grebi:curie": "mondo:0005002",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -1884,6 +1896,7 @@
             ]
           }
         },
+        "grebi:curie": "ex:chemical1",
         "grebi:datasources": [
           "TestMultiDatasourceB"
         ],
@@ -1942,6 +1955,7 @@
             ]
           }
         },
+        "grebi:curie": "ex:disease1",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -2000,6 +2014,7 @@
             ]
           }
         },
+        "grebi:curie": "ex:pathway1",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -2149,6 +2164,7 @@
             }
           }
         ],
+        "grebi:curie": "ex:protein1",
         "grebi:datasources": [
           "TestMultiDatasourceA",
           "TestMultiDatasourceB"
@@ -2273,6 +2289,7 @@
             }
           }
         ],
+        "grebi:curie": "hgnc:11603",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -2331,6 +2348,7 @@
             ]
           }
         },
+        "grebi:curie": "mondo:0005002",
         "grebi:datasources": [
           "TestMultiDatasourceA"
         ],
@@ -2420,6 +2438,10 @@
         "count": 1
       }
     },
+    "edge_counts_by_datasource": {
+      "TestMultiDatasourceA": 3,
+      "TestMultiDatasourceB": 1
+    },
     "edge_prop_defs": {},
     "edge_props": {
       "test_mda:id": {
@@ -2490,12 +2512,12 @@
       {
         "cypher_query": "RETURN \"Hello, World!\" AS message",
         "description": "Tester query to see if the pipeline is working",
-        "end_time": "2026-03-24 10:25:02",
+        "end_time": "2026-06-25 16:29:52",
         "id": "hello_world",
         "num_results": 1,
-        "start_time": "2026-03-24 10:25:01",
+        "start_time": "2026-06-25 16:29:50",
         "subgraph": "test_multi_datasource",
-        "time": 0.615741,
+        "time": 2.112508,
         "title": "Hello world",
         "uses_datasources": [
           "IMPC",
@@ -2503,6 +2525,234 @@
         ]
       }
     ],
+    "node_counts_by_datasource": {
+      "TestMultiDatasourceA": 5,
+      "TestMultiDatasourceB": 2
+    },
+    "subgraph_config": {
+      "additional_equivalence_groups": [
+        [
+          "grebi:name",
+          "ols:label",
+          "rdfs:label",
+          "monarch:name",
+          "impc:name",
+          "reactome:displayName",
+          "dcterms:title",
+          "ncit:Preferred_Name",
+          "robokop:name",
+          "otar:name"
+        ],
+        [
+          "grebi:description",
+          "iao:definition",
+          "iao:0000115",
+          "monarch:description",
+          "ols:definition",
+          "robokop:description",
+          "otar:description"
+        ],
+        [
+          "grebi:synonym",
+          "monarch:synonym",
+          "iao:alternative_label",
+          "ols:synonym",
+          "oboinowl:hasExactSynonym",
+          "dcterms:alternative",
+          "otar:synonyms"
+        ],
+        [
+          "mondo:0000001",
+          "ogms:0000031"
+        ],
+        [
+          "biolink:broad_match",
+          "skos:broader",
+          "skos:broadMatch",
+          "ols:directAncestor"
+        ],
+        [
+          "biolink:subclass_of",
+          "ols:directParent",
+          "rdfs:subClassOf",
+          "rdfs:subPropertyOf"
+        ],
+        [
+          "rdfs:isDefinedBy",
+          "ols:ontologyIri",
+          "ols:ontologyId"
+        ],
+        [
+          "biolink:gene_to_disease_association",
+          "ncit:Gene_Associated_With_Disease"
+        ],
+        [
+          "biolink:disease_has_location",
+          "efo:has_disease_location"
+        ]
+      ],
+      "bytes_per_merged_file": 1073741824,
+      "datasource_configs": [
+        {
+          "description": "Test datasource A for multi-datasource merge testing",
+          "download": [
+            {
+              "dest": "test_multi_datasource/source_a_edges.jsonl",
+              "sources": [
+                "tests/data/test_multi_datasource/source_a_edges.jsonl"
+              ]
+            },
+            {
+              "dest": "test_multi_datasource/source_a_nodes.jsonl",
+              "sources": [
+                "tests/data/test_multi_datasource/source_a_nodes.jsonl"
+              ]
+            }
+          ],
+          "enabled": true,
+          "id": "TestMultiDatasourceA",
+          "ingests": [
+            {
+              "command": " cat $GREBI_INGEST_FILENAME | grebi_ingest_kgx_edges --kgx-inject-key-prefix test_mda:",
+              "globs": [
+                "test_multi_datasource/source_a_edges.jsonl"
+              ]
+            },
+            {
+              "command": " cat $GREBI_INGEST_FILENAME | grebi_transform_jsonl --json-rename category:grebi:type --json-inject-key-prefix test_mda:",
+              "globs": [
+                "test_multi_datasource/source_a_nodes.jsonl"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Test datasource B for multi-datasource merge testing",
+          "download": [
+            {
+              "dest": "test_multi_datasource/source_b_edges.jsonl",
+              "sources": [
+                "tests/data/test_multi_datasource/source_b_edges.jsonl"
+              ]
+            },
+            {
+              "dest": "test_multi_datasource/source_b_nodes.jsonl",
+              "sources": [
+                "tests/data/test_multi_datasource/source_b_nodes.jsonl"
+              ]
+            }
+          ],
+          "enabled": true,
+          "id": "TestMultiDatasourceB",
+          "ingests": [
+            {
+              "command": " cat $GREBI_INGEST_FILENAME | grebi_ingest_kgx_edges --kgx-inject-key-prefix test_mdb:",
+              "globs": [
+                "test_multi_datasource/source_b_edges.jsonl"
+              ]
+            },
+            {
+              "command": " cat $GREBI_INGEST_FILENAME | grebi_transform_jsonl --json-rename category:grebi:type --json-inject-key-prefix test_mdb:",
+              "globs": [
+                "test_multi_datasource/source_b_nodes.jsonl"
+              ]
+            }
+          ]
+        }
+      ],
+      "exclude_edges": [],
+      "exclude_props": [
+        "ols:hierarchicalProperty",
+        "ols:synonymProperty",
+        "ols:curie",
+        "ols:shortForm",
+        "ols:ontologyPreferredPrefix",
+        "ols:iri",
+        "ols:uri",
+        "ols:imported",
+        "ols:hasHierarchicalParents",
+        "ols:hasHierarchicalChildren",
+        "ols:hasDirectParents",
+        "ols:hasDirectChildren",
+        "ols:numDescendants",
+        "ols:numHierarchicalDescendants",
+        "oboinowl:id",
+        "oboinowl:url",
+        "monarch:iri",
+        "cco:hasDocument",
+        "cco:hasMolecule"
+      ],
+      "exclude_self_referential_edges": [
+        "foaf:page",
+        "rdfs:seeAlso",
+        "oboinowl:hasDbXref",
+        "biolink:subclass_of",
+        "biolink:broad_match",
+        "ols:ontology_purl",
+        "ols:ontologyId",
+        "cheminf:000407",
+        "cheminf:InChIKey",
+        "biolink:interacts_with",
+        "reactome:url",
+        "dc:Identifier",
+        "hgnc:agr",
+        "hgnc:gencc",
+        "monarch:xref",
+        "hgnc:uniprot_ids",
+        "hgnc:omim_id",
+        "hgnc:entrez_id",
+        "reactome:referenceGene",
+        "reactome:identifier",
+        "reactome:crossReference",
+        "edam:Ensembl_gene_id",
+        "obo:pr#has_gene_template",
+        "ols:relatedTo",
+        "ols:relatedFrom",
+        "robokop:smiles",
+        "ctd:ChemicalURL",
+        "ctd:UniProtIDs",
+        "ols:linksTo"
+      ],
+      "id": "TestMultiDatasource",
+      "identifier_props": [
+        "id",
+        "owl:equivalentClass",
+        "owl:equivalentProperty",
+        "owl:sameAs",
+        "grebi:hashId",
+        "grebi:equivalentTo",
+        "ols:iri",
+        "ols:shortForm",
+        "hgnc:ensembl_gene_id",
+        "obo:chebi/inchi",
+        "obo:chebi/inchikey",
+        "obo:chebi/smiles",
+        "otar:canonicalSmiles",
+        "otar:inchiKey",
+        "impc:pmId",
+        "impc:humanGeneAccId",
+        "monarch:iri",
+        "skos:exactMatch",
+        "ncit:P368",
+        "ncit:C98965",
+        "dcterms:identifier",
+        "oboinowl:hasAlternativeId",
+        "robokop:equivalent_identifiers",
+        "mesh.vocab:identifier"
+      ],
+      "name": "Test: Multi Datasource Merge",
+      "ontology_sets": [],
+      "prioritise_datasources": [
+        "TestMultiDatasourceA"
+      ],
+      "type_superclasses": [
+        "mondo:0000001",
+        "efo:0000408",
+        "chebi:36080",
+        "chebi:24431",
+        "biolink:ChemicalEntity"
+      ]
+    },
     "subgraph_name": "test_multi_datasource",
     "types": {
       "biolink:ChemicalEntity": {

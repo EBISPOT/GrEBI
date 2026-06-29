@@ -133,6 +133,7 @@ def create_indexes_for_subgraph(
     # Node indexes
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_nodeId" ON "nodes_{sg}" USING btree ("grebi:nodeId");')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_curie" ON "nodes_{sg}" USING btree ("ols:curie");')
+    stmts.append(f'CREATE INDEX "idx_nodes_{sg}_grebi_curie" ON "nodes_{sg}" USING btree ("grebi:curie");')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_name" ON "nodes_{sg}" USING btree ("grebi:name");')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_name_trgm" ON "nodes_{sg}" USING gin ("grebi:name" gin_trgm_ops);')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_type_gin" ON "nodes_{sg}" USING gin ("grebi:type");')

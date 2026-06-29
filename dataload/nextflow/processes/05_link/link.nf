@@ -24,6 +24,7 @@ process link {
           --out-graph-metadata-json linked_graph_metadata_${subgraph}_${shard_id}.json \
           --exclude ${exclude.iterator().join(",")} \
           --exclude-self-referential ${exclude_self_referential.iterator().join(",")} \
+          --in-prefix-map-json /opt/grebi_dataload/prefix_maps/prefix_map_normalise.json \
         > linked_nodes_${subgraph}_${shard_id}.jsonl
     """
 }

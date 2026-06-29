@@ -34,11 +34,13 @@ const RDF_PREDICATE:SimpleIri<'static> =
 const RDF_OBJECT:SimpleIri<'static> =
     SimpleIri::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#", Some("object"));
 
-const OWL_AXIOM:SimpleIri<'static> = 
+const OWL_AXIOM:SimpleIri<'static> =
     SimpleIri::new_unchecked("http://www.w3.org/2002/07/owl#", Some("Axiom"));
-const OWL_SUBJECT:SimpleIri<'static> = 
+const RDFS_ISDEFINEDBY:SimpleIri<'static> =
+    SimpleIri::new_unchecked("http://www.w3.org/2000/01/rdf-schema#", Some("isDefinedBy"));
+const OWL_SUBJECT:SimpleIri<'static> =
     SimpleIri::new_unchecked("http://www.w3.org/2002/07/owl#", Some("annotatedSource"));
-const OWL_PREDICATE:SimpleIri<'static> = 
+const OWL_PREDICATE:SimpleIri<'static> =
     SimpleIri::new_unchecked("http://www.w3.org/2002/07/owl#", Some("annotatedProperty"));
 const OWL_OBJECT:SimpleIri<'static> = 
     SimpleIri::new_unchecked("http://www.w3.org/2002/07/owl#", Some("annotatedTarget"));
@@ -81,7 +83,13 @@ struct Args {
     reif_value_predicate:Vec<String>, // predicates from reification metadata object to the actual value
 
     #[arg(long, default_value_t = false)]
-    rdf_types_are_grebi_types:bool 
+    rdf_types_are_grebi_types:bool,
+
+    #[arg(long)]
+    map_predicate:Vec<String>, // rename a predicate to a new JSON key, FROM=TO (e.g. "http://www.w3.org/2000/01/rdf-schema#subClassOf=biolink:broad_match")
+
+    #[arg(long)]
+    datasource_from_isdefinedby:Option<String> // JSON file mapping ontology IRI -> datasource name; per term, set grebi:datasource from its rdfs:isDefinedBy target (per-ontology provenance for the ubergraph)
 }
 
 fn main() -> std::io::Result<()> {
@@ -103,7 +111,15 @@ fn main() -> std::io::Result<()> {
     let reif_pointer_preds:BTreeSet<String> = args.reif_pointer_predicate.into_iter().collect();
     let reif_value_preds:BTreeSet<String> = args.reif_value_predicate.into_iter().collect();
     let rdf_types_are_grebi_types = args.rdf_types_are_grebi_types;
-        
+
+    // Per-ingest predicate renames (FROM=TO). Used to emit the ubergraph's
+    // redundant vs non-redundant rdfs:subClassOf as distinct biolink predicates
+    // (broad_match vs subclass_of) so the closure is queryable separately.
+    let map_predicate:Vec<(String,String)> = args.map_predicate.iter().map(|m| {
+        let eq = m.find('=').expect("--map-predicate must be FROM=TO");
+        (m[0..eq].to_string(), m[eq+1..].to_string())
+    }).collect();
+
     let gr:CustomGraph = match args.rdf_type.as_str() {
         "rdf_triples_xml" => {
             let parser = RdfXmlParser { base: Some("http://www.ebi.ac.uk/kg/".into()) };
@@ -148,6 +164,16 @@ fn main() -> std::io::Result<()> {
     let mut owl_axiom_subjs:Vec<Term<Rc<str>>> = Vec::new();
     let mut rdf_statement_subjs:Vec<Term<Rc<str>>> = Vec::new();
 
+    // Per-ontology provenance: map each ontology IRI (the rdfs:isDefinedBy target
+    // owlmake stamps on every term) to a datasource name (e.g. Ontologies.efo).
+    // For the ubergraph ontology graph this lets a single ingest tag each term
+    // with the ontology it actually came from.
+    let isdefinedby_iri_to_ds:HashMap<String,String> = match &args.datasource_from_isdefinedby {
+        Some(path) => serde_json::from_reader(BufReader::new(File::open(path).unwrap())).unwrap(),
+        None => HashMap::new(),
+    };
+    let mut subject_to_datasource:HashMap<String,String> = HashMap::new();
+
     for triple in ds.triples() {
         let triple_u = triple.unwrap();
         if triple_u.p().eq(&RDF_TYPE) {
@@ -155,6 +181,11 @@ fn main() -> std::io::Result<()> {
                 owl_axiom_subjs.push(triple_u.s().clone());
             } else if triple_u.o().eq(&RDF_STATEMENT) {
                 rdf_statement_subjs.push(triple_u.s().clone());
+            }
+        }
+        if !isdefinedby_iri_to_ds.is_empty() && triple_u.p().eq(&RDFS_ISDEFINEDBY) {
+            if let Some(ds_name) = isdefinedby_iri_to_ds.get(&triple_u.o().value().to_string()) {
+                subject_to_datasource.insert(triple_u.s().value().to_string(), ds_name.clone());
             }
         }
         if nest_preds.contains(&triple_u.p().value().to_string()) {
@@ -173,7 +204,7 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("Building reification index took {} seconds", start_time.elapsed().as_secs());
 
-    write_subjects(ds, &mut output_nodes, &nest_preds, &exclude_subjects, &exclude_subjects_at_toplevel, reifs, rdf_types_are_grebi_types, &reif_pointer_preds, &reif_value_preds);
+    write_subjects(ds, &mut output_nodes, &nest_preds, &exclude_subjects, &exclude_subjects_at_toplevel, reifs, rdf_types_are_grebi_types, &reif_pointer_preds, &reif_value_preds, &map_predicate, &subject_to_datasource);
 
     eprintln!("Total time elapsed: {} seconds", start_time.elapsed().as_secs());
 
@@ -237,6 +268,8 @@ fn write_subjects(
     rdf_types_are_grebi_types:bool,
     reif_pointer_preds:&BTreeSet<String>,
     reif_value_preds:&BTreeSet<String>,
+    map_predicate:&[(String,String)],
+    subject_to_datasource:&HashMap<String,String>,
 ) {
 
     let start_time2 = std::time::Instant::now();
@@ -254,7 +287,7 @@ fn write_subjects(
             continue;
         }
 
-        let json = term_to_json(s, ds, nest_preds, Some(&reifs), rdf_types_are_grebi_types, reif_pointer_preds, reif_value_preds);
+        let mut json = term_to_json(s, ds, nest_preds, Some(&reifs), rdf_types_are_grebi_types, reif_pointer_preds, reif_value_preds);
 
         let json_obj = json.as_object().unwrap();
         let types = json_obj.get("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
@@ -267,6 +300,35 @@ fn write_subjects(
                         continue 'write_subjs;
                     }
                 }
+            }
+        }
+
+        // Rename top-level predicate keys per --map-predicate (e.g. the
+        // materialised relation graphs' rdfs:subClassOf -> biolink:broad_match /
+        // biolink:subclass_of). Values are always arrays here; merge if the
+        // target key already exists.
+        if !map_predicate.is_empty() {
+            let obj = json.as_object_mut().unwrap();
+            for (from, to) in map_predicate {
+                if let Some(v) = obj.remove(from.as_str()) {
+                    match obj.get_mut(to.as_str()) {
+                        Some(existing) => {
+                            if let (Some(ex), Some(add)) = (existing.as_array_mut(), v.as_array()) {
+                                ex.extend(add.iter().cloned());
+                            }
+                        }
+                        None => { obj.insert(to.clone(), v); }
+                    }
+                }
+            }
+        }
+
+        // Per-ontology provenance: tag this term with the datasource derived from
+        // its rdfs:isDefinedBy target (e.g. Ontologies.efo). grebi_merge honours a
+        // per-line grebi:datasource, overriding the ingest's file-level id.
+        if !subject_to_datasource.is_empty() {
+            if let Some(ds_name) = subject_to_datasource.get(&s.value().to_string()) {
+                json.as_object_mut().unwrap().insert("grebi:datasource".to_string(), Value::String(ds_name.clone()));
             }
         }
 

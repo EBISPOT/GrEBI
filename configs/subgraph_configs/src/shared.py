@@ -37,7 +37,7 @@ config = {
     ],
     "additional_equivalence_groups": [
         ["grebi:name", "ols:label", "rdfs:label", "monarch:name", "impc:name", "reactome:displayName", "dcterms:title", "ncit:Preferred_Name", "robokop:name", "otar:name"],
-        ["grebi:description", "iao:definition", "monarch:description", "ols:definition", "robokop:description", "otar:description"],
+        ["grebi:description", "iao:definition", "iao:0000115", "monarch:description", "ols:definition", "robokop:description", "otar:description"],
         ["grebi:synonym", "monarch:synonym", "iao:alternative_label", "ols:synonym", "oboinowl:hasExactSynonym", "dcterms:alternative", "otar:synonyms" ],
         ["mondo:0000001", "ogms:0000031"],
         ["biolink:broad_match", "skos:broader", "skos:broadMatch", "ols:directAncestor"],
@@ -101,15 +101,15 @@ config = {
         "ols:linksTo"
      ],
      "prioritise_datasources": [
-        "OLS.biolink",
-        "OLS.ro",
-        "OLS.chebi",
-        "OLS.hp",
-        "OLS.mp",
-        "OLS.mondo",
-        "OLS.oba",
-        "OLS.efo",
-        "OLS.doid",
+        "Ontologies.biolink",
+        "Ontologies.ro",
+        "Ontologies.chebi",
+        "Ontologies.hp",
+        "Ontologies.mp",
+        "Ontologies.mondo",
+        "Ontologies.oba",
+        "Ontologies.efo",
+        "Ontologies.doid",
         "HGNC",
         "IMPC"
      ]

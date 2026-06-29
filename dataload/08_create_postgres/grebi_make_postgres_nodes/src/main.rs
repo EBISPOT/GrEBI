@@ -46,8 +46,8 @@ fn main() -> std::io::Result<()> {
     let nodes_file = File::create(&args.out_nodes_pgbin_path)?;
     let mut pgw = PgCopyWriter::new(BufWriter::with_capacity(1024 * 1024 * 32, nodes_file));
 
-    // 6 fixed columns + embedding columns
-    let nfields = (6 + embedding_models.len()) as i16;
+    // 7 fixed columns + embedding columns
+    let nfields = (7 + embedding_models.len()) as i16;
 
     for line_result in nodes_reader.lines() {
         let line = line_result?;
@@ -114,6 +114,9 @@ fn write_node_row(
 
     // ols:curie TEXT
     pgw.write_text(&extract_first_string(json.get("ols:curie")));
+
+    // grebi:curie TEXT
+    pgw.write_text(&extract_first_string(json.get("grebi:curie")));
 
     // Embedding columns (vector(dim))
     for model_name in embedding_models.keys() {
@@ -188,6 +191,7 @@ fn write_columns(
     writeln!(writer, "\"grebi:datasources\" TEXT[] NOT NULL DEFAULT '{{}}'").unwrap();
     writeln!(writer, "\"grebi:sourceIds\" TEXT[] DEFAULT '{{}}'").unwrap();
     writeln!(writer, "\"ols:curie\" TEXT").unwrap();
+    writeln!(writer, "\"grebi:curie\" TEXT").unwrap();
     for (model_name, dim) in embedding_models {
         writeln!(writer, "\"embedding:{}\" vector({})", model_name, dim).unwrap();
     }

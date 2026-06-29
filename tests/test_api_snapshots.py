@@ -86,13 +86,13 @@ def collect_api_snapshot(base_url: str, subgraph: str) -> Dict[str, Any]:
     snapshot["health"] = api_get(base_url, "/api/health")
 
     # Subgraphs list
-    snapshot["subgraphs"] = api_get(base_url, "/api/v1/subgraphs")
+    snapshot["subgraphs"] = api_get(base_url, "/api/v1/graphs")
 
     # Subgraph metadata
-    snapshot["subgraph_metadata"] = api_get(base_url, f"/api/v1/subgraphs/{subgraph}")
+    snapshot["subgraph_metadata"] = api_get(base_url, f"/api/v1/graphs/{subgraph}")
 
     # Nodes search (first page)
-    nodes_resp = api_get(base_url, f"/api/v1/subgraphs/{subgraph}/nodes", {"size": "100"})
+    nodes_resp = api_get(base_url, f"/api/v1/graphs/{subgraph}/nodes", {"size": "100"})
     if nodes_resp:
         # Sort nodes for determinism
         if "content" in nodes_resp:
@@ -102,8 +102,8 @@ def collect_api_snapshot(base_url: str, subgraph: str) -> Dict[str, Any]:
             )
         snapshot["nodes"] = nodes_resp
 
-    # Search 
-    search_resp = api_get(base_url, f"/api/v1/subgraphs/{subgraph}/search", {"q": "*", "size": "100"})
+    # Search (the current API folds search into the nodes endpoint via ?q=)
+    search_resp = api_get(base_url, f"/api/v1/graphs/{subgraph}/nodes", {"q": "*", "size": "100"})
     if search_resp:
         if "content" in search_resp:
             search_resp["content"] = sorted(
@@ -120,16 +120,17 @@ def collect_api_snapshot(base_url: str, subgraph: str) -> Dict[str, Any]:
             if not node_id:
                 continue
 
-            encoded_id = base64.b64encode(node_id.encode()).decode()
+            # URL-safe base64 to match the API's Base64.getUrlDecoder()
+            encoded_id = base64.urlsafe_b64encode(node_id.encode()).decode()
 
-            detail = api_get(base_url, f"/api/v1/subgraphs/{subgraph}/nodes/{encoded_id}")
+            detail = api_get(base_url, f"/api/v1/graphs/{subgraph}/nodes/{encoded_id}")
             if detail:
                 node_details[node_id] = {"node": detail}
 
             # Outgoing edges
             out_edges = api_get(
                 base_url,
-                f"/api/v1/subgraphs/{subgraph}/nodes/{encoded_id}/outgoing_edges",
+                f"/api/v1/graphs/{subgraph}/nodes/{encoded_id}/outgoing_edges",
                 {"size": "100"}
             )
             if out_edges:
@@ -143,7 +144,7 @@ def collect_api_snapshot(base_url: str, subgraph: str) -> Dict[str, Any]:
             # Incoming edges
             in_edges = api_get(
                 base_url,
-                f"/api/v1/subgraphs/{subgraph}/nodes/{encoded_id}/incoming_edges",
+                f"/api/v1/graphs/{subgraph}/nodes/{encoded_id}/incoming_edges",
                 {"size": "100"}
             )
             if in_edges:

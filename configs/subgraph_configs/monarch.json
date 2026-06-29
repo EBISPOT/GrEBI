@@ -52,6 +52,7 @@
     [
       "grebi:description",
       "iao:definition",
+      "iao:0000115",
       "monarch:description",
       "ols:definition",
       "robokop:description",
@@ -150,15 +151,15 @@
     "ols:linksTo"
   ],
   "prioritise_datasources": [
-    "OLS.biolink",
-    "OLS.ro",
-    "OLS.chebi",
-    "OLS.hp",
-    "OLS.mp",
-    "OLS.mondo",
-    "OLS.oba",
-    "OLS.efo",
-    "OLS.doid",
+    "Ontologies.biolink",
+    "Ontologies.ro",
+    "Ontologies.chebi",
+    "Ontologies.hp",
+    "Ontologies.mp",
+    "Ontologies.mondo",
+    "Ontologies.oba",
+    "Ontologies.efo",
+    "Ontologies.doid",
     "HGNC",
     "IMPC"
   ],

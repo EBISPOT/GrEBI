@@ -50,7 +50,7 @@ public class GrebiPostgresClient {
     private static final List<String> EDGE_FACET_FIELDS = List.of("grebi:datasources");
 
     private static final Set<String> ALLOWED_NODE_COLUMNS = Set.of(
-            "grebi:nodeId", "grebi:name", "ols:curie"
+            "grebi:nodeId", "grebi:name", "ols:curie", "grebi:curie"
     );
 
     private static final Set<String> ALLOWED_NODE_ARRAY_COLUMNS = Set.of(
@@ -962,7 +962,8 @@ public class GrebiPostgresClient {
         }
         return hasSingleFilterValue(filters, "grebi:sourceIds")
                 || hasSingleFilterValue(filters, "grebi:nodeId")
-                || hasSingleFilterValue(filters, "ols:curie");
+                || hasSingleFilterValue(filters, "ols:curie")
+                || hasSingleFilterValue(filters, "grebi:curie");
     }
 
     private List<Map<String, Object>> fetchExactIdentifierLookup(
@@ -982,7 +983,7 @@ public class GrebiPostgresClient {
             row.put("grebi:type", toDatasourceList(record.get("grebi:type")));
             row.put("grebi:datasources", toDatasourceList(record.get("grebi:datasources")));
             row.put("grebi:sourceIds", toDatasourceList(record.get("grebi:sourceIds")));
-            row.put("ols:curie", record.get("ols:curie", String.class));
+            row.put("grebi:curie", record.get("grebi:curie", String.class));
             results.add(row);
         }
         return results;
@@ -1030,7 +1031,11 @@ public class GrebiPostgresClient {
             var typeField = field(name("grebi:type"));
             var dsField = field(name("grebi:datasources"));
             var srcField = field(name("grebi:sourceIds"));
-            var curieField = field(name("ols:curie"), String.class);
+            // grebi:curie is derived for every node (the compact CURIE of its id,
+            // or the id itself when no prefix matches), so it is the pipeline-wide
+            // identifier that replaces the OLS-only ols:curie. Expose it directly.
+            // (Requires graphs reloaded since the grebi:curie column was added.)
+            var curieField = field(name("grebi:curie"), String.class);
 
             var select = ctx.select(nodeIdField, nameField, typeField, dsField, srcField, curieField)
                     .from(tbl)
@@ -1050,7 +1055,7 @@ public class GrebiPostgresClient {
                     row.put("grebi:type", toDatasourceList(record.get(typeField)));
                     row.put("grebi:datasources", toDatasourceList(record.get(dsField)));
                     row.put("grebi:sourceIds", toDatasourceList(record.get(srcField)));
-                    row.put("ols:curie", record.get(curieField));
+                    row.put("grebi:curie", record.get(curieField));
                     results.add(row);
                 }
             } else if (exactIdentifierLookup) {
@@ -1068,7 +1073,7 @@ public class GrebiPostgresClient {
                     row.put("grebi:type", toDatasourceList(record.get(typeField)));
                     row.put("grebi:datasources", toDatasourceList(record.get(dsField)));
                     row.put("grebi:sourceIds", toDatasourceList(record.get(srcField)));
-                    row.put("ols:curie", record.get(curieField));
+                    row.put("grebi:curie", record.get(curieField));
                     results.add(row);
                 }
             }

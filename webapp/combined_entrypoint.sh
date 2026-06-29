@@ -113,9 +113,13 @@ else
     if ! getent group "$CURRENT_GID" >/dev/null 2>&1; then
         echo "grebi:x:${CURRENT_GID}:" >> /etc/group 2>/dev/null || true
     fi
-    # Postgres will run as the current user (supervisord user= is ignored
-    # when supervisord itself is not root)
-    GREBI_PG_USER="grebi"
+    # Postgres must run as the current (non-root) UID: supervisord is not root,
+    # so it cannot setuid to a different user (it errors, it does not silently
+    # ignore user=). Use the numeric UID (resolvable via the /etc/passwd entry
+    # added above) rather than the name "grebi", which the image's pre-created
+    # grebi user (a different, lower UID) would otherwise shadow — causing
+    # "couldn't setuid to <uid>: Can't drop privilege as nonroot user".
+    GREBI_PG_USER="$CURRENT_UID"
 fi
 
 export GREBI_PG_USER
@@ -140,7 +144,7 @@ case "$MODE" in
         
         # Start all services in background
         echo "Starting services with supervisord..."
-        /usr/bin/supervisord -c "$SUPERVISORD_CONF" > ./logs/supervisord_output.log 2>&1 &
+        supervisord -c "$SUPERVISORD_CONF" > ./logs/supervisord_output.log 2>&1 &
         SUPERVISOR_PID=$!
         
         # Give supervisord a moment to start and check if it's running
@@ -193,30 +197,34 @@ case "$MODE" in
                 python3 /opt/export_postgres.py "$SUBGRAPH"
                 set -e
                 
-                # Phase 3: Compare snapshots against expected output (if requested)
+                # Phase 3: Compare snapshots against expected output (if requested).
+                # Expected snapshots are committed per-subgraph in
+                # tests/expected_output/<subgraph>/ (see that dir's README), so
+                # look in the subgraph subdirectory rather than the parent.
                 if [ -n "${GREBI_EXPECTED_DIR:-}" ]; then
-                    if ls "$GREBI_EXPECTED_DIR"/${SUBGRAPH}_snapshot_*.jsonl 1>/dev/null 2>&1; then
+                    EXPECTED_SG_DIR="$GREBI_EXPECTED_DIR/$SUBGRAPH"
+                    if ls "$EXPECTED_SG_DIR"/${SUBGRAPH}_snapshot_*.jsonl 1>/dev/null 2>&1; then
                         echo ""
                         echo "=== Comparing DB snapshots ==="
                         set +e
                         python3 /opt/compare_snapshots.py \
                             --subgraph "$SUBGRAPH" \
                             --actual-dir "$PWD" \
-                            --expected-dir "$GREBI_EXPECTED_DIR"
+                            --expected-dir "$EXPECTED_SG_DIR"
                         SNAPSHOT_EXIT_CODE=$?
                         set -e
                     else
-                        echo "No expected DB snapshots found at $GREBI_EXPECTED_DIR — skipping comparison"
+                        echo "No expected DB snapshots found at $EXPECTED_SG_DIR — skipping comparison"
                     fi
-                    
-                    if [ -f "$GREBI_EXPECTED_DIR/${SUBGRAPH}_api_snapshot.json" ]; then
+
+                    if [ -f "$EXPECTED_SG_DIR/${SUBGRAPH}_api_snapshot.json" ]; then
                         echo ""
                         echo "=== Comparing API snapshots ==="
                         set +e
                         python3 /opt/test_api_snapshots.py \
                             --subgraph "$SUBGRAPH" \
                             --api-url http://localhost:8090 \
-                            --expected-dir "$GREBI_EXPECTED_DIR"
+                            --expected-dir "$EXPECTED_SG_DIR"
                         API_EXIT_CODE=$?
                         set -e
                     else
@@ -270,7 +278,7 @@ case "$MODE" in
         echo ""
         
         # Start supervisor in foreground
-        exec /usr/bin/supervisord -c "$SUPERVISORD_CONF"
+        exec supervisord -c "$SUPERVISORD_CONF"
         ;;
         
     bash)
@@ -279,7 +287,7 @@ case "$MODE" in
             echo ""
             echo "Services are NOT started automatically."
             echo "To start services manually, run:"
-            echo "  /usr/bin/supervisord -c $SUPERVISORD_CONF &"
+            echo "  supervisord -c $SUPERVISORD_CONF &"
             echo ""
             exec /bin/bash
         else
