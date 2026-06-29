@@ -13,9 +13,12 @@ RUN printf '%s\n' \
     microdnf install -y --setopt=install_weak_deps=0 bash nodejs shadow-utils tar gzip && \
     microdnf clean all
 
-# Caddy upstream static binary (arch-aware).
+# Caddy upstream static binary (arch-aware). Force HTTP/1.1 + retries + a time
+# cap: caddyserver.com's download endpoint intermittently throws an HTTP/2 stream
+# error (curl exit 92) which otherwise hangs the build ~45 min before failing.
 RUN arch="$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/')" && \
-    curl -L "https://caddyserver.com/api/download?os=linux&arch=${arch}" -o /usr/bin/caddy && \
+    curl --http1.1 -fSL --retry 5 --retry-all-errors --retry-delay 5 --max-time 180 \
+      "https://caddyserver.com/api/download?os=linux&arch=${arch}" -o /usr/bin/caddy && \
     chmod +x /usr/bin/caddy
 
 WORKDIR /opt/grebi_ui
