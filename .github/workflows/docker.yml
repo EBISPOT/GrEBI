@@ -6,6 +6,7 @@ name: Build & publish GrEBI images
 # Rust/Maven builds and the source of intermittent cargo cache corruption.
 
 on:
+  workflow_dispatch: {}
   push:
     branches: [ "dev", "stable" ]
 
