@@ -3,7 +3,7 @@ import React, { Fragment, useState } from "react"
 function DatasourceTag(props:{ds:string}) {
     let { ds } = props
 
-    if(ds.startsWith("OLS.")) {
+    if(ds.startsWith("OLS.") || ds.startsWith("Ontologies.")) {
      return <span
               className="link-ontology px-2 py-0.5 rounded-md text-xs text-white uppercase ml-1"
               title={ds.split('.')[1]}>{ds.split('.')[1]}</span>

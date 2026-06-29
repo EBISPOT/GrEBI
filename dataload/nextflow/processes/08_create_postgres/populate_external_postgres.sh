@@ -92,6 +92,7 @@ for SG in "${SUBGRAPHS[@]}"; do
     echo "Creating node indexes for $SG in parallel..."
     $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_nodeId\" ON \"nodes_${SG}\" USING btree (\"grebi:nodeId\");" &
     $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_curie\" ON \"nodes_${SG}\" USING btree (\"ols:curie\");" &
+    $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_grebi_curie\" ON \"nodes_${SG}\" USING btree (\"grebi:curie\");" &
     $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_name\" ON \"nodes_${SG}\" USING btree (\"grebi:name\");" &
     $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_name_trgm\" ON \"nodes_${SG}\" USING gin (\"grebi:name\" gin_trgm_ops);" &
     $PSQL -c "CREATE INDEX \"idx_nodes_${SG}_type_gin\" ON \"nodes_${SG}\" USING gin (\"grebi:type\");" &

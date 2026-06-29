@@ -1,0 +1,18 @@
+# Tiny synthetic ontology set for the E2E test of the ubergraph path. Built by
+# `om ubergraph` from a committed local fixture (no download), so the test runs
+# fast. Exercises: subclass chain C < B < A (closure), an existential
+# part_of restriction (C part_of A), and labels.
+id: test_ubergraph
+description: "Tiny synthetic ontology set for the ubergraph E2E test."
+offline: true
+# Tiny build: keep build_ubergraph's memory request small so the E2E fits a
+# modest CI machine (the 16 GB default targets real EFO-scale reasoning).
+memory: "2 GB"
+ontologies:
+  - id: tiny
+    # The ontology's declared IRI (the Ontology(<...>) header in tiny.ofn). owlmake
+    # stamps this as each term's rdfs:isDefinedBy target; the ingest maps it to the
+    # per-ontology datasource Ontologies.tiny.
+    iri: http://example.org/test_ubergraph
+    sources:
+      - tests/data/test_ubergraph/tiny.ofn

@@ -26,6 +26,7 @@ use grebi_shared::json_parser;
 use grebi_shared::load_metadata_mapping_table;
 use grebi_shared::load_metadata_mapping_table::Metadata;
 use grebi_shared::prefix_map::PrefixMap;
+use grebi_shared::prefix_map::PrefixMapBuilder;
 
 use grebi_shared::slice_merged_entity::SlicedPropertyValue;
 use serde_json::Map;
@@ -63,7 +64,10 @@ struct Args {
     exclude: String,
 
     #[arg(long)]
-    exclude_self_referential: String
+    exclude_self_referential: String,
+
+    #[arg(long)]
+    in_prefix_map_json: String
 }
 
 
@@ -119,6 +123,16 @@ fn main() -> std::io::Result<()> {
     let mut edge_counts_by_datasource:HashMap<Vec<u8>, u64> = HashMap::new();
 
     let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
+
+    // Prefix map for deriving grebi:curie (compact CURIE) from each node id.
+    let prefix_map = {
+        let rdr = BufReader::new(File::open(&args.in_prefix_map_json).unwrap());
+        let mut builder = PrefixMapBuilder::new();
+        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
+            builder.add_mapping(k, v);
+        });
+        builder.build()
+    };
 
     let mut types_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
     {
@@ -252,6 +266,15 @@ fn main() -> std::io::Result<()> {
             let count:&mut i64 = w_count.unwrap();
             *count += 1;
         }
+        // grebi:curie — compact CURIE derived from the node id via the prefix map.
+        // reprefix_bytes returns None when no prefix matches → emit the id unchanged.
+        nodes_writer.write_all(b",\"grebi:curie\":\"").unwrap();
+        match prefix_map.reprefix_bytes(sliced.id) {
+            Some(c) => nodes_writer.write_all(&c).unwrap(),
+            None => nodes_writer.write_all(sliced.id).unwrap(),
+        }
+        nodes_writer.write_all(b"\"").unwrap();
+
         nodes_writer.write_all(b",\"_refs\":").unwrap();
         nodes_writer.write_all(serde_json::to_string(&_refs).unwrap().as_bytes()).unwrap();
         nodes_writer.write_all(b"}\n").unwrap();

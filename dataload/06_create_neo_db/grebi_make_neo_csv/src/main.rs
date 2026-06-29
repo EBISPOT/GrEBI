@@ -93,7 +93,7 @@ fn main() -> std::io::Result<()> {
 
 
 
-    nodes_writer.write_all("grebi:nodeId:ID,:LABEL,grebi:datasources:string[],grebi:subgraph:string,grebi:displayType:string".as_bytes()).unwrap();
+    nodes_writer.write_all("grebi:nodeId:ID,:LABEL,grebi:datasources:string[],grebi:subgraph:string,grebi:displayType:string,grebi:curie:string".as_bytes()).unwrap();
     for prop in &all_entity_props {
         if prop.starts_with("embedding:") {
             continue;
@@ -221,6 +221,13 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
     nodes_writer.write_all(b"\"").unwrap();
     if entity.display_type.is_some() {
         write_escaped_value(entity.display_type.unwrap(), nodes_writer);
+    }
+    nodes_writer.write_all(b"\"").unwrap();
+
+    // grebi:curie (compact CURIE derived in the link stage)
+    nodes_writer.write_all(b",\"").unwrap();
+    if entity.curie.is_some() {
+        write_escaped_value(entity.curie.unwrap(), nodes_writer);
     }
     nodes_writer.write_all(b"\"").unwrap();
 

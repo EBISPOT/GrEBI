@@ -14,6 +14,14 @@ SUBGRAPHS=(
     test_edge_linking
     test_multi_datasource
     test_type_hierarchy
+    # owlmake-ubergraph path: builds a tiny ubergraph with `om ubergraph` and
+    # ingests redundant/non-redundant as separate datasources. Before this can
+    # pass in CI, generate + commit its expected output once (needs a runner with
+    # a high open-files ulimit for neo4j; see tests/expected_output/README.md):
+    #   GREBI_SUBGRAPHS=test_ubergraph GREBI_NF_EXTRA_ARGS="--export_snapshots true" \
+    #     bash dataload/scripts/dataload_local.sh
+    #   cp out/test_ubergraph/test_ubergraph_snapshot_*.jsonl tests/expected_output/test_ubergraph/
+    test_ubergraph
 )
 
 FAILED=()

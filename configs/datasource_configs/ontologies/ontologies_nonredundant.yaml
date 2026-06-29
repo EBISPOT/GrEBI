@@ -1,0 +1,22 @@
+# Materialised NON-REDUNDANT relation graph (transitive reduction; most-specific
+# direct edges only) from the owlmake-built ubergraph. Loaded as its OWN
+# datasource, separate from Ontologies.redundant, to support "queries minus
+# closure": filter edges to this datasource for direct relationships without the
+# transitive closure polluting direct-neighbour queries.
+#
+# subClassOf is mapped to biolink:subclass_of (the direct-parent relation),
+# reproducing the previous OLS directParent -> subclass_of behaviour.
+#
+# from_ubergraph: fed by the in-pipeline `om ubergraph` build, not downloaded.
+id: Ontologies.nonredundant
+enabled: true
+from_ubergraph: true
+description: "Non-redundant (transitive reduction; direct edges only) materialised relation graph from the owlmake-built ubergraph; subClassOf exposed as biolink:subclass_of."
+ingests:
+  - memory: "32 GB"
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_rdf2jsonl
+        --rdf-type rdf_quads_nq
+        --rdf-graph "https://w3id.org/owlmake/ubergraph/nonredundant"
+        --map-predicate "http://www.w3.org/2000/01/rdf-schema#subClassOf=biolink:subclass_of"'

@@ -6,6 +6,7 @@ import groovy.json.JsonOutput
 import groovy.yaml.YamlSlurper
 
 include { ingest } from './processes/01_ingest/ingest'
+include { build_ubergraph } from './processes/01_ingest/build_ubergraph'
 include { build_equiv_groups } from './processes/01_ingest/build_equiv_groups'
 include { assign_ids } from './processes/02_assign_ids/assign_ids'
 include { merge_ingests } from './processes/03_merge/merge_ingests'
@@ -72,11 +73,13 @@ workflow {
     subgraph_names.each { sg ->
         def sg_config = new JsonSlurper().parse(new File(params.grebi_home, "configs/subgraph_configs/${sg}.json"))
         def datasources = sg_config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.grebi_home, ds)) }
+        def ontology_sets = (sg_config.ontology_sets ?: []).collect { os -> new YamlSlurper().parse(new File(params.grebi_home, os)) }
         def resolved = [:] + sg_config
         resolved.datasource_configs = datasources
+        resolved.ontology_sets = ontology_sets
         def rpath = "${workflow.workDir}/resolved_${sg}_subgraph_config.json"
         new File(rpath).text = JsonOutput.prettyPrint(JsonOutput.toJson(resolved))
-        configs[sg] = [sg_config: sg_config, datasources: datasources]
+        configs[sg] = [sg_config: sg_config, datasources: datasources, ontology_sets: ontology_sets]
         resolved_paths[sg] = rpath
     }
 
@@ -85,7 +88,7 @@ workflow {
     datasource_files = Channel.from(
         subgraph_names.collectMany { sg ->
             def cfg = configs[sg]
-            cfg.datasources.collectMany { ds ->
+            cfg.datasources.findAll { !it.from_ubergraph }.collectMany { ds ->
                 ds.ingests.collectMany { ingest_spec ->
                     ingest_spec.globs.collectMany { glob ->
                         files("${params.downloads_path}/${sg}/${glob}").collect { f ->
@@ -100,8 +103,34 @@ workflow {
         }
     )
 
+    // === STEP 0: BUILD ONTOLOGY UBERGRAPHS ===
+    // Each ontology_set is built by `om ubergraph` into one ubergraph.nq.gz.
+    // Nextflow runs these (slow, reasoning-heavy) builds in parallel with the
+    // normal datasource ingests below.
+    ubergraph_sets = Channel.from(
+        subgraph_names.collectMany { sg ->
+            configs[sg].ontology_sets.collect { os -> [sg, os, params.grebi_home, params.downloads_path] }
+        }
+    )
+    built_ubergraphs = build_ubergraph(ubergraph_sets)
+    // built_ubergraphs: [sg, set_id, nq_path]
+
+    // Feed the built ubergraph nq into the ingest step for the subgraph's
+    // from_ubergraph datasources (Ontologies / .redundant / .nonredundant).
+    ubergraph_files = built_ubergraphs.flatMap { sg, set_id, nq ->
+        def cfg = configs[sg]
+        cfg.datasources.findAll { it.from_ubergraph }.collectMany { ds ->
+            ds.ingests.collect { ingest_spec ->
+                [sg,
+                 [datasource: ds, ingest: ingest_spec, filename: nq.toString()],
+                 cfg.sg_config.identifier_props,
+                 cfg.sg_config.bytes_per_merged_file]
+            }
+        }
+    }
+
     // === STEP 1: INGEST ===
-    ingest(datasource_files)
+    ingest(datasource_files.mix(ubergraph_files))
     // ingest.out.nodes: [sg, ds_id, node_files]
     // ingest.out.identifiers: [sg, identifiers_file]
 

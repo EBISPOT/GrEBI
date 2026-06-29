@@ -85,6 +85,23 @@ RUN mvn -B clean package -DskipTests
 # separately by .github/workflows/base.yml and only rebuilt when Dockerfile.base
 # changes — so day-to-day combined builds skip ~1 GB of downloads.
 ###############################################################################
+# ---- owlmake `om` binary (the ubergraph builder, used by build_ubergraph.nf) ----
+# Downloaded as a release binary from owlmake's GitHub releases (a portable glibc
+# binary that runs on the UBI9 runtime) — no owlmake build needed. Pinned to a
+# tag for reproducible builds; v0.3.0 is the first release with
+# `om ubergraph --graph-prefix`. Override with --build-arg OWLMAKE_RELEASE=vX.Y.Z
+# (or =latest).
+#
+# Arch: `dpkg --print-architecture` is the build/target arch (amd64|arm64) and
+# the release ships per-arch assets, so each per-arch GrEBI build fetches the
+# matching `om`.
+FROM rust:1.90.0-bullseye AS om-dl
+ARG OWLMAKE_RELEASE=v0.4.0
+RUN arch="$(dpkg --print-architecture)"; base="https://github.com/EBISPOT/owlmake/releases"; \
+    if [ "$OWLMAKE_RELEASE" = "latest" ]; then url="$base/latest/download/om-linux-$arch"; \
+    else url="$base/download/$OWLMAKE_RELEASE/om-linux-$arch"; fi; \
+    echo "fetching $url"; curl -fsSL -o /om "$url" && chmod 0755 /om
+
 FROM ${BASE_IMAGE}
 # Reset to root for the build/COPY steps below (base ships as non-root).
 USER root
@@ -92,6 +109,8 @@ USER root
 # ---- Copy pre-built Rust binaries from cross-compile stage ----
 # (grebi_reprefix is included in the grebi_* glob and is spawned by grebi_api)
 COPY --from=rust-builder /usr/local/bin/grebi_* /usr/local/bin/
+# owlmake `om`, used by the build_ubergraph dataload process.
+COPY --from=om-dl /om /usr/local/bin/om
 ENV PATH="$PATH:/usr/local/bin"
 
 # Copy prefix maps

@@ -61,7 +61,7 @@ function updateReducers(
     if (hiDs && data.datasources) {
       const dss = data.datasources as string[];
       if (dss.includes(hiDs)) {
-        res.color = hiDs.startsWith("OLS.") ? "#00827c" : "#7323b7";
+        res.color = (hiDs.startsWith("OLS.") || hiDs.startsWith("Ontologies.")) ? "#00827c" : "#7323b7";
         res.labelColor = "#ffffff";
         if (data.dsToCount && data.dsToCount[hiDs]) {
           res.label = formatter.format(data.dsToCount[hiDs]);
@@ -95,7 +95,7 @@ function updateReducers(
     if (hiDs && data.datasources) {
       const dss = data.datasources as string[];
       if (dss.includes(hiDs)) {
-        res.color = hiDs.startsWith("OLS.") ? "#00827c" : "#7323b7";
+        res.color = (hiDs.startsWith("OLS.") || hiDs.startsWith("Ontologies.")) ? "#00827c" : "#7323b7";
         res.size = Math.max(data.size, 2);
         res._faded = false;
       } else {

@@ -29,6 +29,9 @@ export default class GraphNodeRef {
     }
 
     getId():PropVal {
+        if(this.props['grebi:curie']){
+            return PropVal.arrFrom(this.props['grebi:curie'])[0]
+        }
         if(this.props['ols:curie']){
             return PropVal.arrFrom(this.props['ols:curie'])[0]
         }

@@ -6,7 +6,7 @@ topics:
   - gwas_catalog
 cypher_match_fragment: |-
   MATCH (disease)-[:sourceId]->(:Id {id: $disease_id})
-  WHERE 'OLS.mondo' IN disease.`grebi:datasources`
+  WHERE 'Ontologies.mondo' IN disease.`grebi:datasources`
 
   // find subclasses
   MATCH (disease)<-[:`biolink:broad_match`*0..1]-(specific_disease)

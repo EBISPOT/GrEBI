@@ -14,7 +14,8 @@ export default function DatasourceSelector({
     orientation?: "horizontal" | "vertical",
 }) {
 
-  const sorted = [...datasources].sort((a, b) => a.localeCompare(b) + (a.startsWith("OLS.") ? 10000 : 0) + (b.startsWith("OLS.") ? -10000 : 0));
+  const isOntologyDs = (d: string) => d.startsWith("OLS.") || d.startsWith("Ontologies.");
+  const sorted = [...datasources].sort((a, b) => a.localeCompare(b) + (isOntologyDs(a) ? 10000 : 0) + (isOntologyDs(b) ? -10000 : 0));
 
   const allSelected = dsEnabled.length === datasources.length;
   const noneSelected = dsEnabled.length === 0;
@@ -51,7 +52,7 @@ export default function DatasourceSelector({
                   </div>
                 )}
                 {sorted.map((ds) => {
-                  const isOls = ds.startsWith("OLS.");
+                  const isOls = ds.startsWith("OLS.") || ds.startsWith("Ontologies.");
                   const label = isOls ? ds.split('.')[1] : ds;
                   const className = isOls ? "link-ontology" : "link-datasource";
                   return <div key={ds} style={orientation === "horizontal" ? { display: "inline", marginRight: "4px" } : { display: "flex", alignItems: "center", marginBottom: "1px" }}>

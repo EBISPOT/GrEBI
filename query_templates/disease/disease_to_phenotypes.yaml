@@ -16,7 +16,7 @@ cypher_match_fragment: |-
     `obo:mondo#disease_has_major_feature`|
     `primekg:disease_phenotype_positive`
   )*0..1]->(phenotype)
-  WHERE "OLS.hp" IN phenotype.`grebi:datasources`
+  WHERE "Ontologies.hp" IN phenotype.`grebi:datasources`
   AND ALL(rel IN r WHERE NOT "CTD" IN coalesce(rel.`grebi:datasources`, []))
 cypher_return_fragment: |-
   RETURN DISTINCT

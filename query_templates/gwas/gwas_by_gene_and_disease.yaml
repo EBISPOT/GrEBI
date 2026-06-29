@@ -7,7 +7,7 @@ topics:
 cypher_match_fragment: |-
   MATCH (gene)-[:sourceId]->(:Id {id: $gene_id })
   MATCH (disease)-[:sourceId]->(:Id {id: $disease_id})
-  WHERE 'OLS.mondo' IN disease.`grebi:datasources`
+  WHERE 'Ontologies.mondo' IN disease.`grebi:datasources`
   MATCH (disease)<-[:`biolink:broad_match`*0..1]-(trait)
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
   MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)

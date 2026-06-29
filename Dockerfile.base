@@ -22,8 +22,10 @@ RUN rpm -ivh https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.
     microdnf clean all
 
 # ---- PostgreSQL 18 (pgdg) ----
+# pgvector provides the `vector` extension that load_postgres.py creates for
+# embedding columns; without it create_postgres fails (CREATE EXTENSION vector).
 RUN rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(uname -m)/pgdg-redhat-repo-latest.noarch.rpm" && \
-    microdnf install -y --setopt=install_weak_deps=0 postgresql18-server postgresql18-contrib && \
+    microdnf install -y --setopt=install_weak_deps=0 postgresql18-server postgresql18-contrib pgvector_18 && \
     microdnf clean all
 ENV PATH="$PATH:/usr/pgsql-18/bin"
 
@@ -81,8 +83,12 @@ RUN curl -fsSL https://get.nextflow.io | bash && \
     mv nextflow /usr/local/bin/ && chmod +x /usr/local/bin/nextflow
 
 # ---- Permissions, dirs, non-root user ----
-RUN chmod a+w /etc/passwd /etc/group && \
-    mkdir -p /opt/grebi/data/neo4j /opt/grebi/data/postgres /opt/grebi/data/prefix_maps /var/run/postgresql && \
+# chmod a+w on /etc/passwd|group must come AFTER useradd/groupadd: those rewrite
+# the files and reset perms to 0644, undoing an earlier chmod. World-write lets
+# an arbitrary runtime UID add its own entry — required by create_postgres/initdb
+# (and the combined entrypoint) when the container runs as the host UID.
+RUN mkdir -p /opt/grebi/data/neo4j /opt/grebi/data/postgres /opt/grebi/data/prefix_maps /var/run/postgresql && \
     chmod 777 /var/run/postgresql && \
-    groupadd -r grebi && useradd -r -g grebi -d /opt grebi
+    groupadd -r grebi && useradd -r -g grebi -d /opt grebi && \
+    chmod a+w /etc/passwd /etc/group
 USER grebi

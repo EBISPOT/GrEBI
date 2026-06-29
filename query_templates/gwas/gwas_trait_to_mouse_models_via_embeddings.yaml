@@ -11,7 +11,7 @@ cypher_match_fragment: |-
   WITH trait, emb, any_term, toFloat(emb.`ols_top_k:distance`[0]) AS emb_dist
   ORDER BY emb_dist ASC LIMIT toInteger($n_embedding_candidates)
   WITH trait, emb_dist, any_term
-  WHERE "OLS.mp" IN any_term.`grebi:datasources`
+  WHERE "Ontologies.mp" IN any_term.`grebi:datasources`
   WITH trait, any_term AS mp_phenotype, emb_dist
   ORDER BY emb_dist ASC LIMIT toInteger($n_top_mp_hits)
   MATCH (mouse_gene:`impc:MouseGene`)-[:`biolink:has_phenotype`]->(mp_phenotype)

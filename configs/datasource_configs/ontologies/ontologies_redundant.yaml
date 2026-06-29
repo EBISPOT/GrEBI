@@ -1,0 +1,24 @@
+# Materialised REDUNDANT relation graph (full transitive closure of subclass +
+# existential-restriction edges) from the owlmake-built ubergraph. Loaded as its
+# OWN datasource, separate from Ontologies.nonredundant, so queries can include
+# or exclude the closure: an edge present in both graphs is tagged with both
+# datasources, while closure-only edges are tagged only here.
+#
+# subClassOf is mapped to biolink:broad_match (the transitive-ancestor relation),
+# reproducing the previous OLS directAncestor -> broad_match behaviour. The
+# reflexive C->C edges from the closure are dropped at link by
+# exclude_self_referential_edges (which already lists biolink:broad_match).
+#
+# from_ubergraph: fed by the in-pipeline `om ubergraph` build, not downloaded.
+id: Ontologies.redundant
+enabled: true
+from_ubergraph: true
+description: "Redundant (full closure) materialised relation graph from the owlmake-built ubergraph; subClassOf exposed as biolink:broad_match."
+ingests:
+  - memory: "32 GB"
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_rdf2jsonl
+        --rdf-type rdf_quads_nq
+        --rdf-graph "https://w3id.org/owlmake/ubergraph/redundant"
+        --map-predicate "http://www.w3.org/2000/01/rdf-schema#subClassOf=biolink:broad_match"'

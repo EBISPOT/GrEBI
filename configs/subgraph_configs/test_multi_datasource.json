@@ -51,6 +51,7 @@
     [
       "grebi:description",
       "iao:definition",
+      "iao:0000115",
       "monarch:description",
       "ols:definition",
       "robokop:description",
