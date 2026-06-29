@@ -7,12 +7,13 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 # Core userland the entrypoint + services need (ubi-minimal is very bare).
 # shadow-utils -> useradd/groupadd; glibc-common -> getent; coreutils/findutils,
-# bash, tar/gzip for the tarball installs below.
+# bash, tar/gzip for the tarball installs below; unzip for download.nf's zip
+# sources (e.g. the GWAS catalog).
 # Note: curl-minimal + coreutils-single are already in ubi-minimal; do not pull
 # the full curl (it conflicts with curl-minimal).
 RUN microdnf install -y --setopt=install_weak_deps=0 \
       bash findutils glibc-common shadow-utils \
-      ca-certificates gzip tar gnupg2 rsync procps-ng \
+      ca-certificates gzip tar unzip gnupg2 rsync procps-ng \
       python3 python3-pip \
     && microdnf clean all
 
