@@ -98,6 +98,7 @@ process download_file {
                 script_lines << "    echo \"Success: downloaded ${source}\""
                 script_lines << "    exit 0"
                 script_lines << "else"
+                script_lines << "    rm -f \"${downloads_path}/${dest}${filename}\""  // curl -o leaves a 0-byte file on HTTP error
                 if (is_last) {
                     if (optional) {
                         script_lines << "    echo \"OPTIONAL: all sources missing for dest ${dest} — skipping (marked optional)\""
@@ -119,6 +120,7 @@ process download_file {
                 script_lines << "    echo \"Success: downloaded ${source}\""
                 script_lines << "    exit 0"
                 script_lines << "else"
+                script_lines << "    rm -f \"${downloads_path}/${dest}\""  // curl -o leaves a 0-byte file on HTTP error
                 if (is_last) {
                     if (optional) {
                         script_lines << "    echo \"OPTIONAL: all sources missing for dest ${dest} — skipping (marked optional)\""
