@@ -40,6 +40,7 @@ config['datasource_configs'] = [
     "./configs/datasource_configs/ols/ols_upheno.yaml",
     "./configs/datasource_configs/ols/ols_ecto.yaml",
     "./configs/datasource_configs/reactome.yaml",
+    "./configs/datasource_configs/pdbe.yaml",
     "./configs/datasource_configs/ubergraph.yaml",
     "./configs/datasource_configs/otar/otar_evidence.yaml",
     "./configs/datasource_configs/otar/otar_drug_indication.yaml",

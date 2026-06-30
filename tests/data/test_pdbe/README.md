@@ -25,15 +25,22 @@ two-line header — date comment + column header — is preserved verbatim):
 | `2lyz` | Hen egg-white lysozyme (P00698) | EC 3.2.1.17 |
 | `5cmd` | (P13501) | chains with empty coordinate fields |
 
+`reference_nodes.jsonl` is a small companion set of the **real** UniProt protein
+and EC enzyme entities that these structures reference (ingested as the
+`ProteinsAndEnzymes` test datasource). In the full EBI graph these entities come
+from the UniProt/enzyme datasources; the stand-in lets the structure→protein and
+structure→enzyme edges actually form in this isolated subgraph (GrEBI only
+creates an edge when the referenced entity is present in the graph).
+
 ## What it demonstrates
 
 - **Merge**: each PDB entry spans several SIFTS rows (one per chain/segment) and
   appears in both files; all rows for a PDB id collapse into a single
-  `pdbe:Structure` node.
-- **Edge linking**: `SP_PRIMARY`/`ACCESSION` become `uniprot:` CURIEs that link
-  the structure to its UniProt protein(s) — turning the `pdb:` references that
+  `pdb:Structure` node (e.g. `pdb:4hhb` → 4 chains, both haemoglobin subunits).
+- **Edge linking**: `SP_PRIMARY` becomes a `uniprot:` CURIE that links the
+  structure to its UniProt protein(s) — turning the `pdb:` references that
   already arrive from UniProt/Reactome/etc. into first-class merged entities.
-- **Ontology mapping**: `EC_NUMBER` becomes an `ec:` CURIE, mapping structures
+- **Ontology mapping**: `EC_NUMBER` becomes an `ec:` CURIE, linking structures
   onto enzyme classification (a vocabulary GrEBI already loads).
 
 ## Regenerating / extending

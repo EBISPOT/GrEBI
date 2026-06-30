@@ -1,0 +1,10 @@
+{"id": "uniprot:P02185", "name": "Myoglobin", "category": ["biolink:Protein"]}
+{"id": "uniprot:P00720", "name": "Endolysin (T4 lysozyme)", "category": ["biolink:Protein"]}
+{"id": "uniprot:P29373", "name": "Cellular retinoic acid-binding protein 2", "category": ["biolink:Protein"]}
+{"id": "uniprot:P69905", "name": "Hemoglobin subunit alpha", "category": ["biolink:Protein"]}
+{"id": "uniprot:P68871", "name": "Hemoglobin subunit beta", "category": ["biolink:Protein"]}
+{"id": "uniprot:P00698", "name": "Lysozyme C", "category": ["biolink:Protein"]}
+{"id": "uniprot:P13501", "name": "C-C motif chemokine 5 (RANTES)", "category": ["biolink:Protein"]}
+{"id": "ec:3.2.1.17", "name": "lysozyme", "category": ["biolink:MolecularActivity"]}
+{"id": "ec:1.11.1.-", "name": "peroxidase activity", "category": ["biolink:MolecularActivity"]}
+{"id": "ec:1.7.-.-", "name": "oxidoreductase, acting on other nitrogenous compounds as donors", "category": ["biolink:MolecularActivity"]}

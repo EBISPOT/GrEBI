@@ -163,6 +163,7 @@
     "IMPC"
   ],
   "datasource_configs": [
-    "./configs/datasource_configs/test/test_pdbe.yaml"
+    "./configs/datasource_configs/test/test_pdbe.yaml",
+    "./configs/datasource_configs/test/test_pdbe_refs.yaml"
   ]
 }
