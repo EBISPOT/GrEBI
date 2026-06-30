@@ -22,6 +22,14 @@ SUBGRAPHS=(
     #     bash dataload/scripts/dataload_local.sh
     #   cp out/test_ubergraph/test_ubergraph_snapshot_*.jsonl tests/expected_output/test_ubergraph/
     test_ubergraph
+    # PDBe SIFTS trial: ingests a small real subset of PDB->UniProt and PDB->EC
+    # mappings (tests/data/test_pdbe/). Left out of the active list until its
+    # expected output is generated + committed once on a Docker-capable runner:
+    #   GREBI_SUBGRAPHS=test_pdbe GREBI_NF_EXTRA_ARGS="--export_snapshots true" \
+    #     bash dataload/scripts/dataload_local.sh
+    #   mkdir -p tests/expected_output/test_pdbe
+    #   cp out/test_pdbe/test_pdbe_snapshot_*.jsonl tests/expected_output/test_pdbe/
+    # then add `test_pdbe` to this list.
 )
 
 FAILED=()

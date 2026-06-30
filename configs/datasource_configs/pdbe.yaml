@@ -1,0 +1,38 @@
+id: PDBe
+enabled: true
+description: "The Protein Data Bank in Europe (PDBe): SIFTS residue-level mappings integrating PDB 3D structures with UniProt proteins and EC enzyme classifications"
+download:
+  - dest: pdbe/pdb_chain_uniprot.tsv.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_uniprot.tsv.gz
+  - dest: pdbe/pdb_chain_enzyme.tsv.gz
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_enzyme.tsv.gz
+ingests:
+  # PDB structure -> UniProt protein mapping (the flagship SIFTS file). One row
+  # per mapped chain/segment, so each PDB entry spans several rows; the merge
+  # step collapses them into a single structure node. SP_PRIMARY becomes a
+  # uniprot: CURIE that links the structure to its UniProt protein(s).
+  - globs: ["pdbe/pdb_chain_uniprot.tsv.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_tsv2jsonl |
+      grebi_transform_jsonl
+          --json-select-keys PDB,CHAIN,SP_PRIMARY
+          --json-rename PDB:id
+          --json-inject-type pdbe:Structure
+          --json-inject-key-prefix pdbe:
+          --json-inject-value-prefix PDB:pdb:
+          --json-inject-value-prefix SP_PRIMARY:uniprot:'
+  # PDB structure -> EC enzyme classification (IntEnz) mapping.
+  - globs: ["pdbe/pdb_chain_enzyme.tsv.gz"]
+    command: '
+      zcat $GREBI_INGEST_FILENAME |
+      grebi_tsv2jsonl |
+      grebi_transform_jsonl
+          --json-select-keys PDB,EC_NUMBER
+          --json-rename PDB:id
+          --json-inject-type pdbe:Structure
+          --json-inject-key-prefix pdbe:
+          --json-inject-value-prefix PDB:pdb:
+          --json-inject-value-prefix EC_NUMBER:ec:'
