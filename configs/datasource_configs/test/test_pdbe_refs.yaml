@@ -1,0 +1,14 @@
+id: ProteinsAndEnzymes
+enabled: true
+description: "Test datasource: a minimal stand-in for the UniProt protein and EC enzyme entities that PDBe structures reference, so structure->protein and structure->enzyme edges form in the test_pdbe subgraph (in production these come from the UniProt/enzyme datasources)"
+download:
+  - dest: test_pdbe/reference_nodes.jsonl
+    sources:
+      - tests/data/test_pdbe/reference_nodes.jsonl
+ingests:
+  - globs: ["test_pdbe/reference_nodes.jsonl"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename category:grebi:type
+          --json-inject-key-prefix pe:'

@@ -1,0 +1,39 @@
+id: PDBe
+enabled: true
+description: "Test datasource: a small real subset of PDBe SIFTS residue-level mappings (PDB structures cross-referenced to UniProt proteins and EC enzyme classifications)"
+download:
+  - dest: test_pdbe/pdb_chain_uniprot.tsv
+    sources:
+      - tests/data/test_pdbe/pdb_chain_uniprot.tsv
+  - dest: test_pdbe/pdb_chain_enzyme.tsv
+    sources:
+      - tests/data/test_pdbe/pdb_chain_enzyme.tsv
+ingests:
+  # PDB structure -> UniProt protein mapping. Each row is a chain/segment, so a
+  # single PDB entry appears on multiple rows; the merge step collapses them
+  # into one structure node. SP_PRIMARY becomes a uniprot: CURIE which links to
+  # the corresponding UniProt entity (clique merge / edge linking).
+  - globs: ["test_pdbe/pdb_chain_uniprot.tsv"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_tsv2jsonl |
+      grebi_transform_jsonl
+          --json-select-keys PDB,CHAIN,SP_PRIMARY
+          --json-rename PDB:id
+          --json-inject-type pdbe:Structure
+          --json-inject-key-prefix pdbe:
+          --json-inject-value-prefix PDB:pdb:
+          --json-inject-value-prefix SP_PRIMARY:uniprot:'
+  # PDB structure -> EC enzyme classification mapping. EC_NUMBER becomes an ec:
+  # CURIE, demonstrating ontology mapping onto a vocabulary GrEBI already loads.
+  - globs: ["test_pdbe/pdb_chain_enzyme.tsv"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_tsv2jsonl |
+      grebi_transform_jsonl
+          --json-select-keys PDB,EC_NUMBER
+          --json-rename PDB:id
+          --json-inject-type pdbe:Structure
+          --json-inject-key-prefix pdbe:
+          --json-inject-value-prefix PDB:pdb:
+          --json-inject-value-prefix EC_NUMBER:ec:'
