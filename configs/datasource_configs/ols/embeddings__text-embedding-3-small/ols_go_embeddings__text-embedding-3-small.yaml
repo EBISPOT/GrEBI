@@ -1,14 +1,14 @@
 id: OLS.go
 enabled: true
 download:
-  - dest: ols_embeddings/text-embedding-3-small_pca512/go.parquet.gz
+  - dest: ols_embeddings/text-embedding-3-small_pca512/go.parquet
     sources:
-      - /nfs/production/parkinso/spot/ols4/dev2/out/embeddings/text-embedding-3-small_pca512/go.parquet.gz
-      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev2/embeddings/text-embedding-3-small_pca512/go.parquet.gz
+      - /nfs/production/parkinso/spot/ols4/dev2/out/embeddings/text-embedding-3-small_pca512/go.parquet
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev2/embeddings/text-embedding-3-small_pca512/go.parquet
 ingests:
-  - globs: ["ols_embeddings/text-embedding-3-small_pca512/go.parquet.gz"]
+  - globs: ["ols_embeddings/text-embedding-3-small_pca512/go.parquet"]
     command: '
-      zcat $GREBI_INGEST_FILENAME |
+      cat $GREBI_INGEST_FILENAME |
       grebi_parquet2jsonl |
       grebi_transform_jsonl
         --json-select-by-value string_type:LABEL
