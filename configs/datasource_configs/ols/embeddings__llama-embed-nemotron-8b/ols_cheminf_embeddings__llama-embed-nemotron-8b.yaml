@@ -2,6 +2,7 @@ id: OLS.cheminf
 enabled: true
 download:
   - dest: ols_embeddings/llama-embed-nemotron-8b_pca512/cheminf.parquet
+    optional: true   # missing parquet — skip rather than fail
     sources:
       - /nfs/production/parkinso/spot/ols4/dev2/out/embeddings/llama-embed-nemotron-8b_pca512/cheminf.parquet
       - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev2/embeddings/llama-embed-nemotron-8b_pca512/cheminf.parquet

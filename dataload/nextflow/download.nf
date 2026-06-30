@@ -24,6 +24,7 @@ process download_file {
     script:
     def dest = download_entry.dest
     def sources = download_entry.sources
+    def optional = download_entry.optional ?: false
     def downloads_path = params.downloads_path
     def grebi_home = params.grebi_home
 
@@ -52,8 +53,13 @@ process download_file {
                 script_lines << "    exit 0"
                 script_lines << "else"
                 if (is_last) {
-                    script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
-                    script_lines << "    exit 1"
+                    if (optional) {
+                        script_lines << "    echo \"OPTIONAL: all sources missing for dest ${dest} — skipping (marked optional)\""
+                        script_lines << "    exit 0"
+                    } else {
+                        script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
+                        script_lines << "    exit 1"
+                    }
                 } else {
                     script_lines << "    echo \"Failed, trying next source...\""
                 }
@@ -71,8 +77,13 @@ process download_file {
                 script_lines << "else"
                 script_lines << "    rm -f \"\$GREBI_TMPZIP\""
                 if (is_last) {
-                    script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
-                    script_lines << "    exit 1"
+                    if (optional) {
+                        script_lines << "    echo \"OPTIONAL: all sources missing for dest ${dest} — skipping (marked optional)\""
+                        script_lines << "    exit 0"
+                    } else {
+                        script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
+                        script_lines << "    exit 1"
+                    }
                 } else {
                     script_lines << "    echo \"Failed, trying next source...\""
                 }
@@ -88,8 +99,13 @@ process download_file {
                 script_lines << "    exit 0"
                 script_lines << "else"
                 if (is_last) {
-                    script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
-                    script_lines << "    exit 1"
+                    if (optional) {
+                        script_lines << "    echo \"OPTIONAL: all sources missing for dest ${dest} — skipping (marked optional)\""
+                        script_lines << "    exit 0"
+                    } else {
+                        script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
+                        script_lines << "    exit 1"
+                    }
                 } else {
                     script_lines << "    echo \"Failed, trying next source...\""
                 }
@@ -104,8 +120,13 @@ process download_file {
                 script_lines << "    exit 0"
                 script_lines << "else"
                 if (is_last) {
-                    script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
-                    script_lines << "    exit 1"
+                    if (optional) {
+                        script_lines << "    echo \"OPTIONAL: all sources missing for dest ${dest} — skipping (marked optional)\""
+                        script_lines << "    exit 0"
+                    } else {
+                        script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
+                        script_lines << "    exit 1"
+                    }
                 } else {
                     script_lines << "    echo \"Failed, trying next source...\""
                 }
@@ -131,8 +152,13 @@ process download_file {
                 script_lines << "    exit 0"
                 script_lines << "else"
                 if (is_last) {
-                    script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
-                    script_lines << "    exit 1"
+                    if (optional) {
+                        script_lines << "    echo \"OPTIONAL: all sources missing for dest ${dest} — skipping (marked optional)\""
+                        script_lines << "    exit 0"
+                    } else {
+                        script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
+                        script_lines << "    exit 1"
+                    }
                 } else {
                     script_lines << "    echo \"No files matched, trying next source...\""
                 }
@@ -148,8 +174,13 @@ process download_file {
                 script_lines << "    exit 0"
                 script_lines << "else"
                 if (is_last) {
-                    script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
-                    script_lines << "    exit 1"
+                    if (optional) {
+                        script_lines << "    echo \"OPTIONAL: all sources missing for dest ${dest} — skipping (marked optional)\""
+                        script_lines << "    exit 0"
+                    } else {
+                        script_lines << "    echo \"FAILED: all sources exhausted for dest ${dest}\""
+                        script_lines << "    exit 1"
+                    }
                 } else {
                     script_lines << "    echo \"Not found, trying next source...\""
                 }
@@ -180,7 +211,12 @@ workflow {
             ds.download.each { dl ->
                 def dest = dl.dest
                 if (!all_downloads.containsKey(dest)) {
-                    all_downloads[dest] = [paths: [] as Set, urls: [] as Set]
+                    all_downloads[dest] = [paths: [] as Set, urls: [] as Set, optional: true]
+                }
+                // A dest is optional only if every download entry contributing to
+                // it is marked optional (so a required source can't be skipped).
+                if (!dl.optional) {
+                    all_downloads[dest].optional = false
                 }
                 dl.sources.each { source ->
                     if (source.contains("://")) {
@@ -194,8 +230,8 @@ workflow {
     }
 
     // Build channel: paths first, then URLs for each dest
-    def download_entries = all_downloads.collect { dest, sources ->
-        [dest: dest, sources: (sources.paths.toList() + sources.urls.toList())]
+    def download_entries = all_downloads.collect { dest, v ->
+        [dest: dest, sources: (v.paths.toList() + v.urls.toList()), optional: v.optional]
     }
 
     download_channel = Channel.from(download_entries)

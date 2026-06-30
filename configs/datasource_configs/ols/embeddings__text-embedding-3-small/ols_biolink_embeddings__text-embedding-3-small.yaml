@@ -2,6 +2,7 @@ id: OLS.biolink
 enabled: true
 download:
   - dest: ols_embeddings/text-embedding-3-small_pca512/biolink.parquet
+    optional: true   # missing parquet — skip rather than fail
     sources:
       - /nfs/production/parkinso/spot/ols4/dev2/out/embeddings/text-embedding-3-small_pca512/biolink.parquet
       - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev2/embeddings/text-embedding-3-small_pca512/biolink.parquet
