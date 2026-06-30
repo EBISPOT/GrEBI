@@ -19,7 +19,9 @@ for sg in "${SUBGRAPH_ARRAY[@]}"; do
   export NXF_HOME=$BASE_DIR/download_${sg}__NXF_HOME
   export NXF_TEMP=$BASE_DIR/download_${sg}__NXF_TEMP
   export NXF_CACHE_DIR=$BASE_DIR/download_${sg}__NXF_CACHE_DIR
-  export NXF_SINGULARITY_CACHEDIR=$BASE_DIR/download_${sg}__NXF_SINGULARITY_CACHEDIR
+  # Shared image cache across subgraphs (and the dataload, which uses the same
+  # path): the container is identical, so pull it once instead of per-subgraph.
+  export NXF_SINGULARITY_CACHEDIR=$BASE_DIR/NXF_SINGULARITY_CACHEDIR
   export REPORTS_DIR=$BASE_DIR/out/reports_download_${sg}
 
   srun --time 1:0:0 --mem 4g mkdir -p $GREBI_DOWNLOADS_PATH $NXF_HOME $NXF_WORK $NXF_TEMP $NXF_CACHE_DIR $NXF_SINGULARITY_CACHEDIR $REPORTS_DIR
