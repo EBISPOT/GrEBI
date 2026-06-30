@@ -91,7 +91,10 @@ workflow {
             cfg.datasources.findAll { !it.from_ubergraph }.collectMany { ds ->
                 ds.ingests.collectMany { ingest_spec ->
                     ingest_spec.globs.collectMany { glob ->
-                        files("${params.downloads_path}/${sg}/${glob}").collect { f ->
+                        // files() returns a no-wildcard path even if it doesn't
+                        // exist, so skip missing/empty inputs (e.g. optional
+                        // sources that weren't downloaded).
+                        files("${params.downloads_path}/${sg}/${glob}").findAll { it.exists() && it.size() > 0 }.collect { f ->
                             [sg,
                              [datasource: ds, ingest: ingest_spec, filename: f.toString()],
                              cfg.sg_config.identifier_props,
