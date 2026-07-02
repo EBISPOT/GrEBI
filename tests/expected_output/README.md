@@ -10,8 +10,8 @@ expected_output/
   test_clique_merge/
     test_clique_merge_snapshot_neo4j_nodes.jsonl
     test_clique_merge_snapshot_neo4j_edges.jsonl
-    test_clique_merge_snapshot_solr_nodes.jsonl
-    test_clique_merge_snapshot_solr_edges.jsonl
+    test_clique_merge_snapshot_postgres_nodes.jsonl
+    test_clique_merge_snapshot_postgres_edges.jsonl
     test_clique_merge_api_snapshot.json        (optional)
   test_edge_linking/
     ...
@@ -24,9 +24,9 @@ expected_output/
 ## How It Works
 
 When `--export_snapshots true` is passed to the pipeline, the integration test
-process (which already has Neo4j, Solr, and the API running) will:
+process (which already has Neo4j, Postgres, and the API running) will:
 
-1. Export DB snapshots (Neo4j nodes/edges, Solr nodes/edges) to JSONL files
+1. Export DB snapshots (Neo4j nodes/edges, Postgres nodes/edges) to JSONL files
 2. Compare them against expected output in this directory (if present)
 3. Compare API response snapshots against expected output (if present)
 

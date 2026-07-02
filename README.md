@@ -14,7 +14,7 @@ The GrEBI pipeline is being applied to a number of projects including the [Inter
 
 ## Making the tests pass
 
-GrEBI has a suite of automated E2E tests that run the full pipeline on small synthetic datasets and compare the resulting Neo4j/Solr database contents against committed expected output in `tests/expected_output/`. If code changes alter the pipeline output such that it no longer matches the expected snapshots, the CI will fail and you will need to update the expected output.
+GrEBI has a suite of automated E2E tests that run the full pipeline on small synthetic datasets and compare the resulting Neo4j/Postgres database contents against committed expected output in `tests/expected_output/`. If code changes alter the pipeline output such that it no longer matches the expected snapshots, the CI will fail and you will need to update the expected output.
 
 There are four test subgraphs, each exercising a different aspect of the pipeline:
 
@@ -37,7 +37,7 @@ Run the full E2E test suite across all four test subgraphs:
 
     bash tests/run_all_e2e.sh
 
-This will run each test subgraph through the full Nextflow pipeline (ingest → assign IDs → merge → index → link → create Neo4j → run queries → create Solr → integration tests), export DB snapshots, and compare them against `tests/expected_output/`.
+This will run each test subgraph through the full Nextflow pipeline (ingest → assign IDs → merge → index → link → create Neo4j → run queries → create Postgres → integration tests), export DB snapshots, and compare them against `tests/expected_output/`.
 
 ### Running a single test
 

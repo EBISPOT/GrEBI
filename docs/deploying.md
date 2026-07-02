@@ -422,11 +422,10 @@ curl "http://localhost:8090/api/v1/normalise_curies?iris_or_curies=http://purl.u
 
 ## Deploying the GrEBI stack
 
-The dataload produces three main database artefacts used to run the GrEBI stack: Neo4j, PostgreSQL, and Solr. Each database stores different views over the same data (simple JSON objects for nodes and edges), with different purposes:
+The dataload produces two main database artefacts used to run the GrEBI stack: Neo4j and PostgreSQL. Each database stores different views over the same data (simple JSON objects for nodes and edges), with different purposes:
 
-* Postgres is used by the backend to drive most of the API endpoints used by the website. It stores nodes and edges with minimal metadata, embedding vectors with pgvector, graph metadata, and compressed JSON blobs used to resolve full node and edge objects.
+* Postgres is used by the backend to drive most of the API endpoints used by the website. It stores nodes and edges with minimal metadata, embedding vectors with pgvector, graph metadata, and compressed JSON blobs used to resolve full node and edge objects. It also drives the free text lexical search and holds an autocomplete list derived from all of the names in the graph.
 * Neo4j is used by the `grebi_cypher_service` to drive Cypher queries. It stores nodes and edges with minimal metadata.
-* Solr drives the free text lexical search. It stores nodes with minimal metadata and also has an autocomplete list derived from all of the names in the graph.
 
 ### Kubernetes with managed PostgreSQL
 
