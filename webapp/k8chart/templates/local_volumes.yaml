@@ -1,43 +1,21 @@
 ###
-### Read-write local disk on the pinned worker node, used to serve the Neo4j
-### store.  The cypher-service initContainer copies the store here from the
-### read-only NFS import mount, then serves it from local disk (fast).
+### Claim the pinned worker's pre-existing local-disk PV (worker-N-local-pv).
 ###
-### One PV+PVC per release (PV names are cluster-scoped, so dev and prod must
-### differ), pinned to worker-{{ .Values.neo_worker_n }}.  dev = worker-1,
-### prod = worker-2 — different nodes, so the shared /var/local-disk path is safe.
+### These per-node PVs are shared cluster infrastructure created earlier (when the
+### local-storage StorageClass with WaitForFirstConsumer binding existed), so they
+### carry node topology and are schedulable. New local PVs created now would bind
+### "Immediate" with no topology and be unschedulable, so we reuse the existing PV:
+### we only create the PVC bound to it, we do NOT create the PV.
 ###
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: {{ .Release.Name }}-{{ .Release.Namespace }}-local-pv
-  finalizers:
-  - kubernetes.io/pv-protection
-spec:
-  accessModes: ['ReadWriteMany']
-  capacity:
-    storage: {{ .Values.local_disk }}
-  local:
-    path: /var/local-disk
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - hh-rke-wp-webadmin-58-worker-{{ .Values.neo_worker_n }}.caas.ebi.ac.uk
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
-  volumeMode: Filesystem
----
+### dev pins to worker-1, prod to worker-2, so each claims a different node's PV.
+###
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Release.Name }}-local-pvc
+  name: worker-{{ .Values.neo_worker_n }}-local-pvc
 spec:
   storageClassName: local-storage
-  volumeName: {{ .Release.Name }}-{{ .Release.Namespace }}-local-pv
+  volumeName: worker-{{ .Values.neo_worker_n }}-local-pv
   accessModes: ['ReadWriteMany']
   resources:
     requests:

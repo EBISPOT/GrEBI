@@ -37,7 +37,7 @@ spec:
             claimName: {{ .Release.Name }}-import-pvc
         - name: {{ .Release.Name }}-local
           persistentVolumeClaim:
-            claimName: {{ .Release.Name }}-local-pvc
+            claimName: worker-{{ .Values.neo_worker_n }}-local-pvc
       initContainers:
         # Serve Neo4j from local disk: sync the store from the read-only NFS import
         # mount onto this node's local disk on first deploy (and whenever the release

@@ -15,10 +15,9 @@ spec:
         app: {{ .Release.Name }}-frontend
     spec:
       automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
+      # No pod-level runAsNonRoot: the grebi_ui image bakes a non-numeric USER
+      # (grebi), which the kubelet can't verify as non-root; it already runs as
+      # that non-root user from the image. (Matches the live dev deployment.)
       containers:
         - name: web
           image: ghcr.io/ebispot/grebi_ui:{{.Values.imageTag}}
