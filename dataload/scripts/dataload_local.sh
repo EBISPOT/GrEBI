@@ -35,11 +35,16 @@ mkdir -p $TMP_DIR
 # On macOS the orchestrator runs as root (Docker Desktop handles socket
 # permissions natively); on Linux we run as the host user with the Docker
 # socket group.
+# The runtime image ships non-root (USER grebi), so the orchestrator must be
+# given explicit socket access: root on macOS, or the host uid + docker socket
+# group on Linux. Nested process containers still run as the host uid via the
+# Nextflow config's docker.runOptions.
 HOST_UID=$(id -u)
 HOST_GID=$(id -g)
 
-USER_OPT=""
-if [ "$(uname)" != "Darwin" ]; then
+if [ "$(uname)" = "Darwin" ]; then
+  USER_OPT="--user 0:0"
+else
   USER_OPT="--user $HOST_UID:$HOST_GID --group-add $(stat -c %g /var/run/docker.sock)"
 fi
 

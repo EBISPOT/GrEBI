@@ -15,11 +15,16 @@ SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 GREBI_HOME=$(dirname $(dirname $SCRIPT_PATH))
 GREBI_DOWNLOADS_BASE=${GREBI_DOWNLOADS_PATH:-$GREBI_HOME/downloads}
 
+# The runtime image ships non-root (USER grebi), so the orchestrator must be
+# given explicit socket access: root on macOS (Docker Desktop maps the socket
+# for root), or the host uid + docker socket group on Linux. Nested process
+# containers still run as the host uid via the Nextflow config's docker.runOptions.
 HOST_UID=$(id -u)
 HOST_GID=$(id -g)
 
-USER_OPT=""
-if [ "$(uname)" != "Darwin" ]; then
+if [ "$(uname)" = "Darwin" ]; then
+  USER_OPT="--user 0:0"
+else
   USER_OPT="--user $HOST_UID:$HOST_GID --group-add $(stat -c %g /var/run/docker.sock)"
 fi
 

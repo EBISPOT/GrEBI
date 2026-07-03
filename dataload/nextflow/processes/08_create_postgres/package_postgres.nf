@@ -17,7 +17,18 @@ process package_postgres {
     """
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    tar -chf - ${postgres_data} | pigz > postgres.tgz
+    # tar can exit 1 ("file changed as we read it") for benign metadata changes
+    # on bind-mounted filesystems (e.g. Docker Desktop on macOS) even when the
+    # Postgres data dir is quiesced. Tolerate that specific warning (exit 1) but
+    # still fail on fatal tar errors (exit >= 2).
+    set +e
+    tar --warning=no-file-changed -chf - ${postgres_data} | pigz > postgres.tgz
+    rc=\${PIPESTATUS[0]}
+    set -e
+    if [ "\$rc" -gt 1 ]; then
+        echo "tar failed packaging ${postgres_data} (exit \$rc)" >&2
+        exit "\$rc"
+    fi
     echo "Packaged PostgreSQL data: postgres.tgz"
     """
 }
