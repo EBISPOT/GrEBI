@@ -10,7 +10,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ .Release.Name }}-local-pv
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-local-pv
   finalizers:
   - kubernetes.io/pv-protection
 spec:
@@ -37,7 +37,7 @@ metadata:
   name: {{ .Release.Name }}-local-pvc
 spec:
   storageClassName: local-storage
-  volumeName: {{ .Release.Name }}-local-pv
+  volumeName: {{ .Release.Name }}-{{ .Release.Namespace }}-local-pv
   accessModes: ['ReadWriteMany']
   resources:
     requests:

@@ -1,5 +1,11 @@
 ###
-### Read-only NFS mounts to copy data from
+### Read-only NFS mount to copy data from.
+###
+### PersistentVolumes are CLUSTER-scoped, and dev + prod use the same Helm
+### release name ("grebi"), so the PV name must include the namespace to keep
+### the two deployments from colliding on a shared PV (which would let one
+### environment hijack the other's import mount). PVCs are namespaced, so their
+### name can stay per-release.
 ###
 apiVersion: v1
 kind: PersistentVolume
@@ -7,7 +13,7 @@ metadata:
   annotations:
   finalizers:
   - kubernetes.io/pv-protection
-  name: {{ .Release.Name }}-import-pv
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-import-pv
 spec:
   accessModes: ['ReadWriteMany']
   storageClassName: standard-nfs-production
@@ -25,7 +31,7 @@ metadata:
   name: {{.Release.Name}}-import-pvc
 spec:
   storageClassName: standard-nfs-production
-  volumeName: {{.Release.Name}}-import-pv
+  volumeName: {{ .Release.Name }}-{{ .Release.Namespace }}-import-pv
   accessModes: ['ReadWriteMany']
   resources:
     requests:
