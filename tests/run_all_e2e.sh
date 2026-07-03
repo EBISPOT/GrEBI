@@ -28,7 +28,7 @@ SUBGRAPHS=(
     # mapping. To regenerate its expected output after intentional changes:
     #   GREBI_SUBGRAPHS=test_pdbe GREBI_NF_EXTRA_ARGS="--export_snapshots true" \
     #     bash dataload/scripts/dataload_local.sh
-    #   cp out/test_pdbe_snapshot_{neo4j_nodes,neo4j_edges,postgres_edges}.jsonl \
+    #   cp out/test_pdbe_snapshot_{neo4j_nodes,neo4j_edges,postgres_nodes,postgres_edges}.jsonl \
     #     tests/expected_output/test_pdbe/
     test_pdbe
 )
