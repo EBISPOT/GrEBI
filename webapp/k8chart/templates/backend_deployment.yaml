@@ -53,7 +53,7 @@ spec:
             - name: GREBI_CYPHER_HOST
               value: http://{{ .Release.Name }}-cypher-service:8085
             - name: GREBI_CONTEXT_PATH
-              value: /kg
+              value: {{ .Values.contextPath }}
             - name: JDK_JAVA_OPTIONS
               value: "-XX:InitialRAMPercentage=60.0 -XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=80.0"
             - name: GREBI_QUERY_TEMPLATES_PATH

@@ -41,9 +41,9 @@ spec:
             - name: REACT_APP_ENV
               value: ebi
             - name: REACT_APP_APIURL
-              value: https://wwwdev.ebi.ac.uk/kg/
+              value: {{ .Values.apiUrl }}
             - name: PUBLIC_URL
-              value: /kg
+              value: {{ .Values.contextPath }}
             - name: GREBI_MINIFY
               value: 'true'
           command: ["/bin/bash", "-c"]

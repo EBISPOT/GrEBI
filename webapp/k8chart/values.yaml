@@ -17,6 +17,16 @@ importNfs:
   server: hh-isi-srv-vlan1496.ebi.ac.uk
   path: /ifs/public/rw/ontoapps/grebi/current
 
+# URL path the app is hosted under (backend context path + UI base path).
+# Same for both deployments now (/grebi, was /kg).
+contextPath: "/grebi"
+
+# Public base URL the UI calls the API on. The path is /grebi; the host differs
+# per environment, so override apiUrl for prod once the prod URL is routed.
+#   dev  = https://wwwdev.ebi.ac.uk/grebi/
+#   prod = https://www.ebi.ac.uk/grebi/   (pending)
+apiUrl: "https://wwwdev.ebi.ac.uk/grebi/"
+
 postgres:
   secret:
     name: ""
