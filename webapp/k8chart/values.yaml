@@ -1,9 +1,21 @@
 
 imageTag: dev
 
+# Read-write local disk (per worker node) that the Neo4j store is copied onto and
+# served from.  The cypher-service is node-pinned (neo_worker_n) and its local disk
+# is used; a per-release PV claims it (see templates/local_volumes.yaml).
 local_disk: "2Ti"
 
+# Which HH worker node the cypher-service (Neo4j) pins to.  dev = 1, prod = 2.
 neo_worker_n: "1"
+
+# Read-only NFS release mount that data is copied FROM (the "current" data release).
+# Override importNfs.path per environment:
+#   dev  = /ifs/public/rw/ontoapps/grebi/current
+#   prod = /ifs/public/rw/ontoapps/grebi/prod/current
+importNfs:
+  server: hh-isi-srv-vlan1496.ebi.ac.uk
+  path: /ifs/public/rw/ontoapps/grebi/current
 
 postgres:
   secret:

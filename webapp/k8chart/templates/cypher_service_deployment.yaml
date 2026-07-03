@@ -35,6 +35,46 @@ spec:
         - name: {{ .Release.Name }}-import
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-import-pvc
+        - name: {{ .Release.Name }}-local
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-local-pvc
+      initContainers:
+        # Serve Neo4j from local disk: sync the store from the read-only NFS import
+        # mount onto this node's local disk on first deploy (and whenever the release
+        # data changes).  `cp --sparse=auto` keeps the store sparse so the local copy
+        # stays small.  Re-copy only when the import changes, keyed on the import dir
+        # mtime + imageTag (recorded in a stamp file).
+        - name: copy-neo4j-to-local
+          image: ghcr.io/ebispot/grebi_cypher_service:{{.Values.imageTag}}
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              STAMP_FILE=/data_local/neo4j/.synced_from_import
+              WANT="{{ .Values.imageTag }}-$(stat -c %Y /data_import/neo4j)"
+              if [ "$(cat "$STAMP_FILE" 2>/dev/null || true)" = "$WANT" ]; then
+                echo "Neo4j already synced to local disk ($WANT); skipping."
+                exit 0
+              fi
+              echo "Syncing Neo4j store from NFS import to local disk ($WANT)..."
+              rm -rf /data_local/neo4j
+              mkdir -p /data_local/neo4j
+              # --sparse=always: punch holes for zero regions even if the NFS source
+              # isn't itself sparse, so the local-disk store stays small.
+              cp -a --sparse=always /data_import/neo4j/. /data_local/neo4j/
+              echo "$WANT" > "$STAMP_FILE"
+              echo "Done syncing Neo4j to local disk."
+          volumeMounts:
+            - mountPath: "/data_import"
+              name: {{ .Release.Name }}-import
+            - mountPath: "/data_local"
+              name: {{ .Release.Name }}-local
       containers:
         - name: cypher-service
           image: ghcr.io/ebispot/grebi_cypher_service:{{.Values.imageTag}}
@@ -47,6 +87,8 @@ spec:
           volumeMounts:
             - mountPath: "/data_import"
               name: {{ .Release.Name }}-import
+            - mountPath: "/data_local"
+              name: {{ .Release.Name }}-local
           resources:
             requests:
               memory: 38Gi
@@ -56,7 +98,7 @@ spec:
               cpu: 4
           env:
             - name: GREBI_NEO4J_DATA_SEARCH_PATH
-              value: /data_import/neo4j
+              value: /data_local/neo4j
             - name: GREBI_CYPHER_PORT
               value: "8085"
             # Embedded Neo4j is a thin streaming proxy on the JVM side; query speed

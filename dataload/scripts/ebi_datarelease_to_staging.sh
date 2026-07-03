@@ -51,7 +51,9 @@ mkdir -p $STAGING_PATH/neo4j
 echo Extracting new data release
 
 for SUBGRAPH in "${SUBGRAPHS[@]}"; do
-  tar --use-compress-program=pigz -xf $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz -C $STAGING_PATH/neo4j
+  # -S (--sparse): recreate holes for the Neo4j store's zero-padded regions so the
+  # extracted store stays small (matches the sparse archive written by package_neo.nf).
+  tar --use-compress-program=pigz -Sxf $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz -C $STAGING_PATH/neo4j
 done
 
 

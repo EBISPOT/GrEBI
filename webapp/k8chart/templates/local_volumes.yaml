@@ -1,30 +1,22 @@
 ###
-### Read-write local disk to run the databases
-### These each belong to a specific worker node
+### Read-write local disk on the pinned worker node, used to serve the Neo4j
+### store.  The cypher-service initContainer copies the store here from the
+### read-only NFS import mount, then serves it from local disk (fast).
+###
+### One PV+PVC per release (PV names are cluster-scoped, so dev and prod must
+### differ), pinned to worker-{{ .Values.neo_worker_n }}.  dev = worker-1,
+### prod = worker-2 — different nodes, so the shared /var/local-disk path is safe.
 ###
 apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: worker-1-local-pvc
-spec:
-  storageClassName: local-storage
-  volumeName: worker-1-local-pv
-  accessModes: ['ReadWriteMany']
-  resources:
-    requests:
-      storage: {{.Values.local_disk}}
----
-apiVersion: v1
 kind: PersistentVolume
 metadata:
-  annotations:
+  name: {{ .Release.Name }}-local-pv
   finalizers:
   - kubernetes.io/pv-protection
-  name: worker-1-local-pv
 spec:
   accessModes: ['ReadWriteMany']
   capacity:
-    storage: {{.Values.local_disk}}
+    storage: {{ .Values.local_disk }}
   local:
     path: /var/local-disk
   nodeAffinity:
@@ -34,7 +26,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - hh-rke-wp-webadmin-58-worker-1.caas.ebi.ac.uk
+          - hh-rke-wp-webadmin-58-worker-{{ .Values.neo_worker_n }}.caas.ebi.ac.uk
   persistentVolumeReclaimPolicy: Retain
   storageClassName: local-storage
   volumeMode: Filesystem
@@ -42,110 +34,11 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: worker-2-local-pvc
+  name: {{ .Release.Name }}-local-pvc
 spec:
   storageClassName: local-storage
-  volumeName: worker-2-local-pv
+  volumeName: {{ .Release.Name }}-local-pv
   accessModes: ['ReadWriteMany']
   resources:
     requests:
-      storage: {{.Values.local_disk}}
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  annotations:
-  finalizers:
-  - kubernetes.io/pv-protection
-  name: worker-2-local-pv
-spec:
-  accessModes: ['ReadWriteMany']
-  capacity:
-    storage: {{.Values.local_disk}}
-  local:
-    path: /var/local-disk
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - hh-rke-wp-webadmin-58-worker-2.caas.ebi.ac.uk
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
-  volumeMode: Filesystem
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: worker-3-local-pvc
-spec:
-  storageClassName: local-storage
-  volumeName: worker-3-local-pv
-  accessModes: ['ReadWriteMany']
-  resources:
-    requests:
-      storage: {{.Values.local_disk}}
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  annotations:
-  finalizers:
-  - kubernetes.io/pv-protection
-  name: worker-3-local-pv
-spec:
-  accessModes: ['ReadWriteMany']
-  capacity:
-    storage: {{.Values.local_disk}}
-  local:
-    path: /var/local-disk
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - hh-rke-wp-webadmin-58-worker-3.caas.ebi.ac.uk
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
-  volumeMode: Filesystem
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: worker-4-local-pvc
-spec:
-  storageClassName: local-storage
-  volumeName: worker-4-local-pv
-  accessModes: ['ReadWriteMany']
-  resources:
-    requests:
-      storage: {{.Values.local_disk}}
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  annotations:
-  finalizers:
-  - kubernetes.io/pv-protection
-  name: worker-4-local-pv
-spec:
-  accessModes: ['ReadWriteMany']
-  capacity:
-    storage: {{.Values.local_disk}}
-  local:
-    path: /var/local-disk
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - hh-rke-wp-webadmin-58-worker-4.caas.ebi.ac.uk
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
-  volumeMode: Filesystem
+      storage: {{ .Values.local_disk }}
