@@ -9,6 +9,14 @@ local_disk: "2Ti"
 # Which HH worker node the cypher-service (Neo4j) pins to.  dev = 1, prod = 2.
 neo_worker_n: "1"
 
+# cypher-service (embedded Neo4j) memory sizing. Defaults suit dev's 64Gi worker;
+# override smaller for prod's ~31Gi worker. Total memory ~= heap + pageCacheMB +
+# JVM overhead, and must fit under `memory`.
+cypher:
+  memory: "38Gi"
+  heap: "8g"
+  pageCacheMB: "26000"
+
 # Read-only NFS release mount that data is copied FROM (the "current" data release).
 # Override importNfs.path per environment:
 #   dev  = /ifs/public/rw/ontoapps/grebi/current
