@@ -25,14 +25,14 @@ if [ ! -d "$STAGING_PATH" ]; then
 fi
 
 # Discover subgraphs from neo4j archives
-SUBGRAPHS=($(ls "$DATARELEASE_PATH"/*_neo4j.tgz 2>/dev/null | sed 's|.*/||; s|_neo4j.tgz||'))
+SUBGRAPHS=($(ls "$DATARELEASE_PATH"/*_neo4j.tar.xz 2>/dev/null | sed 's|.*/||; s|_neo4j.tar.xz||'))
 if [ ${#SUBGRAPHS[@]} -eq 0 ]; then
-  echo "No neo4j archives (*_neo4j.tgz) found in $DATARELEASE_PATH"
+  echo "No neo4j archives (*_neo4j.tar.xz) found in $DATARELEASE_PATH"
   exit 1
 fi
 
 for SUBGRAPH in "${SUBGRAPHS[@]}"; do
-  for f in "${SUBGRAPH}_neo4j.tgz"; do
+  for f in "${SUBGRAPH}_neo4j.tar.xz"; do
     if [ ! -f "$DATARELEASE_PATH/$f" ]; then
       echo "$f not found in $DATARELEASE_PATH"
       exit 1
@@ -53,7 +53,8 @@ echo Extracting new data release
 for SUBGRAPH in "${SUBGRAPHS[@]}"; do
   # -S (--sparse): recreate holes for the Neo4j store's zero-padded regions so the
   # extracted store stays small (matches the sparse archive written by package_neo.nf).
-  tar --use-compress-program=pigz -Sxf $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tgz -C $STAGING_PATH/neo4j
+  # tar runs `xz -d` for extraction; -T0 parallelises across the archive's blocks.
+  tar --use-compress-program='xz -T0' -Sxf $DATARELEASE_PATH/${SUBGRAPH}_neo4j.tar.xz -C $STAGING_PATH/neo4j
 done
 
 

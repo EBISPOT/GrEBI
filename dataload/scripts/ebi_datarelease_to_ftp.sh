@@ -24,7 +24,7 @@ echo "Copying archives from $DATARELEASE_PATH to $FTP_PATH"
 rm -rf $FTP_PATH
 mkdir -p $FTP_PATH
 
-cp -L $DATARELEASE_PATH/*.tgz $FTP_PATH/
+cp -L $DATARELEASE_PATH/*.tar.xz $FTP_PATH/
 cp -L $DATARELEASE_PATH/*_metadata.json $FTP_PATH/
 cp -rL $DATARELEASE_PATH/query_results $FTP_PATH/
 

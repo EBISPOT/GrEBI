@@ -73,17 +73,17 @@ const data: any[] = [
   {
     description:
       "Neo4j database with all datasources (~700 GB uncompressed)",
-    downloadLabel: "neo4j.tgz",
+    downloadLabel: "neo4j.tar.xz",
     downloadLink:
-      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi/latest/ebi_full_monarch_neo4j.tgz",
+      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi/latest/ebi_full_monarch_neo4j.tar.xz",
     format: "Neo4j database",
   },
   {
     description:
       "Postgres database indexing all properties of all nodes and edges (~300 GB uncompressed)",
-    downloadLabel: "postgres.tgz",
+    downloadLabel: "postgres.tar.xz",
     downloadLink:
-      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/latest/postgres.tgz",
+      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/latest/postgres.tar.xz",
     format: "Postgres database",
   },
   {

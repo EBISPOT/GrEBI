@@ -1,8 +1,8 @@
 process package_postgres {
     cache "lenient"
     memory "4 GB"
-    time "8h"
-    cpus "4"
+    time "24h"
+    cpus "16"
 
     input:
     path(postgres_data)
@@ -11,7 +11,7 @@ process package_postgres {
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("postgres.tgz")
+    path("postgres.tar.xz")
 
     script:
     """
@@ -22,13 +22,14 @@ process package_postgres {
     # Postgres data dir is quiesced. Tolerate that specific warning (exit 1) but
     # still fail on fatal tar errors (exit >= 2).
     set +e
-    tar --warning=no-file-changed -chf - ${postgres_data} | pigz > postgres.tgz
+    # xz -T0 (all cores); level tunable (-3 faster, -9e max ratio). See package_neo.nf.
+    tar --warning=no-file-changed -chf - ${postgres_data} | xz -T0 -6 > postgres.tar.xz
     rc=\${PIPESTATUS[0]}
     set -e
     if [ "\$rc" -gt 1 ]; then
         echo "tar failed packaging ${postgres_data} (exit \$rc)" >&2
         exit "\$rc"
     fi
-    echo "Packaged PostgreSQL data: postgres.tgz"
+    echo "Packaged PostgreSQL data: postgres.tar.xz"
     """
 }

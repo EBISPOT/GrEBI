@@ -31,7 +31,7 @@ process test_query_templates {
     set -Eeuo pipefail
     
     echo "Extracting release tarball..."
-    cat ${release_tgz} | pigz -d | tar -xf -
+    cat ${release_tgz} | xz -d -T0 | tar -xf -
     cd release
 
     # Configure environment for the entrypoint

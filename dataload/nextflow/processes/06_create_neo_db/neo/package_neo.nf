@@ -1,17 +1,17 @@
 process package_neo {
     cache "lenient"
-    memory "4 GB" 
-    time "8h"
-    cpus "4"
+    memory "4 GB"
+    time "24h"
+    cpus "16"
 
-    input: 
+    input:
     tuple val(subgraph), path(neo4j_dir)
     val(out_dir)
 
     publishDir "${out_dir}", overwrite: true
 
     output:
-    tuple val(subgraph), path("${subgraph}_neo4j.tgz")
+    tuple val(subgraph), path("${subgraph}_neo4j.tar.xz")
 
     script:
     """
@@ -25,7 +25,11 @@ process package_neo {
     # records the zeros literally and extraction inflates the store ~5-8x (e.g. a
     # 208G store ballooning past 1T). With -S the archive stores holes sparsely and
     # extraction recreates them, keeping the extracted store small.
-    tar --warning=no-file-changed -cShf ${subgraph}_neo4j.tgz --use-compress-program="pigz --fast" ${neo4j_dir}
+    # xz -T0 (all cores) compresses the store ~2-2.5x smaller than gzip because the
+    # embedding/property stores are highly redundant. Level is tunable: -3 is much
+    # faster (still ~2x over gzip), -9e is maximum ratio. Extraction (staging /
+    # integration test) auto-detects xz.
+    tar --warning=no-file-changed -cShf ${subgraph}_neo4j.tar.xz --use-compress-program="xz -T0 -6" ${neo4j_dir}
     rc=\$?
     set -e
     if [ "\$rc" -gt 1 ]; then

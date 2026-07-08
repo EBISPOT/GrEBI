@@ -13,7 +13,7 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 # the full curl (it conflicts with curl-minimal).
 RUN microdnf install -y --setopt=install_weak_deps=0 \
       bash findutils glibc-common shadow-utils \
-      ca-certificates gzip tar unzip gnupg2 rsync procps-ng \
+      ca-certificates gzip xz tar unzip gnupg2 rsync procps-ng \
       python3 python3-pip \
     && microdnf clean all
 

@@ -13,24 +13,24 @@ if [ ! -d "$DATARELEASE_PATH" ]; then
 fi
 
 # Discover subgraphs from neo4j archives
-SUBGRAPHS=($(ls "$DATARELEASE_PATH"/*_neo4j.tgz 2>/dev/null | sed 's|.*/||; s|_neo4j.tgz||'))
+SUBGRAPHS=($(ls "$DATARELEASE_PATH"/*_neo4j.tar.xz 2>/dev/null | sed 's|.*/||; s|_neo4j.tar.xz||'))
 if [ ${#SUBGRAPHS[@]} -eq 0 ]; then
-  echo "No neo4j archives (*_neo4j.tgz) found in $DATARELEASE_PATH"
+  echo "No neo4j archives (*_neo4j.tar.xz) found in $DATARELEASE_PATH"
   exit 1
 fi
 
 echo "Checking data release at $DATARELEASE_PATH (subgraphs: ${SUBGRAPHS[*]})"
 
 for SUBGRAPH in "${SUBGRAPHS[@]}"; do
-  for f in "${SUBGRAPH}_neo4j.tgz" "${SUBGRAPH}_metadata.json"; do
+  for f in "${SUBGRAPH}_neo4j.tar.xz" "${SUBGRAPH}_metadata.json"; do
     if [ ! -f "$DATARELEASE_PATH/$f" ]; then
       echo "$f not found in $DATARELEASE_PATH"
       exit 1
     fi
   done
 done
-if [ ! -f "$DATARELEASE_PATH/postgres.tgz" ]; then
-  echo "postgres.tgz not found in $DATARELEASE_PATH"
+if [ ! -f "$DATARELEASE_PATH/postgres.tar.xz" ]; then
+  echo "postgres.tar.xz not found in $DATARELEASE_PATH"
   exit 1
 fi
 if [ ! -d "$DATARELEASE_PATH/query_results" ]; then

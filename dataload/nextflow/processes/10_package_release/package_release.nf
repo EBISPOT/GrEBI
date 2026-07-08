@@ -1,8 +1,8 @@
 process package_release {
     cache "lenient"
     memory "4 GB"
-    time "8h"
-    cpus "4"
+    time "24h"
+    cpus "16"
 
     input:
     path(release_dir)
@@ -11,7 +11,7 @@ process package_release {
     publishDir "${out_dir}", overwrite: true
 
     output:
-    path("release.tgz")
+    path("release.tar.xz")
 
     script:
     """
@@ -21,7 +21,8 @@ process package_release {
     # on bind-mounted filesystems (e.g. Docker Desktop on macOS). Tolerate that
     # warning (exit 1) but still fail on fatal tar errors (exit >= 2).
     set +e
-    tar --warning=no-file-changed -chf release.tgz --use-compress-program="pigz --fast" ${release_dir}
+    # xz -T0 (all cores); level tunable (-3 faster, -9e max ratio). See package_neo.nf.
+    tar --warning=no-file-changed -chf release.tar.xz --use-compress-program="xz -T0 -6" ${release_dir}
     rc=\$?
     set -e
     if [ "\$rc" -gt 1 ]; then
