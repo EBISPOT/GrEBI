@@ -1,0 +1,108 @@
+name: Build & publish KG release
+
+# Builds a SMALL subgraph through the full GrEBI pipeline on a GitHub-hosted
+# runner and publishes the resulting release bundle (release.tar.xz + metadata)
+# as a GitHub Release. This is the CI-native counterpart to the HPC flow: the
+# full multi-source KG is far too large for a GitHub runner (or GitHub's 2 GiB
+# per-asset limit) and is built on the EBI Codon HPC and published with
+# dataload/scripts/datarelease_to_github.sh. Use this workflow to keep a small,
+# always-downloadable KG artefact attached to the repo for testing and demos.
+#
+# Mirrors the build setup in docs_pdf.yml (disk cleanup, /mnt scratch, combined
+# image build) and the release-upload pattern (softprops/action-gh-release).
+
+on:
+  workflow_dispatch:
+    inputs:
+      subgraph:
+        description: "Subgraph to build (must fit a GitHub runner)"
+        required: true
+        default: dismech
+  schedule:
+    # Weekly, Mondays 04:00 UTC — matches the project's weekly release cadence.
+    - cron: "0 4 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  build-kg-release:
+    runs-on: ubuntu-latest
+    env:
+      SUBGRAPH: ${{ github.event.inputs.subgraph || 'dismech' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          docker system prune -af
+
+      - name: Build combined image
+        run: docker build -t ghcr.io/ebispot/grebi_combined:dev .
+
+      - name: Download subgraph data
+        run: |
+          export GREBI_SUBGRAPHS="$SUBGRAPH"
+          export GREBI_NF_DOWNLOAD_CONFIG=dataload/nextflow/download_local.config
+          bash dataload/scripts/download_local.sh
+
+      - name: Run pipeline
+        run: |
+          # The Nextflow work dir and the Postgres data directory live under
+          # ./tmp on the runner's small root fs (~28 GB); relocate onto the
+          # larger /mnt partition (~70 GB) so the Postgres index build doesn't
+          # run out of space. dataload_local.sh resolves the ./tmp symlink and
+          # bind-mounts the real path, so this is transparent to the pipeline.
+          sudo mkdir -p /mnt/grebi-tmp
+          sudo chown "$(id -u):$(id -g)" /mnt/grebi-tmp
+          rm -rf tmp
+          ln -s /mnt/grebi-tmp tmp
+          export GREBI_SUBGRAPHS="$SUBGRAPH"
+          export GREBI_NF_CONFIG=dataload/nextflow/local_4g_nextflow.config
+          bash dataload/scripts/dataload_local.sh
+
+      - name: Collect release artefacts
+        id: collect
+        run: |
+          mkdir -p release_assets
+          RELEASE_TGZ=$(find out -name 'release.tar.xz' -type f | head -1)
+          if [ -z "$RELEASE_TGZ" ]; then
+            echo "ERROR: release.tar.xz not found in output"
+            find out -type f -name '*.tar.xz' || true
+            exit 1
+          fi
+          # Name the bundle after the subgraph so multiple runs don't collide.
+          cp "$RELEASE_TGZ" "release_assets/${SUBGRAPH}_release.tar.xz"
+          find out -name '*_metadata.json' -type f -exec cp {} release_assets/ \;
+          ( cd release_assets && sha256sum * > SHA256SUMS )
+          echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+          ls -lh release_assets
+
+      - name: Upload artefacts to workflow run
+        uses: actions/upload-artifact@v4
+        with:
+          name: kg-release-${{ env.SUBGRAPH }}
+          path: release_assets/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: kg-${{ env.SUBGRAPH }}-${{ steps.collect.outputs.date }}
+          name: "KG release: ${{ env.SUBGRAPH }} (${{ steps.collect.outputs.date }})"
+          body: |
+            GrEBI knowledge graph release for the **${{ env.SUBGRAPH }}** subgraph,
+            built in CI by `.github/workflows/kg_release.yml`.
+
+            Extract `${{ env.SUBGRAPH }}_release.tar.xz` and run `./grebi_dev.sh`
+            to start a local GrEBI stack. Verify downloads with
+            `sha256sum -c SHA256SUMS`.
+
+            The full multi-source KG is built on the EBI Codon HPC and published
+            separately (large stores are hosted on EBI FTP).
+          files: release_assets/*
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

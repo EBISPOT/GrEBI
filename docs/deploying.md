@@ -10,6 +10,17 @@ The GrEBI dataload is implemented as a containerised [Nextflow](https://www.next
 
 The GrEBI Nextflow pipeline takes about 15 minutes on an M3 MacBook Air to build the `dismech` graph with ~80k nodes and ~3 million edges, or a day on the EBI HPC to build the `ebi_monarch_xspecies` graph with >50 million nodes and >1 billion edges.
 
+## Releases and downloads
+
+A completed build produces a release bundle (assembled by the `construct_release`/`package_release` pipeline steps): per-subgraph Neo4j store archives (`<subgraph>_neo4j.tar.xz`), the Postgres store (`postgres.tar.xz`), `<subgraph>_metadata.json`, materialised `query_results/`, and a generated `grebi_dev.sh` that starts the stack from the extracted files.
+
+Full multi-source builds run weekly on the EBI Codon HPC and are published two ways:
+
+- **EBI FTP** — [`ebi_datarelease_to_ftp.sh`](https://github.com/EBISPOT/GrEBI/blob/dev/dataload/scripts/ebi_datarelease_to_ftp.sh) copies the archives to a date-versioned directory (and a `latest/` alias) under `https://ftp.ebi.ac.uk/pub/databases/spot/kg/`. This is the home of the multi-gigabyte store archives.
+- **GitHub Releases** — [`datarelease_to_github.sh`](https://github.com/EBISPOT/GrEBI/blob/dev/dataload/scripts/datarelease_to_github.sh) creates a dated GitHub Release (tag `data-<version>`) and attaches the small, self-describing artefacts (metadata, packaged query results, run script, and a `SHA256SUMS`). GitHub caps each asset at 2 GiB, so by default the large store archives are not uploaded — the release notes link to their FTP copies instead. Set `GREBI_GH_SPLIT=1` to instead split oversized archives into <2 GiB parts and upload every part. It needs only outbound HTTPS and a `GITHUB_TOKEN` with `contents: write`, so it can run from a Codon login node right after the FTP step; run it with `GREBI_GH_DRY_RUN=1` first to preview the plan.
+
+For testing and demos, the [`kg_release.yml`](https://github.com/EBISPOT/GrEBI/blob/dev/.github/workflows/kg_release.yml) GitHub Actions workflow builds a small subgraph (default `dismech`) entirely in CI and publishes its `release.tar.xz` as a GitHub Release, so a downloadable KG artefact is always available without HPC access.
+
 ## Downloads and Ingests
 
 GrEBI datasources are defined in YAML files in the [`configs/datasource_configs`](https://github.com/EBISPOT/GrEBI/tree/dev/configs/datasource_configs) directory. For example, [`otar_disease_phenotype.yaml`](https://github.com/EBISPOT/GrEBI/blob/dev/configs/datasource_configs/otar/otar_disease_phenotype.yaml) defines a datasource to import disease-phenotype associations from the Open Targets platform:
