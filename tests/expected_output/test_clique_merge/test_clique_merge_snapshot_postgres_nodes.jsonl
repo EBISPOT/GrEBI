@@ -1,5 +1,5 @@
-{"grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "ex:entity_a_alt", "grebi:sourceIds": ["ex:entity_a", "ex:entity_a_alt"], "grebi:type": ["biolink:NamedThing"], "ols:curie": ""}
-{"grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "ex:entity_b", "grebi:sourceIds": ["ex:entity_b"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
-{"grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "ex:entity_c", "grebi:sourceIds": ["ex:entity_c"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}
-{"grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "hgnc:11603", "grebi:sourceIds": ["hgnc:11603"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
-{"grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "mondo:0005002", "grebi:sourceIds": ["mondo:0005002"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}
+{"grebi:curie": "ex:entity_a_alt", "grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "ex:entity_a_alt", "grebi:sourceIds": ["ex:entity_a", "ex:entity_a_alt"], "grebi:type": ["biolink:NamedThing"], "ols:curie": ""}
+{"grebi:curie": "ex:entity_b", "grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "ex:entity_b", "grebi:sourceIds": ["ex:entity_b"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
+{"grebi:curie": "ex:entity_c", "grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "ex:entity_c", "grebi:sourceIds": ["ex:entity_c"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}
+{"grebi:curie": "hgnc:11603", "grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "hgnc:11603", "grebi:sourceIds": ["hgnc:11603"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
+{"grebi:curie": "mondo:0005002", "grebi:datasources": ["TestCliqueMerge"], "grebi:name": "", "grebi:nodeId": "mondo:0005002", "grebi:sourceIds": ["mondo:0005002"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}

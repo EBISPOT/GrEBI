@@ -1,6 +1,6 @@
-{"grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "ex:disease1", "grebi:sourceIds": ["ex:disease1"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}
-{"grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "ex:gene1", "grebi:sourceIds": ["ex:gene1"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
-{"grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "ex:gene2", "grebi:sourceIds": ["ex:gene2"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
-{"grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "ex:phenotype1", "grebi:sourceIds": ["ex:phenotype1"], "grebi:type": ["biolink:PhenotypicFeature"], "ols:curie": ""}
-{"grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "hgnc:11603", "grebi:sourceIds": ["hgnc:11603"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
-{"grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "mondo:0005002", "grebi:sourceIds": ["mondo:0005002"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}
+{"grebi:curie": "ex:disease1", "grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "ex:disease1", "grebi:sourceIds": ["ex:disease1"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}
+{"grebi:curie": "ex:gene1", "grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "ex:gene1", "grebi:sourceIds": ["ex:gene1"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
+{"grebi:curie": "ex:gene2", "grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "ex:gene2", "grebi:sourceIds": ["ex:gene2"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
+{"grebi:curie": "ex:phenotype1", "grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "ex:phenotype1", "grebi:sourceIds": ["ex:phenotype1"], "grebi:type": ["biolink:PhenotypicFeature"], "ols:curie": ""}
+{"grebi:curie": "hgnc:11603", "grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "hgnc:11603", "grebi:sourceIds": ["hgnc:11603"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
+{"grebi:curie": "mondo:0005002", "grebi:datasources": ["TestEdgeLinking"], "grebi:name": "", "grebi:nodeId": "mondo:0005002", "grebi:sourceIds": ["mondo:0005002"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}
