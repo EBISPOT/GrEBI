@@ -196,7 +196,22 @@ case "$MODE" in
                 python3 /opt/export_neo4j.py "$SUBGRAPH"
                 python3 /opt/export_postgres.py "$SUBGRAPH"
                 set -e
-                
+
+                # Always generate the API snapshot into the working dir so it is
+                # published to the pipeline output for initial population, exactly
+                # like the DB snapshots above (see tests/expected_output/README.md).
+                # The comparison against committed expected output (if any) happens
+                # in Phase 3 below.
+                echo ""
+                echo "=== Exporting API snapshot for '$SUBGRAPH' ==="
+                set +e
+                python3 /opt/test_api_snapshots.py \
+                    --subgraph "$SUBGRAPH" \
+                    --api-url http://localhost:8090 \
+                    --expected-dir "$PWD" \
+                    --update
+                set -e
+
                 # Phase 3: Compare snapshots against expected output (if requested).
                 # Expected snapshots are committed per-subgraph in
                 # tests/expected_output/<subgraph>/ (see that dir's README), so

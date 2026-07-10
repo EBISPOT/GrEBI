@@ -27,11 +27,14 @@ When `--export_snapshots true` is passed to the pipeline, the integration test
 process (which already has Neo4j, Postgres, and the API running) will:
 
 1. Export DB snapshots (Neo4j nodes/edges, Postgres nodes/edges) to JSONL files
-2. Compare them against expected output in this directory (if present)
-3. Compare API response snapshots against expected output (if present)
+2. Export an API response snapshot (`<subgraph>_api_snapshot.json`) by querying
+   the running API for every node's details and incoming/outgoing edges
+3. Compare the DB snapshots against expected output in this directory (if present)
+4. Compare the API snapshot against expected output (if present)
 
-If no expected output exists yet, the comparison is skipped and the snapshot
-files are published to the pipeline output directory for initial population.
+Both the DB snapshots and the API snapshot are always exported and published to
+the pipeline output directory (`out/<subgraph>/`) for initial population; the
+comparisons in steps 3–4 are skipped when no expected output exists yet.
 
 ## Updating Expected Output
 

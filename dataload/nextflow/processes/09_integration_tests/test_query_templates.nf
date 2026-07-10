@@ -23,6 +23,7 @@ process test_query_templates {
     path("integration_test_results.txt"), optional: true, emit: results
     path("grebi-docs.html"), optional: true, emit: docs_html
     path("*_snapshot_*.jsonl"), optional: true, emit: snapshots
+    path("*_api_snapshot.json"), optional: true, emit: api_snapshot
     stdout emit: log
 
     script:
@@ -75,6 +76,7 @@ process test_query_templates {
 
     # Copy snapshot files to parent dir for Nextflow publishDir
     cp -f *_snapshot_*.jsonl ../ 2>/dev/null || true
+    cp -f *_api_snapshot.json ../ 2>/dev/null || true
     cp -f grebi-docs.html ../ 2>/dev/null || true
 
     exit \$EXIT_CODE

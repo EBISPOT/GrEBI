@@ -1,0 +1,11 @@
+Prefix(:=<http://example.org/>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Ontology(<http://example.org/test_ubergraph2>
+  Declaration(Class(:D))
+  AnnotationAssertion(rdfs:label :D "thing D")
+  # Cross-ontology axiom: D is declared here (ontology 2) but subclasses C,
+  # which is declared in tiny.ofn (ontology 1). `om ubergraph` must reason over
+  # the union of both ontologies to materialise the D < C < B < A closure and
+  # to propagate C's existential (part_of some A) restriction down to D.
+  SubClassOf(:D :C)
+)

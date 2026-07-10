@@ -1,7 +1,9 @@
 # Tiny synthetic ontology set for the E2E test of the ubergraph path. Built by
-# `om ubergraph` from a committed local fixture (no download), so the test runs
+# `om ubergraph` from committed local fixtures (no download), so the test runs
 # fast. Exercises: subclass chain C < B < A (closure), an existential
-# part_of restriction (C part_of A), and labels.
+# part_of restriction (C part_of A), labels, and CROSS-ONTOLOGY reasoning — a
+# second ontology (tiny2) declares D and subclasses it under C (declared in
+# tiny), so the reasoner must combine both ontologies to close D < C < B < A.
 id: test_ubergraph
 description: "Tiny synthetic ontology set for the ubergraph E2E test."
 offline: true
@@ -16,3 +18,11 @@ ontologies:
     iri: http://example.org/test_ubergraph
     sources:
       - tests/data/test_ubergraph/tiny.ofn
+  - id: tiny2
+    # Second ontology in the set. Declares D and asserts D SubClassOf C (C is
+    # declared in tiny), so the ubergraph build reasons across both ontologies.
+    # D is stamped isDefinedBy this IRI -> datasource Ontologies.tiny2, while the
+    # inferred D->{A,B,C} closure edges cross the ontology boundary.
+    iri: http://example.org/test_ubergraph2
+    sources:
+      - tests/data/test_ubergraph/tiny2.ofn

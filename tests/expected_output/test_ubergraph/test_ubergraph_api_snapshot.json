@@ -1,0 +1,6056 @@
+{
+  "health": {
+    "status": "ok"
+  },
+  "node_details": {
+    "http://example.org/A": {
+      "incoming_edges": {
+        "content": [
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "05c691aad70ffa9f7617789b8ab292726e446331",
+            "grebi:fromNodeId": "http://example.org/B",
+            "grebi:fromSourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "biolink:subclass_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "3af8536e835e816406c51fe3f84c62d0644715aa",
+            "grebi:fromNodeId": "http://example.org/B",
+            "grebi:fromSourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/part_of": {
+                "grebi:datasources": [
+                  "Ontologies.tiny"
+                ],
+                "grebi:nodeId": "http://example.org/part_of",
+                "grebi:sourceIds": [
+                  "http://example.org/part_of"
+                ],
+                "grebi:type": [
+                  "owl:ObjectProperty"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "203c008e96f6ccfa1d3ef34f69e297774fd03e32",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "http://example.org/part_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "c8d841109a364c3b381c7cb8b9d9435d10faabf3",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/part_of": {
+                "grebi:datasources": [
+                  "Ontologies.tiny"
+                ],
+                "grebi:nodeId": "http://example.org/part_of",
+                "grebi:sourceIds": [
+                  "http://example.org/part_of"
+                ],
+                "grebi:type": [
+                  "owl:ObjectProperty"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "87fb667ccadead036e00ff302201a02f6120ff9d",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "http://example.org/part_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "48e8af7afdb1091f0fceee34557188d1eae8a58a",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "Ontologies.nonredundant": 2,
+            "Ontologies.redundant": 5,
+            "Ontologies.tiny": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 6
+      },
+      "node": {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "grebi:curie": "http://example.org/A",
+        "grebi:datasources": [
+          "Ontologies.redundant",
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "thing A"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/A",
+        "grebi:sourceIds": [
+          "http://example.org/A"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "-29.2481"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "0"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "6"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/test_ubergraph": {
+                "grebi:datasources": [
+                  "Ontologies"
+                ],
+                "grebi:nodeId": "http://example.org/test_ubergraph",
+                "grebi:sourceIds": [
+                  "http://example.org/test_ubergraph"
+                ],
+                "grebi:type": [
+                  "owl:Ontology"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "a73867135a742c839d935fd6666fa80cc3192639",
+            "grebi:fromNodeId": "http://example.org/A",
+            "grebi:fromSourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/test_ubergraph",
+            "grebi:type": "rdfs:isDefinedBy",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies"
+              ],
+              "grebi:nodeId": "http://example.org/test_ubergraph",
+              "grebi:sourceIds": [
+                "http://example.org/test_ubergraph"
+              ],
+              "grebi:type": [
+                "owl:Ontology"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "Ontologies.tiny": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "http://example.org/B": {
+      "incoming_edges": {
+        "content": [
+          {
+            "_refs": {
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "670430586aabbd116f25d37d47e7648b0375f5a9",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/B",
+            "grebi:type": "biolink:subclass_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "c3ab51ba5ee5412e25ca59c77daad7380d006bca",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/B",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "0a389b46a0a1be855e470acd8dfbbe0671f1d995",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/B",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "Ontologies.nonredundant": 1,
+            "Ontologies.redundant": 2,
+            "Ontologies.tiny": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 3
+      },
+      "node": {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/B": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing B"
+            ],
+            "grebi:nodeId": "http://example.org/B",
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/B"
+          }
+        ],
+        "biolink:subclass_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "grebi:curie": "http://example.org/B",
+        "grebi:datasources": [
+          "Ontologies.nonredundant",
+          "Ontologies.redundant",
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "thing B"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/B",
+        "grebi:sourceIds": [
+          "http://example.org/B"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "20.7519"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "20.7519"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "3"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/B"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "05c691aad70ffa9f7617789b8ab292726e446331",
+            "grebi:fromNodeId": "http://example.org/B",
+            "grebi:fromSourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "biolink:subclass_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "3af8536e835e816406c51fe3f84c62d0644715aa",
+            "grebi:fromNodeId": "http://example.org/B",
+            "grebi:fromSourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/test_ubergraph": {
+                "grebi:datasources": [
+                  "Ontologies"
+                ],
+                "grebi:nodeId": "http://example.org/test_ubergraph",
+                "grebi:sourceIds": [
+                  "http://example.org/test_ubergraph"
+                ],
+                "grebi:type": [
+                  "owl:Ontology"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "d9f116079d3d75f4a51e898384f0cfe089ceadf3",
+            "grebi:fromNodeId": "http://example.org/B",
+            "grebi:fromSourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/test_ubergraph",
+            "grebi:type": "rdfs:isDefinedBy",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies"
+              ],
+              "grebi:nodeId": "http://example.org/test_ubergraph",
+              "grebi:sourceIds": [
+                "http://example.org/test_ubergraph"
+              ],
+              "grebi:type": [
+                "owl:Ontology"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "Ontologies.nonredundant": 1,
+            "Ontologies.redundant": 1,
+            "Ontologies.tiny": 2
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 3
+      }
+    },
+    "http://example.org/C": {
+      "incoming_edges": {
+        "content": [
+          {
+            "_refs": {
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:edgeId": "bf27d48d562892a25da3e405a9ca23c73771dbb6",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/C",
+            "grebi:type": "biolink:subclass_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "e8faf3f26b9f04d94f527fd1c931a1d094ff34e0",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/C",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "Ontologies.nonredundant": 1,
+            "Ontologies.redundant": 1,
+            "Ontologies.tiny2": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 2
+      },
+      "node": {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/B": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing B"
+            ],
+            "grebi:nodeId": "http://example.org/B",
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/C": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing C"
+            ],
+            "grebi:nodeId": "http://example.org/C",
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/part_of": {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:nodeId": "http://example.org/part_of",
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:type": [
+              "owl:ObjectProperty"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/B"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/C"
+          }
+        ],
+        "biolink:subclass_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/B"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": {
+              "owl:onProperty": [
+                "http://example.org/part_of"
+              ],
+              "owl:someValuesFrom": [
+                "http://example.org/A"
+              ],
+              "rdf:type": [
+                "owl:Restriction"
+              ]
+            }
+          }
+        ],
+        "grebi:curie": "http://example.org/C",
+        "grebi:datasources": [
+          "Ontologies.nonredundant",
+          "Ontologies.redundant",
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "thing C"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/C",
+        "grebi:sourceIds": [
+          "http://example.org/C"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "http://example.org/part_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "50"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "50"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "2"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/C"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/part_of": {
+                "grebi:datasources": [
+                  "Ontologies.tiny"
+                ],
+                "grebi:nodeId": "http://example.org/part_of",
+                "grebi:sourceIds": [
+                  "http://example.org/part_of"
+                ],
+                "grebi:type": [
+                  "owl:ObjectProperty"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "203c008e96f6ccfa1d3ef34f69e297774fd03e32",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "http://example.org/part_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "c8d841109a364c3b381c7cb8b9d9435d10faabf3",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "670430586aabbd116f25d37d47e7648b0375f5a9",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/B",
+            "grebi:type": "biolink:subclass_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "c3ab51ba5ee5412e25ca59c77daad7380d006bca",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/B",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/test_ubergraph": {
+                "grebi:datasources": [
+                  "Ontologies"
+                ],
+                "grebi:nodeId": "http://example.org/test_ubergraph",
+                "grebi:sourceIds": [
+                  "http://example.org/test_ubergraph"
+                ],
+                "grebi:type": [
+                  "owl:Ontology"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "e8f99b8d94d66ea5d3cb598ac3af8804f5727477",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/test_ubergraph",
+            "grebi:type": "rdfs:isDefinedBy",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies"
+              ],
+              "grebi:nodeId": "http://example.org/test_ubergraph",
+              "grebi:sourceIds": [
+                "http://example.org/test_ubergraph"
+              ],
+              "grebi:type": [
+                "owl:Ontology"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "Ontologies.nonredundant": 2,
+            "Ontologies.redundant": 3,
+            "Ontologies.tiny": 2
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 5
+      }
+    },
+    "http://example.org/D": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/B": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing B"
+            ],
+            "grebi:nodeId": "http://example.org/B",
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/C": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing C"
+            ],
+            "grebi:nodeId": "http://example.org/C",
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/D": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:name": [
+              "thing D"
+            ],
+            "grebi:nodeId": "http://example.org/D",
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/part_of": {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:nodeId": "http://example.org/part_of",
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:type": [
+              "owl:ObjectProperty"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/B"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/C"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/D"
+          }
+        ],
+        "biolink:subclass_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/C"
+          }
+        ],
+        "grebi:curie": "http://example.org/D",
+        "grebi:datasources": [
+          "Ontologies.nonredundant",
+          "Ontologies.redundant",
+          "Ontologies.tiny2"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "thing D"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/D",
+        "grebi:sourceIds": [
+          "http://example.org/D"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "http://example.org/part_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "100"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "100"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "1"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/D"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph2"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/part_of": {
+                "grebi:datasources": [
+                  "Ontologies.tiny"
+                ],
+                "grebi:nodeId": "http://example.org/part_of",
+                "grebi:sourceIds": [
+                  "http://example.org/part_of"
+                ],
+                "grebi:type": [
+                  "owl:ObjectProperty"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "87fb667ccadead036e00ff302201a02f6120ff9d",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "http://example.org/part_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "48e8af7afdb1091f0fceee34557188d1eae8a58a",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/A",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "0a389b46a0a1be855e470acd8dfbbe0671f1d995",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/B",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:edgeId": "bf27d48d562892a25da3e405a9ca23c73771dbb6",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/C",
+            "grebi:type": "biolink:subclass_of",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/D": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny2"
+                ],
+                "grebi:name": [
+                  "thing D"
+                ],
+                "grebi:nodeId": "http://example.org/D",
+                "grebi:sourceIds": [
+                  "http://example.org/D"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny2"
+              ],
+              "grebi:name": [
+                "thing D"
+              ],
+              "grebi:nodeId": "http://example.org/D",
+              "grebi:sourceIds": [
+                "http://example.org/D"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:edgeId": "e8faf3f26b9f04d94f527fd1c931a1d094ff34e0",
+            "grebi:fromNodeId": "http://example.org/D",
+            "grebi:fromSourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/C",
+            "grebi:type": "biolink:broad_match",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "Ontologies.nonredundant": 1,
+            "Ontologies.redundant": 4,
+            "Ontologies.tiny2": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 5
+      }
+    },
+    "http://example.org/part_of": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "http://example.org/part_of": {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:nodeId": "http://example.org/part_of",
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:type": [
+              "owl:ObjectProperty"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "grebi:curie": "http://example.org/part_of",
+        "grebi:datasources": [
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:ObjectProperty",
+        "grebi:nodeId": "http://example.org/part_of",
+        "grebi:sourceIds": [
+          "http://example.org/part_of"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "owl:ObjectProperty"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "http://example.org/part_of"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "owl:ObjectProperty"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "http://example.org/part_of": {
+                "grebi:datasources": [
+                  "Ontologies.tiny"
+                ],
+                "grebi:nodeId": "http://example.org/part_of",
+                "grebi:sourceIds": [
+                  "http://example.org/part_of"
+                ],
+                "grebi:type": [
+                  "owl:ObjectProperty"
+                ]
+              },
+              "http://example.org/test_ubergraph": {
+                "grebi:datasources": [
+                  "Ontologies"
+                ],
+                "grebi:nodeId": "http://example.org/test_ubergraph",
+                "grebi:sourceIds": [
+                  "http://example.org/test_ubergraph"
+                ],
+                "grebi:type": [
+                  "owl:Ontology"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.tiny"
+              ],
+              "grebi:nodeId": "http://example.org/part_of",
+              "grebi:sourceIds": [
+                "http://example.org/part_of"
+              ],
+              "grebi:type": [
+                "owl:ObjectProperty"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "6aff6a74bfe5ed14755a8e5f7ab39c936f1903e1",
+            "grebi:fromNodeId": "http://example.org/part_of",
+            "grebi:fromSourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/test_ubergraph",
+            "grebi:type": "rdfs:isDefinedBy",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies"
+              ],
+              "grebi:nodeId": "http://example.org/test_ubergraph",
+              "grebi:sourceIds": [
+                "http://example.org/test_ubergraph"
+              ],
+              "grebi:type": [
+                "owl:Ontology"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "Ontologies.tiny": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "http://example.org/test_ubergraph": {
+      "incoming_edges": {
+        "content": [
+          {
+            "_refs": {
+              "http://example.org/A": {
+                "grebi:datasources": [
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing A"
+                ],
+                "grebi:nodeId": "http://example.org/A",
+                "grebi:sourceIds": [
+                  "http://example.org/A"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/test_ubergraph": {
+                "grebi:datasources": [
+                  "Ontologies"
+                ],
+                "grebi:nodeId": "http://example.org/test_ubergraph",
+                "grebi:sourceIds": [
+                  "http://example.org/test_ubergraph"
+                ],
+                "grebi:type": [
+                  "owl:Ontology"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing A"
+              ],
+              "grebi:nodeId": "http://example.org/A",
+              "grebi:sourceIds": [
+                "http://example.org/A"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "a73867135a742c839d935fd6666fa80cc3192639",
+            "grebi:fromNodeId": "http://example.org/A",
+            "grebi:fromSourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/test_ubergraph",
+            "grebi:type": "rdfs:isDefinedBy",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies"
+              ],
+              "grebi:nodeId": "http://example.org/test_ubergraph",
+              "grebi:sourceIds": [
+                "http://example.org/test_ubergraph"
+              ],
+              "grebi:type": [
+                "owl:Ontology"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/B": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing B"
+                ],
+                "grebi:nodeId": "http://example.org/B",
+                "grebi:sourceIds": [
+                  "http://example.org/B"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/test_ubergraph": {
+                "grebi:datasources": [
+                  "Ontologies"
+                ],
+                "grebi:nodeId": "http://example.org/test_ubergraph",
+                "grebi:sourceIds": [
+                  "http://example.org/test_ubergraph"
+                ],
+                "grebi:type": [
+                  "owl:Ontology"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing B"
+              ],
+              "grebi:nodeId": "http://example.org/B",
+              "grebi:sourceIds": [
+                "http://example.org/B"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "d9f116079d3d75f4a51e898384f0cfe089ceadf3",
+            "grebi:fromNodeId": "http://example.org/B",
+            "grebi:fromSourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/test_ubergraph",
+            "grebi:type": "rdfs:isDefinedBy",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies"
+              ],
+              "grebi:nodeId": "http://example.org/test_ubergraph",
+              "grebi:sourceIds": [
+                "http://example.org/test_ubergraph"
+              ],
+              "grebi:type": [
+                "owl:Ontology"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/C": {
+                "grebi:datasources": [
+                  "Ontologies.nonredundant",
+                  "Ontologies.redundant",
+                  "Ontologies.tiny"
+                ],
+                "grebi:name": [
+                  "thing C"
+                ],
+                "grebi:nodeId": "http://example.org/C",
+                "grebi:sourceIds": [
+                  "http://example.org/C"
+                ],
+                "grebi:type": [
+                  "owl:Class"
+                ]
+              },
+              "http://example.org/test_ubergraph": {
+                "grebi:datasources": [
+                  "Ontologies"
+                ],
+                "grebi:nodeId": "http://example.org/test_ubergraph",
+                "grebi:sourceIds": [
+                  "http://example.org/test_ubergraph"
+                ],
+                "grebi:type": [
+                  "owl:Ontology"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.nonredundant",
+                "Ontologies.redundant",
+                "Ontologies.tiny"
+              ],
+              "grebi:name": [
+                "thing C"
+              ],
+              "grebi:nodeId": "http://example.org/C",
+              "grebi:sourceIds": [
+                "http://example.org/C"
+              ],
+              "grebi:type": [
+                "owl:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "e8f99b8d94d66ea5d3cb598ac3af8804f5727477",
+            "grebi:fromNodeId": "http://example.org/C",
+            "grebi:fromSourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/test_ubergraph",
+            "grebi:type": "rdfs:isDefinedBy",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies"
+              ],
+              "grebi:nodeId": "http://example.org/test_ubergraph",
+              "grebi:sourceIds": [
+                "http://example.org/test_ubergraph"
+              ],
+              "grebi:type": [
+                "owl:Ontology"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "http://example.org/part_of": {
+                "grebi:datasources": [
+                  "Ontologies.tiny"
+                ],
+                "grebi:nodeId": "http://example.org/part_of",
+                "grebi:sourceIds": [
+                  "http://example.org/part_of"
+                ],
+                "grebi:type": [
+                  "owl:ObjectProperty"
+                ]
+              },
+              "http://example.org/test_ubergraph": {
+                "grebi:datasources": [
+                  "Ontologies"
+                ],
+                "grebi:nodeId": "http://example.org/test_ubergraph",
+                "grebi:sourceIds": [
+                  "http://example.org/test_ubergraph"
+                ],
+                "grebi:type": [
+                  "owl:Ontology"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "Ontologies.tiny"
+              ],
+              "grebi:nodeId": "http://example.org/part_of",
+              "grebi:sourceIds": [
+                "http://example.org/part_of"
+              ],
+              "grebi:type": [
+                "owl:ObjectProperty"
+              ]
+            },
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:edgeId": "6aff6a74bfe5ed14755a8e5f7ab39c936f1903e1",
+            "grebi:fromNodeId": "http://example.org/part_of",
+            "grebi:fromSourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:subgraph": "test_ubergraph",
+            "grebi:toNodeId": "http://example.org/test_ubergraph",
+            "grebi:type": "rdfs:isDefinedBy",
+            "to": {
+              "grebi:datasources": [
+                "Ontologies"
+              ],
+              "grebi:nodeId": "http://example.org/test_ubergraph",
+              "grebi:sourceIds": [
+                "http://example.org/test_ubergraph"
+              ],
+              "grebi:type": [
+                "owl:Ontology"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "Ontologies.tiny": 4
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 4
+      },
+      "node": {
+        "_refs": {
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "grebi:curie": "http://example.org/test_ubergraph",
+        "grebi:datasources": [
+          "Ontologies"
+        ],
+        "grebi:displayType": "owl:Ontology",
+        "grebi:nodeId": "http://example.org/test_ubergraph",
+        "grebi:sourceIds": [
+          "http://example.org/test_ubergraph"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:value": "owl:Ontology"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:value": "owl:Ontology"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      }
+    }
+  },
+  "nodes": {
+    "content": [
+      {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "grebi:curie": "http://example.org/A",
+        "grebi:datasources": [
+          "Ontologies.redundant",
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "thing A"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/A",
+        "grebi:sourceIds": [
+          "http://example.org/A"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "-29.2481"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "0"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "6"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/B": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing B"
+            ],
+            "grebi:nodeId": "http://example.org/B",
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/B"
+          }
+        ],
+        "biolink:subclass_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "grebi:curie": "http://example.org/B",
+        "grebi:datasources": [
+          "Ontologies.nonredundant",
+          "Ontologies.redundant",
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "thing B"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/B",
+        "grebi:sourceIds": [
+          "http://example.org/B"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "20.7519"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "20.7519"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "3"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/B"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/B": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing B"
+            ],
+            "grebi:nodeId": "http://example.org/B",
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/C": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing C"
+            ],
+            "grebi:nodeId": "http://example.org/C",
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/part_of": {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:nodeId": "http://example.org/part_of",
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:type": [
+              "owl:ObjectProperty"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/B"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/C"
+          }
+        ],
+        "biolink:subclass_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/B"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": {
+              "owl:onProperty": [
+                "http://example.org/part_of"
+              ],
+              "owl:someValuesFrom": [
+                "http://example.org/A"
+              ],
+              "rdf:type": [
+                "owl:Restriction"
+              ]
+            }
+          }
+        ],
+        "grebi:curie": "http://example.org/C",
+        "grebi:datasources": [
+          "Ontologies.nonredundant",
+          "Ontologies.redundant",
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "thing C"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/C",
+        "grebi:sourceIds": [
+          "http://example.org/C"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "http://example.org/part_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "50"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "50"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "2"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/C"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/B": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing B"
+            ],
+            "grebi:nodeId": "http://example.org/B",
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/C": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing C"
+            ],
+            "grebi:nodeId": "http://example.org/C",
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/D": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:name": [
+              "thing D"
+            ],
+            "grebi:nodeId": "http://example.org/D",
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/part_of": {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:nodeId": "http://example.org/part_of",
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:type": [
+              "owl:ObjectProperty"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/B"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/C"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/D"
+          }
+        ],
+        "biolink:subclass_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/C"
+          }
+        ],
+        "grebi:curie": "http://example.org/D",
+        "grebi:datasources": [
+          "Ontologies.nonredundant",
+          "Ontologies.redundant",
+          "Ontologies.tiny2"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "thing D"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/D",
+        "grebi:sourceIds": [
+          "http://example.org/D"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "http://example.org/part_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "100"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "100"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "1"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/D"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph2"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/part_of": {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:nodeId": "http://example.org/part_of",
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:type": [
+              "owl:ObjectProperty"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "grebi:curie": "http://example.org/part_of",
+        "grebi:datasources": [
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:ObjectProperty",
+        "grebi:nodeId": "http://example.org/part_of",
+        "grebi:sourceIds": [
+          "http://example.org/part_of"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "owl:ObjectProperty"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "http://example.org/part_of"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "owl:ObjectProperty"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "grebi:curie": "http://example.org/test_ubergraph",
+        "grebi:datasources": [
+          "Ontologies"
+        ],
+        "grebi:displayType": "owl:Ontology",
+        "grebi:nodeId": "http://example.org/test_ubergraph",
+        "grebi:sourceIds": [
+          "http://example.org/test_ubergraph"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:value": "owl:Ontology"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:value": "owl:Ontology"
+          }
+        ]
+      }
+    ],
+    "empty": false,
+    "facetFieldToCounts": {},
+    "first": true,
+    "last": true,
+    "number": 0,
+    "numberOfElements": 6,
+    "pageable": {
+      "offset": 0,
+      "pageNumber": 0,
+      "pageSize": 100,
+      "paged": true,
+      "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+      },
+      "unpaged": false
+    },
+    "size": 100,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "totalElements": 6,
+    "totalPages": 1
+  },
+  "search": {
+    "content": [
+      {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "grebi:curie": "http://example.org/A",
+        "grebi:datasources": [
+          "Ontologies.redundant",
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "thing A"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/A",
+        "grebi:sourceIds": [
+          "http://example.org/A"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "-29.2481"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "0"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "6"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/B": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing B"
+            ],
+            "grebi:nodeId": "http://example.org/B",
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/B"
+          }
+        ],
+        "biolink:subclass_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "grebi:curie": "http://example.org/B",
+        "grebi:datasources": [
+          "Ontologies.nonredundant",
+          "Ontologies.redundant",
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "thing B"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/B",
+        "grebi:sourceIds": [
+          "http://example.org/B"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "20.7519"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "20.7519"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "3"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/B"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/B": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing B"
+            ],
+            "grebi:nodeId": "http://example.org/B",
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/C": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing C"
+            ],
+            "grebi:nodeId": "http://example.org/C",
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/part_of": {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:nodeId": "http://example.org/part_of",
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:type": [
+              "owl:ObjectProperty"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/B"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/C"
+          }
+        ],
+        "biolink:subclass_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/B"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": {
+              "owl:onProperty": [
+                "http://example.org/part_of"
+              ],
+              "owl:someValuesFrom": [
+                "http://example.org/A"
+              ],
+              "rdf:type": [
+                "owl:Restriction"
+              ]
+            }
+          }
+        ],
+        "grebi:curie": "http://example.org/C",
+        "grebi:datasources": [
+          "Ontologies.nonredundant",
+          "Ontologies.redundant",
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "thing C"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/C",
+        "grebi:sourceIds": [
+          "http://example.org/C"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "http://example.org/part_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "50"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "50"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "2"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/C"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/A": {
+            "grebi:datasources": [
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing A"
+            ],
+            "grebi:nodeId": "http://example.org/A",
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/B": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing B"
+            ],
+            "grebi:nodeId": "http://example.org/B",
+            "grebi:sourceIds": [
+              "http://example.org/B"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/C": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny"
+            ],
+            "grebi:name": [
+              "thing C"
+            ],
+            "grebi:nodeId": "http://example.org/C",
+            "grebi:sourceIds": [
+              "http://example.org/C"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/D": {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:name": [
+              "thing D"
+            ],
+            "grebi:nodeId": "http://example.org/D",
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:type": [
+              "owl:Class"
+            ]
+          },
+          "http://example.org/part_of": {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:nodeId": "http://example.org/part_of",
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:type": [
+              "owl:ObjectProperty"
+            ]
+          }
+        },
+        "biolink:broad_match": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/B"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/C"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/D"
+          }
+        ],
+        "biolink:subclass_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/C"
+          }
+        ],
+        "grebi:curie": "http://example.org/D",
+        "grebi:datasources": [
+          "Ontologies.nonredundant",
+          "Ontologies.redundant",
+          "Ontologies.tiny2"
+        ],
+        "grebi:displayType": "owl:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "thing D"
+          }
+        ],
+        "grebi:nodeId": "http://example.org/D",
+        "grebi:sourceIds": [
+          "http://example.org/D"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "http://example.org/part_of": [
+          {
+            "grebi:datasources": [
+              "Ontologies.redundant"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/A"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "100"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "100"
+          }
+        ],
+        "https://w3id.org/owlmake/vocab/referenceCount": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "1"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.nonredundant",
+              "Ontologies.redundant",
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/D"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "owl:Class"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny2"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/D"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph2"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/part_of": {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:nodeId": "http://example.org/part_of",
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:type": [
+              "owl:ObjectProperty"
+            ]
+          },
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "grebi:curie": "http://example.org/part_of",
+        "grebi:datasources": [
+          "Ontologies.tiny"
+        ],
+        "grebi:displayType": "owl:ObjectProperty",
+        "grebi:nodeId": "http://example.org/part_of",
+        "grebi:sourceIds": [
+          "http://example.org/part_of"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "owl:ObjectProperty"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "http://example.org/part_of"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "owl:ObjectProperty"
+          }
+        ],
+        "rdfs:isDefinedBy": [
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/part_of"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "http://example.org/test_ubergraph": {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:nodeId": "http://example.org/test_ubergraph",
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:type": [
+              "owl:Ontology"
+            ]
+          }
+        },
+        "grebi:curie": "http://example.org/test_ubergraph",
+        "grebi:datasources": [
+          "Ontologies"
+        ],
+        "grebi:displayType": "owl:Ontology",
+        "grebi:nodeId": "http://example.org/test_ubergraph",
+        "grebi:sourceIds": [
+          "http://example.org/test_ubergraph"
+        ],
+        "grebi:subgraph": "test_ubergraph",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:value": "owl:Ontology"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:value": "http://example.org/test_ubergraph"
+          }
+        ],
+        "rdf:type": [
+          {
+            "grebi:datasources": [
+              "Ontologies"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/test_ubergraph"
+            ],
+            "grebi:value": "owl:Ontology"
+          }
+        ]
+      }
+    ],
+    "empty": false,
+    "facetFieldToCounts": {},
+    "first": true,
+    "last": true,
+    "number": 0,
+    "numberOfElements": 6,
+    "pageable": {
+      "offset": 0,
+      "pageNumber": 0,
+      "pageSize": 100,
+      "paged": true,
+      "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+      },
+      "unpaged": false
+    },
+    "size": 100,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "totalElements": 6,
+    "totalPages": 1
+  },
+  "subgraph_metadata": {
+    "displaytypes": {
+      "owl:Class": {
+        "count": 4
+      },
+      "owl:ObjectProperty": {
+        "count": 1
+      },
+      "owl:Ontology": {
+        "count": 1
+      }
+    },
+    "edge_counts_by_datasource": {
+      "Ontologies.nonredundant": 4,
+      "Ontologies.redundant": 8,
+      "Ontologies.tiny": 6,
+      "Ontologies.tiny2": 1
+    },
+    "edge_prop_defs": {},
+    "edge_props": {},
+    "edges": {
+      "owl:Class": {
+        "biolink:broad_match": {
+          "owl:Class": {
+            "Ontologies.redundant": 6
+          }
+        },
+        "biolink:subclass_of": {
+          "owl:Class": {
+            "Ontologies.nonredundant,Ontologies.tiny": 2,
+            "Ontologies.nonredundant,Ontologies.tiny2": 1
+          }
+        },
+        "http://example.org/part_of": {
+          "owl:Class": {
+            "Ontologies.nonredundant,Ontologies.redundant": 1,
+            "Ontologies.redundant": 1
+          }
+        },
+        "rdfs:isDefinedBy": {
+          "owl:Ontology": {
+            "Ontologies.tiny": 3
+          }
+        }
+      },
+      "owl:ObjectProperty": {
+        "rdfs:isDefinedBy": {
+          "owl:Ontology": {
+            "Ontologies.tiny": 1
+          }
+        }
+      }
+    },
+    "embedding_models2dims": {},
+    "entity_prop_defs": {
+      "http://example.org/part_of": {
+        "grebi:datasources": [
+          "Ontologies.tiny"
+        ],
+        "grebi:nodeId": "http://example.org/part_of",
+        "grebi:sourceIds": [
+          "http://example.org/part_of"
+        ],
+        "grebi:type": [
+          "owl:ObjectProperty"
+        ]
+      }
+    },
+    "entity_props": {
+      "biolink:broad_match": {
+        "count": 10
+      },
+      "biolink:subclass_of": {
+        "count": 4
+      },
+      "grebi:name": {
+        "count": 4
+      },
+      "grebi:type": {
+        "count": 6
+      },
+      "http://example.org/part_of": {
+        "count": 2
+      },
+      "https://w3id.org/owlmake/vocab/normalizedInformationContent": {
+        "count": 4
+      },
+      "https://w3id.org/owlmake/vocab/normalizedSubClassInformationContent": {
+        "count": 4
+      },
+      "https://w3id.org/owlmake/vocab/referenceCount": {
+        "count": 4
+      },
+      "id": {
+        "count": 6
+      },
+      "rdf:type": {
+        "count": 6
+      },
+      "rdfs:isDefinedBy": {
+        "count": 5
+      }
+    },
+    "materialised_queries": [
+      {
+        "cypher_query": "RETURN \"Hello, World!\" AS message",
+        "description": "Tester query to see if the pipeline is working",
+        "end_time": "2026-07-10 15:40:55",
+        "id": "hello_world",
+        "num_results": 1,
+        "start_time": "2026-07-10 15:40:54",
+        "subgraph": "test_ubergraph",
+        "time": 0.743083,
+        "title": "Hello world",
+        "uses_datasources": [
+          "IMPC",
+          "GWAS"
+        ]
+      }
+    ],
+    "node_counts_by_datasource": {
+      "Ontologies": 1,
+      "Ontologies.nonredundant": 3,
+      "Ontologies.redundant": 4,
+      "Ontologies.tiny": 4,
+      "Ontologies.tiny2": 1
+    },
+    "subgraph_config": {
+      "additional_equivalence_groups": [
+        [
+          "grebi:name",
+          "ols:label",
+          "rdfs:label",
+          "monarch:name",
+          "impc:name",
+          "reactome:displayName",
+          "dcterms:title",
+          "ncit:Preferred_Name",
+          "robokop:name",
+          "otar:name"
+        ],
+        [
+          "grebi:description",
+          "iao:definition",
+          "iao:0000115",
+          "monarch:description",
+          "ols:definition",
+          "robokop:description",
+          "otar:description"
+        ],
+        [
+          "grebi:synonym",
+          "monarch:synonym",
+          "iao:alternative_label",
+          "ols:synonym",
+          "oboinowl:hasExactSynonym",
+          "dcterms:alternative",
+          "otar:synonyms"
+        ],
+        [
+          "mondo:0000001",
+          "ogms:0000031"
+        ],
+        [
+          "biolink:broad_match",
+          "skos:broader",
+          "skos:broadMatch",
+          "ols:directAncestor"
+        ],
+        [
+          "biolink:subclass_of",
+          "ols:directParent",
+          "rdfs:subClassOf",
+          "rdfs:subPropertyOf"
+        ],
+        [
+          "rdfs:isDefinedBy",
+          "ols:ontologyIri",
+          "ols:ontologyId"
+        ],
+        [
+          "biolink:gene_to_disease_association",
+          "ncit:Gene_Associated_With_Disease"
+        ],
+        [
+          "biolink:disease_has_location",
+          "efo:has_disease_location"
+        ]
+      ],
+      "bytes_per_merged_file": 1073741824,
+      "datasource_configs": [
+        {
+          "description": "Merged, reasoned ontology graph (labels, synonyms, definitions, axioms) from the owlmake-built ubergraph of the configured ontology set.",
+          "enabled": true,
+          "from_ubergraph": true,
+          "id": "Ontologies",
+          "ingests": [
+            {
+              "command": " zcat $GREBI_INGEST_FILENAME | grebi_rdf2jsonl --rdf-type rdf_quads_nq --rdf-graph \"https://w3id.org/owlmake/ubergraph/ontology\" --rdf-types-are-grebi-types --datasource-from-isdefinedby \"${GREBI_INGEST_FILENAME%.nq.gz}.datasource_map.json\"",
+              "memory": "32 GB"
+            }
+          ]
+        },
+        {
+          "description": "Non-redundant (transitive reduction; direct edges only) materialised relation graph from the owlmake-built ubergraph; subClassOf exposed as biolink:subclass_of.",
+          "enabled": true,
+          "from_ubergraph": true,
+          "id": "Ontologies.nonredundant",
+          "ingests": [
+            {
+              "command": " zcat $GREBI_INGEST_FILENAME | grebi_rdf2jsonl --rdf-type rdf_quads_nq --rdf-graph \"https://w3id.org/owlmake/ubergraph/nonredundant\" --map-predicate \"http://www.w3.org/2000/01/rdf-schema#subClassOf=biolink:subclass_of\"",
+              "memory": "32 GB"
+            }
+          ]
+        },
+        {
+          "description": "Redundant (full closure) materialised relation graph from the owlmake-built ubergraph; subClassOf exposed as biolink:broad_match.",
+          "enabled": true,
+          "from_ubergraph": true,
+          "id": "Ontologies.redundant",
+          "ingests": [
+            {
+              "command": " zcat $GREBI_INGEST_FILENAME | grebi_rdf2jsonl --rdf-type rdf_quads_nq --rdf-graph \"https://w3id.org/owlmake/ubergraph/redundant\" --map-predicate \"http://www.w3.org/2000/01/rdf-schema#subClassOf=biolink:broad_match\"",
+              "memory": "32 GB"
+            }
+          ]
+        }
+      ],
+      "exclude_edges": [],
+      "exclude_props": [
+        "ols:hierarchicalProperty",
+        "ols:synonymProperty",
+        "ols:curie",
+        "ols:shortForm",
+        "ols:ontologyPreferredPrefix",
+        "ols:iri",
+        "ols:uri",
+        "ols:imported",
+        "ols:hasHierarchicalParents",
+        "ols:hasHierarchicalChildren",
+        "ols:hasDirectParents",
+        "ols:hasDirectChildren",
+        "ols:numDescendants",
+        "ols:numHierarchicalDescendants",
+        "oboinowl:id",
+        "oboinowl:url",
+        "monarch:iri",
+        "cco:hasDocument",
+        "cco:hasMolecule"
+      ],
+      "exclude_self_referential_edges": [
+        "foaf:page",
+        "rdfs:seeAlso",
+        "oboinowl:hasDbXref",
+        "biolink:subclass_of",
+        "biolink:broad_match",
+        "ols:ontology_purl",
+        "ols:ontologyId",
+        "cheminf:000407",
+        "cheminf:InChIKey",
+        "biolink:interacts_with",
+        "reactome:url",
+        "dc:Identifier",
+        "hgnc:agr",
+        "hgnc:gencc",
+        "monarch:xref",
+        "hgnc:uniprot_ids",
+        "hgnc:omim_id",
+        "hgnc:entrez_id",
+        "reactome:referenceGene",
+        "reactome:identifier",
+        "reactome:crossReference",
+        "edam:Ensembl_gene_id",
+        "obo:pr#has_gene_template",
+        "ols:relatedTo",
+        "ols:relatedFrom",
+        "robokop:smiles",
+        "ctd:ChemicalURL",
+        "ctd:UniProtIDs",
+        "ols:linksTo"
+      ],
+      "id": "TestUbergraph",
+      "identifier_props": [
+        "id",
+        "owl:equivalentClass",
+        "owl:equivalentProperty",
+        "owl:sameAs",
+        "grebi:hashId",
+        "grebi:equivalentTo",
+        "ols:iri",
+        "ols:shortForm",
+        "hgnc:ensembl_gene_id",
+        "obo:chebi/inchi",
+        "obo:chebi/inchikey",
+        "obo:chebi/smiles",
+        "otar:canonicalSmiles",
+        "otar:inchiKey",
+        "impc:pmId",
+        "impc:humanGeneAccId",
+        "monarch:iri",
+        "skos:exactMatch",
+        "ncit:P368",
+        "ncit:C98965",
+        "dcterms:identifier",
+        "oboinowl:hasAlternativeId",
+        "robokop:equivalent_identifiers",
+        "mesh.vocab:identifier"
+      ],
+      "name": "Test: Ubergraph (redundant / non-redundant)",
+      "ontology_sets": [
+        {
+          "description": "Tiny synthetic ontology set for the ubergraph E2E test.",
+          "id": "test_ubergraph",
+          "memory": "2 GB",
+          "offline": true,
+          "ontologies": [
+            {
+              "id": "tiny",
+              "iri": "http://example.org/test_ubergraph",
+              "sources": [
+                "tests/data/test_ubergraph/tiny.ofn"
+              ]
+            },
+            {
+              "id": "tiny2",
+              "iri": "http://example.org/test_ubergraph2",
+              "sources": [
+                "tests/data/test_ubergraph/tiny2.ofn"
+              ]
+            }
+          ]
+        }
+      ],
+      "prioritise_datasources": [
+        "Ontologies",
+        "Ontologies.nonredundant",
+        "Ontologies.redundant",
+        "Ontologies.biolink",
+        "Ontologies.ro",
+        "Ontologies.chebi",
+        "Ontologies.hp",
+        "Ontologies.mp",
+        "Ontologies.mondo",
+        "Ontologies.oba",
+        "Ontologies.efo",
+        "Ontologies.doid",
+        "HGNC",
+        "IMPC"
+      ],
+      "type_superclasses": [
+        "mondo:0000001",
+        "efo:0000408",
+        "chebi:36080",
+        "chebi:24431",
+        "biolink:ChemicalEntity"
+      ]
+    },
+    "subgraph_name": "test_ubergraph",
+    "types": {
+      "owl:Class": {
+        "count": 4
+      },
+      "owl:ObjectProperty": {
+        "count": 1
+      },
+      "owl:Ontology": {
+        "count": 1
+      }
+    }
+  },
+  "subgraphs": [
+    "test_ubergraph"
+  ]
+}
