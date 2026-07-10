@@ -28,4 +28,8 @@ out
 .DS_Store
 run_backend_with_k8s_pg.sh
 
+# Committed E2E test expected-output snapshots (override *.jsonl / *.json ignores above)
+!tests/expected_output/**/*.jsonl
+!tests/expected_output/**/*.json
+
 target-bullseye

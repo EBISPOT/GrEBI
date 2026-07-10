@@ -1,0 +1,6 @@
+{"grebi:datasources": ["TestMultiDatasourceA", "TestMultiDatasourceB"], "grebi:name": "", "grebi:nodeId": "ex:protein1", "grebi:sourceIds": ["ex:protein1"], "grebi:type": ["biolink:Protein"], "ols:curie": ""}
+{"grebi:datasources": ["TestMultiDatasourceA"], "grebi:name": "", "grebi:nodeId": "ex:disease1", "grebi:sourceIds": ["ex:disease1"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}
+{"grebi:datasources": ["TestMultiDatasourceA"], "grebi:name": "", "grebi:nodeId": "ex:pathway1", "grebi:sourceIds": ["ex:pathway1"], "grebi:type": ["biolink:Pathway"], "ols:curie": ""}
+{"grebi:datasources": ["TestMultiDatasourceA"], "grebi:name": "", "grebi:nodeId": "hgnc:11603", "grebi:sourceIds": ["hgnc:11603"], "grebi:type": ["biolink:Gene"], "ols:curie": ""}
+{"grebi:datasources": ["TestMultiDatasourceA"], "grebi:name": "", "grebi:nodeId": "mondo:0005002", "grebi:sourceIds": ["mondo:0005002"], "grebi:type": ["biolink:Disease"], "ols:curie": ""}
+{"grebi:datasources": ["TestMultiDatasourceB"], "grebi:name": "", "grebi:nodeId": "ex:chemical1", "grebi:sourceIds": ["ex:chemical1"], "grebi:type": ["biolink:ChemicalEntity"], "ols:curie": ""}
