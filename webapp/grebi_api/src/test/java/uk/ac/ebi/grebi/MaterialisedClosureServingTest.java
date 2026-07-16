@@ -74,7 +74,7 @@ class MaterialisedClosureServingTest {
     private long count(String closure, String curie) {
         var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
                 List.of(new ClosureParam("cell", closure, curie)),
-                null, Map.of(), List.of(), null, true, false, 0, 100);
+                null, true, false, 0, 100);
         return res.totalCount;
     }
 
@@ -109,7 +109,7 @@ class MaterialisedClosureServingTest {
         assumeTrue(enabled());
         var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
                 List.of(new ClosureParam("cell", "exact", "ex:A")),
-                null, Map.of(), List.of(), null, true, false, 0, 100);
+                null, true, false, 0, 100);
         assertEquals(1, res.results.size());
         @SuppressWarnings("unchecked")
         var cell = (Map<String, Object>) res.results.get(0).get("cell");
@@ -129,22 +129,13 @@ class MaterialisedClosureServingTest {
     }
 
     @Test
-    void searchTextFilters() {
-        assumeTrue(enabled());
-        var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
-                List.of(new ClosureParam("cell", "descendants", "ex:A")),
-                "charlie", Map.of(), List.of(), null, true, false, 0, 100);
-        assertEquals(1, res.totalCount, "free-text 'charlie' matches only the C row");
-    }
-
-    @Test
     void numericSortToleratesNonNumericAndIsStable() {
         assumeTrue(enabled());
         // sort descendants(A) = {A,B,C,D} by the "score" float column ascending.
         // Numeric scores 3.0/1.0/2.0 sort B,D,A; C's "NR" is non-numeric -> NULLS LAST.
         var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
                 List.of(new ClosureParam("cell", "descendants", "ex:A")),
-                null, Map.of(), List.of(), "score", true, true, 0, 100);
+                "score", true, true, 0, 100);
         assertEquals(4, res.totalCount);
         var order = res.results.stream()
                 .map(r -> ((java.util.List<?>) ((Map<?, ?>) r.get("cell")).get("grebi:name")).get(0))

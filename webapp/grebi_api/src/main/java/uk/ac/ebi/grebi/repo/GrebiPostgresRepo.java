@@ -309,7 +309,6 @@ public class GrebiPostgresRepo {
 
         var result = pgClient.searchMaterialisedParameterised(
                 graph, template.id, closureParams,
-                null, Map.of(), List.of(),
                 sortColumn, sortAsc, sortNumeric,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
@@ -359,21 +358,16 @@ public class GrebiPostgresRepo {
     }
 
     /**
-     * Exact serving-count for a materialised template: count(*) over the closure
-     * for full mode, or the summed per-base histogram for counts_only mode.
+     * Exact serving-count for a counts_only materialised template: the summed
+     * per-base `_count` histogram over the closure (data is served live).
      */
     public long materialisedParameterisedCount(
             String graph, QueryTemplate template, Map<String, List<String>> params) {
-        var closureParams = buildClosureParams(template, params);
-        if (template.materialise != null && template.materialise.isCountsOnly()) {
-            return pgClient.sumMaterialisedParameterisedCounts(graph, template.id, closureParams);
-        }
-        // full mode: an empty search that only counts (page of size 0 would still
-        // count) — reuse the search with a tiny page.
-        var res = pgClient.searchMaterialisedParameterised(
-                graph, template.id, closureParams, null, Map.of(), List.of(),
-                null, true, false, 0, 1);
-        return res.totalCount;
+        // Only the counts_only serving path needs a standalone count — full mode
+        // takes its total from the data page. The total is the summed per-base
+        // histogram over the closure.
+        return pgClient.sumMaterialisedParameterisedCounts(
+                graph, template.id, buildClosureParams(template, params));
     }
 
     /**

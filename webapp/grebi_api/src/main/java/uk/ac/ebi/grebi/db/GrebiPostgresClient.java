@@ -1323,8 +1323,7 @@ public class GrebiPostgresClient {
     }
 
     private ClosureWhere buildClosureWhere(Connection conn, String graph, String queryId,
-            List<ClosureParam> params, String searchText, Map<String, List<String>> extraFilters)
-            throws SQLException {
+            List<ClosureParam> params) throws SQLException {
         StringBuilder sql = new StringBuilder("query_id = ?");
         List<Object> binds = new ArrayList<>();
         binds.add(queryId);
@@ -1337,23 +1336,6 @@ public class GrebiPostgresClient {
             sql.append(" AND jsonb_exists_any(data -> ? -> 'id', ?)");
             binds.add(cp.filtersColumn);
             binds.add(conn.createArrayOf("text", curies.toArray(new String[0])));
-        }
-
-        if (searchText != null && !searchText.isBlank()) {
-            sql.append(" AND (data)::text ILIKE ?");
-            binds.add("%" + escapeLike(searchText) + "%");
-        }
-
-        if (extraFilters != null) {
-            for (var entry : extraFilters.entrySet()) {
-                var values = entry.getValue();
-                if (values == null || values.isEmpty()) continue;
-                for (String v : values) {
-                    sql.append(" AND data ->> ? = ?");
-                    binds.add(entry.getKey());
-                    binds.add(v);
-                }
-            }
         }
         return new ClosureWhere(sql.toString(), binds, false);
     }
@@ -1370,12 +1352,11 @@ public class GrebiPostgresClient {
 
     /**
      * Serve a full-materialise parameterised template from Postgres: filter the
-     * stored rows by the closure of each parameter, page, count and (optionally)
-     * facet — the same surface as the live Cypher path, minus the latency.
+     * stored rows by the closure of each parameter, then page and count — the same
+     * surface as the live Cypher /query path, minus the latency.
      */
     public MatQueryResult searchMaterialisedParameterised(
             String graph, String queryId, List<ClosureParam> params,
-            String searchText, Map<String, List<String>> extraFilters, List<String> facetFields,
             String sortColumn, boolean sortAsc, boolean sortNumeric,
             int offset, int limit) {
         if (!graph.matches("[a-zA-Z0-9_]+")) {
@@ -1383,7 +1364,7 @@ public class GrebiPostgresClient {
         }
         String tbl = "\"materialised_queries_" + graph + "\"";
         try (Connection conn = getConnection()) {
-            ClosureWhere w = buildClosureWhere(conn, graph, queryId, params, searchText, extraFilters);
+            ClosureWhere w = buildClosureWhere(conn, graph, queryId, params);
             if (w.impossible) {
                 return new MatQueryResult(List.of(), 0, Map.of());
             }
@@ -1417,29 +1398,7 @@ public class GrebiPostgresClient {
                 }
             }
 
-            Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
-            if (facetFields != null && !facetFields.isEmpty() && totalCount < 100_000) {
-                for (String facetField : facetFields) {
-                    List<Object> facetBinds = new ArrayList<>();
-                    facetBinds.add(facetField);       // SELECT data ->> ?
-                    facetBinds.addAll(w.binds);        // WHERE ...
-                    Map<String, Long> counts = new LinkedHashMap<>();
-                    try (PreparedStatement ps = conn.prepareStatement(
-                            "SELECT data ->> ? AS fv, count(*) AS c FROM " + tbl +
-                            " WHERE " + w.sql + " GROUP BY fv ORDER BY c DESC")) {
-                        bind(ps, facetBinds);
-                        try (ResultSet rs = ps.executeQuery()) {
-                            while (rs.next()) {
-                                String fv = rs.getString("fv");
-                                if (fv != null) counts.put(fv, rs.getLong("c"));
-                            }
-                        }
-                    }
-                    facets.put(facetField, counts);
-                }
-            }
-
-            return new MatQueryResult(results, totalCount, facets);
+            return new MatQueryResult(results, totalCount, Map.of());
         } catch (SQLException e) {
             logger.error("Materialised parameterised search failed", e);
             throw new RuntimeException(e);
@@ -1482,7 +1441,7 @@ public class GrebiPostgresClient {
             boolean prevAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false); // required for a server-side (streaming) cursor
             try {
-                ClosureWhere w = buildClosureWhere(conn, graph, queryId, params, null, null);
+                ClosureWhere w = buildClosureWhere(conn, graph, queryId, params);
                 if (w.impossible) {
                     return;
                 }
@@ -1524,7 +1483,7 @@ public class GrebiPostgresClient {
         }
         String tbl = "\"materialised_queries_" + graph + "\"";
         try (Connection conn = getConnection()) {
-            ClosureWhere w = buildClosureWhere(conn, graph, queryId, params, null, null);
+            ClosureWhere w = buildClosureWhere(conn, graph, queryId, params);
             if (w.impossible) {
                 return 0;
             }
