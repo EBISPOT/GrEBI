@@ -5800,7 +5800,23 @@
         ]
       }
     ],
-    "materialised_templates": [],
+    "materialised_templates": [
+      {
+        "id": "test_ubergraph_subtypes",
+        "kind": "parameterised",
+        "mode": "full",
+        "params": [
+          {
+            "closure": "descendants",
+            "filters_column": "subtype",
+            "param_id": "term_id",
+            "param_type": "SourceId"
+          }
+        ],
+        "subgraph": "test_ubergraph",
+        "title": "Subtypes of a term (test)"
+      }
+    ],
     "node_counts_by_datasource": {
       "Ontologies": 1,
       "Ontologies.nonredundant": 3,

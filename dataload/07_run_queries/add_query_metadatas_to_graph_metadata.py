@@ -19,6 +19,11 @@ def main():
     materialised_queries = []
     materialised_templates = []
 
+    # Parameterised materialised templates are a serving/routing descriptor, so we
+    # keep only stable fields (no run-dependent num_results / timings): the API
+    # only needs `id` to route, plus mode/params for the closure filter.
+    stable_template_fields = ["id", "subgraph", "title", "kind", "mode", "params"]
+
     for query_metadata_filename in query_metadata_filenames:
         with open(query_metadata_filename, 'r') as file:
             query_metadata = json.load(file)
@@ -29,8 +34,8 @@ def main():
             if not isinstance(q, dict):
                 continue
             if q.get("kind") == "parameterised":
-                # Keep serving directives (mode, params, closure) for API routing.
-                materialised_templates.append(q)
+                materialised_templates.append(
+                    {k: q[k] for k in stable_template_fields if k in q})
             else:
                 # Standalone: browsable-table metadata; drop the internal routing
                 # marker so the entry keeps its original display shape.

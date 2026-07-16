@@ -423,12 +423,17 @@ given the behaviour-preserving `(gene:\`hgnc:Gene\`)` label.
   `GrebiPostgresClient` closure serving against a live Postgres (descendants /
   ancestors / exact, counts_only, unknown-node, text filter, prefix stripping).
   Skipped unless `GREBI_TEST_POSTGRES=true`.
-- The E2E api snapshots were updated for the renamed standalone tester and the new
-  `materialised_templates` metadata key. **Remaining:** adding a parameterised
-  materialised template to a test subgraph exercises the full Nextflow→Neo4j→Postgres
-  path; it should be added together with regenerated snapshots on a full E2E runner
-  (the closure/derivation logic it would cover is already unit- and
-  integration-tested above).
+- `query_templates/test/test_ubergraph_subtypes.yaml` — a parameterised materialised
+  template scoped to the `test_ubergraph` E2E subgraph (which has a real
+  `biolink:broad_match` closure). It exercises the full Nextflow→Neo4j→Postgres path
+  in CI: the pipeline derives its materialise query, runs it, stores the rows, and
+  records the build in `graph_metadata.materialised_templates`. Its derived and live
+  queries were verified against a Neo4j reconstructed from the committed
+  `test_ubergraph` snapshot (root A → subtypes {A,B,C,D}; B → {B,C,D}). The
+  `materialised_templates` metadata is a stable serving descriptor (id / mode /
+  params, no run-dependent counts), so its api snapshot entry is deterministic.
+- The E2E api snapshots were updated for the renamed standalone tester, the new
+  `materialised_templates` key, and the test_ubergraph fixture entry.
 
 ---
 
