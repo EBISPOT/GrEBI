@@ -28,7 +28,9 @@ DEFAULT_BUDGET_ROWS = 15_000_000
 
 
 def is_materialised(template):
-    return isinstance(template, dict) and template.get("materialise") is not None
+    # Only a `materialise:` *block* (mapping) opts in. `materialise: false` (or any
+    # non-mapping) means live — matching the documented opt-out.
+    return isinstance(template, dict) and isinstance(template.get("materialise"), dict)
 
 
 def is_standalone(template):
@@ -86,9 +88,13 @@ def _materialise_param(template, param_id):
 
 
 def _sub_param_token(text, param_id, replacement):
-    """Replace the Cypher parameter $param_id (word-bounded) with `replacement`."""
+    """Replace the Cypher parameter $param_id (word-bounded) with `replacement`.
+
+    Uses a function replacement so backslashes/quotes in `replacement` (e.g. an
+    escaped string literal) are inserted literally, not interpreted as re escapes.
+    """
     pattern = r"\$" + re.escape(param_id) + r"(?![A-Za-z0-9_])"
-    return re.sub(pattern, replacement, text)
+    return re.sub(pattern, lambda _m: replacement, text)
 
 
 def _anchor_regex(param_id):
@@ -163,8 +169,17 @@ def derive_materialise_match(template):
                     "-[:sourceId]->(:Id {id: '" + domain_root + "'})"
                 )
                 match = _anchor_regex(pid).sub(repl, match)
-            else:  # descendants / ancestors -> value substitution on the root Id
+            elif closure == "descendants":
+                # closure-root form: substituting the domain-top root makes the base
+                # range over all its descendants (= the whole domain).
                 match = _sub_param_token(match, pid, "'" + domain_root + "'")
+            else:
+                # `ancestors` has no single domain-root substitution that frees the
+                # base over the whole domain; use domain_kind=label for that case.
+                raise ValueError(
+                    f"materialise param {pid}: closure '{closure}' with domain_kind=id "
+                    f"is not supported (use 'descendants', 'exact', or domain_kind=label)"
+                )
         else:
             raise ValueError(
                 f"materialise param {pid}: unknown domain_kind '{domain_kind}'"
@@ -190,6 +205,34 @@ def _base_columns(template):
     return cols
 
 
+def _validate_materialise(template):
+    """Fail fast on a mis-declared materialise block (before we run the query)."""
+    result_cols = {c.get("column_id") for c in template.get("result_columns") or []}
+    param_ids = {p.get("param_id") for p in template.get("params") or []}
+    for mp in (template.get("materialise") or {}).get("params") or []:
+        pid = mp.get("param_id")
+        if pid not in param_ids:
+            raise ValueError(f"materialise param '{pid}' is not a template param")
+        fc = mp.get("filters_column")
+        # Real templates always declare result_columns; validate the base column
+        # against them when present.
+        if result_cols and fc not in result_cols:
+            raise ValueError(
+                f"materialise param '{pid}': filters_column '{fc}' is not a result "
+                f"column (columns: {sorted(result_cols)})"
+            )
+
+
+def _assert_no_unbound_params(template, query):
+    """Guard against a derivation that left a template parameter unsubstituted."""
+    for p in template.get("params") or []:
+        pid = p.get("param_id")
+        if re.search(r"\$" + re.escape(pid) + r"(?![A-Za-z0-9_])", query):
+            raise ValueError(
+                f"derived materialise query still references unbound parameter ${pid}"
+            )
+
+
 def derive_materialise_query(template):
     """Full derived Cypher for a parameterised materialised template.
 
@@ -198,6 +241,8 @@ def derive_materialise_query(template):
                         (RETURN <base_col>, count(*) AS _count). Requires exactly
                         one base column.
     """
+    _validate_materialise(template)
+
     match = derive_materialise_match(template).rstrip()
     ret = template["cypher_return_fragment"].strip()
 
@@ -210,19 +255,22 @@ def derive_materialise_query(template):
             )
         base_col = bases[0]
         # Turn the DISTINCT projection into an intermediate WITH, then group by the
-        # base column and count the distinct result rows it contributes.
+        # base column (a RETURN alias) and count the distinct result rows.
         with_frag = re.sub(r"^\s*RETURN\s+DISTINCT\b", "WITH DISTINCT", ret, count=1)
         if with_frag == ret:
             raise ValueError(
                 "counts_only expects the return fragment to start with "
                 "'RETURN DISTINCT'"
             )
-        return (
+        query = (
             match + "\n" + with_frag
             + "\nRETURN `" + base_col + "`, count(*) AS _count"
         )
+    else:
+        query = match + "\n" + ret
 
-    return match + "\n" + ret
+    _assert_no_unbound_params(template, query)
+    return query
 
 
 def standalone_query(template):

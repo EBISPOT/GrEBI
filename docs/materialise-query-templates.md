@@ -376,8 +376,14 @@ anchor so the base ranges over its whole domain
 - `domain_kind: label` — drop the `-[:sourceId]->(:Id {id: $p})` anchor; the base
   keeps its type label (e.g. `(gene:\`hgnc:Gene\`)`).
 
-Remaining non-closure params are substituted with their `param_default`. A build-size
-budget gates the pipeline (fail unless `GREBI_MATERIALISE_BUDGET_OVERRIDE=true`).
+Remaining non-closure params are substituted with their `param_default`. The derived
+query is validated (no unbound `$params`; `filters_column` is a real result column)
+before it runs. `closure: ancestors` with `domain_kind: id` is rejected — no single
+domain-root substitution frees the base over the whole domain, so use `domain_kind:
+label` for an ancestors base. A build-size budget gates parameterised templates (fail
+unless `GREBI_MATERIALISE_BUDGET_OVERRIDE=true`); standalone queries are budgeted only
+if they set `materialise.budget_rows`. Opt a template out entirely with
+`materialise: false`.
 
 ### Serving (closure-at-query-time)
 

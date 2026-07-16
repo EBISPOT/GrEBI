@@ -17,6 +17,16 @@ class TestClassification(unittest.TestCase):
         t = {"title": "x", "cypher_match_fragment": "MATCH (n)"}
         self.assertFalse(gm.is_materialised(t))
 
+    def test_materialise_false_is_live(self):
+        # documented opt-out: `materialise: false` (or any non-mapping) means live
+        self.assertFalse(gm.is_materialised({"params": [{"param_id": "x"}], "materialise": False}))
+        self.assertFalse(gm.is_materialised({"materialise": True}))
+        self.assertFalse(gm.is_materialised({"materialise": None}))
+        self.assertFalse(gm.is_materialised({}))
+        # and none of these crash the classifiers
+        self.assertFalse(gm.is_standalone({"materialise": True}))
+        self.assertFalse(gm.is_parameterised({"materialise": False}))
+
     def test_parameterised(self):
         t = {
             "params": [{"param_id": "x", "param_type": "SourceId"}],
@@ -170,6 +180,54 @@ class TestCountsOnly(unittest.TestCase):
         self.assertIn("WITH DISTINCT gene { .id } AS gene, disease { .id } AS disease", q)
         self.assertIn("RETURN `gene`, count(*) AS _count", q)
         self.assertNotIn("RETURN DISTINCT", q)
+
+
+class TestValidation(unittest.TestCase):
+    def _base(self):
+        return {
+            "params": [{"param_id": "p", "param_type": "SourceId"}],
+            "cypher_match_fragment": "MATCH (b)-[:`biolink:broad_match`*0..1]->(x)-[:sourceId]->(:Id {id: $p})",
+            "cypher_return_fragment": "RETURN DISTINCT b AS b",
+            "result_columns": [{"column_id": "b", "column_type": "GraphNodeId"}],
+        }
+
+    def test_id_ancestors_rejected(self):
+        t = self._base()
+        t["materialise"] = {"params": [{"param_id": "p", "filters_column": "b",
+                                        "closure": "ancestors", "domain_kind": "id",
+                                        "domain_root": "x:0"}]}
+        with self.assertRaises(ValueError):
+            gm.derive_materialise_query(t)
+
+    def test_filters_column_must_be_result_column(self):
+        t = self._base()
+        t["materialise"] = {"params": [{"param_id": "p", "filters_column": "not_a_col",
+                                        "closure": "descendants", "domain_kind": "id",
+                                        "domain_root": "x:0"}]}
+        with self.assertRaises(ValueError):
+            gm.derive_materialise_query(t)
+
+    def test_materialise_param_must_be_template_param(self):
+        t = self._base()
+        t["materialise"] = {"params": [{"param_id": "ghost", "filters_column": "b",
+                                        "closure": "descendants", "domain_kind": "id",
+                                        "domain_root": "x:0"}]}
+        with self.assertRaises(ValueError):
+            gm.derive_materialise_query(t)
+
+    def test_leftover_param_detected(self):
+        # an exact param whose $p also appears in a WHERE would be left unbound
+        t = {
+            "params": [{"param_id": "p", "param_type": "SourceId"}],
+            "cypher_match_fragment":
+                "MATCH (b:`Lbl`)-[:sourceId]->(:Id {id: $p})\nWHERE b.foo = $p",
+            "cypher_return_fragment": "RETURN DISTINCT b AS b",
+            "result_columns": [{"column_id": "b", "column_type": "GraphNodeId"}],
+            "materialise": {"params": [{"param_id": "p", "filters_column": "b",
+                                        "closure": "exact", "domain_kind": "label"}]},
+        }
+        with self.assertRaises(ValueError):
+            gm.derive_materialise_query(t)
 
 
 class TestServingMetadata(unittest.TestCase):

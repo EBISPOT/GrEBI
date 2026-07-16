@@ -58,7 +58,7 @@ for file in template_files:
     try:
         cypher = gm.query_to_run(template)
     except Exception as e:
-        print(f"Skipping {query_id}: cannot derive materialise query: {e}")
+        print(f"ERROR deriving materialise query for {query_id}: {e}")
         raise
 
     start_time = datetime.now()
@@ -78,10 +78,13 @@ for file in template_files:
 
     end_time = datetime.now()
 
-    # Enforce the build-size budget so a new template can't silently 10x the
-    # dataload. For counts_only the stored rows are a compact per-base histogram.
+    # Enforce the build-size budget so a new parameterised template can't silently
+    # 10x the dataload. Standalone queries are hand-authored and were historically
+    # unbudgeted, so only gate them if they opt in with an explicit budget_rows.
+    template_mat = template.get("materialise") or {}
+    apply_budget = (not gm.is_standalone(template)) or (template_mat.get("budget_rows") is not None)
     budget = gm.budget_rows(template)
-    if n > budget:
+    if apply_budget and n > budget:
         msg = (f"Materialised query {query_id} produced {n} rows, exceeding the "
                f"build-size budget of {budget}.")
         if budget_override:
