@@ -6,12 +6,15 @@ topics:
   - gwas_catalog
   - cl
 cypher_match_fragment: |-
-  MATCH (cl_root)-[:sourceId]->(:Id {id: $cell_type_id })
-  // include subclasses of the requested cell type (e.g. basal cell of epidermis under keratinocyte)
-  MATCH (cl_term)-[:(`biolink:subclass_of`|`biolink:broad_match`)*0..1]->(cl_root)
+  // base-keyed / param-as-closure-root form: cl_term is the base the row is
+  // about; the queried cell (cl_root) is reached via the precomputed broad_match
+  // closure, so cl_term is the queried cell or one of its subtypes. A single
+  // broad_match hop suffices (it is a full transitive closure), which is also
+  // ~2x faster live than the old subclass_of|broad_match roll-up.
+  MATCH (cl_term)-[:`biolink:broad_match`*0..1]->(cl_root)-[:sourceId]->(:Id {id: $cell_type_id })
   MATCH (cl_term)<-[r:(`ro:characteristic_of`|`ro:characteristic_of_part_of`|`iao:is_about`|`biolink:has_participant`|`biolink:disease_has_location`|`efo:has_disease_location`)]-(matched_trait)
   // include subclasses of the matched trait (e.g. basal cell carcinoma under keratinocyte carcinoma)
-  MATCH (trait)-[:(`biolink:subclass_of`|`biolink:broad_match`)*0..1]->(matched_trait)
+  MATCH (trait)-[:`biolink:broad_match`*0..1]->(matched_trait)
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
   OPTIONAL MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
   WITH
@@ -28,11 +31,11 @@ cypher_match_fragment: |-
       (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
 cypher_return_fragment: |-
   RETURN DISTINCT
-      cl_term { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS cell_type,
+      cl_term { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(cl_term) } AS cell_type,
       trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
-      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS snp,
+      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
       effect_allele,
-      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS gene,
+      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
       study_id AS study_accession,
       study.`gwas:pubmedid`[0] AS pubmed_id,
       p_value,
@@ -70,6 +73,14 @@ result_columns:
     optional: true
   - column_id: edge_id
     column_type: EdgeId
+materialise:
+  mode: full
+  params:
+    - param_id: cell_type_id
+      filters_column: cell_type
+      closure: descendants
+      domain_kind: id
+      domain_root: 'cl:0000000'
 examples:
   - title: leukocyte
     params:

@@ -1227,4 +1227,279 @@ public class GrebiPostgresClient {
     private static String escapeLike(String s) {
         return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
+
+    // ------------------------------------------------------------------
+    // Closure-at-query-time serving of materialised parameterised templates
+    // ------------------------------------------------------------------
+    //
+    // A parameterised materialised template stores base-keyed result rows for its
+    // whole domain (all cells, all diseases, ...). At query time, given a queried
+    // value P, we resolve the set of source CURIEs in P's closure (P itself plus
+    // its broad_match descendants/ancestors, or just P for exact) and keep the
+    // rows whose base column's `id` array intersects that set. Counts become a
+    // cheap count(*) over the filtered rows (flat latency; no live Cypher count).
+
+    /** One parameter's serving directive: which base column it filters and how. */
+    public static class ClosureParam {
+        public final String filtersColumn;
+        public final String closure;       // descendants | ancestors | exact
+        public final String queriedCurie;  // reprefixed source CURIE
+
+        public ClosureParam(String filtersColumn, String closure, String queriedCurie) {
+            this.filtersColumn = filtersColumn;
+            this.closure = closure;
+            this.queriedCurie = queriedCurie;
+        }
+    }
+
+    /**
+     * Resolve the set of source CURIEs in the closure of `queriedCurie`:
+     * the queried node itself plus (for descendants/ancestors) the nodes reached
+     * via the precomputed `biolink:broad_match` closure. Empty if the queried node
+     * is unknown to this graph.
+     */
+    private Set<String> closureCurieSet(Connection conn, String graph, String closure, String queriedCurie)
+            throws SQLException {
+        String nodesTbl = "\"nodes_" + graph + "\"";
+        String edgesTbl = "\"edges_" + graph + "\"";
+
+        List<String> pnodes = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT \"grebi:nodeId\" FROM " + nodesTbl + " WHERE \"grebi:sourceIds\" && ?")) {
+            ps.setArray(1, conn.createArrayOf("text", new String[]{queriedCurie}));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) pnodes.add(rs.getString(1));
+            }
+        }
+        if (pnodes.isEmpty()) {
+            return Set.of();
+        }
+
+        Set<String> nodeIds = new LinkedHashSet<>(pnodes);
+        String c = (closure == null ? "descendants" : closure.toLowerCase());
+        if (c.equals("descendants") || c.equals("ancestors")) {
+            // broad_match points descendant -> ancestor. Descendants of P are the
+            // fromNodeId of broad_match edges into P; ancestors the toNodeId out of
+            // P. A single hop suffices — broad_match is a full transitive closure.
+            String selectCol = c.equals("descendants") ? "grebi:fromNodeId" : "grebi:toNodeId";
+            String matchCol = c.equals("descendants") ? "grebi:toNodeId" : "grebi:fromNodeId";
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT \"" + selectCol + "\" FROM " + edgesTbl +
+                    " WHERE \"grebi:type\" = 'biolink:broad_match' AND \"" + matchCol + "\" = ANY(?)")) {
+                ps.setArray(1, conn.createArrayOf("text", pnodes.toArray(new String[0])));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) nodeIds.add(rs.getString(1));
+                }
+            }
+        }
+
+        Set<String> curies = new HashSet<>();
+        curies.add(queriedCurie);
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT \"grebi:sourceIds\" FROM " + nodesTbl + " WHERE \"grebi:nodeId\" = ANY(?)")) {
+            ps.setArray(1, conn.createArrayOf("text", nodeIds.toArray(new String[0])));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    java.sql.Array arr = rs.getArray(1);
+                    if (arr != null) {
+                        for (Object s : (Object[]) arr.getArray()) {
+                            if (s != null) curies.add(s.toString());
+                        }
+                    }
+                }
+            }
+        }
+        return curies;
+    }
+
+    /** WHERE clause + ordered bind values for a closure-filtered materialised query. */
+    private static final class ClosureWhere {
+        final String sql;
+        final List<Object> binds;
+        final boolean impossible; // a param resolved to an empty closure -> no rows
+        ClosureWhere(String sql, List<Object> binds, boolean impossible) {
+            this.sql = sql; this.binds = binds; this.impossible = impossible;
+        }
+    }
+
+    private ClosureWhere buildClosureWhere(Connection conn, String graph, String queryId,
+            List<ClosureParam> params, String searchText, Map<String, List<String>> extraFilters)
+            throws SQLException {
+        StringBuilder sql = new StringBuilder("query_id = ?");
+        List<Object> binds = new ArrayList<>();
+        binds.add(queryId);
+
+        for (ClosureParam cp : params) {
+            Set<String> curies = closureCurieSet(conn, graph, cp.closure, cp.queriedCurie);
+            if (curies.isEmpty()) {
+                return new ClosureWhere(null, null, true);
+            }
+            sql.append(" AND jsonb_exists_any(data -> ? -> 'id', ?)");
+            binds.add(cp.filtersColumn);
+            binds.add(conn.createArrayOf("text", curies.toArray(new String[0])));
+        }
+
+        if (searchText != null && !searchText.isBlank()) {
+            sql.append(" AND (data)::text ILIKE ?");
+            binds.add("%" + escapeLike(searchText) + "%");
+        }
+
+        if (extraFilters != null) {
+            for (var entry : extraFilters.entrySet()) {
+                var values = entry.getValue();
+                if (values == null || values.isEmpty()) continue;
+                for (String v : values) {
+                    sql.append(" AND data ->> ? = ?");
+                    binds.add(entry.getKey());
+                    binds.add(v);
+                }
+            }
+        }
+        return new ClosureWhere(sql.toString(), binds, false);
+    }
+
+    private static void bind(PreparedStatement ps, List<Object> binds) throws SQLException {
+        for (int i = 0; i < binds.size(); i++) {
+            Object b = binds.get(i);
+            if (b instanceof java.sql.Array a) ps.setArray(i + 1, a);
+            else if (b instanceof Integer n) ps.setInt(i + 1, n);
+            else if (b instanceof Long n) ps.setLong(i + 1, n);
+            else ps.setString(i + 1, (String) b);
+        }
+    }
+
+    /**
+     * Serve a full-materialise parameterised template from Postgres: filter the
+     * stored rows by the closure of each parameter, page, count and (optionally)
+     * facet — the same surface as the live Cypher path, minus the latency.
+     */
+    public MatQueryResult searchMaterialisedParameterised(
+            String graph, String queryId, List<ClosureParam> params,
+            String searchText, Map<String, List<String>> extraFilters, List<String> facetFields,
+            String sortColumn, boolean sortAsc, boolean sortNumeric,
+            int offset, int limit) {
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
+        }
+        String tbl = "\"materialised_queries_" + graph + "\"";
+        try (Connection conn = getConnection()) {
+            ClosureWhere w = buildClosureWhere(conn, graph, queryId, params, searchText, extraFilters);
+            if (w.impossible) {
+                return new MatQueryResult(List.of(), 0, Map.of());
+            }
+
+            long totalCount;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT count(*) FROM " + tbl + " WHERE " + w.sql)) {
+                bind(ps, w.binds);
+                try (ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    totalCount = rs.getLong(1);
+                }
+            }
+
+            String orderBy;
+            List<Object> dataBinds = new ArrayList<>(w.binds);
+            if (sortColumn != null && !sortColumn.isBlank()) {
+                if (sortNumeric) {
+                    orderBy = " ORDER BY (data ->> ?)::numeric " + (sortAsc ? "ASC" : "DESC") + " NULLS LAST";
+                } else {
+                    orderBy = " ORDER BY (data ->> ?) " + (sortAsc ? "ASC" : "DESC") + " NULLS LAST";
+                }
+                dataBinds.add(sortColumn);
+            } else {
+                orderBy = " ORDER BY row_number ASC";
+            }
+            dataBinds.add(limit);
+            dataBinds.add(offset);
+
+            List<Map<String, Object>> results = new ArrayList<>();
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT data FROM " + tbl + " WHERE " + w.sql + orderBy + " LIMIT ? OFFSET ?")) {
+                bind(ps, dataBinds);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Map<String, Object> row = gson.fromJson(rs.getString(1),
+                                new TypeToken<Map<String, Object>>() {}.getType());
+                        stripGraphPrefix(row, graph);
+                        results.add(row);
+                    }
+                }
+            }
+
+            Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
+            if (facetFields != null && !facetFields.isEmpty() && totalCount < 100_000) {
+                for (String facetField : facetFields) {
+                    List<Object> facetBinds = new ArrayList<>();
+                    facetBinds.add(facetField);       // SELECT data ->> ?
+                    facetBinds.addAll(w.binds);        // WHERE ...
+                    Map<String, Long> counts = new LinkedHashMap<>();
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "SELECT data ->> ? AS fv, count(*) AS c FROM " + tbl +
+                            " WHERE " + w.sql + " GROUP BY fv ORDER BY c DESC")) {
+                        bind(ps, facetBinds);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            while (rs.next()) {
+                                String fv = rs.getString("fv");
+                                if (fv != null) counts.put(fv, rs.getLong("c"));
+                            }
+                        }
+                    }
+                    facets.put(facetField, counts);
+                }
+            }
+
+            return new MatQueryResult(results, totalCount, facets);
+        } catch (SQLException e) {
+            logger.error("Materialised parameterised search failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Count-only serving: for a counts_only template the stored rows are a compact
+     * per-base-node histogram carrying `_count`; the total for a queried value is
+     * the sum of `_count` over the base nodes in its closure. Exact, because the
+     * materialised rows are DISTINCT and partitioned by base node.
+     */
+    public long sumMaterialisedParameterisedCounts(
+            String graph, String queryId, List<ClosureParam> params) {
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
+        }
+        String tbl = "\"materialised_queries_" + graph + "\"";
+        try (Connection conn = getConnection()) {
+            ClosureWhere w = buildClosureWhere(conn, graph, queryId, params, null, null);
+            if (w.impossible) {
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT COALESCE(SUM((data ->> '_count')::bigint), 0) FROM " + tbl + " WHERE " + w.sql)) {
+                bind(ps, w.binds);
+                try (ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    return rs.getLong(1);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Materialised counts sum failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** Strip the graph:-prefix Neo4j adds to nodeIds so materialised node columns
+     *  match the live (resolve=false) shape. */
+    @SuppressWarnings("unchecked")
+    private static void stripGraphPrefix(Map<String, Object> row, String graph) {
+        if (row == null) return;
+        String prefix = graph + ":";
+        for (Object v : row.values()) {
+            if (v instanceof Map<?, ?> m) {
+                Object nid = ((Map<String, Object>) m).get("grebi:nodeId");
+                if (nid instanceof String s && s.startsWith(prefix)) {
+                    ((Map<String, Object>) m).put("grebi:nodeId", s.substring(prefix.length()));
+                }
+            }
+        }
+    }
 }

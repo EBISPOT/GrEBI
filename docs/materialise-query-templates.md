@@ -1,8 +1,11 @@
 # Design: fold `materialised_queries` into `query_templates`
 
-Status: **design / not yet implemented.** Author notes from an investigation + a
-full materialisation-sizing experiment on the 2026-07-08 `ebi_monarch_xspecies`
-snapshot (see [Appendix A](#appendix-a-validated-materialisation-sizes)).
+Status: **implemented.** Stage 1 + Stage 2 are built; see
+[Implementation status](#implementation-status) for exactly what landed, the final
+YAML schema, and which templates are materialised vs kept live. The original
+design rationale (from an investigation + a full materialisation-sizing experiment
+on the 2026-07-08 `ebi_monarch_xspecies` snapshot, see
+[Appendix A](#appendix-a-validated-materialisation-sizes)) is preserved below.
 
 ## Goal
 
@@ -315,6 +318,117 @@ UI:
 3. Build-size budget threshold and what happens on exceed (skip + warn, or fail).
 4. `disease_to_genes` / `gene_to_diseases` are the genuine ~100 M-edge tables — decide
    materialise vs counts-only vs keep-live once the codon run reports their true size.
+
+---
+
+## Implementation status
+
+Both stages are implemented. `materialised_queries/` is gone; a template opts into
+precomputation with a top-level `materialise:` block.
+
+### Final YAML schema
+
+```yaml
+# --- always ---
+title: ...
+description: ...
+graphs: [ebi_monarch_xspecies]     # (parameterised only; standalone uses run_for_subgraphs)
+topics: [...]
+
+# --- live parameterised (unchanged): fragments + params, served via Cypher ---
+question: ...
+cypher_match_fragment: |- ...
+cypher_return_fragment: |- ...
+cypher_count_fragment: |- ...
+params: [...]
+result_columns: [...]
+examples: [...]
+
+# --- standalone materialised (kind 2): a body with no params ---
+materialise:
+  cypher: |-  RETURN ...            # the query to run (was cypher_query)
+  run_for_subgraphs: [impc_x_gwas]  # optional; absent => every subgraph
+  uses_datasources: [IMPC, GWAS]    # display only
+
+# --- materialised parameterised (kind 3): its own body doubles as the materialise query ---
+materialise:
+  mode: full                # full (store rows) | counts_only (store per-base-node counts)
+  budget_rows: 15000000     # optional per-template row budget override
+  params:
+    - param_id: cell_type_id
+      filters_column: cell_type   # the base result-column this param constrains at serving
+      closure: descendants        # descendants | ancestors | exact (serving semantics)
+      domain_kind: id             # id (CURIE root) | label (type label)
+      domain_root: 'cl:0000000'   # domain root substituted when deriving the materialise query
+```
+
+**Derivation (no separate materialise Cypher).** At dataload the materialise query
+is derived from the template's own match fragment by rewriting each param's Id
+anchor so the base ranges over its whole domain
+(`dataload/07_run_queries/grebi_materialise.py`):
+
+- `domain_kind: id`, `closure: descendants|ancestors` — the body is authored in
+  closure-root form (`(base)-[:broad_match*0..1]->(x)-[:sourceId]->(:Id {id: $p})`);
+  substitute `$p` → the domain-root CURIE literal.
+- `domain_kind: id`, `closure: exact` — the base is anchored directly; the anchor
+  `-[:sourceId]->(:Id {id: $p})` is wrapped into
+  `-[:broad_match*0..1]->(__p_dom)-[:sourceId]->(:Id {id: 'root'})`.
+- `domain_kind: label` — drop the `-[:sourceId]->(:Id {id: $p})` anchor; the base
+  keeps its type label (e.g. `(gene:\`hgnc:Gene\`)`).
+
+Remaining non-closure params are substituted with their `param_default`. A build-size
+budget gates the pipeline (fail unless `GREBI_MATERIALISE_BUDGET_OVERRIDE=true`).
+
+### Serving (closure-at-query-time)
+
+`GrebiPostgresClient.searchMaterialisedParameterised` resolves the queried value P
+to the set of source CURIEs in its closure — P plus its `biolink:broad_match`
+descendants (or ancestors, or just P for `exact`) via the precomputed closure in
+`edges_{sg}` — then keeps the stored rows whose base column's `id` intersects that
+set (`jsonb_exists_any(data -> col -> 'id', curies)`). Counts are `count(*)` over the
+filtered rows (flat, cheap). `counts_only` stores a per-base `_count` histogram and
+sums it over the closure (data served live). `GrebiApi.serveQueryTemplate` routes
+`/query/{id}` and `.csv` to Postgres when a build exists in
+`graph_metadata.materialised_templates`, else falls back to live Cypher.
+
+### What is materialised
+
+- **Standalone** (`materialise.cypher`, browsable `/tables`): `hello_world_tester`,
+  `impc_x_gwas`.
+- **Parameterised, full** (served from Postgres): the four rewritten roll-ups
+  (`gwas_by_cell_type`, `gwas_by_location`, `gwas_by_disease_location`,
+  `gwas_by_gene_and_cell_type`), `gwas_by_gene_and_disease`,
+  `gwas_by_gene_and_location`, `gwas_traits_reported_different_from_matched`,
+  `chebi_to_metabolights`, `phenotype_to_diseases`, and the five disease templates
+  (`disease_to_{processes,exposures,treatments,locations,phenotypes}`).
+- **Kept live** (documented, `materialise` absent): `disease_to_genes`,
+  `gene_to_diseases` (the two ~125 M-edge tables — Q4 above, flip to `counts_only`
+  or `full` once the codon size lands), `gwas_by_pathway` and
+  `gwas_by_drugs_indicated_for_disease` (the base node isn't carried to the result
+  and threading it through their `reactome:hasEvent*` / `CALL {}` subqueries needs a
+  larger rewrite than the mechanical one), `gwas_trait_to_mouse_models_via_embeddings`
+  (KNN special case) and `mouse_gene_to_opentargets` (a user-tunable `min_score`
+  filter that materialisation would fix at its default).
+
+The four Appendix B roll-ups were rewritten to the canonical base-keyed form (single
+`biolink:broad_match` hop, `_root` enumeration dropped); the gwas gene templates were
+given the behaviour-preserving `(gene:\`hgnc:Gene\`)` label.
+
+### Testing
+
+- `dataload/07_run_queries/test_grebi_materialise.py` — unit tests for the derivation
+  transforms, plus a smoke pass over every real template (no unbound `$params`,
+  valid `filters_column`).
+- `webapp/.../MaterialisedClosureServingTest.java` — exercises the real
+  `GrebiPostgresClient` closure serving against a live Postgres (descendants /
+  ancestors / exact, counts_only, unknown-node, text filter, prefix stripping).
+  Skipped unless `GREBI_TEST_POSTGRES=true`.
+- The E2E api snapshots were updated for the renamed standalone tester and the new
+  `materialised_templates` metadata key. **Remaining:** adding a parameterised
+  materialised template to a test subgraph exercises the full Nextflow→Neo4j→Postgres
+  path; it should be added together with regenerated snapshots on a full E2E runner
+  (the closure/derivation logic it would cover is already unit- and
+  integration-tested above).
 
 ---
 

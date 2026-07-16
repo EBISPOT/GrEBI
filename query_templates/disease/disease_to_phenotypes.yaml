@@ -57,3 +57,11 @@ examples:
   - title: Parkinson disease
     params:
       disease_id: mondo:0005180
+materialise:
+  mode: full
+  params:
+    - param_id: disease_id
+      filters_column: disease
+      closure: descendants
+      domain_kind: id
+      domain_root: 'mondo:0000001'

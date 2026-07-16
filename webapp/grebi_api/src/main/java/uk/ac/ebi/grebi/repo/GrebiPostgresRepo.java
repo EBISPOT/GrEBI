@@ -9,6 +9,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
+import java.io.PrintWriter;
 
 import uk.ac.ebi.grebi.GrebiFacetedResultsPage;
 import uk.ac.ebi.grebi.db.GrebiPostgresClient;
@@ -263,6 +266,175 @@ public class GrebiPostgresRepo {
 
         return new GrebiFacetedResultsPage<>(
                 result.results, result.facets, pageable, result.totalCount);
+    }
+
+    /**
+     * Serve a full-materialise parameterised template from Postgres with
+     * closure-at-query-time. Returns the same page shape as the live Cypher path
+     * (projected to result_columns; node columns resolved when resolve=true).
+     */
+    public GrebiFacetedResultsPage<Map<String, Object>> runMaterialisedParameterisedPaginated(
+            String graph, QueryTemplate template, Map<String, List<String>> params,
+            boolean resolve, Pageable pageable) {
+
+        if (template.graphs != null && !template.graphs.contains(graph)) {
+            throw new IllegalArgumentException(
+                    "Query template " + template.id + " is not available for graph " + graph);
+        }
+        for (var key : params.keySet()) {
+            if (template.params.stream().noneMatch(p -> p.param_id.equals(key))) {
+                throw new IllegalArgumentException(
+                        "Unknown parameter " + key + " provided for query template " + template.id);
+            }
+        }
+
+        var closureParams = buildClosureParams(template, params);
+
+        String sortColumn = null;
+        boolean sortAsc = true;
+        boolean sortNumeric = false;
+        if (pageable.getSort() != null && pageable.getSort().isSorted()) {
+            var order = pageable.getSort().iterator().next();
+            sortColumn = order.getProperty();
+            sortAsc = order.isAscending();
+            final String sc = sortColumn;
+            var col = template.result_columns.stream()
+                    .filter(c -> c.column_id.equals(sc)).findFirst().orElse(null);
+            if (col == null) {
+                throw new IllegalArgumentException("Sort column " + sortColumn + " not found");
+            }
+            String ct = col.column_type == null ? "" : col.column_type.toLowerCase();
+            sortNumeric = ct.equals("float") || ct.equals("int") || ct.equals("integer");
+        }
+
+        var result = pgClient.searchMaterialisedParameterised(
+                graph, template.id, closureParams,
+                null, Map.of(), List.of(),
+                sortColumn, sortAsc, sortNumeric,
+                (int) pageable.getOffset(), pageable.getPageSize());
+
+        var nodeColumns = template.result_columns.stream()
+                .filter(c -> "GraphNodeId".equals(c.column_type))
+                .map(c -> c.column_id).toList();
+
+        Map<String, Map<String, Object>> resolved = Map.of();
+        if (resolve && !result.results.isEmpty()) {
+            Set<String> nodeIds = new HashSet<>();
+            for (var raw : result.results) {
+                for (var col : nodeColumns) {
+                    if (raw.get(col) instanceof Map<?, ?> m && m.get("grebi:nodeId") instanceof String s) {
+                        nodeIds.add(s);
+                    }
+                }
+            }
+            resolved = pgClient.resolveToMap(graph, nodeIds);
+        }
+
+        // Project each stored row down to the declared result columns so the shape
+        // matches the live path exactly (dropping internal _refs/_node_ids/id).
+        List<Map<String, Object>> content = new ArrayList<>();
+        for (var raw : result.results) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            for (var col : template.result_columns) {
+                Object v = raw.get(col.column_id);
+                if (resolve && "GraphNodeId".equals(col.column_type)
+                        && v instanceof Map<?, ?> m && m.get("grebi:nodeId") instanceof String s
+                        && resolved.containsKey(s)) {
+                    row.put(col.column_id, resolved.get(s));
+                } else {
+                    row.put(col.column_id, v);
+                }
+            }
+            content.add(row);
+        }
+
+        return new GrebiFacetedResultsPage<>(content, result.facets, pageable, result.totalCount);
+    }
+
+    /**
+     * Exact serving-count for a materialised template: count(*) over the closure
+     * for full mode, or the summed per-base histogram for counts_only mode.
+     */
+    public long materialisedParameterisedCount(
+            String graph, QueryTemplate template, Map<String, List<String>> params) {
+        var closureParams = buildClosureParams(template, params);
+        if (template.materialise != null && template.materialise.isCountsOnly()) {
+            return pgClient.sumMaterialisedParameterisedCounts(graph, template.id, closureParams);
+        }
+        // full mode: an empty search that only counts (page of size 0 would still
+        // count) — reuse the search with a tiny page.
+        var res = pgClient.searchMaterialisedParameterised(
+                graph, template.id, closureParams, null, Map.of(), List.of(),
+                null, true, false, 0, 1);
+        return res.totalCount;
+    }
+
+    /**
+     * Stream a full-materialise parameterised template as CSV from Postgres,
+     * paging through the closure-filtered rows. Same CSV shape as the live path.
+     */
+    public void streamMaterialisedParameterisedCsv(
+            String graph, QueryTemplate template, Map<String, List<String>> params,
+            Sort sort, PrintWriter writer) {
+
+        var closureParams = buildClosureParams(template, params);
+
+        String sortColumn = null;
+        boolean sortAsc = true;
+        boolean sortNumeric = false;
+        if (sort != null && sort.isSorted()) {
+            var order = sort.iterator().next();
+            final String sc = order.getProperty();
+            var col = template.result_columns.stream()
+                    .filter(c -> c.column_id.equals(sc)).findFirst().orElse(null);
+            if (col != null) {
+                sortColumn = sc;
+                sortAsc = order.isAscending();
+                String ct = col.column_type == null ? "" : col.column_type.toLowerCase();
+                sortNumeric = ct.equals("float") || ct.equals("int") || ct.equals("integer");
+            }
+        }
+
+        writer.write(String.join(",", GrebiCypherRepo.csvHeader(template.result_columns)));
+        writer.write("\n");
+
+        final int pageSize = 10_000;
+        int offset = 0;
+        while (true) {
+            var res = pgClient.searchMaterialisedParameterised(
+                    graph, template.id, closureParams, null, Map.of(), List.of(),
+                    sortColumn, sortAsc, sortNumeric, offset, pageSize);
+            for (var row : res.results) {
+                GrebiCypherRepo.writeCsvRow(template.result_columns, row, writer);
+            }
+            offset += pageSize;
+            if (res.results.isEmpty() || offset >= res.totalCount) {
+                break;
+            }
+        }
+        writer.flush();
+    }
+
+    private List<GrebiPostgresClient.ClosureParam> buildClosureParams(
+            QueryTemplate template, Map<String, List<String>> params) {
+        var prefixService = uk.ac.ebi.grebi.db.PrefixService.get();
+        List<GrebiPostgresClient.ClosureParam> out = new ArrayList<>();
+        for (var mp : template.materialise.params) {
+            var values = params.get(mp.param_id);
+            var tp = template.params.stream()
+                    .filter(p -> p.param_id.equals(mp.param_id)).findFirst().orElse(null);
+            if (values == null || values.isEmpty()) {
+                if (tp != null && tp.param_default != null) {
+                    values = List.of(tp.param_default);
+                } else {
+                    throw new IllegalArgumentException(
+                            "Parameter " + mp.param_id + " is required but not provided");
+                }
+            }
+            String curie = prefixService.reprefix(List.of(values.get(0))).get(0);
+            out.add(new GrebiPostgresClient.ClosureParam(mp.filters_column, mp.getClosure(), curie));
+        }
+        return out;
     }
 
     private Map<String, Map<String, Map<String, Integer>>> getCachedBothEdgeCounts(String graph, String nodeId) {

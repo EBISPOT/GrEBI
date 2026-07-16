@@ -47,3 +47,10 @@ examples:
   - title: blood metabolite level
     params:
       parent_id: oba:2050078
+materialise:
+  mode: full
+  params:
+    - param_id: parent_id
+      filters_column: trait
+      closure: descendants
+      domain_kind: label

@@ -2593,7 +2593,7 @@
         "cypher_query": "RETURN \"Hello, World!\" AS message",
         "description": "Tester query to see if the pipeline is working",
         "end_time": "2026-06-25 16:24:47",
-        "id": "hello_world",
+        "id": "hello_world_tester",
         "num_results": 1,
         "start_time": "2026-06-25 16:24:45",
         "subgraph": "test_edge_linking",
@@ -2605,6 +2605,7 @@
         ]
       }
     ],
+    "materialised_templates": [],
     "node_counts_by_datasource": {
       "TestEdgeLinking": 6
     },

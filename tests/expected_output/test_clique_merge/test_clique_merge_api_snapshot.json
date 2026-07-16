@@ -2227,7 +2227,7 @@
         "cypher_query": "RETURN \"Hello, World!\" AS message",
         "description": "Tester query to see if the pipeline is working",
         "end_time": "2026-06-25 16:19:42",
-        "id": "hello_world",
+        "id": "hello_world_tester",
         "num_results": 1,
         "start_time": "2026-06-25 16:19:39",
         "subgraph": "test_clique_merge",
@@ -2239,6 +2239,7 @@
         ]
       }
     ],
+    "materialised_templates": [],
     "node_counts_by_datasource": {
       "TestCliqueMerge": 5
     },

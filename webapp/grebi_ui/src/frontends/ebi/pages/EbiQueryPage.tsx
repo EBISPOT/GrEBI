@@ -49,7 +49,7 @@ export default function EbiQueriesPage() {
             <div>
               <Typography variant="h4" sx={{ mt: 3 }}>{addLinksToText(queryTemplate.title, graph)}</Typography>
               <p className="text-lg text-neutral-dark mt-6 mb-6">
-                  {queryTemplate.question.split(/(\[[^\]]+\]\{[^}]+\}|\{[^}]+\})/).map((part, i) => {
+                  {(queryTemplate.question || "").split(/(\[[^\]]+\]\{[^}]+\}|\{[^}]+\})/).map((part, i) => {
                     let mRef = part.match(/^\[([^\]]+)\]\{(.+)\}$/);
                     if (mRef) {
                       return <span key={i}><strong>{mRef[1]}</strong> (<OutputBadge>{mRef[2]}</OutputBadge>)</span>;

@@ -2,10 +2,14 @@
 
 import os
 from pathlib import Path
-from pandas import DataFrame
 import json
 from datetime import datetime
 import sys
+
+# grebi_materialise lives next to this script; make sure it's importable
+# regardless of the working directory the pipeline runs us from.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import grebi_materialise as gm
 
 neo_mem = os.environ['NEO_MEM']
 os.environ['JAVA_OPTS'] = f"--add-modules jdk.incubator.vector -Xms{neo_mem} -Xmx{neo_mem}"
@@ -21,44 +25,97 @@ from py2neo import Graph
 import yaml
 graph = Graph("bolt://localhost:7687")
 
+subgraph = os.environ['GREBI_SUBGRAPH']
+templates_dir = sys.argv[1]
+
+# Allow overriding the build-size budget breach behaviour (fail by default).
+budget_override = os.environ.get('GREBI_MATERIALISE_BUDGET_OVERRIDE') == 'true'
+
 metadatas = []
 
-for file in os.listdir(sys.argv[1]):
-    if not file.endswith(".yaml"):
-        continue
+# Walk the query_templates tree recursively (templates live in subdirs like
+# disease/ and gwas/). Skip files starting with '_' (e.g. _topics.yaml).
+template_files = []
+for root, _dirs, files in os.walk(templates_dir):
+    for name in sorted(files):
+        if name.endswith(".yaml") and not name.startswith("_"):
+            template_files.append(os.path.join(root, name))
+template_files.sort(key=lambda p: os.path.basename(p))
 
+for file in template_files:
     query_id = Path(file).stem
 
-    query = yaml.safe_load(open(f"{sys.argv[1]}/{file}"))
+    template = yaml.safe_load(open(file))
 
-    if 'run_for_subgraphs' in query:
-        if os.environ['GREBI_SUBGRAPH'] not in query['run_for_subgraphs']:
-            continue
+    # Only templates that opt into materialisation are precomputed. Live-only
+    # templates are served on demand via Cypher and skipped here.
+    if not gm.is_materialised(template):
+        continue
+
+    if not gm.runs_for_subgraph(template, subgraph):
+        continue
+
+    try:
+        cypher = gm.query_to_run(template)
+    except Exception as e:
+        print(f"Skipping {query_id}: cannot derive materialise query: {e}")
+        raise
 
     start_time = datetime.now()
+    print(f"Running materialised query {query_id} ({gm.serving_metadata(template).get('kind')}, mode={gm.materialise_mode(template)})")
+    if os.environ.get('GREBI_DEBUG_QUERIES') == 'true':
+        print(cypher)
 
-    print(f"Running query {query_id}")
-
-    n=0
+    n = 0
     with open(f"./query_results/{query_id}.results.jsonl", "w") as f:
-        for row in graph.run(query['cypher_query']).data():
-            n=n+1
-            json.dump(row, f, skipkeys=True)
+        # Iterate the cursor directly (streaming) rather than .data() — the big
+        # materialise queries produce millions of rows and .data() would collect
+        # them all into memory at once.
+        for record in graph.run(cypher):
+            n = n + 1
+            json.dump(dict(record), f, skipkeys=True)
             f.write("\n")
 
     end_time = datetime.now()
 
-    query['id'] = query_id
-    query['subgraph'] = os.environ['GREBI_SUBGRAPH']
-    query['start_time'] = start_time.strftime("%Y-%m-%d %H:%M:%S")
-    query['end_time'] = end_time.strftime("%Y-%m-%d %H:%M:%S")
-    query['time'] = (end_time - start_time).total_seconds()
-    query['num_results'] = n
+    # Enforce the build-size budget so a new template can't silently 10x the
+    # dataload. For counts_only the stored rows are a compact per-base histogram.
+    budget = gm.budget_rows(template)
+    if n > budget:
+        msg = (f"Materialised query {query_id} produced {n} rows, exceeding the "
+               f"build-size budget of {budget}.")
+        if budget_override:
+            print("WARNING: " + msg + " (continuing: GREBI_MATERIALISE_BUDGET_OVERRIDE=true)")
+        else:
+            raise RuntimeError(msg + " Set GREBI_MATERIALISE_BUDGET_OVERRIDE=true to "
+                               "override, raise materialise.budget_rows, or switch the "
+                               "template to mode: counts_only.")
 
-    metadatas.append(query)
+    # Assemble the per-query metadata. Keep title/description/uses_datasources at
+    # the top level (the /tables UI + graph_metadata consumers read them there).
+    mat = template.get("materialise") or {}
+    query_metadata = {
+        "id": query_id,
+        "subgraph": subgraph,
+        "title": template.get("title"),
+        "description": template.get("description"),
+        "uses_datasources": mat.get("uses_datasources"),
+        "start_time": start_time.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S"),
+        "time": (end_time - start_time).total_seconds(),
+        "num_results": n,
+    }
+    # Standalone materialised queries keep the browsable-table metadata shape
+    # (including the query body under cypher_query, as the old materialised_queries
+    # concept did).
+    if gm.is_standalone(template):
+        query_metadata["cypher_query"] = cypher
+    query_metadata.update(gm.serving_metadata(template))
+
+    metadatas.append(query_metadata)
 
     with open(f"./query_results/{query_id}.json", "w") as f:
-        json.dump(query, f, skipkeys=True)
+        json.dump(query_metadata, f, skipkeys=True)
 
 with open(f"./query_results/queries.json", "w") as f:
     json.dump(metadatas, f, skipkeys=True)
@@ -66,4 +123,3 @@ with open(f"./query_results/queries.json", "w") as f:
 os.system("sleep 20")
 os.system("neo4j stop")
 os.system("sleep 20")
-

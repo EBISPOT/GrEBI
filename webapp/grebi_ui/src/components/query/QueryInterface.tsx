@@ -23,7 +23,7 @@ export default function QueryInterface({
     graph:string, queryTemplate:QueryTemplate, sidebar?:React.ReactNode
 }) {
 
-    let params = queryTemplate.params
+    let params = queryTemplate.params || []
 
     let [queryParams, setQueryParams] = useSearchParams();
 
@@ -88,7 +88,7 @@ export default function QueryInterface({
         setParamValuesSubmitted(valuesToSend);
     }
 
- let cypherSource = queryTemplate.cypher_match_fragment.trim() + "\n" + queryTemplate.cypher_return_fragment.trim();
+ let cypherSource = (queryTemplate.cypher_match_fragment || "").trim() + "\n" + (queryTemplate.cypher_return_fragment || "").trim();
  let codeSnippets = query2code(queryTemplate, graph, paramValues)
 
  const sourceTabs = [

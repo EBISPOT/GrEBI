@@ -259,19 +259,13 @@ public class GrebiApi {
                 .get("/api/v1/materialised_queries", ctx -> {
                     List<JsonElement> all_matqs = new ArrayList<>();
                     for(String graph : metadata.getGraphs()) {
-                        var matqs = metadata.getMetadata(graph).get("materialised_queries").getAsJsonArray().asList();
-                        for(var mq : matqs) {
-                            // temp hack for botched dataload
-                            if(mq.isJsonArray()) {
-                                for(var qr : mq.getAsJsonArray()) {
-                                    qr.getAsJsonObject().addProperty("graph", graph);
-                                    all_matqs.add(qr);
-                                }
-                            } else {
-                                mq.getAsJsonObject().addProperty("graph", graph);
-                                all_matqs.add(mq);
-
-                            }
+                        var mqEl = metadata.getMetadata(graph).get("materialised_queries");
+                        if (mqEl == null || !mqEl.isJsonArray()) {
+                            continue;
+                        }
+                        for(var mq : mqEl.getAsJsonArray()) {
+                            mq.getAsJsonObject().addProperty("graph", graph);
+                            all_matqs.add(mq);
                         }
                     }
                     ctx.contentType("application/json");
@@ -279,8 +273,9 @@ public class GrebiApi {
                 })
                 .get("/api/v1/graphs/{graph}/materialised_queries", ctx -> {
                     var md = metadata.getMetadata(ctx.pathParam("graph"));
+                    var mqEl = md.get("materialised_queries");
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(md.get("materialised_queries")));
+                    ctx.result(gson.toJson(mqEl == null ? new com.google.gson.JsonArray() : mqEl));
                 })
                 .get("/api/v1/graphs/{graph}/materialised_queries/{queryid}", ctx -> {
                     var searchText = ctx.queryParam("q");
@@ -317,6 +312,9 @@ public class GrebiApi {
                     ctx.header("cache-control", "no-cache");
                     ctx.result(gson.toJson(queryTemplates.getQueryTemplates().stream()
                             .filter(qt -> qt.graphs == null || qt.graphs.contains(graph))
+                            // standalone materialised queries are browsable tables
+                            // (/materialised_queries), not interactive templates
+                            .filter(qt -> !qt.isStandaloneMaterialised())
                             .collect(Collectors.toList())));
                 })
                 .get("/api/v1/graphs/{graph}/query_templates/{templateId}", ctx -> {
@@ -349,7 +347,24 @@ public class GrebiApi {
 
                     ctx.future(() -> {
                         try {
-                            return cypher.runQueryFromTemplateStreamed(graph, template, params, sort, ctx.res());
+                            var httpRes = ctx.res();
+                            httpRes.setContentType("text/csv");
+                            httpRes.setCharacterEncoding("UTF-8");
+                            httpRes.setHeader("Content-Disposition", "attachment; filename=\"" + template.id + ".csv\"");
+                            httpRes.setStatus(200);
+                            var writer = httpRes.getWriter();
+
+                            if (template.isParameterisedMaterialised()
+                                    && !template.materialise.isCountsOnly()
+                                    && isMaterialisedBuilt(metadata, graph, templateId)) {
+                                return java.util.concurrent.CompletableFuture.runAsync(() ->
+                                        postgres.streamMaterialisedParameterisedCsv(graph, template, params, sort, writer));
+                            }
+
+                            if (cypher == null) {
+                                throw new IllegalStateException("Cypher service unavailable; cannot serve CSV for " + templateId);
+                            }
+                            return cypher.runQueryFromTemplateStreamed(graph, template, params, sort, writer);
                         } catch (IOException e) {
                             throw new RuntimeException("Failed to write CSV response", e);
                         }
@@ -379,7 +394,7 @@ public class GrebiApi {
 
                     var resolve = "true".equals(ctx.queryParam("resolve"));
 
-                    var res = cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page);
+                    var res = serveQueryTemplate(cypher, postgres, metadata, graph, template, params, resolve, page);
 
                     ctx.result(
                         gson.toJson(
@@ -781,6 +796,56 @@ public class GrebiApi {
             .orElseThrow(() -> new NotFoundResponse(
                 "Query template " + templateId + " not found for graph " + graph
             ));
+    }
+
+    /** Whether a parameterised materialised build for this template exists in the
+     *  graph's Postgres metadata (i.e. the dataload precomputed it). */
+    static boolean isMaterialisedBuilt(GrebiMetadataRepo metadata, String graph, String templateId) {
+        try {
+            var md = metadata.getMetadata(graph);
+            var el = md.get("materialised_templates");
+            if (el == null || !el.isJsonArray()) {
+                return false;
+            }
+            for (var e : el.getAsJsonArray()) {
+                if (e.isJsonObject()) {
+                    var idEl = e.getAsJsonObject().get("id");
+                    if (idEl != null && templateId.equals(idEl.getAsString())) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Missing/malformed metadata -> treat as not built (fall back to live).
+        }
+        return false;
+    }
+
+    /**
+     * Serve a query template: from the Postgres closure path when a materialisation
+     * has been built for this graph, otherwise live via Cypher. counts_only
+     * templates serve data live but take their (flat) total from Postgres.
+     */
+    static org.springframework.data.domain.Page<Map<String, Object>> serveQueryTemplate(
+            GrebiCypherRepo cypher, GrebiPostgresRepo postgres, GrebiMetadataRepo metadata,
+            String graph, QueryTemplate template, Map<String, List<String>> params,
+            boolean resolve, org.springframework.data.domain.Pageable page) {
+
+        if (template.isParameterisedMaterialised() && isMaterialisedBuilt(metadata, graph, template.id)) {
+            if (template.materialise.isCountsOnly()) {
+                if (cypher == null) {
+                    throw new IllegalStateException("Cypher service unavailable for counts_only template " + template.id);
+                }
+                long total = postgres.materialisedParameterisedCount(graph, template, params);
+                return cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page, total);
+            }
+            return postgres.runMaterialisedParameterisedPaginated(graph, template, params, resolve, page);
+        }
+
+        if (cypher == null) {
+            throw new IllegalStateException("Cypher service unavailable; cannot serve live query template " + template.id);
+        }
+        return cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page);
     }
 
 }

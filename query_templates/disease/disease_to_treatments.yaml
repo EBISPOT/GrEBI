@@ -49,3 +49,11 @@ examples:
   - title: asthma
     params:
       disease_id: mondo:0004979
+materialise:
+  mode: full
+  params:
+    - param_id: disease_id
+      filters_column: disease
+      closure: exact
+      domain_kind: id
+      domain_root: 'mondo:0000001'
