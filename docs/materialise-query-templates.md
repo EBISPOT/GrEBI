@@ -108,11 +108,55 @@ domain, and do the ancestor/descendant closure at SERVING time** (in Postgres,
 using the precomputed `broad_match` closure) — never by enumerating the queried
 `_root` and expanding the closure into storage.
 
-**Consequence for this design:** the materialised form of a parameterised template
-is a genuinely different query that is not reliably auto-derivable. Each
-materialisable parameterised template must **provide** its base-keyed materialise
-query, and the serving layer must do closure-at-query-time. (The base-keyed forms
-for the hard templates already exist — Appendix B.)
+## The resolution: one body, the param is a closure root (no second Cypher)
+
+The two lessons above do **not** mean a materialisable template needs a separate
+`materialise` query. They mean the template should be authored in a **canonical
+base-keyed form** where the `SourceId` param is expressed as the *closure root* of
+the base column:
+
+```cypher
+MATCH (cl_term)-[:`biolink:broad_match`*0..1]->(x)-[:sourceId]->(:Id {id: $cell_type_id})
+... rest of the body, keyed on cl_term ...
+WITH DISTINCT cl_term, trait, snp, gene, study, or_or_beta, edge_id RETURN ...
+```
+
+This single body yields all three modes by only changing what `$cell_type_id`
+binds to:
+
+- **Live** — `$cell_type_id` = the queried cell. (`(base)-[:broad_match*0..1]->…->(:Id{queried})`
+  = "base is the queried node or a descendant of it" — exactly today's semantics.)
+- **Materialise** — substitute `$cell_type_id` = the `param_opts` domain root
+  (`cl:0000000`). Run once, store keyed on `cl_term`. **Auto-derived — a literal
+  substitution, no hand-written second query.**
+- **Serve materialised** — given queried `C`, Postgres filters
+  `data->'cell_type'->>'id' = ANY(descendants(C))` using the precomputed closure.
+
+For **type-label** params (`hgnc:Gene`, `impc:MouseGene`, `biolink:ChemicalEntity`)
+the base has no closure — the param is an exact match on a labelled node, so live =
+`(gene:\`hgnc:Gene\`)-[:sourceId]->(:Id{$gene_id})` and materialise = `(gene:\`hgnc:Gene\`)`
+(domain = the label). Same "substitute the root" mechanic.
+
+### It is also *faster* live — measured
+
+The unified base-keyed form isn't a performance compromise for the live path; it's a
+**win**. Head-to-head on the snapshot for `gwas_by_cell_type`, single param, count query:
+
+| queried cell | today's form (anchor + `subclass_of\|broad_match` rollup) | unified base-keyed form |
+|---|--:|--:|
+| leukocyte (high fan-out) | 398,142 in **25.1 s** | 398,142 in **12.3 s** |
+| platelet | 48,383 in 2.8 s | 48,383 in 2.7 s |
+
+Identical results; ~2× faster on the heavy case (the unified form goes straight
+through the single precomputed `broad_match` closure hop instead of an intermediate
+`cl_root` + a `subclass_of` alternative). **So rewriting the roll-up templates to the
+base-keyed form is a standalone live-latency improvement — independent of
+materialisation.**
+
+**Consequence for this design:** no per-template second Cypher. The work is a
+**one-time rewrite** of the parameterised templates into the canonical base-keyed /
+param-as-closure-root form (Appendix B has the four hard ones), after which
+materialise is a mechanical root-substitution and serving is a closure filter.
 
 ## Target architecture
 
@@ -121,10 +165,10 @@ One YAML format in `query_templates/`. A template is one of three kinds:
 1. **Live parameterised** (unchanged): fragments + params, served via Cypher.
 2. **Standalone materialised** (= today's `materialised_queries`): a `cypher_query`
    with no params; always precomputed; served as a browsable table.
-3. **Materialised parameterised** (the end goal): a live parameterised template that
-   *also* carries a `materialise:` block (the base-keyed query + the serving key
-   column). Precomputed and served from Postgres with closure-at-query-time; falls
-   back to live Cypher if not built.
+3. **Materialised parameterised** (the end goal): a parameterised template authored
+   in the canonical base-keyed form and flagged `materialise`. Its live body doubles
+   as the materialise query (root-substituted); precomputed and served from Postgres
+   with closure-at-query-time; falls back to live Cypher if not built.
 
 ### Unified YAML schema (superset)
 
@@ -145,21 +189,31 @@ result_columns: [ {column_id, column_type, optional?} ]
 examples: [ {title, params} ]
 
 # --- materialisation (kinds 2 & 3), optional ---
-materialise:
-  # kind 2 (standalone): a full query, no params
-  cypher: |- ...
-  # kind 3 (parameterised): the base-keyed, domain-constrained, param-freed query
-  #   producing all rows, PLUS the serving key column(s) and how the param maps to them
-  serving_key: { column: disease, closure: descendants }   # given queried X, match rows whose `disease` ∈ descendants(X)
-  run_for_subgraphs: [impc_x_gwas]     # from mat queries (optional)
+materialise: true                      # opt in (or auto per the rule below)
+run_for_subgraphs: [impc_x_gwas]       # from mat queries (optional)
 uses_datasources: [IMPC, GWAS]         # display only (optional)
+
+# per-param: which result column the param filters, and the closure direction.
+# For a parameterised template authored in the canonical base-keyed form this is
+# mostly derivable from param_opts (ontology-CURIE root => descendants of a base
+# column; type-label root => exact match), but declare it explicitly to be safe:
+params:
+  - param_id: cell_type_id
+    ...
+    filters_column: cell_type          # the base column this param constrains
+    closure: descendants               # descendants | ancestors | exact
 ```
 
 Notes:
-- Auto-materialise rule from the original proposal — "one param without a default
-  and no `materialise: false`" — is **not** sufficient on its own precisely because
-  of the base-keying problem. Keep an explicit `materialise:` block. The rule can
-  still gate *whether* a template is a candidate, but the block supplies the *how*.
+- **No separate `materialise.cypher`.** The materialise query is the template's own
+  (canonical base-keyed) body with each param's closure root substituted by its
+  `param_opts` domain root — a mechanical substitution done by the pipeline. Kind 2
+  (standalone) is the degenerate case: no params, so the body *is* the materialise
+  query.
+- The auto-materialise rule from the original proposal — "one param without a
+  default and no `materialise: false`" — can gate *whether* a template is
+  materialised, but it only works once templates are in the canonical form (else it
+  recreates the blow-up). So: rewrite to canonical form first, then the rule is safe.
 - A **build-size budget** must gate the pipeline (refuse/warn above N M rows) so a
   new template can't silently 10× the dataload (Appendix A shows the range).
 
@@ -198,11 +252,18 @@ Parameterised templates still served live.
 
 The user's end goal ("don't do cypher at query time for most templates").
 
+Prerequisite (one-time):
+- **Rewrite the parameterised templates into the canonical base-keyed /
+  param-as-closure-root form.** This is also a live-latency improvement (2× on the
+  `gwas_by_cell_type` stress case — see above), so it's worth doing regardless. The
+  four roll-up templates are the main work (Appendix B); the disease-anchored ones
+  just need the `param_opts` domain baked into the anchor.
+
 Dataload:
-- For each parameterised template with a `materialise:` block, run its base-keyed
-  `materialise.cypher` (Appendix B) through the same link→pgbin→table path. The
-  serving key column(s) must be present in the stored `data` (they already are —
-  the base node is a result column).
+- For each materialised template, derive the materialise query by substituting each
+  param's closure root with its `param_opts` domain root, then run it through the
+  same link→pgbin→table path. The serving key column(s) are already present in the
+  stored `data` (the base node is a result column).
 - Enforce the build-size budget.
 
 Serving (the **new** component — closure-at-query-time):
@@ -248,9 +309,9 @@ UI:
 
 1. Do we merge the `/tables` and `/queries` UI sections, or keep "browsable table"
    vs "interactive query" as two presentations of one underlying concept?
-2. Serving-key closure direction is per-template (descendants for
-   disease/cell/location "or subclasses", but note some templates roll *up*). The
-   `materialise.serving_key.closure` field must capture this; validate per template.
+2. Per-param `closure` direction (descendants / ancestors / exact) and the
+   `filters_column` it targets — mostly derivable from `param_opts`, but declare and
+   validate per template.
 3. Build-size budget threshold and what happens on exceed (skip + warn, or fail).
 4. `disease_to_genes` / `gene_to_diseases` are the genuine ~100 M-edge tables — decide
    materialise vs counts-only vs keep-live once the codon run reports their true size.
@@ -291,10 +352,12 @@ Takeaway: **~18 of ~21 materialise in ≤ ~20 min at ≤ ~13 M rows.** Only the 
 gene↔disease association tables are potentially too large; the embeddings query is a
 special case.
 
-## Appendix B: base-keyed materialise queries (the hard four)
+## Appendix B: canonical base-keyed forms (the hard four)
 
-The corrected, base-keyed, domain-constrained count queries validated on the
-snapshot (drop the `_root` enumeration; constrain the base term to its domain). See
+These are the rewritten bodies. In each, the param's closure root is what varies:
+bind it to the queried value for **live** serving, or to the `param_opts` domain
+root (shown) for **materialise**. Validated as counts on the snapshot (drop the
+`_root` enumeration; constrain the base term to its domain). See
 the experiment at `/nfs/production/parkinso/spot/jmcl/grebi_query_timings` on codon
 (`queries.jsonl` holds the exact bodies; `logs/results.tsv` the results). Reproduce
 `RETURN count(*)` → materialise by swapping to the template's `RETURN DISTINCT ...`.
