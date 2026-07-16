@@ -1398,18 +1398,8 @@ public class GrebiPostgresClient {
                 }
             }
 
-            String orderBy;
             List<Object> dataBinds = new ArrayList<>(w.binds);
-            if (sortColumn != null && !sortColumn.isBlank()) {
-                if (sortNumeric) {
-                    orderBy = " ORDER BY (data ->> ?)::numeric " + (sortAsc ? "ASC" : "DESC") + " NULLS LAST";
-                } else {
-                    orderBy = " ORDER BY (data ->> ?) " + (sortAsc ? "ASC" : "DESC") + " NULLS LAST";
-                }
-                dataBinds.add(sortColumn);
-            } else {
-                orderBy = " ORDER BY row_number ASC";
-            }
+            String orderBy = buildOrderByClause(sortColumn, sortAsc, sortNumeric, dataBinds);
             dataBinds.add(limit);
             dataBinds.add(offset);
 
@@ -1452,6 +1442,71 @@ public class GrebiPostgresClient {
             return new MatQueryResult(results, totalCount, facets);
         } catch (SQLException e) {
             logger.error("Materialised parameterised search failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** Build the ORDER BY clause for a closure query, appending any bind values.
+     *  Numeric sort tolerates non-numeric stored values (sorts them NULL, like the
+     *  live toFloat()); a row_number tiebreaker keeps pagination stable. */
+    private String buildOrderByClause(String sortColumn, boolean sortAsc, boolean sortNumeric,
+                                      List<Object> binds) {
+        String dir = sortAsc ? "ASC" : "DESC";
+        if (sortColumn == null || sortColumn.isBlank()) {
+            return " ORDER BY row_number ASC";
+        }
+        if (sortNumeric) {
+            binds.add(sortColumn);
+            binds.add(sortColumn);
+            return " ORDER BY (CASE WHEN (data ->> ?) ~ '^-?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?$'"
+                    + " THEN (data ->> ?)::numeric END) " + dir + " NULLS LAST, row_number ASC";
+        }
+        binds.add(sortColumn);
+        return " ORDER BY (data ->> ?) " + dir + " NULLS LAST, row_number ASC";
+    }
+
+    /**
+     * Stream every closure-matching row of a full-materialise template through a
+     * single server-side cursor — the closure is resolved once and no per-page
+     * count is run. Used by the CSV export.
+     */
+    public void streamMaterialisedParameterised(
+            String graph, String queryId, List<ClosureParam> params,
+            String sortColumn, boolean sortAsc, boolean sortNumeric,
+            java.util.function.Consumer<Map<String, Object>> rowConsumer) {
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
+        }
+        String tbl = "\"materialised_queries_" + graph + "\"";
+        try (Connection conn = getConnection()) {
+            boolean prevAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false); // required for a server-side (streaming) cursor
+            try {
+                ClosureWhere w = buildClosureWhere(conn, graph, queryId, params, null, null);
+                if (w.impossible) {
+                    return;
+                }
+                List<Object> binds = new ArrayList<>(w.binds);
+                String orderBy = buildOrderByClause(sortColumn, sortAsc, sortNumeric, binds);
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT data FROM " + tbl + " WHERE " + w.sql + orderBy)) {
+                    ps.setFetchSize(10_000);
+                    bind(ps, binds);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            Map<String, Object> row = gson.fromJson(rs.getString(1),
+                                    new TypeToken<Map<String, Object>>() {}.getType());
+                            stripGraphPrefix(row, graph);
+                            rowConsumer.accept(row);
+                        }
+                    }
+                }
+                conn.commit();
+            } finally {
+                conn.setAutoCommit(prevAutoCommit);
+            }
+        } catch (SQLException e) {
+            logger.error("Materialised parameterised stream failed", e);
             throw new RuntimeException(e);
         }
     }

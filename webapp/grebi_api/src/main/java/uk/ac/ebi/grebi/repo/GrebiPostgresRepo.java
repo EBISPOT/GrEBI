@@ -332,17 +332,24 @@ public class GrebiPostgresRepo {
 
         // Project each stored row down to the declared result columns so the shape
         // matches the live path exactly (dropping internal _refs/_node_ids/id).
+        // Non-node columns are normalized to their declared type exactly as the
+        // live Cypher path does (e.g. a float column stored as a JSON string
+        // becomes a number), so the two backends return identical JSON.
         List<Map<String, Object>> content = new ArrayList<>();
         for (var raw : result.results) {
             Map<String, Object> row = new LinkedHashMap<>();
             for (var col : template.result_columns) {
                 Object v = raw.get(col.column_id);
-                if (resolve && "GraphNodeId".equals(col.column_type)
-                        && v instanceof Map<?, ?> m && m.get("grebi:nodeId") instanceof String s
-                        && resolved.containsKey(s)) {
-                    row.put(col.column_id, resolved.get(s));
+                if ("GraphNodeId".equals(col.column_type)) {
+                    if (resolve && v instanceof Map<?, ?> m
+                            && m.get("grebi:nodeId") instanceof String s
+                            && resolved.containsKey(s)) {
+                        row.put(col.column_id, resolved.get(s));
+                    } else {
+                        row.put(col.column_id, v);
+                    }
                 } else {
-                    row.put(col.column_id, v);
+                    row.put(col.column_id, GrebiCypherRepo.normalizeResultValue(col, v));
                 }
             }
             content.add(row);
@@ -398,25 +405,18 @@ public class GrebiPostgresRepo {
         writer.write(String.join(",", GrebiCypherRepo.csvHeader(template.result_columns)));
         writer.write("\n");
 
-        final int pageSize = 10_000;
-        int offset = 0;
-        while (true) {
-            var res = pgClient.searchMaterialisedParameterised(
-                    graph, template.id, closureParams, null, Map.of(), List.of(),
-                    sortColumn, sortAsc, sortNumeric, offset, pageSize);
-            for (var row : res.results) {
-                GrebiCypherRepo.writeCsvRow(template.result_columns, row, writer);
-            }
-            offset += pageSize;
-            if (res.results.isEmpty() || offset >= res.totalCount) {
-                break;
-            }
-        }
+        pgClient.streamMaterialisedParameterised(
+                graph, template.id, closureParams, sortColumn, sortAsc, sortNumeric,
+                row -> GrebiCypherRepo.writeCsvRow(template.result_columns, row, writer));
         writer.flush();
     }
 
     private List<GrebiPostgresClient.ClosureParam> buildClosureParams(
             QueryTemplate template, Map<String, List<String>> params) {
+        if (template.materialise == null || template.materialise.params == null) {
+            throw new IllegalStateException(
+                    "Template " + template.id + " has no materialise params; cannot serve from Postgres");
+        }
         var prefixService = uk.ac.ebi.grebi.db.PrefixService.get();
         List<GrebiPostgresClient.ClosureParam> out = new ArrayList<>();
         for (var mp : template.materialise.params) {

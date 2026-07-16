@@ -55,12 +55,14 @@ class MaterialisedClosureServingTest {
                     "('biolink:broad_match','grp_B','grp_A'),('biolink:broad_match','grp_C','grp_A')," +
                     "('biolink:broad_match','grp_C','grp_B'),('biolink:broad_match','grp_D','grp_A')," +
                     "('biolink:broad_match','grp_D','grp_B'),('biolink:broad_match','grp_D','grp_C')");
+            // score is a "float" column stored as a JSON *string*; C's is non-numeric
+            // ("NR") to exercise the tolerant numeric sort.
             st.execute("INSERT INTO \"materialised_queries_" + GRAPH + "\" VALUES " +
-                    "('q1',1,'{\"cell\":{\"id\":[\"ex:A\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_A\",\"grebi:name\":[\"A\"]},\"trait\":\"alpha\"}')," +
-                    "('q1',2,'{\"cell\":{\"id\":[\"ex:B\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_B\",\"grebi:name\":[\"B\"]},\"trait\":\"bravo\"}')," +
-                    "('q1',3,'{\"cell\":{\"id\":[\"ex:C\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_C\",\"grebi:name\":[\"C\"]},\"trait\":\"charlie\"}')," +
-                    "('q1',4,'{\"cell\":{\"id\":[\"ex:D\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_D\",\"grebi:name\":[\"D\"]},\"trait\":\"delta\"}')," +
-                    "('q1',5,'{\"cell\":{\"id\":[\"ex:X\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_X\",\"grebi:name\":[\"X\"]},\"trait\":\"xray\"}')");
+                    "('q1',1,'{\"cell\":{\"id\":[\"ex:A\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_A\",\"grebi:name\":[\"A\"]},\"trait\":\"alpha\",\"score\":\"3.0\"}')," +
+                    "('q1',2,'{\"cell\":{\"id\":[\"ex:B\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_B\",\"grebi:name\":[\"B\"]},\"trait\":\"bravo\",\"score\":\"1.0\"}')," +
+                    "('q1',3,'{\"cell\":{\"id\":[\"ex:C\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_C\",\"grebi:name\":[\"C\"]},\"trait\":\"charlie\",\"score\":\"NR\"}')," +
+                    "('q1',4,'{\"cell\":{\"id\":[\"ex:D\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_D\",\"grebi:name\":[\"D\"]},\"trait\":\"delta\",\"score\":\"2.0\"}')," +
+                    "('q1',5,'{\"cell\":{\"id\":[\"ex:X\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_X\",\"grebi:name\":[\"X\"]},\"trait\":\"xray\",\"score\":\"9.0\"}')");
             st.execute("INSERT INTO \"materialised_queries_" + GRAPH + "\" VALUES " +
                     "('q2',1,'{\"cell\":{\"id\":[\"ex:A\"]},\"_count\":10}')," +
                     "('q2',2,'{\"cell\":{\"id\":[\"ex:B\"]},\"_count\":20}')," +
@@ -133,5 +135,31 @@ class MaterialisedClosureServingTest {
                 List.of(new ClosureParam("cell", "descendants", "ex:A")),
                 "charlie", Map.of(), List.of(), null, true, false, 0, 100);
         assertEquals(1, res.totalCount, "free-text 'charlie' matches only the C row");
+    }
+
+    @Test
+    void numericSortToleratesNonNumericAndIsStable() {
+        assumeTrue(enabled());
+        // sort descendants(A) = {A,B,C,D} by the "score" float column ascending.
+        // Numeric scores 3.0/1.0/2.0 sort B,D,A; C's "NR" is non-numeric -> NULLS LAST.
+        var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                null, Map.of(), List.of(), "score", true, true, 0, 100);
+        assertEquals(4, res.totalCount);
+        var order = res.results.stream()
+                .map(r -> ((java.util.List<?>) ((Map<?, ?>) r.get("cell")).get("grebi:name")).get(0))
+                .toList();
+        assertEquals(List.of("B", "D", "A", "C"), order,
+                "numeric asc with the non-numeric 'NR' sorted last (no exception)");
+    }
+
+    @Test
+    void streamCollectsClosureRows() {
+        assumeTrue(enabled());
+        var collected = new java.util.ArrayList<Map<String, Object>>();
+        pg.streamMaterialisedParameterised(GRAPH, "q1",
+                List.of(new ClosureParam("cell", "descendants", "ex:B")),
+                null, true, false, collected::add);
+        assertEquals(3, collected.size(), "stream yields descendants(B) = B,C,D");
     }
 }
