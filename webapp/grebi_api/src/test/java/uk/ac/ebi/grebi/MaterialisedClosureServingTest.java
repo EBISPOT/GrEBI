@@ -56,13 +56,14 @@ class MaterialisedClosureServingTest {
                     "('biolink:broad_match','grp_C','grp_B'),('biolink:broad_match','grp_D','grp_A')," +
                     "('biolink:broad_match','grp_D','grp_B'),('biolink:broad_match','grp_D','grp_C')");
             // score is a "float" column stored as a JSON *string*; C's is non-numeric
-            // ("NR") to exercise the tolerant numeric sort.
+            // ("NR") to exercise the tolerant numeric sort. `ds` is an array column
+            // (like a DatasourceList) for the ARRAY facet.
             st.execute("INSERT INTO \"materialised_queries_" + GRAPH + "\" VALUES " +
-                    "('q1',1,'{\"cell\":{\"id\":[\"ex:A\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_A\",\"grebi:name\":[\"A\"]},\"trait\":\"alpha\",\"score\":\"3.0\"}')," +
-                    "('q1',2,'{\"cell\":{\"id\":[\"ex:B\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_B\",\"grebi:name\":[\"B\"]},\"trait\":\"bravo\",\"score\":\"1.0\"}')," +
-                    "('q1',3,'{\"cell\":{\"id\":[\"ex:C\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_C\",\"grebi:name\":[\"C\"]},\"trait\":\"charlie\",\"score\":\"NR\"}')," +
-                    "('q1',4,'{\"cell\":{\"id\":[\"ex:D\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_D\",\"grebi:name\":[\"D\"]},\"trait\":\"delta\",\"score\":\"2.0\"}')," +
-                    "('q1',5,'{\"cell\":{\"id\":[\"ex:X\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_X\",\"grebi:name\":[\"X\"]},\"trait\":\"xray\",\"score\":\"9.0\"}')");
+                    "('q1',1,'{\"cell\":{\"id\":[\"ex:A\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_A\",\"grebi:name\":[\"A\"]},\"trait\":\"alpha\",\"score\":\"3.0\",\"ds\":[\"X\",\"Y\"]}')," +
+                    "('q1',2,'{\"cell\":{\"id\":[\"ex:B\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_B\",\"grebi:name\":[\"B\"]},\"trait\":\"bravo\",\"score\":\"1.0\",\"ds\":[\"X\"]}')," +
+                    "('q1',3,'{\"cell\":{\"id\":[\"ex:C\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_C\",\"grebi:name\":[\"C\"]},\"trait\":\"charlie\",\"score\":\"NR\",\"ds\":[\"Y\"]}')," +
+                    "('q1',4,'{\"cell\":{\"id\":[\"ex:D\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_D\",\"grebi:name\":[\"D\"]},\"trait\":\"delta\",\"score\":\"2.0\",\"ds\":[\"X\"]}')," +
+                    "('q1',5,'{\"cell\":{\"id\":[\"ex:X\"],\"grebi:nodeId\":\"" + GRAPH + ":grp_X\",\"grebi:name\":[\"X\"]},\"trait\":\"xray\",\"score\":\"9.0\",\"ds\":[\"Z\"]}')");
             st.execute("INSERT INTO \"materialised_queries_" + GRAPH + "\" VALUES " +
                     "('q2',1,'{\"cell\":{\"id\":[\"ex:A\"]},\"_count\":10}')," +
                     "('q2',2,'{\"cell\":{\"id\":[\"ex:B\"]},\"_count\":20}')," +
@@ -74,7 +75,7 @@ class MaterialisedClosureServingTest {
     private long count(String closure, String curie) {
         var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
                 List.of(new ClosureParam("cell", closure, curie)),
-                null, true, false, 0, 100);
+                null, List.of(), null, true, false, 0, 100);
         return res.totalCount;
     }
 
@@ -109,7 +110,7 @@ class MaterialisedClosureServingTest {
         assumeTrue(enabled());
         var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
                 List.of(new ClosureParam("cell", "exact", "ex:A")),
-                null, true, false, 0, 100);
+                null, List.of(), null, true, false, 0, 100);
         assertEquals(1, res.results.size());
         @SuppressWarnings("unchecked")
         var cell = (Map<String, Object>) res.results.get(0).get("cell");
@@ -135,7 +136,7 @@ class MaterialisedClosureServingTest {
         // Numeric scores 3.0/1.0/2.0 sort B,D,A; C's "NR" is non-numeric -> NULLS LAST.
         var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
                 List.of(new ClosureParam("cell", "descendants", "ex:A")),
-                "score", true, true, 0, 100);
+                null, List.of(), "score", true, true, 0, 100);
         assertEquals(4, res.totalCount);
         var order = res.results.stream()
                 .map(r -> ((java.util.List<?>) ((Map<?, ?>) r.get("cell")).get("grebi:name")).get(0))
@@ -149,8 +150,50 @@ class MaterialisedClosureServingTest {
         assumeTrue(enabled());
         var collected = new java.util.ArrayList<Map<String, Object>>();
         pg.streamMaterialisedParameterised(GRAPH, "q1",
-                List.of(new ClosureParam("cell", "descendants", "ex:B")),
+                List.of(new ClosureParam("cell", "descendants", "ex:B")), null,
                 null, true, false, collected::add);
         assertEquals(3, collected.size(), "stream yields descendants(B) = B,C,D");
+    }
+
+    @Test
+    void freeTextNarrowsRows() {
+        assumeTrue(enabled());
+        var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                "charlie", List.of(), null, true, false, 0, 100);
+        assertEquals(1, res.totalCount, "free-text 'charlie' matches only the C row");
+    }
+
+    @Test
+    void facetsBreakDownColumns() {
+        assumeTrue(enabled());
+        // descendants(A) = {A,B,C,D}
+        var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                null,
+                List.of(
+                        new GrebiPostgresClient.FacetField("cell", GrebiPostgresClient.FacetKind.NODE_NAME),
+                        new GrebiPostgresClient.FacetField("trait", GrebiPostgresClient.FacetKind.SCALAR),
+                        new GrebiPostgresClient.FacetField("ds", GrebiPostgresClient.FacetKind.ARRAY)),
+                null, true, false, 0, 100);
+
+        // node-name facet: one row per cell in the closure
+        assertEquals(Map.of("A", 1L, "B", 1L, "C", 1L, "D", 1L), res.facets.get("cell"));
+        // scalar facet
+        assertEquals(Map.of("alpha", 1L, "bravo", 1L, "charlie", 1L, "delta", 1L), res.facets.get("trait"));
+        // array facet: X in A,B,D = 3; Y in A,C = 2 (Z's row is X-node, outside the closure)
+        assertEquals(Map.of("X", 3L, "Y", 2L), res.facets.get("ds"));
+    }
+
+    @Test
+    void facetsRespectFreeText() {
+        assumeTrue(enabled());
+        var res = pg.searchMaterialisedParameterised(GRAPH, "q1",
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                "charlie",
+                List.of(new GrebiPostgresClient.FacetField("trait", GrebiPostgresClient.FacetKind.SCALAR)),
+                null, true, false, 0, 100);
+        // the free-text narrow applies to the facet too
+        assertEquals(Map.of("charlie", 1L), res.facets.get("trait"));
     }
 }

@@ -30,6 +30,7 @@ result_columns:
     column_type: GraphNodeId
   - column_id: from_datasources
     column_type: DatasourceList
+    facet: true
   - column_id: edge_id
     column_type: EdgeId
 examples:

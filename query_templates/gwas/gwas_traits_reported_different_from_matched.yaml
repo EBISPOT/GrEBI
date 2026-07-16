@@ -31,6 +31,7 @@ result_columns:
     column_type: string
   - column_id: trait
     column_type: GraphNodeId
+    facet: true
   - column_id: study_accession
     column_type: string
   - column_id: pubmed_id

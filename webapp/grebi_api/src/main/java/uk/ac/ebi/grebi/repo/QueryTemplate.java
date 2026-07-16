@@ -36,6 +36,10 @@ public class QueryTemplate {
         public String column_id;
         public String column_type;
         public Boolean optional;
+        // When true, materialised serving returns a top-N value breakdown for this
+        // column (a GROUP BY over the closure-filtered rows). Only meaningful for
+        // low-cardinality columns (datasource lists, node names, short strings).
+        public Boolean facet;
     }
     public static class Example {
         public String title;

@@ -23,6 +23,7 @@ params:
 result_columns:
   - column_id: subtype
     column_type: GraphNodeId
+    facet: true
 materialise:
   mode: full
   params:

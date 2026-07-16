@@ -37,10 +37,12 @@ params:
 result_columns:
   - column_id: disease
     column_type: GraphNodeId
+    facet: true
   - column_id: phenotype
     column_type: GraphNodeId
   - column_id: from_datasources
     column_type: DatasourceList
+    facet: true
   - column_id: evidence
     column_type: string
     optional: true

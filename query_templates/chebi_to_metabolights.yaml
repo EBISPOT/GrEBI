@@ -26,6 +26,7 @@ params:
 result_columns:
   - column_id: chemical
     column_type: GraphNodeId
+    facet: true
   - column_id: study
     column_type: GraphNodeId
 examples:

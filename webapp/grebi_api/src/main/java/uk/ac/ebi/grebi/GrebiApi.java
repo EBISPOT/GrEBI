@@ -337,13 +337,17 @@ public class GrebiApi {
                         if (param.getKey().equals("page") || param.getKey().equals("size") ||
                                 param.getKey().equals("templateId") || param.getKey().equals("graph") ||
                                 param.getKey().equals("sortBy") || param.getKey().equals("sortDir") ||
-                                param.getKey().equals("resolve")) {
+                                param.getKey().equals("resolve") ||
+                                param.getKey().equals("q") || param.getKey().equals("filter")) {
                             continue;
                         }
                         params.put(param.getKey(), param.getValue());
                     }
 
                     var sort = Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
+                    // Free-text narrow, so a filtered table exports a filtered CSV.
+                    var searchText = Objects.requireNonNullElse(ctx.queryParam("q"), ctx.queryParam("filter"));
+                    limits.validateText(searchText, "q");
 
                     ctx.future(() -> {
                         try {
@@ -358,7 +362,7 @@ public class GrebiApi {
                                     && !template.materialise.isCountsOnly()
                                     && isMaterialisedBuilt(metadata, graph, templateId)) {
                                 return java.util.concurrent.CompletableFuture.runAsync(() ->
-                                        postgres.streamMaterialisedParameterisedCsv(graph, template, params, sort, writer));
+                                        postgres.streamMaterialisedParameterisedCsv(graph, template, params, searchText, sort, writer));
                             }
 
                             if (cypher == null) {
@@ -386,15 +390,19 @@ public class GrebiApi {
                         if (param.getKey().equals("page") || param.getKey().equals("size") ||
                                 param.getKey().equals("templateId") || param.getKey().equals("graph") ||
                                 param.getKey().equals("sortBy") || param.getKey().equals("sortDir") ||
-                                param.getKey().equals("resolve")) {
+                                param.getKey().equals("resolve") ||
+                                param.getKey().equals("q") || param.getKey().equals("filter")) {
                             continue;
                         }
                         params.put(param.getKey(), param.getValue());
                     }
 
                     var resolve = "true".equals(ctx.queryParam("resolve"));
+                    // Free-text narrow (materialised full templates only; ignored otherwise).
+                    var searchText = Objects.requireNonNullElse(ctx.queryParam("q"), ctx.queryParam("filter"));
+                    limits.validateText(searchText, "q");
 
-                    var res = serveQueryTemplate(cypher, postgres, metadata, graph, template, params, resolve, page);
+                    var res = serveQueryTemplate(cypher, postgres, metadata, graph, template, params, searchText, resolve, page);
 
                     ctx.result(
                         gson.toJson(
@@ -829,22 +837,25 @@ public class GrebiApi {
     static org.springframework.data.domain.Page<Map<String, Object>> serveQueryTemplate(
             GrebiCypherRepo cypher, GrebiPostgresRepo postgres, GrebiMetadataRepo metadata,
             String graph, QueryTemplate template, Map<String, List<String>> params,
-            boolean resolve, org.springframework.data.domain.Pageable page) {
+            String searchText, boolean resolve, org.springframework.data.domain.Pageable page) {
 
         if (template.isParameterisedMaterialised() && isMaterialisedBuilt(metadata, graph, template.id)) {
             if (template.materialise.isCountsOnly()) {
                 if (cypher == null) {
                     throw new IllegalStateException("Cypher service unavailable for counts_only template " + template.id);
                 }
+                // Data is served live (no free-text narrow) and the flat total from Postgres.
                 long total = postgres.materialisedParameterisedCount(graph, template, params);
                 return cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page, total);
             }
-            return postgres.runMaterialisedParameterisedPaginated(graph, template, params, resolve, page);
+            // Full materialised: closure filter + optional free-text + facets from Postgres.
+            return postgres.runMaterialisedParameterisedPaginated(graph, template, params, searchText, resolve, page);
         }
 
         if (cypher == null) {
             throw new IllegalStateException("Cypher service unavailable; cannot serve live query template " + template.id);
         }
+        // Live path: free-text narrow (searchText) is not supported and is ignored.
         return cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page);
     }
 

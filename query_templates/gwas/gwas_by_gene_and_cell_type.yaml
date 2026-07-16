@@ -61,8 +61,10 @@ params:
 result_columns:
   - column_id: cell_type
     column_type: GraphNodeId
+    facet: true
   - column_id: trait
     column_type: GraphNodeId
+    facet: true
   - column_id: snp
     column_type: GraphNodeId
   - column_id: effect_allele

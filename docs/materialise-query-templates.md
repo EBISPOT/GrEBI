@@ -397,6 +397,24 @@ sums it over the closure (data served live). `GrebiApi.serveQueryTemplate` route
 `/query/{id}` and `.csv` to Postgres when a build exists in
 `graph_metadata.materialised_templates`, else falls back to live Cypher.
 
+### Faceting + free-text (materialised only)
+
+Because the rows sit in an indexed Postgres table, the materialised path can offer
+two things the live Cypher path can't do cheaply over a streamed result:
+
+- **Facets** — a top-N value breakdown (`GROUP BY`) for each result column marked
+  `facet: true`, over the closure-filtered rows. The extraction depends on the
+  column type: array elements for a `DatasourceList`, the node name for a
+  `GraphNodeId` (`data -> col -> 'grebi:name' ->> 0`), the scalar for a `string`.
+  Skipped above `FACET_MAX_ROWS` (too big to `GROUP BY` interactively) and capped at
+  `FACET_MAX_VALUES` per column. Returned in the page's `facetFieldToCounts`.
+- **Free-text** — an optional `q=` narrows the closure-filtered rows
+  (`(data)::text ILIKE %q%`), and is reflected in the facets, counts, paging and CSV.
+
+Both are served only from the full-materialise Postgres path; live and `counts_only`
+templates ignore `q` and return no facets. The `/queries` UI shows the facet
+breakdown and the filter box only for materialised templates.
+
 ### What is materialised
 
 - **Standalone** (`materialise.cypher`, browsable `/tables`): `hello_world_tester`,

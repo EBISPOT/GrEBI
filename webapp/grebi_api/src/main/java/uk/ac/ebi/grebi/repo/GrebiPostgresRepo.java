@@ -275,7 +275,7 @@ public class GrebiPostgresRepo {
      */
     public GrebiFacetedResultsPage<Map<String, Object>> runMaterialisedParameterisedPaginated(
             String graph, QueryTemplate template, Map<String, List<String>> params,
-            boolean resolve, Pageable pageable) {
+            String searchText, boolean resolve, Pageable pageable) {
 
         if (template.graphs != null && !template.graphs.contains(graph)) {
             throw new IllegalArgumentException(
@@ -309,6 +309,7 @@ public class GrebiPostgresRepo {
 
         var result = pgClient.searchMaterialisedParameterised(
                 graph, template.id, closureParams,
+                searchText, buildFacetFields(template),
                 sortColumn, sortAsc, sortNumeric,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
@@ -376,7 +377,7 @@ public class GrebiPostgresRepo {
      */
     public void streamMaterialisedParameterisedCsv(
             String graph, QueryTemplate template, Map<String, List<String>> params,
-            Sort sort, PrintWriter writer) {
+            String searchText, Sort sort, PrintWriter writer) {
 
         var closureParams = buildClosureParams(template, params);
 
@@ -400,9 +401,31 @@ public class GrebiPostgresRepo {
         writer.write("\n");
 
         pgClient.streamMaterialisedParameterised(
-                graph, template.id, closureParams, sortColumn, sortAsc, sortNumeric,
+                graph, template.id, closureParams, searchText, sortColumn, sortAsc, sortNumeric,
                 row -> GrebiCypherRepo.writeCsvRow(template.result_columns, row, writer));
         writer.flush();
+    }
+
+    /** The facetable result columns of a template, tagged with how to extract the
+     *  facet value (array elements / node name / scalar). */
+    private List<GrebiPostgresClient.FacetField> buildFacetFields(QueryTemplate template) {
+        List<GrebiPostgresClient.FacetField> out = new ArrayList<>();
+        for (var c : template.result_columns) {
+            if (!Boolean.TRUE.equals(c.facet)) continue;
+            String type = c.column_type == null ? "" : c.column_type;
+            GrebiPostgresClient.FacetKind kind;
+            if ("DatasourceList".equals(type)) {
+                kind = GrebiPostgresClient.FacetKind.ARRAY;
+            } else if ("GraphNodeId".equals(type)) {
+                kind = GrebiPostgresClient.FacetKind.NODE_NAME;
+            } else if ("string".equalsIgnoreCase(type)) {
+                kind = GrebiPostgresClient.FacetKind.SCALAR;
+            } else {
+                continue; // float / EdgeId are not facetable
+            }
+            out.add(new GrebiPostgresClient.FacetField(c.column_id, kind));
+        }
+        return out;
     }
 
     private List<GrebiPostgresClient.ClosureParam> buildClosureParams(

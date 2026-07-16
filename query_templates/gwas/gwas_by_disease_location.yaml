@@ -52,8 +52,10 @@ params:
 result_columns:
   - column_id: location
     column_type: GraphNodeId
+    facet: true
   - column_id: disease
     column_type: GraphNodeId
+    facet: true
   - column_id: snp
     column_type: GraphNodeId
   - column_id: effect_allele

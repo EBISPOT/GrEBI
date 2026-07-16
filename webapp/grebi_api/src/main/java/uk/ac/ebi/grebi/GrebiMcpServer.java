@@ -443,7 +443,7 @@ public class GrebiMcpServer {
                     }
                     limits.validateQueryParams(params);
 
-                    Page<Map<String,Object>> res = GrebiApi.serveQueryTemplate(cypher, postgres, metadata, graph, qt, params, false, page);
+                    Page<Map<String,Object>> res = GrebiApi.serveQueryTemplate(cypher, postgres, metadata, graph, qt, params, null, false, page);
 
                     var edgeIdColumnIds = qt.result_columns.stream()
                         .filter(c -> c.column_type.equalsIgnoreCase("EdgeId"))

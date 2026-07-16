@@ -30,6 +30,8 @@ export interface ResultColumn {
   column_id: string;
   column_type: string;
   optional?: boolean;
+  // materialised serving returns a top-N value breakdown for this column
+  facet?: boolean;
 }
 
 

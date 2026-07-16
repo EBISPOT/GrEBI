@@ -189,7 +189,7 @@ return (
 
     {paramValuesSubmitted !== undefined && <Fragment>
       <Typography variant="h5" gutterBottom>Results</Typography>
-      <ResultsTable graph={graph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} />
+      <ResultsTable graph={graph} queryId={queryTemplate.id} params={paramValuesSubmitted} resultColumns={queryTemplate.result_columns} materialised={!!queryTemplate.materialise && queryTemplate.materialise.mode !== 'counts_only'} />
     </Fragment>}
   </Fragment>
 );
