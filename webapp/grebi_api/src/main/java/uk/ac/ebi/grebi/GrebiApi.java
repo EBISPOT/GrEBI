@@ -346,7 +346,9 @@ public class GrebiApi {
 
                     var sort = Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
                     // Free-text narrow, so a filtered table exports a filtered CSV.
-                    var searchText = Objects.requireNonNullElse(ctx.queryParam("q"), ctx.queryParam("filter"));
+                    // NB: not Objects.requireNonNullElse — that NPEs when both are
+                    // absent (the common case: a query with no free-text narrow).
+                    var searchText = firstNonNull(ctx.queryParam("q"), ctx.queryParam("filter"));
                     limits.validateText(searchText, "q");
 
                     ctx.future(() -> {
@@ -399,7 +401,9 @@ public class GrebiApi {
 
                     var resolve = "true".equals(ctx.queryParam("resolve"));
                     // Free-text narrow (materialised full templates only; ignored otherwise).
-                    var searchText = Objects.requireNonNullElse(ctx.queryParam("q"), ctx.queryParam("filter"));
+                    // NB: not Objects.requireNonNullElse — that NPEs when both are
+                    // absent (the common case: a query with no free-text narrow).
+                    var searchText = firstNonNull(ctx.queryParam("q"), ctx.queryParam("filter"));
                     limits.validateText(searchText, "q");
 
                     var res = serveQueryTemplate(cypher, postgres, metadata, graph, template, params, searchText, resolve, page);
@@ -804,6 +808,19 @@ public class GrebiApi {
             .orElseThrow(() -> new NotFoundResponse(
                 "Query template " + templateId + " not found for graph " + graph
             ));
+    }
+
+    /** First non-null of the given values, or null if all are null. Unlike
+     *  {@link java.util.Objects#requireNonNullElse}, which throws when the fallback
+     *  is also null, this tolerates every value being null — the common case for an
+     *  optional query param (e.g. `q`/`filter`), where a plain query carries neither. */
+    static String firstNonNull(String... values) {
+        for (String v : values) {
+            if (v != null) {
+                return v;
+            }
+        }
+        return null;
     }
 
     /** Whether a parameterised materialised build for this template exists in the
