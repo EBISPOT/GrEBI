@@ -303,7 +303,7 @@ public class GrebiCypherRepo {
         return column.column_id;
     }
 
-    private Object normalizeResultValue(QueryTemplate.ResultColumn column, Object value) {
+    static Object normalizeResultValue(QueryTemplate.ResultColumn column, Object value) {
         if (value == null || column == null || column.column_type == null) {
             return value;
         }
@@ -327,7 +327,7 @@ public class GrebiCypherRepo {
         }
     }
 
-    private Double normalizeFloat(Object value, String columnId) {
+    private static Double normalizeFloat(Object value, String columnId) {
         if (value instanceof Number number) {
             return number.doubleValue();
         }
@@ -344,7 +344,7 @@ public class GrebiCypherRepo {
         throw new IllegalArgumentException("Unsupported float value type for column " + columnId + ": " + value.getClass().getName());
     }
 
-    private Integer normalizeInteger(Object value, String columnId) {
+    private static Integer normalizeInteger(Object value, String columnId) {
         if (value instanceof Number number) {
             return number.intValue();
         }
@@ -361,7 +361,7 @@ public class GrebiCypherRepo {
         throw new IllegalArgumentException("Unsupported integer value type for column " + columnId + ": " + value.getClass().getName());
     }
 
-    private Boolean normalizeBoolean(Object value, String columnId) {
+    private static Boolean normalizeBoolean(Object value, String columnId) {
         if (value instanceof Boolean bool) {
             return bool;
         }
@@ -379,7 +379,7 @@ public class GrebiCypherRepo {
         throw new IllegalArgumentException("Unsupported boolean value for column " + columnId + ": " + value);
     }
 
-    private List<String> normalizeDatasourceList(Object value) {
+    private static List<String> normalizeDatasourceList(Object value) {
         if (value instanceof List<?> list) {
             return list.stream()
                 .filter(Objects::nonNull)
@@ -495,11 +495,27 @@ public class GrebiCypherRepo {
 
 
     public Page<Map<String,Object>> runQueryFromTemplatePaginated(
-        String graph, 
+        String graph,
         QueryTemplate template,
         Map<String, List<String>> params,
         boolean resolve,
         Pageable pageable
+        ) {
+        return runQueryFromTemplatePaginated(graph, template, params, resolve, pageable, null);
+    }
+
+    /**
+     * @param overrideCount if non-null, the total is taken from this value and the
+     *   (expensive) live count query is skipped. Used to serve a counts_only
+     *   materialised template's data live while its total comes from Postgres.
+     */
+    public Page<Map<String,Object>> runQueryFromTemplatePaginated(
+        String graph,
+        QueryTemplate template,
+        Map<String, List<String>> params,
+        boolean resolve,
+        Pageable pageable,
+        Long overrideCount
         ) {
 
         var preparedQuery = prepareQuery(graph, template, params, pageable.getSort());
@@ -517,9 +533,11 @@ public class GrebiCypherRepo {
         // Run the data and (unbounded) count queries concurrently rather than
         // sequentially — for high-fan-out templates the count is as expensive as
         // the data query, so serialising them roughly doubled wall-clock latency.
+        // When overrideCount is supplied (counts_only serving) skip the count query.
         final String fCountQuery = countQuery;
         final Map<String, Object> fParamMap = paramMap;
         CompletableFuture<List<Map<String, Object>>> countFuture =
+            overrideCount != null ? null :
             CompletableFuture.supplyAsync(() -> {
                 try {
                     return cypherClient.query(graph, fCountQuery, fParamMap);
@@ -529,24 +547,28 @@ public class GrebiCypherRepo {
             }, queryExecutor);
 
         List<Map<String, Object>> records;
-        List<Map<String, Object>> countRecords;
         try {
             records = cypherClient.query(graph, query, paramMap);
         } catch (IOException e) {
-            countFuture.cancel(true);
+            if (countFuture != null) countFuture.cancel(true);
             throw new RuntimeException("Failed to run query template", e);
         }
-        try {
-            countRecords = countFuture.join();
-        } catch (java.util.concurrent.CompletionException e) {
-            throw new RuntimeException("Failed to run count query", e.getCause());
-        }
-        
-        if(countRecords.isEmpty() || countRecords.get(0).get("count") == null) {
-            throw new RuntimeException("Count query did not return a count");
-        }
 
-        var count = ((Number) countRecords.get(0).get("count")).intValue();
+        int count;
+        if (overrideCount != null) {
+            count = overrideCount.intValue();
+        } else {
+            List<Map<String, Object>> countRecords;
+            try {
+                countRecords = countFuture.join();
+            } catch (java.util.concurrent.CompletionException e) {
+                throw new RuntimeException("Failed to run count query", e.getCause());
+            }
+            if(countRecords.isEmpty() || countRecords.get(0).get("count") == null) {
+                throw new RuntimeException("Count query did not return a count");
+            }
+            count = ((Number) countRecords.get(0).get("count")).intValue();
+        }
         if(count == 0) {
             return new org.springframework.data.domain.PageImpl<>(List.of(), pageable, 0);
         }
@@ -611,7 +633,62 @@ public class GrebiCypherRepo {
     }
 
 
+    /** CSV header cells for a template's result columns (EdgeId/EdgeProps omitted;
+     *  a GraphNodeId column expands to {id}_id and {id}_label). Shared by the live
+     *  and Postgres-materialised CSV paths. */
+    public static List<String> csvHeader(List<QueryTemplate.ResultColumn> columns) {
+        var csvColumns = new ArrayList<String>();
+        for (QueryTemplate.ResultColumn column : columns) {
+            if ("EdgeId".equals(column.column_type) || "EdgeProps".equals(column.column_type)) {
+                continue;
+            }
+            if ("GraphNodeId".equals(column.column_type)) {
+                csvColumns.add(column.column_id + "_id");
+                csvColumns.add(column.column_id + "_label");
+            } else {
+                csvColumns.add(column.column_id);
+            }
+        }
+        return csvColumns;
+    }
+
+    /** Write one CSV row for the given result columns (must match {@link #csvHeader}).
+     *  `record` is a row map of column_id -> value (node columns are node-object
+     *  maps with `id` and `grebi:name`). */
     @SuppressWarnings("unchecked")
+    public static void writeCsvRow(List<QueryTemplate.ResultColumn> columns,
+                                   Map<String, Object> record, PrintWriter writer) {
+        boolean first = true;
+        for (QueryTemplate.ResultColumn column : columns) {
+            if ("EdgeId".equals(column.column_type) || "EdgeProps".equals(column.column_type)) {
+                continue;
+            }
+            if (first) {
+                first = false;
+            } else {
+                writer.write(",");
+            }
+            if ("GraphNodeId".equals(column.column_type)) {
+                var value = (Map<String, Object>) record.get(column.column_id);
+                if (value == null) {
+                    writer.write("\"\",\"\"");
+                    continue;
+                }
+                var sourceIds = (List<String>) value.get("id");
+                var nodeId = pickFavouriteSourceId(sourceIds);
+                var names = (List<String>) value.get("grebi:name");
+                String nodeLabel = (names == null || names.isEmpty())
+                        ? nodeId : Objects.toString(names.get(0), null);
+                writer.write("\"" + (nodeId == null ? "" : nodeId.replace("\"", "\"\"")) + "\",");
+                writer.write("\"" + (nodeLabel == null ? "" : nodeLabel.replace("\"", "\"\"")) + "\"");
+            } else {
+                String raw = Objects.toString(normalizeResultValue(column, record.get(column.column_id)), "");
+                writer.write("\"" + raw.replace("\"", "\"\"") + "\"");
+            }
+        }
+        writer.write("\n");
+    }
+
     public CompletableFuture<Void> runQueryFromTemplateStreamed(
             String graph,
             QueryTemplate template,
@@ -622,75 +699,15 @@ public class GrebiCypherRepo {
 
         List<QueryTemplate.ResultColumn> columns = template.result_columns;
 
-        var csvColumns = new ArrayList<String>();
-
-        for (QueryTemplate.ResultColumn column : columns) {
-            if (column.column_type.equals("EdgeId")) {
-                continue;
-            }
-            String columnId = column.column_id;
-            if (column.column_type.equals("GraphNodeId")) {
-                csvColumns.add(columnId + "_id");
-                csvColumns.add(columnId + "_label");
-            } else {
-                csvColumns.add(columnId);
-            }
-        }
-
-        writer.write(String.join(",", csvColumns));
+        writer.write(String.join(",", csvHeader(columns)));
         writer.write("\n");
 
         var preparedQuery = prepareQuery(graph, template, params, sort);
 
         return CompletableFuture.runAsync(() -> {
             try {
-                cypherClient.streamQuery(graph, preparedQuery.query, preparedQuery.params, record -> {
-
-                    boolean first = true;
-
-                    for (QueryTemplate.ResultColumn column : columns) {
-
-                        if (column.column_type.equals("EdgeProps")) {
-                            continue;
-                        }
-
-                        if(first) {
-                            first = false;
-                        } else {
-                            writer.write(",");
-                        }
-
-                        String columnId = column.column_id;
-                        if (column.column_type.equals("GraphNodeId")) {
-                            var value = (Map<String, Object>) record.get(columnId);
-                            if (value == null) {
-                                writer.write("\"\",\"\"");
-                                continue;
-                            }
-
-                            var sourceIds = (List<String>) value.get("id");
-                            var nodeId = pickFavouriteSourceId(sourceIds);
-
-                            String nodeLabel;
-
-                            var names = (List<String>) value.get("grebi:name");
-                            if(names == null || names.isEmpty()) {
-                                nodeLabel = nodeId;
-                            } else {
-                                nodeLabel = names.get(0).toString();
-                            }
-
-                            writer.write("\"" + nodeId.replace("\"", "\"\"") + "\",");
-                            writer.write("\"" + nodeLabel.replace("\"", "\"\"") + "\"");
-
-                        } else {
-                            String raw = Objects.toString(normalizeResultValue(column, record.get(columnId)), "");
-                            writer.write("\"" + raw.replace("\"", "\"\"") + "\"");
-                        }
-                    }
-
-                    writer.write("\n");
-                });
+                cypherClient.streamQuery(graph, preparedQuery.query, preparedQuery.params,
+                        record -> writeCsvRow(columns, record, writer));
                 writer.flush();
             } catch (Exception e) {
                 writer.write("ERROR: " + e.getMessage() + "\n");
@@ -722,7 +739,7 @@ public class GrebiCypherRepo {
 
     // TODO: move to config
     //
-    private static List<String> FAVOURITE_PREFIXES = List.of(
+    private static final List<String> FAVOURITE_PREFIXES = List.of(
         "grebi:",
         "biolink:",
         "ro:",
@@ -741,7 +758,7 @@ public class GrebiCypherRepo {
         "MTBLC"
     );
 
-    private String pickFavouriteSourceId(List<String> ids) {
+    private static String pickFavouriteSourceId(List<String> ids) {
 
         if(ids == null || ids.isEmpty()) {
             return null;

@@ -1,8 +1,0 @@
-title: Hello world
-description: Tester query to see if the pipeline is working
-uses_datasources:
-  - IMPC
-  - GWAS
-cypher_query: |-
-  RETURN "Hello, World!" AS message
-

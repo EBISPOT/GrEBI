@@ -330,6 +330,12 @@ public class GrebiMcpServer {
 
         queryTemplates.getQueryTemplates().forEach(qt -> {
 
+            // Standalone materialised queries are browsable tables, not callable
+            // parameterised tools (no params/result_columns) — skip them here.
+            if (qt.isStandaloneMaterialised()) {
+                return;
+            }
+
             var paramProps = new LinkedHashMap<String, Object>();
 
             paramProps.put("graph", Map.of(
@@ -437,7 +443,7 @@ public class GrebiMcpServer {
                     }
                     limits.validateQueryParams(params);
 
-                    Page<Map<String,Object>> res = cypher.runQueryFromTemplatePaginated(graph, qt, params, false, page);
+                    Page<Map<String,Object>> res = GrebiApi.serveQueryTemplate(cypher, postgres, metadata, graph, qt, params, null, false, page);
 
                     var edgeIdColumnIds = qt.result_columns.stream()
                         .filter(c -> c.column_type.equalsIgnoreCase("EdgeId"))

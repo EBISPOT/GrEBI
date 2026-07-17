@@ -14,7 +14,7 @@ const cols= [
         name:"Query ID",
         selector:(row:any,key:string)=> {
             return <Fragment>
-                <code>{row[key]}</code> <Link className="link-default" target="_blank" href={`https://github.com/EBISPOT/GrEBI/blob/dev/materialised_queries/${row[key]}.yaml`}>
+                <code>{row[key]}</code> <Link className="link-default" target="_blank" href={`https://github.com/EBISPOT/GrEBI/blob/dev/query_templates/${row[key]}.yaml`}>
 <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Info style={{ fontSize: '1em' }} /></span>
                 </Link>
                 </Fragment>

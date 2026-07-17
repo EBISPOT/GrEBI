@@ -12,7 +12,7 @@ fi
 
 export GREBI_HOME=${GREBI_HOME:-/nfs/production/parkinso/spot/grebi}
 export GREBI_DATALOAD_HOME=$GREBI_HOME/dataload
-export GREBI_QUERY_YAMLS_PATH=$GREBI_HOME/materialised_queries
+export GREBI_QUERY_YAMLS_PATH=$GREBI_HOME/query_templates
 export GREBI_NOBACKUP=${GREBI_NOBACKUP:-/hps/nobackup/parkinso/spot/grebi}
 export GREBI_OUT_DIR=$GREBI_NOBACKUP/out
 export GREBI_DOWNLOADS_PATH=${GREBI_DOWNLOADS_PATH:-$GREBI_NOBACKUP/downloads}

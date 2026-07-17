@@ -5,7 +5,7 @@ graphs:
 topics:
   - gwas_catalog
 cypher_match_fragment: |-
-  MATCH (gene)-[:sourceId]->(:Id {id: $gene_id })
+  MATCH (gene:`hgnc:Gene`)-[:sourceId]->(:Id {id: $gene_id })
   MATCH (disease)-[:sourceId]->(:Id {id: $disease_id})
   WHERE 'Ontologies.mondo' IN disease.`grebi:datasources`
   MATCH (disease)<-[:`biolink:broad_match`*0..1]-(trait)
@@ -52,8 +52,10 @@ params:
 result_columns:
   - column_id: disease
     column_type: GraphNodeId
+    facet: true
   - column_id: trait
     column_type: GraphNodeId
+    facet: true
   - column_id: snp
     column_type: GraphNodeId
   - column_id: effect_allele
@@ -80,3 +82,16 @@ examples:
     params:
       gene_id: hgnc:7884
       disease_id: mondo:0004822
+materialise:
+  mode: full
+  params:
+    - param_id: gene_id
+      filters_column: gene
+      closure: exact
+      domain_kind: label
+      domain_root: 'hgnc:Gene'
+    - param_id: disease_id
+      filters_column: disease
+      closure: exact
+      domain_kind: id
+      domain_root: 'mondo:0000001'
