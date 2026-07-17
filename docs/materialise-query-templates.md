@@ -111,6 +111,31 @@ domain, and do the ancestor/descendant closure at SERVING time** (in Postgres,
 using the precomputed `broad_match` closure) — never by enumerating the queried
 `_root` and expanding the closure into storage.
 
+3. **Per-param `ORDER BY … LIMIT` silently goes global when you free the param.**
+   `gwas_trait_to_mouse_models_via_embeddings` (the "embeddings" query — note its
+   KNN is *precomputed* `ols_top_k:matches` edges, not a live vector search) does a
+   **per-trait** top-K: `... ORDER BY emb_dist ASC LIMIT $n_embedding_candidates`.
+   Freeing `trait_id` turns that into a single **global** top-50 across all traits —
+   wrong semantics *and* a giant global sort — plus `trait` (no `param_opts`) roamed
+   all 95 M nodes → 12 h timeout. The fix is the same family as the fan-outs:
+   constrain `trait` to its domain (the GWAS traits) and do the top-K **per trait in
+   a correlated subquery**:
+   ```cypher
+   MATCH (:`gwas:SNP`)-[:`gwas:associated_with`]->(trait) WITH DISTINCT trait
+   CALL (trait) {
+     MATCH (trait)-[emb:`ols_top_k:matches`]->(any_term)
+     WITH any_term, toFloat(emb.`ols_top_k:distance`[0]) AS emb_dist ORDER BY emb_dist ASC LIMIT 50
+     WITH any_term, emb_dist WHERE "Ontologies.mp" IN any_term.`grebi:datasources`
+     WITH any_term AS mp_phenotype ORDER BY emb_dist ASC LIMIT 5 RETURN mp_phenotype
+   }
+   ... downstream ...
+   ```
+   Result: **18,015 rows in ~50 min** on the weak dev box (minutes on codon) — a
+   third instance of "don't naively free the param," and it removes the last
+   supposed exception. When a template has a per-param `LIMIT`, the materialise
+   derivation must wrap it in a `CALL (key) { … }` subquery, not just substitute the
+   root.
+
 ## The resolution: one body, the param is a closure root (no second Cypher)
 
 The two lessons above do **not** mean a materialisable template needs a separate
@@ -316,8 +341,11 @@ UI:
    `filters_column` it targets — mostly derivable from `param_opts`, but declare and
    validate per template.
 3. Build-size budget threshold and what happens on exceed (skip + warn, or fail).
-4. `disease_to_genes` / `gene_to_diseases` are the genuine ~100 M-edge tables — decide
-   materialise vs counts-only vs keep-live once the codon run reports their true size.
+4. The two gene↔disease association tables dedup small (`gene_to_diseases` 270 k;
+   `disease_to_genes` pending) but take **hours** to build (125 M-edge scans). Fine
+   to materialise, but the dataload cost is real — consider whether they need a
+   `materialise: false` or a cheaper build path. (The embeddings query is **no longer
+   an exception** — it materialises at 18 k, see Lesson 3.)
 
 ---
 
@@ -487,13 +515,15 @@ edges). "constrained" = domain-constrained; fan-outs use the base-keyed form.
 | gwas_by_location | 12,869,019 | 20 min | **base-keyed** (was 12 h timeout) |
 | gwas_by_gene_and_disease | 3,753,465 | 47 min | |
 | gwas_by_gene_and_location | 8,067,406 | 72 min | |
-| gene_to_diseases | TBD | — | genuine ~125 M-edge table (running) |
-| disease_to_genes | TBD | — | genuine ~125 M-edge table (running) |
-| gwas_trait_to_mouse_models_via_embeddings | TBD | — | KNN; special-case |
+| gene_to_diseases | 270,229 | 4.7 h | 125 M-edge scan dedups to 270 k |
+| disease_to_genes | TBD | — | 125 M-edge table (running) |
+| gwas_trait_to_mouse_models_via_embeddings | 18,015 | ~50 min† | per-trait subquery fix (was 12 h timeout); †weak dev box |
 
-Takeaway: **~18 of ~21 materialise in ≤ ~20 min at ≤ ~13 M rows.** Only the two
-gene↔disease association tables are potentially too large; the embeddings query is a
-special case.
+Takeaway: **every template materialises.** Most in seconds-to-minutes at ≤ ~13 M
+rows; the gene↔disease association tables dedup to surprisingly small sizes
+(`gene_to_diseases` 270 k) despite 125 M-edge scans (hours to build); and even the
+embeddings KNN materialises (18 k) once the trait domain is constrained and the
+top-K is done per-trait. **No genuine "can't materialise" exception remains.**
 
 ## Appendix B: canonical base-keyed forms (the hard four)
 
