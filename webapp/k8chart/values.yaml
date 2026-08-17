@@ -42,7 +42,7 @@ apiUrl: "https://wwwdev.ebi.ac.uk/grebi/"
 
 # The embedding service runs in the ontoapps namespace. The short service name
 # works for dev; prod overrides this with the cross-namespace cluster FQDN.
-embeddingServiceUrl: "http://spot-embedding-service:5000"
+embeddingServiceUrl: "http://spot-embedding-service:5000/spot/embed"
 
 postgres:
   secret:
