@@ -1,5 +1,5 @@
 ###
-### Claim the pinned worker's pre-existing local-disk PV (worker-N-local-pv).
+### Claim the configured pre-existing local-disk PV.
 ###
 ### These per-node PVs are shared cluster infrastructure created earlier (when the
 ### local-storage StorageClass with WaitForFirstConsumer binding existed), so they
@@ -7,7 +7,8 @@
 ### "Immediate" with no topology and be unschedulable, so we reuse the existing PV:
 ### we only create the PVC bound to it, we do NOT create the PV.
 ###
-### dev pins to worker-1, prod to worker-2, so each claims a different node's PV.
+### dev keeps worker-1-local-pv. prod uses a separately managed PV object for
+### worker-2, preventing the legacy dev Helm release from owning prod storage.
 ###
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -15,7 +16,7 @@ metadata:
   name: worker-{{ .Values.neo_worker_n }}-local-pvc
 spec:
   storageClassName: local-storage
-  volumeName: worker-{{ .Values.neo_worker_n }}-local-pv
+  volumeName: {{ .Values.localPvName }}
   accessModes: ['ReadWriteMany']
   resources:
     requests:

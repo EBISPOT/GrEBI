@@ -9,6 +9,11 @@ local_disk: "2Ti"
 # Which HH worker node the cypher-service (Neo4j) pins to.  dev = 1, prod = 2.
 neo_worker_n: "1"
 
+# Pre-existing local PV to claim for the pinned worker. The default preserves
+# the live dev deployment; prod overrides this with a separately managed PV so
+# the legacy dev Helm release cannot delete prod storage during a future upgrade.
+localPvName: "worker-1-local-pv"
+
 # cypher-service (embedded Neo4j) memory sizing. Defaults suit dev's 64Gi worker;
 # override smaller for prod's ~31Gi worker. Total memory ~= heap + pageCacheMB +
 # JVM overhead, and must fit under `memory`.
@@ -34,6 +39,10 @@ contextPath: "/grebi"
 #   dev  = https://wwwdev.ebi.ac.uk/grebi/
 #   prod = https://www.ebi.ac.uk/grebi/   (pending)
 apiUrl: "https://wwwdev.ebi.ac.uk/grebi/"
+
+# The embedding service runs in the ontoapps namespace. The short service name
+# works for dev; prod overrides this with the cross-namespace cluster FQDN.
+embeddingServiceUrl: "http://spot-embedding-service:5000"
 
 postgres:
   secret:
