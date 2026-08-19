@@ -38,6 +38,19 @@ import uk.ac.ebi.grebi.repo.GrebiMetadataRepo;
 
 public class GrebiApi {
 
+    // Metadata keys omitted from GET /api/v1/graphs/{graph} unless ?full is given.
+    // These are only consumed server side (the /stats endpoint derives its counts
+    // from `edges`) but dwarf everything else: for ebi_monarch_xspecies they are
+    // ~150MB of the 150MB response. Use ?full=true to get them.
+    static final List<String> BULK_METADATA_KEYS = List.of(
+        "embedding_pca_models",
+        "edges",
+        "entity_prop_defs",
+        "entity_props",
+        "edge_prop_defs",
+        "edge_props"
+    );
+
     public static void main(String[] args) throws ParseException, org.apache.commons.cli.ParseException, IOException {
 
         GrebiCypherRepo cypher = null;
@@ -126,6 +139,10 @@ public class GrebiApi {
         Gson gson = new Gson();
         ResourceLimits limits = ResourceLimits.get();
 
+        // Serialized summary metadata per graph; the underlying metadata is loaded
+        // once at startup and never mutated, so this only ever needs building once.
+        final Map<String, String> summaryMetadataJson = new java.util.concurrent.ConcurrentHashMap<>();
+
         GrebiMcpServer mcpServer = new GrebiMcpServer(
             cypher, postgres, metadata, graphs, queryTemplates
         );
@@ -176,9 +193,24 @@ public class GrebiApi {
                 })
                 .get("/api/v1/graphs/{graph}", ctx -> {
                     ctx.contentType("application/json");
-                    var meta = new java.util.LinkedHashMap<>(metadata.getMetadata(ctx.pathParam("graph")));
-                    meta.remove("embedding_pca_models");
-                    ctx.result(gson.toJson(meta));
+                    var graph = ctx.pathParam("graph");
+                    var full = ctx.queryParam("full");
+                    if(full != null && !full.equalsIgnoreCase("false")) {
+                        // Opt-in to the complete metadata. This can be hundreds of MB
+                        // (the `edges` type-pair matrix dominates), so it is serialized
+                        // on demand and never cached.
+                        var meta = new java.util.LinkedHashMap<>(metadata.getMetadata(graph));
+                        meta.remove("embedding_pca_models");
+                        ctx.result(gson.toJson(meta));
+                        return;
+                    }
+                    ctx.result(summaryMetadataJson.computeIfAbsent(graph, g -> {
+                        var meta = new java.util.LinkedHashMap<>(metadata.getMetadata(g));
+                        for(String k : BULK_METADATA_KEYS) {
+                            meta.remove(k);
+                        }
+                        return gson.toJson(meta);
+                    }));
                 })
                 .get("/api/v1/graphs/{graph}/stats", ctx -> {
                     var graph = ctx.pathParam("graph");

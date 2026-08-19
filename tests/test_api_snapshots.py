@@ -88,8 +88,9 @@ def collect_api_snapshot(base_url: str, subgraph: str) -> Dict[str, Any]:
     # Subgraphs list
     snapshot["subgraphs"] = api_get(base_url, "/api/v1/graphs")
 
-    # Subgraph metadata
-    snapshot["subgraph_metadata"] = api_get(base_url, f"/api/v1/graphs/{subgraph}")
+    # Subgraph metadata (full=true, so the snapshot keeps covering the bulk keys
+    # that the default summary response omits)
+    snapshot["subgraph_metadata"] = api_get(base_url, f"/api/v1/graphs/{subgraph}", {"full": "true"})
 
     # Nodes search (first page)
     nodes_resp = api_get(base_url, f"/api/v1/graphs/{subgraph}/nodes", {"size": "100"})
