@@ -44,6 +44,12 @@ apiUrl: "https://wwwdev.ebi.ac.uk/grebi/"
 # works for dev; prod overrides this with the cross-namespace cluster FQDN.
 embeddingServiceUrl: "http://spot-embedding-service:5000/spot/embed"
 
+# API backend CPU (request and limit are set to the same value). Needs to be >=2
+# so the JVM doesn't fall back to a single-threaded GC; see the UseG1GC note in
+# templates/backend_deployment.yaml.
+backend:
+  cpu: 2
+
 postgres:
   secret:
     name: ""

@@ -42,10 +42,10 @@ spec:
           resources:
             requests:
               memory: 8Gi
-              cpu: 0.5
+              cpu: {{ .Values.backend.cpu }}
             limits:
               memory: 8Gi
-              cpu: 0.5
+              cpu: {{ .Values.backend.cpu }}
           envFrom:
             - secretRef:
                 name: {{ $postgresSecretName }}
@@ -54,8 +54,11 @@ spec:
               value: http://{{ .Release.Name }}-cypher-service:8085
             - name: GREBI_CONTEXT_PATH
               value: {{ .Values.contextPath }}
+            # UseG1GC is set explicitly: the JVM only auto-selects it when it sees
+            # >=2 CPUs, so a low cpu limit silently drops it to SerialGC, whose
+            # full collections stop the whole API for seconds on this heap size.
             - name: JDK_JAVA_OPTIONS
-              value: "-XX:InitialRAMPercentage=60.0 -XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=80.0"
+              value: "-XX:InitialRAMPercentage=60.0 -XX:MinRAMPercentage=60.0 -XX:MaxRAMPercentage=80.0 -XX:+UseG1GC"
             - name: GREBI_QUERY_TEMPLATES_PATH
               value: /data_import/query_templates
             - name: GREBI_EMBEDDING_SERVICE_URL
