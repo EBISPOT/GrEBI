@@ -88,15 +88,15 @@ RUN mvn -B clean package -DskipTests
 # ---- owlmake `om` binary (the ubergraph builder, used by build_ubergraph.nf) ----
 # Downloaded as a release binary from owlmake's GitHub releases (a portable glibc
 # binary that runs on the UBI9 runtime) — no owlmake build needed. Pinned to a
-# tag for reproducible builds; v0.3.0 is the first release with
-# `om ubergraph --graph-prefix`. Override with --build-arg OWLMAKE_RELEASE=vX.Y.Z
-# (or =latest).
+# tag for reproducible builds; the pinned release must support the flags
+# build_ubergraph.nf passes (-i, --graph-prefix, --offline, -o). Override with
+# --build-arg OWLMAKE_RELEASE=vX.Y.Z (or =latest).
 #
 # Arch: `dpkg --print-architecture` is the build/target arch (amd64|arm64) and
 # the release ships per-arch assets, so each per-arch GrEBI build fetches the
 # matching `om`.
 FROM rust:1.90.0-bullseye AS om-dl
-ARG OWLMAKE_RELEASE=v0.4.0
+ARG OWLMAKE_RELEASE=v0.1.0
 RUN arch="$(dpkg --print-architecture)"; base="https://github.com/EBISPOT/owlmake/releases"; \
     if [ "$OWLMAKE_RELEASE" = "latest" ]; then url="$base/latest/download/om-linux-$arch"; \
     else url="$base/download/$OWLMAKE_RELEASE/om-linux-$arch"; fi; \
