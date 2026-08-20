@@ -26,6 +26,7 @@ params:
 result_columns:
   - column_id: chemical
     column_type: GraphNodeId
+    facet: true
   - column_id: study
     column_type: GraphNodeId
 examples:
@@ -38,3 +39,11 @@ examples:
   - title: ATP
     params:
       chemical_id: chebi:15422
+materialise:
+  mode: full
+  params:
+    - param_id: chemical_id
+      filters_column: chemical
+      closure: descendants
+      domain_kind: label
+      domain_root: 'biolink:ChemicalEntity'

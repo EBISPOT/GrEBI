@@ -33,8 +33,10 @@ result_columns:
     column_type: GraphNodeId
   - column_id: relationship
     column_type: string
+    facet: true
   - column_id: from_datasources
     column_type: DatasourceList
+    facet: true
   - column_id: edge_id
     column_type: EdgeId
 examples:
@@ -47,3 +49,11 @@ examples:
   - title: hepatocellular carcinoma
     params:
       disease_id: mondo:0007256
+materialise:
+  mode: full
+  params:
+    - param_id: disease_id
+      filters_column: disease
+      closure: exact
+      domain_kind: id
+      domain_root: 'mondo:0000001'

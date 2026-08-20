@@ -1,0 +1,38 @@
+title: Subtypes of a term (test)
+question: What [subtypes]{subtype} does {term_id} have?
+graphs:
+  - test_ubergraph
+topics:
+  - qc
+# Exercises the full materialise path (derive -> run -> link -> Postgres -> serve)
+# on the tiny test_ubergraph ontology, which has a real biolink:broad_match
+# closure (A <- B <- C <- D). Authored in canonical base-keyed / param-as-closure
+# form: subtype is the base, the queried term is its closure root.
+cypher_match_fragment: |-
+  MATCH (subtype)-[:`biolink:broad_match`*0..1]->(root)-[:sourceId]->(:Id {id: $term_id})
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      subtype { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(subtype) } AS subtype
+cypher_count_fragment: |-
+  WITH DISTINCT subtype
+  RETURN count(*) AS count
+params:
+  - param_id: term_id
+    param_name: Term
+    param_type: SourceId
+result_columns:
+  - column_id: subtype
+    column_type: GraphNodeId
+    facet: true
+materialise:
+  mode: full
+  params:
+    - param_id: term_id
+      filters_column: subtype
+      closure: descendants
+      domain_kind: id
+      domain_root: 'http://example.org/A'
+examples:
+  - title: thing A
+    params:
+      term_id: http://example.org/A

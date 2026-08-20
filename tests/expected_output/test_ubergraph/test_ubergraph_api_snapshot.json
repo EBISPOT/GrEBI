@@ -5788,7 +5788,7 @@
         "cypher_query": "RETURN \"Hello, World!\" AS message",
         "description": "Tester query to see if the pipeline is working",
         "end_time": "2026-07-10 15:40:55",
-        "id": "hello_world",
+        "id": "hello_world_tester",
         "num_results": 1,
         "start_time": "2026-07-10 15:40:54",
         "subgraph": "test_ubergraph",
@@ -5798,6 +5798,23 @@
           "IMPC",
           "GWAS"
         ]
+      }
+    ],
+    "materialised_templates": [
+      {
+        "id": "test_ubergraph_subtypes",
+        "kind": "parameterised",
+        "mode": "full",
+        "params": [
+          {
+            "closure": "descendants",
+            "filters_column": "subtype",
+            "param_id": "term_id",
+            "param_type": "SourceId"
+          }
+        ],
+        "subgraph": "test_ubergraph",
+        "title": "Subtypes of a term (test)"
       }
     ],
     "node_counts_by_datasource": {
