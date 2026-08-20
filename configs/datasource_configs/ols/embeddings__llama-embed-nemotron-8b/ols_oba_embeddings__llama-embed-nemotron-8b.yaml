@@ -5,10 +5,11 @@ download:
     sources:
       - /nfs/production/parkinso/spot/ols4/dev2/out/embeddings/llama-embed-nemotron-8b_pca512/oba.parquet
       - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev2/embeddings/llama-embed-nemotron-8b_pca512/oba.parquet
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev2/embeddings/llama-embed-nemotron-8b_pca512/oba.parquet.gz
 ingests:
   - globs: ["ols_embeddings/llama-embed-nemotron-8b_pca512/oba.parquet"]
     command: '
-      cat $GREBI_INGEST_FILENAME |
+      gzip -dcf $GREBI_INGEST_FILENAME |
       grebi_parquet2jsonl |
       grebi_transform_jsonl
         --json-select-by-value string_type:LABEL
