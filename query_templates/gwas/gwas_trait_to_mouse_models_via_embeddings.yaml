@@ -16,10 +16,19 @@ cypher_match_fragment: |-
   ORDER BY emb_dist ASC LIMIT toInteger($n_top_mp_hits)
   MATCH (mouse_gene:`impc:MouseGene`)-[:`biolink:has_phenotype`]->(mp_phenotype)
   MATCH (mouse_gene)-[:`impc:humanGeneOrthologues`]->(human_gene:`hgnc:Gene`)
-  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
-  MATCH (snp)-[:`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`]->(human_gene)
+  // Collapse to distinct human genes before touching GWAS. The (phenotype,
+  // mouse gene) fan-out repeats each human gene ~2x, and joining SNPs from that
+  // wide side makes the planner drive off the trait's association list (10k+
+  // rows for a common trait) once per row: 78s on prod. Aggregating first gives
+  // the planner a cardinality it can hash-join against instead — 10s.
+  WITH trait, human_gene,
+    collect(DISTINCT {mp: mp_phenotype, dist: emb_dist, mouse_gene: mouse_gene}) AS models
+  MATCH (snp:`gwas:SNP`)-[:`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`]->(human_gene)
+  MATCH (snp)-[assoc:`gwas:associated_with`]->(trait)
+  UNWIND models AS model
   WITH
-    trait, mp_phenotype, emb_dist AS embedding_distance, mouse_gene, human_gene, snp,
+    trait, model.mp AS mp_phenotype, model.dist AS embedding_distance,
+    model.mouse_gene AS mouse_gene, human_gene, snp,
     [id IN assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
     assoc.`gwas:strongest_snp_risk_allele`[0] AS effect_allele,
     assoc.`gwas:p_value`[0] AS p_value,

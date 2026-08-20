@@ -186,6 +186,7 @@ public class GrebiQueryTemplatesRepo {
                     try (InputStream input = Files.newInputStream(file)) {
                         QueryTemplate qt = yaml.loadAs(input, QueryTemplate.class);
                         qt.id = templateId;
+                        normaliseOntologyDatasourceNames(qt);
                         templates.add(qt);
                     }
                 }
@@ -194,6 +195,77 @@ public class GrebiQueryTemplatesRepo {
             throw new RuntimeException("Failed to load query templates", e);
         }
         return Collections.unmodifiableList(templates);
+    }
+
+    // ---------------------------------------------------------------------
+    // TRANSITIONAL: ontology datasource naming (remove once every deployed
+    // release is on one naming scheme).
+    //
+    // The OLS-JSON ingest names per-ontology datasources "OLS.<ont>"; the newer
+    // owlmake/ubergraph ingest derives them from each term's rdfs:isDefinedBy as
+    // "Ontologies.<ont>". Both spellings are in flight — dev and prod currently
+    // serve OLS.*, while templates and subgraph configs are written against
+    // Ontologies.*. Rather than pin templates to whichever release is live (and
+    // break on the mirror image at changeover), we rewrite the datasource
+    // predicate at load time to accept either spelling.
+    //
+    // Matches the one shape templates use:
+    //     "<Ontologies|OLS>.<ont>" IN <var>.`grebi:datasources`
+    // and rewrites it to:
+    //     any(d IN <var>.`grebi:datasources` WHERE d IN ["Ontologies.<ont>", "OLS.<ont>"])
+    // ---------------------------------------------------------------------
+
+    private static final java.util.regex.Pattern DATASOURCE_PREDICATE = java.util.regex.Pattern.compile(
+            "(['\"])(?:Ontologies|OLS)\\.([A-Za-z0-9_]+)\\1\\s+IN\\s+([A-Za-z_][A-Za-z0-9_]*\\.`grebi:datasources`)");
+
+    // Catches any remaining Ontologies./OLS. literal the rewrite above did not
+    // reach, so a template written in an unexpected shape is loud rather than
+    // silently filtering everything out.
+    private static final java.util.regex.Pattern ANY_ONTOLOGY_DATASOURCE_LITERAL = java.util.regex.Pattern.compile(
+            "(['\"])(?:Ontologies|OLS)\\.[A-Za-z0-9_]+\\1");
+
+    static String normaliseOntologyDatasourceNames(String cypher) {
+        if (cypher == null || (!cypher.contains("Ontologies.") && !cypher.contains("OLS."))) {
+            return cypher;
+        }
+        var matcher = DATASOURCE_PREDICATE.matcher(cypher);
+        StringBuilder out = new StringBuilder();
+        while (matcher.find()) {
+            String ontology = matcher.group(2);
+            String datasourcesExpr = matcher.group(3);
+            matcher.appendReplacement(out, java.util.regex.Matcher.quoteReplacement(
+                    "any(__grebi_ds IN " + datasourcesExpr + " WHERE __grebi_ds IN "
+                            + "[\"Ontologies." + ontology + "\", \"OLS." + ontology + "\"])"));
+        }
+        matcher.appendTail(out);
+        return out.toString();
+    }
+
+    // Literals left in the ORIGINAL fragment once the predicates we rewrote are
+    // removed. Scanning the rewritten text instead would match the very literals
+    // the rewrite emits.
+    private static void warnOnUnrecognisedDatasourceLiterals(String templateId, String originalCypher) {
+        if (originalCypher == null) {
+            return;
+        }
+        String residue = DATASOURCE_PREDICATE.matcher(originalCypher).replaceAll("");
+        var leftover = ANY_ONTOLOGY_DATASOURCE_LITERAL.matcher(residue);
+        while (leftover.find()) {
+            logger.warn("Query template '{}' contains ontology datasource literal {} in a shape the " +
+                            "Ontologies./OLS. normaliser does not recognise; it will only match one naming " +
+                            "scheme and may silently return no rows",
+                    templateId, leftover.group());
+        }
+    }
+
+    private static void normaliseOntologyDatasourceNames(QueryTemplate qt) {
+        warnOnUnrecognisedDatasourceLiterals(qt.id, qt.cypher_match_fragment);
+        warnOnUnrecognisedDatasourceLiterals(qt.id, qt.cypher_return_fragment);
+        warnOnUnrecognisedDatasourceLiterals(qt.id, qt.cypher_count_fragment);
+
+        qt.cypher_match_fragment = normaliseOntologyDatasourceNames(qt.cypher_match_fragment);
+        qt.cypher_return_fragment = normaliseOntologyDatasourceNames(qt.cypher_return_fragment);
+        qt.cypher_count_fragment = normaliseOntologyDatasourceNames(qt.cypher_count_fragment);
     }
 
     private static List<QueryTopic> loadQueryTopics(String filePath) {
