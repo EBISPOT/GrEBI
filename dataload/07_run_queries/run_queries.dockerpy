@@ -21,9 +21,20 @@ if ret != 0:
 
 os.system("sleep 20")
 
-from py2neo import Graph
+import orjson
+from neo4j import GraphDatabase
 import yaml
-graph = Graph("bolt://localhost:7687")
+
+# The official driver, NOT py2neo. py2neo's Graph.run() ends in
+# pull(result, -1), which buffers the whole result set client-side before
+# yielding record one; on gwas_by_disease_location that stalled the client long
+# enough for Neo4j's Bolt outbound-buffer throttle to sever the connection after
+# its 15-minute limit ("Outbound network buffer has failed to flush"). The
+# official driver streams with a bounded fetch size, so memory stays flat
+# regardless of result size.
+driver = GraphDatabase.driver("bolt://localhost:7687", auth=None,
+                              max_connection_lifetime=24 * 3600,
+                              connection_acquisition_timeout=3600)
 
 subgraph = os.environ['GREBI_SUBGRAPH']
 templates_dir = sys.argv[1]
@@ -67,14 +78,21 @@ for file in template_files:
         print(cypher)
 
     n = 0
-    with open(f"./query_results/{query_id}.results.jsonl", "w") as f:
-        # Iterate the cursor directly (streaming) rather than .data() — the big
-        # materialise queries produce millions of rows and .data() would collect
-        # them all into memory at once.
-        for record in graph.run(cypher):
-            n = n + 1
-            json.dump(dict(record), f, skipkeys=True)
-            f.write("\n")
+    # Binary mode: orjson.dumps returns bytes, and skipping the text encode is a
+    # measurable part of the win on multi-GB outputs.
+    with open(f"./query_results/{query_id}.results.jsonl", "wb") as f:
+        # Genuine streaming: session.run() yields records as they arrive, bounded
+        # by fetch_size, so peak memory is one batch rather than the whole result.
+        with driver.session(fetch_size=10000) as session:
+            for record in session.run(cypher):
+                n = n + 1
+                # record.data() recursively converts nodes/rels/maps to plain
+                # Python. default=str is a safety net for anything orjson has no
+                # native encoding for (e.g. neo4j temporal/spatial types), which
+                # would otherwise abort the run hours in rather than degrade.
+                f.write(orjson.dumps(record.data(), default=str,
+                                     option=orjson.OPT_NON_STR_KEYS))
+                f.write(b"\n")
 
     end_time = datetime.now()
 
@@ -84,6 +102,20 @@ for file in template_files:
     template_mat = template.get("materialise") or {}
     apply_budget = (not gm.is_standalone(template)) or (template_mat.get("budget_rows") is not None)
     budget = gm.budget_rows(template)
+
+    # A parameterised template that materialises nothing is almost always a broken
+    # template, not an empty graph — and it fails silently: the budget check below
+    # only trips on n > budget, so zero rows sails through and we publish an empty
+    # table that serves empty results forever. Templates that are legitimately
+    # empty for a graph can opt out with materialise.allow_empty: true.
+    if n == 0 and not gm.is_standalone(template) and not template_mat.get("allow_empty"):
+        msg = (f"Materialised query {query_id} produced 0 rows. This usually means the "
+               f"template's domain constraint matches nothing in this graph. Set "
+               f"materialise.allow_empty: true if that is expected here.")
+        if budget_override:
+            print("WARNING: " + msg + " (continuing: GREBI_MATERIALISE_BUDGET_OVERRIDE=true)")
+        else:
+            raise RuntimeError(msg)
     if apply_budget and n > budget:
         msg = (f"Materialised query {query_id} produced {n} rows, exceeding the "
                f"build-size budget of {budget}.")

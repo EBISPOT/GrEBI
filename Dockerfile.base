@@ -56,8 +56,16 @@ RUN arch="$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/')" && \
     chmod +x /usr/bin/caddy
 
 # ---- Python packages (+ supervisor via pip; not in RHEL repos) ----
+# neo4j: the official driver. py2neo is kept for the notebooks but must not be
+# used for materialisation — its Graph.run() calls pull(result, -1), i.e. it
+# buffers the entire result set in memory before yielding the first record,
+# which cannot survive a multi-million-row materialise query.
+# orjson: 6.4x faster than stdlib json on these payloads (1687 vs 264 MB/s,
+# measured on real gwas_by_cell_type rows). Not the bottleneck — the observed
+# end-to-end rate was 10.6 MB/s, i.e. serialisation was under 3% of it and
+# py2neo was the rest — so this is a cheap margin, not the fix.
 RUN pip3 install --no-cache-dir \
-    requests pyyaml pandas tabulate openpyxl py2neo supervisor
+    requests pyyaml pandas tabulate openpyxl py2neo neo4j orjson supervisor
 
 # ---- Java 21 (Amazon Corretto tarball) ----
 RUN ARCH=$(uname -m) && \
