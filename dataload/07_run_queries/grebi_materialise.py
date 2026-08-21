@@ -233,6 +233,60 @@ def _assert_no_unbound_params(template, query):
             )
 
 
+# ---------------------------------------------------------------------------
+# TRANSITIONAL: ontology datasource naming. Mirrors
+# GrebiQueryTemplatesRepo.normaliseOntologyDatasourceNames on the Java side —
+# keep the two in step until every deployed release uses one naming scheme.
+#
+# The OLS-JSON ingest names per-ontology datasources "OLS.<ont>"; the newer
+# owlmake/ubergraph ingest derives "Ontologies.<ont>" from rdfs:isDefinedBy.
+# Templates are written against Ontologies.*, deployed graphs serve OLS.*.
+#
+# The API rewrote this at template load time, but the dataload reads the YAML
+# directly and so kept the raw literal — which matches nothing on a deployed
+# graph. That is why disease_to_phenotypes materialised 0 rows while serving
+# fine live: the two paths disagreed about what the template meant.
+# ---------------------------------------------------------------------------
+
+_DATASOURCE_PREDICATE = re.compile(
+    r"""(['"])(?:Ontologies|OLS)\.([A-Za-z0-9_]+)\1\s+IN\s+"""
+    r"""([A-Za-z_][A-Za-z0-9_]*\.`grebi:datasources`)"""
+)
+
+_ANY_ONTOLOGY_DATASOURCE_LITERAL = re.compile(
+    r"""(['"])(?:Ontologies|OLS)\.[A-Za-z0-9_]+\1"""
+)
+
+
+def normalise_ontology_datasource_names(cypher):
+    """Accept either naming for `"<Ontologies|OLS>.<ont>" IN <var>.`grebi:datasources``."""
+    if not cypher or ("Ontologies." not in cypher and "OLS." not in cypher):
+        return cypher
+
+    def _repl(m):
+        ontology, datasources_expr = m.group(2), m.group(3)
+        return (f'any(__grebi_ds IN {datasources_expr} WHERE __grebi_ds IN '
+                f'["Ontologies.{ontology}", "OLS.{ontology}"])')
+
+    return _DATASOURCE_PREDICATE.sub(_repl, cypher)
+
+
+def warn_on_unrecognised_datasource_literals(template_id, cypher):
+    """Be loud about literals in a shape the rewrite cannot reach.
+
+    Scans the ORIGINAL fragment with the handled predicates stripped — scanning
+    the rewritten text would match the literals the rewrite itself emits.
+    """
+    if not cypher:
+        return
+    residue = _DATASOURCE_PREDICATE.sub("", cypher)
+    for m in _ANY_ONTOLOGY_DATASOURCE_LITERAL.finditer(residue):
+        print(f"WARNING: query template '{template_id}' contains ontology datasource "
+              f"literal {m.group()} in a shape the Ontologies./OLS. normaliser does not "
+              f"recognise; it will only match one naming scheme and may silently "
+              f"materialise no rows")
+
+
 def derive_materialise_query(template):
     """Full derived Cypher for a parameterised materialised template.
 
@@ -270,11 +324,17 @@ def derive_materialise_query(template):
         query = match + "\n" + ret
 
     _assert_no_unbound_params(template, query)
-    return query
+
+    tid = template.get("id") or "<unknown>"
+    for frag in ("cypher_match_fragment", "cypher_return_fragment", "cypher_count_fragment"):
+        warn_on_unrecognised_datasource_literals(tid, template.get(frag))
+    return normalise_ontology_datasource_names(query)
 
 
 def standalone_query(template):
-    return (template.get("materialise") or {}).get("cypher")
+    cypher = (template.get("materialise") or {}).get("cypher")
+    warn_on_unrecognised_datasource_literals(template.get("id") or "<unknown>", cypher)
+    return normalise_ontology_datasource_names(cypher)
 
 
 def query_to_run(template):
