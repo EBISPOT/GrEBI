@@ -60,12 +60,11 @@ RUN arch="$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/')" && \
 # used for materialisation — its Graph.run() calls pull(result, -1), i.e. it
 # buffers the entire result set in memory before yielding the first record,
 # which cannot survive a multi-million-row materialise query.
-# orjson: 6.4x faster than stdlib json on these payloads (1687 vs 264 MB/s,
-# measured on real gwas_by_cell_type rows). Not the bottleneck — the observed
-# end-to-end rate was 10.6 MB/s, i.e. serialisation was under 3% of it and
-# py2neo was the rest — so this is a cheap margin, not the fix.
+# Serialisation stays on stdlib json: measured on real gwas_by_cell_type rows it
+# does 264 MB/s, already 25x the pipeline's observed 10.6 MB/s end-to-end rate,
+# so it is under 3% of the time and not worth a dependency.
 RUN pip3 install --no-cache-dir \
-    requests pyyaml pandas tabulate openpyxl py2neo neo4j orjson supervisor
+    requests pyyaml pandas tabulate openpyxl py2neo neo4j supervisor
 
 # ---- Java 21 (Amazon Corretto tarball) ----
 RUN ARCH=$(uname -m) && \

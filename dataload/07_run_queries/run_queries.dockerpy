@@ -21,7 +21,6 @@ if ret != 0:
 
 os.system("sleep 20")
 
-import orjson
 from neo4j import GraphDatabase
 import yaml
 
@@ -78,21 +77,18 @@ for file in template_files:
         print(cypher)
 
     n = 0
-    # Binary mode: orjson.dumps returns bytes, and skipping the text encode is a
-    # measurable part of the win on multi-GB outputs.
-    with open(f"./query_results/{query_id}.results.jsonl", "wb") as f:
+    with open(f"./query_results/{query_id}.results.jsonl", "w") as f:
         # Genuine streaming: session.run() yields records as they arrive, bounded
         # by fetch_size, so peak memory is one batch rather than the whole result.
         with driver.session(fetch_size=10000) as session:
             for record in session.run(cypher):
                 n = n + 1
                 # record.data() recursively converts nodes/rels/maps to plain
-                # Python. default=str is a safety net for anything orjson has no
+                # Python. default=str is a safety net for anything json has no
                 # native encoding for (e.g. neo4j temporal/spatial types), which
                 # would otherwise abort the run hours in rather than degrade.
-                f.write(orjson.dumps(record.data(), default=str,
-                                     option=orjson.OPT_NON_STR_KEYS))
-                f.write(b"\n")
+                json.dump(record.data(), f, skipkeys=True, default=str)
+                f.write("\n")
 
     end_time = datetime.now()
 
