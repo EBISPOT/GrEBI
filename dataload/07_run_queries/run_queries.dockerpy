@@ -14,6 +14,20 @@ import grebi_materialise as gm
 neo_mem = os.environ['NEO_MEM']
 os.environ['JAVA_OPTS'] = f"--add-modules jdk.incubator.vector -Xms{neo_mem} -Xmx{neo_mem}"
 
+# Lift the per-transaction memory caps, as 06_create_neo_db/neo4j_import.sh
+# already does for the import. Neo4j defaults dbms.memory.transaction.total.max
+# to 70% of heap, so a 500g heap caps transactions at 350 GiB — and a materialise
+# query over the full graph blows through that: gwas_by_location died with
+# "allocation of an extra 2.0 MiB would use more than the limit 350.0 GiB" after
+# streaming 72.7 GB of results. The RETURN DISTINCT is what costs the memory: the
+# distinct set is held server-side for the life of the query.
+#
+# 0 = unlimited, bounded in practice by the heap itself. These queries are the
+# only thing running against this throwaway Neo4j, so there is nothing else to
+# protect it from.
+os.environ['NEO4J_dbms_memory_transaction_total_max'] = '0'
+os.environ['NEO4J_dbms_memory_transaction_max'] = '0'
+
 ret = os.system("neo4j start --verbose")
 if ret != 0:
     print("Neo4j did not start correctly. Exiting.")
