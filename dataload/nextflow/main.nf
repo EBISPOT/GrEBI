@@ -43,6 +43,11 @@ params.neo_query_mem = "140g"
 params.pg_shared_buffers = "2GB"
 params.pg_work_mem = "256MB"
 params.pg_maintenance_work_mem = "1GB"
+// Index-build maintenance_work_mem for the external Postgres specifically; it
+// sizes the parallel-build shared memory segment and that server is not ours to
+// resize. Defaulted here so it is never undefined — populate_external_postgres
+// tests it with a ternary and would silently omit the setting otherwise.
+params.external_pg_maintenance_work_mem = "1GB"
 params.pg_parallel_workers = 2
 params.pg_max_wal_size = "4GB"
 params.pg_build_shared_buffers = "2GB"
