@@ -42,8 +42,10 @@ jobs:
           # (~28 GB free) — too small for the Postgres index build, which fails
           # with "No space left on device". Relocate the scratch onto the much
           # larger /mnt partition (~70 GB). dataload_local.sh readlink-resolves
-          # ./tmp and bind-mounts the resolved path into every container, so the
-          # symlink is transparent to the pipeline.
+          # ./tmp and bind-mounts the resolved path into the orchestrator, and
+          # local_4g_nextflow.config mounts an out-of-tree NXF_WORK into every
+          # nested process container, so the symlink is transparent to the
+          # pipeline.
           sudo mkdir -p /mnt/grebi-tmp
           sudo chown "$(id -u):$(id -g)" /mnt/grebi-tmp
           rm -rf tmp
