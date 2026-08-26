@@ -58,10 +58,12 @@ jobs:
       - name: Locate PDF
         id: find-pdf
         run: |
-          PDF_PATH=$(find out/dismech -name 'grebi-docs.pdf' -type f | head -1)
+          # publishDir is the flat out/ dir (GREBI_OUT_DIR has no per-subgraph
+          # component), so search the whole tree rather than out/<subgraph>.
+          PDF_PATH=$(find out -name 'grebi-docs.pdf' -type f | head -1)
           if [ -z "$PDF_PATH" ]; then
             echo "ERROR: grebi-docs.pdf not found in output"
-            find out/dismech -type f -name '*.pdf' || true
+            find out -type f -name '*.pdf' || true
             exit 1
           fi
           echo "pdf_path=$PDF_PATH" >> "$GITHUB_OUTPUT"
