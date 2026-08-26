@@ -28,8 +28,11 @@ process package_postgres {
     # after the OOM-killed xz closed the pipe). Level tunable (-3 faster, -9e
     # max ratio). See package_neo.nf.
     tar --warning=no-file-changed -chf - ${postgres_data} | xz -T${task.cpus} -6 > postgres.tar.xz
-    tar_rc=\${PIPESTATUS[0]}
-    xz_rc=\${PIPESTATUS[1]}
+    # capture in ONE command: PIPESTATUS is reset by every command, so reading
+    # [0] and [1] in separate assignments leaves [1] unbound (set -u aborts)
+    rc=("\${PIPESTATUS[@]}")
+    tar_rc=\${rc[0]}
+    xz_rc=\${rc[1]}
     set -e
     # tar can exit 1 for the benign file-changed warning; xz must succeed outright.
     if [ "\$tar_rc" -gt 1 ] || [ "\$xz_rc" -ne 0 ]; then
