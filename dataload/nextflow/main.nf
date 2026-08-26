@@ -337,8 +337,25 @@ workflow {
     prepare_postgres_autocomplete(indexed.names_txt)
     // autocomplete_pgbin: [sg, autocomplete_pgbin]
 
-    prepare_postgres_mat_queries(linked_results)
-    // mat_queries_pgbin: [sg, mat_queries_pgbin]
+    // Pair each query's linked results with its metadata json (which names the
+    // storage table + typed columns), keyed on [sg, query_id] via filenames:
+    // {qid}.linked_results.jsonl / {qid}.json. queries.json is the per-subgraph
+    // list, not a per-query file.
+    mat_query_metas = run_materialised_queries.out.metadatas
+        .flatMap { sg, files ->
+            (files instanceof List ? files : [files])
+                .findAll { f -> f.simpleName != 'queries' }
+                .collect { f -> [[sg, f.simpleName], f] }
+        }
+
+    prepare_mat_queries_input = linked_results
+        .map { sg, f -> [[sg, f.simpleName], f] }
+        .combine(mat_query_metas, by: 0)
+        .map { key, linked, meta -> [key[0], linked, meta] }
+    // → [sg, linked_results.jsonl, {qid}.json]
+
+    prepare_postgres_mat_queries(prepare_mat_queries_input)
+    // mat_queries_pgbin/columns/indexes: [sg, matq_{sg}_{qid}.*]
 
     // === STEP 8b: CREATE POSTGRESQL (cross-subgraph) ===
     // Pair edges with graph metadata for prepare_postgres_edges
@@ -384,6 +401,14 @@ workflow {
         .map { sg, f -> f }
         .collect()
         .map { files -> sortPaths(files) }
+    all_mat_queries_cols = prepare_postgres_mat_queries.out.columns
+        .map { sg, f -> f }
+        .collect()
+        .map { files -> sortPaths(files) }
+    all_mat_queries_indexes = prepare_postgres_mat_queries.out.indexes
+        .map { sg, f -> f }
+        .collect()
+        .map { files -> sortPaths(files) }
     all_metadata_jsons = add_query_metadatas_to_graph_metadata.out
         .map { sg, meta -> meta }
         .collect()
@@ -394,7 +419,8 @@ workflow {
         all_edges_pgbins, all_edges_cols,
         all_nodes_pgbins, all_nodes_cols,
         all_blobs_pgbins,
-        all_autocomplete_pgbins, all_mat_queries_pgbins,
+        all_autocomplete_pgbins,
+        all_mat_queries_pgbins, all_mat_queries_cols, all_mat_queries_indexes,
         all_metadata_jsons
     )
 
@@ -404,7 +430,8 @@ workflow {
             all_edges_pgbins, all_edges_cols,
             all_nodes_pgbins, all_nodes_cols,
             all_blobs_pgbins,
-            all_autocomplete_pgbins, all_mat_queries_pgbins,
+            all_autocomplete_pgbins,
+            all_mat_queries_pgbins, all_mat_queries_cols, all_mat_queries_indexes,
             all_metadata_jsons
         )
     }

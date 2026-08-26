@@ -424,17 +424,41 @@ templates (fail unless `GREBI_MATERIALISE_BUDGET_OVERRIDE=true`); standalone
 queries are budgeted only if they set `materialise.budget_rows`. Opt a template
 out entirely with `materialise: false`.
 
-### Serving (closure-at-query-time)
+### Storage (typed per-query tables)
+
+Each materialised query — parameterised and standalone alike — gets its own typed
+table `matq_{sg}_{query_id}` (truncated + 8-char sha1 suffix only past Postgres's
+63-byte identifier limit; the name is computed once at materialise time and
+recorded in the metadata, never re-derived). The physical schema is derived from
+`result_columns` by `grebi_make_postgres_mat_queries`:
+
+- `GraphNodeId` → `"<col>_id" TEXT[]` (source ids; GIN-indexed when it is a
+  closure filter column) + `"<col>_name" TEXT`
+- `DatasourceList` → `"<col>" TEXT[]`; `float` → `double precision`;
+  `string`/`EdgeId` → `TEXT`
+- plus `row_number INT` and `payload BYTEA` — the row's exact linked JSON,
+  served verbatim so the response shape is independent of the typed projection.
+
+The writer emits `.columns`/`.indexes` DDL sidecars alongside the pgbin (like the
+nodes/edges writers); `load_postgres.py` builds the tables and indexes from them.
+
+### Serving (closure-at-query-time, metadata-driven)
+
+Serving reads its directives — table, columns, per-param `filters_column` +
+closure semantics — from the build's `graph_metadata` entry (`MaterialisedBuild`),
+not from the deployed YAML, so it always matches the stored rows even when
+update-query-templates has moved the templates on since the dataload. Metadata
+without a `table` (a pre-typed-table build) falls back to live Cypher.
 
 `GrebiPostgresClient.searchMaterialisedParameterised` resolves the queried value P
 to the set of source CURIEs in its closure — P plus its `biolink:broad_match`
-descendants (or ancestors, or just P for `exact`) via the precomputed closure in
-`edges_{sg}` — then keeps the stored rows whose base column's `id` intersects that
-set (`jsonb_exists_any(data -> col -> 'id', curies)`). Counts are `count(*)` over the
-filtered rows (flat, cheap). `counts_only` stores a per-base `_count` histogram and
-sums it over the closure (data served live). `GrebiApi.serveQueryTemplate` routes
-`/query/{id}` and `.csv` to Postgres when a build exists in
-`graph_metadata.materialised_templates`, else falls back to live Cypher.
+descendants (or just P for `exact`) via the precomputed closure in `edges_{sg}` —
+then keeps the stored rows where `"<col>_id" && curies` (array overlap, satisfied
+by the GIN index). Counts are `count(*)` over the filtered rows (flat, cheap).
+`counts_only` stores a per-base `_count` histogram and sums it over the closure
+(data served live). `GrebiApi.serveQueryTemplate` routes `/query/{id}` and `.csv`
+to Postgres when a build exists in `graph_metadata.materialised_templates`, else
+falls back to live Cypher.
 
 ### Faceting + free-text (materialised only)
 
@@ -443,12 +467,13 @@ two things the live Cypher path can't do cheaply over a streamed result:
 
 - **Facets** — a top-N value breakdown (`GROUP BY`) for each result column marked
   `facet: true`, over the closure-filtered rows. The extraction depends on the
-  column type: array elements for a `DatasourceList`, the node name for a
-  `GraphNodeId` (`data -> col -> 'grebi:name' ->> 0`), the scalar for a `string`.
+  column type: `unnest("<col>")` for a `DatasourceList`, `"<col>_name"` for a
+  `GraphNodeId`, the typed column for a `string`.
   Skipped above `FACET_MAX_ROWS` (too big to `GROUP BY` interactively) and capped at
   `FACET_MAX_VALUES` per column. Returned in the page's `facetFieldToCounts`.
 - **Free-text** — an optional `q=` narrows the closure-filtered rows
-  (`(data)::text ILIKE %q%`), and is reflected in the facets, counts, paging and CSV.
+  (`convert_from(payload,'UTF8') ILIKE %q%`), and is reflected in the facets,
+  counts, paging and CSV.
 
 Both are served only from the full-materialise Postgres path; live and `counts_only`
 templates ignore `q` and return no facets. The `/queries` UI shows the facet

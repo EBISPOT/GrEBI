@@ -47,10 +47,37 @@ The functions here are pure string transforms so they can be unit-tested without
 Neo4j (see test_grebi_materialise.py).
 """
 
+import hashlib
 import re
 
 
 DEFAULT_BUDGET_ROWS = 15_000_000
+
+# Postgres truncates identifiers to 63 bytes (NAMEDATALEN - 1).
+PG_MAX_IDENTIFIER = 63
+
+
+def pg_identifier(name):
+    """`name`, made safe against Postgres's 63-byte identifier limit.
+
+    Postgres would otherwise truncate silently, and two long names sharing a
+    prefix would collide; keep the readable head and append a short hash of the
+    full name only when it would overflow.
+    """
+    if len(name) <= PG_MAX_IDENTIFIER:
+        return name
+    digest = hashlib.sha1(name.encode()).hexdigest()[:8]
+    return name[:PG_MAX_IDENTIFIER - 9] + "_" + digest
+
+
+def table_name(subgraph, query_id):
+    """The Postgres table a materialised query's rows are stored in.
+
+    One typed table per (subgraph, query). Computed once here at materialise
+    time and recorded in the query metadata — every consumer (loader, API)
+    reads the recorded name rather than re-deriving it.
+    """
+    return pg_identifier(f"matq_{subgraph}_{query_id}")
 
 
 def is_materialised(template):
@@ -477,6 +504,31 @@ def query_to_run(template):
     if is_parameterised(template):
         return derive_materialise_query(template)
     raise ValueError("template is not materialised")
+
+
+def storage_columns(template):
+    """The logical columns of this query's storage table, recorded in metadata.
+
+    Full mode stores every result column (with its serving attributes); a
+    counts_only histogram stores only the base column(s) plus `_count`. The
+    physical (typed) schema is derived from these by the pgcopy writer.
+    """
+    cols = template.get("result_columns") or []
+    if is_parameterised(template) and materialise_mode(template) == "counts_only":
+        bases = set(_base_columns(template))
+        out = [{"column_id": c.get("column_id"), "column_type": c.get("column_type")}
+               for c in cols if c.get("column_id") in bases]
+        out.append({"column_id": "_count", "column_type": "int"})
+        return out
+    out = []
+    for c in cols:
+        entry = {"column_id": c.get("column_id"), "column_type": c.get("column_type")}
+        if c.get("optional"):
+            entry["optional"] = True
+        if c.get("facet"):
+            entry["facet"] = True
+        out.append(entry)
+    return out
 
 
 def serving_metadata(template):

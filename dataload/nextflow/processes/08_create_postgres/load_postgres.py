@@ -108,6 +108,19 @@ def discover_subgraphs() -> list[str]:
     return result
 
 
+def discover_matq_tables(sg: str) -> list[str]:
+    """The subgraph's materialised query tables, one per matq_{sg}_*.pgbin.
+
+    The pgbin (and its .columns/.indexes sidecars) are named after the table —
+    the name was computed once at materialise time (incl. the 63-char
+    truncate+hash rule), so it is never re-derived here.
+    """
+    return sorted(
+        os.path.basename(f).removesuffix(".pgbin")
+        for f in glob.glob(f"matq_{sg}_*.pgbin")
+    )
+
+
 # ---------------------------------------------------------------------------
 # Index creation
 # ---------------------------------------------------------------------------
@@ -158,9 +171,13 @@ def create_indexes_for_subgraph(
     # Autocomplete index
     stmts.append(f'CREATE INDEX "idx_autocomplete_{sg}_trgm" ON "autocomplete_{sg}" USING gin (label gin_trgm_ops);')
 
-    # Materialised queries indexes
-    stmts.append(f'CREATE INDEX "idx_mat_queries_{sg}_query_id" ON "materialised_queries_{sg}" USING btree (query_id);')
-    stmts.append(f'CREATE INDEX "idx_mat_queries_{sg}_query_id_row" ON "materialised_queries_{sg}" USING btree (query_id, row_number);')
+    # Materialised query tables: one typed table per query, each shipping its
+    # own CREATE INDEX statements in a .indexes sidecar (GIN on the closure
+    # filter columns + btree on row_number).
+    matq_tables = discover_matq_tables(sg)
+    for table in matq_tables:
+        with open(f"{table}.indexes") as f:
+            stmts.extend(line.strip() for line in f if line.strip())
 
     print(f"  Creating {len(stmts)} indexes for {sg}...", flush=True)
     t0 = time.time()
@@ -169,8 +186,7 @@ def create_indexes_for_subgraph(
         f'"nodes_{sg}"',
         f'"blobs_{sg}"',
         f'"autocomplete_{sg}"',
-        f'"materialised_queries_{sg}"',
-    ]
+    ] + [f'"{table}"' for table in matq_tables]
 
     if parallel_workers > 0:
         print(f"  Setting parallel_workers={parallel_workers} on {len(tables)} tables for {sg}", flush=True)
@@ -252,7 +268,6 @@ def load_all(
         nodes_pgbins = sorted(Path(p) for p in glob.glob(f"postgres_nodes_{sg}_*.pgbin"))
         blobs_pgbins = sorted(Path(p) for p in glob.glob(f"postgres_blobs_{sg}_*.pgbin") if os.path.getsize(p) > 0)
         autocomplete_pgbins = sorted(Path(p) for p in glob.glob(f"autocomplete_{sg}_*.pgbin") if os.path.getsize(p) > 0)
-        mat_queries_pgbins = sorted(Path(p) for p in glob.glob(f"mat_queries_{sg}_*.pgbin") if os.path.getsize(p) > 0)
 
         drop_prefix = f'DROP TABLE IF EXISTS "{{table}}" CASCADE;\n' if drop_existing else ""
 
@@ -287,10 +302,15 @@ def load_all(
             f'CREATE TABLE "autocomplete_{sg}" (label TEXT NOT NULL) WITH (fillfactor=100);'
         load_table(f"autocomplete_{sg}", create_autocomplete, autocomplete_pgbins, psql_base)
 
-        # --- MATERIALISED QUERIES TABLE ---
-        create_mat = drop_prefix.format(table=f"materialised_queries_{sg}") + \
-            f'CREATE TABLE "materialised_queries_{sg}" (query_id TEXT NOT NULL, row_number INT NOT NULL, data JSONB NOT NULL) WITH (fillfactor=100);'
-        load_table(f"materialised_queries_{sg}", create_mat, mat_queries_pgbins, psql_base)
+        # --- MATERIALISED QUERY TABLES (one typed table per query) ---
+        # A header-only pgbin (a query that legitimately materialised 0 rows)
+        # still creates its (empty) table, so serving stays metadata-driven.
+        for table in discover_matq_tables(sg):
+            with open(f"{table}.columns") as f:
+                matq_cols = ",".join(line.strip() for line in f if line.strip())
+            create_matq = drop_prefix.format(table=table) + \
+                f'CREATE TABLE "{table}" ({matq_cols}) WITH (fillfactor=100);'
+            load_table(table, create_matq, [Path(f"{table}.pgbin")], psql_base)
 
         # --- INDEXES ---
         create_indexes_for_subgraph(
@@ -307,8 +327,7 @@ def load_all(
             f'ANALYZE "nodes_{sg}";',
             f'ANALYZE "blobs_{sg}";',
             f'ANALYZE "autocomplete_{sg}";',
-            f'ANALYZE "materialised_queries_{sg}";',
-        ])
+        ] + [f'ANALYZE "{table}";' for table in discover_matq_tables(sg)])
         run_psql(analyze_stmts, f"analyze_{sg}", psql_base)
 
     # --- GRAPH METADATA TABLE ---

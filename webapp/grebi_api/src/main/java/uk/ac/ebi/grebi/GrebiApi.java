@@ -332,9 +332,14 @@ public class GrebiApi {
                         facetFields.add(facetField);
                     }
                     var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"));
+                    var standaloneBuild = findMaterialisedBuild(
+                            metadata, ctx.pathParam("graph"), "materialised_queries", ctx.pathParam("queryid"));
+                    if (standaloneBuild == null) {
+                        throw new NotFoundResponse("Materialised query " + ctx.pathParam("queryid")
+                                + " not found for graph " + ctx.pathParam("graph"));
+                    }
                     var res = postgres.searchMaterialisedQueryResultsPaginated(
-                            ctx.pathParam("graph"), ctx.pathParam("queryid"),
-                            searchText, filters, facetFields, page);
+                            standaloneBuild, searchText, filters, facetFields, page);
                     ctx.contentType("application/json");
                     ctx.result(gson.toJson(res));
                 })
@@ -392,11 +397,12 @@ public class GrebiApi {
                             httpRes.setStatus(200);
                             var writer = httpRes.getWriter();
 
-                            if (template.isParameterisedMaterialised()
-                                    && !template.materialise.isCountsOnly()
-                                    && isMaterialisedBuilt(metadata, graph, templateId)) {
+                            var build = template.isParameterisedMaterialised()
+                                    ? findMaterialisedBuild(metadata, graph, "materialised_templates", templateId)
+                                    : null;
+                            if (build != null && !build.isCountsOnly()) {
                                 return java.util.concurrent.CompletableFuture.runAsync(() ->
-                                        postgres.streamMaterialisedParameterisedCsv(graph, template, params, searchText, sort, writer));
+                                        postgres.streamMaterialisedParameterisedCsv(graph, template, build, params, searchText, sort, writer));
                             }
 
                             if (cypher == null) {
@@ -855,27 +861,29 @@ public class GrebiApi {
         return null;
     }
 
-    /** Whether a parameterised materialised build for this template exists in the
-     *  graph's Postgres metadata (i.e. the dataload precomputed it). */
-    static boolean isMaterialisedBuilt(GrebiMetadataRepo metadata, String graph, String templateId) {
+    /** The typed-table build recorded for an entry with this id in the given
+     *  graph_metadata list, or null when there is none (or the metadata predates
+     *  typed tables — then serving falls back to live Cypher). */
+    static uk.ac.ebi.grebi.db.MaterialisedBuild findMaterialisedBuild(
+            GrebiMetadataRepo metadata, String graph, String metadataKey, String id) {
         try {
             var md = metadata.getMetadata(graph);
-            var el = md.get("materialised_templates");
+            var el = md.get(metadataKey);
             if (el == null || !el.isJsonArray()) {
-                return false;
+                return null;
             }
             for (var e : el.getAsJsonArray()) {
                 if (e.isJsonObject()) {
                     var idEl = e.getAsJsonObject().get("id");
-                    if (idEl != null && templateId.equals(idEl.getAsString())) {
-                        return true;
+                    if (idEl != null && id.equals(idEl.getAsString())) {
+                        return uk.ac.ebi.grebi.db.MaterialisedBuild.fromMetadata(e);
                     }
                 }
             }
         } catch (Exception ignored) {
             // Missing/malformed metadata -> treat as not built (fall back to live).
         }
-        return false;
+        return null;
     }
 
     /**
@@ -888,17 +896,20 @@ public class GrebiApi {
             String graph, QueryTemplate template, Map<String, List<String>> params,
             String searchText, boolean resolve, org.springframework.data.domain.Pageable page) {
 
-        if (template.isParameterisedMaterialised() && isMaterialisedBuilt(metadata, graph, template.id)) {
-            if (template.materialise.isCountsOnly()) {
+        var build = template.isParameterisedMaterialised()
+                ? findMaterialisedBuild(metadata, graph, "materialised_templates", template.id)
+                : null;
+        if (build != null) {
+            if (build.isCountsOnly()) {
                 if (cypher == null) {
                     throw new IllegalStateException("Cypher service unavailable for counts_only template " + template.id);
                 }
                 // Data is served live (no free-text narrow) and the flat total from Postgres.
-                long total = postgres.materialisedParameterisedCount(graph, template, params);
+                long total = postgres.materialisedParameterisedCount(graph, template, build, params);
                 return cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page, total);
             }
             // Full materialised: closure filter + optional free-text + facets from Postgres.
-            return postgres.runMaterialisedParameterisedPaginated(graph, template, params, searchText, resolve, page);
+            return postgres.runMaterialisedParameterisedPaginated(graph, template, build, params, searchText, resolve, page);
         }
 
         if (cypher == null) {

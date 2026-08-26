@@ -138,6 +138,9 @@ for file in template_files:
 
     # Assemble the per-query metadata. Keep title/description/uses_datasources at
     # the top level (the /tables UI + graph_metadata consumers read them there).
+    # `table` + `columns` describe the typed storage table this query's rows go
+    # into — computed once here; the pgcopy writer, loader and API all read them
+    # from this metadata rather than re-deriving.
     mat = template.get("materialise") or {}
     query_metadata = {
         "id": query_id,
@@ -145,6 +148,8 @@ for file in template_files:
         "title": template.get("title"),
         "description": template.get("description"),
         "uses_datasources": mat.get("uses_datasources"),
+        "table": gm.table_name(subgraph, query_id),
+        "columns": gm.storage_columns(template),
         "start_time": start_time.strftime("%Y-%m-%d %H:%M:%S"),
         "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S"),
         "time": (end_time - start_time).total_seconds(),

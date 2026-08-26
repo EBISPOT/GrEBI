@@ -12,6 +12,8 @@ process create_postgres {
     path(blobs_pgbins)
     path(autocomplete_pgbins)
     path(mat_queries_pgbins)
+    path(mat_queries_columns)
+    path(mat_queries_indexes)
     path(metadata_jsons)
 
     output:

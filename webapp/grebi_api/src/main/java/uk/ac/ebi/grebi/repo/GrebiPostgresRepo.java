@@ -257,11 +257,11 @@ public class GrebiPostgresRepo {
      * Search materialised query results with optional text search, filters, and facets.
      */
     public GrebiFacetedResultsPage<Map<String, Object>> searchMaterialisedQueryResultsPaginated(
-            String graph, String queryId, String searchText,
+            uk.ac.ebi.grebi.db.MaterialisedBuild build, String searchText,
             Map<String, List<String>> filters, List<String> facetFields,
             Pageable pageable) {
 
-        var result = pgClient.searchMaterialisedQueryResults(graph, queryId, searchText,
+        var result = pgClient.searchMaterialisedQueryResults(build, searchText,
                 filters, facetFields, (int) pageable.getOffset(), pageable.getPageSize());
 
         return new GrebiFacetedResultsPage<>(
@@ -274,7 +274,8 @@ public class GrebiPostgresRepo {
      * (projected to result_columns; node columns resolved when resolve=true).
      */
     public GrebiFacetedResultsPage<Map<String, Object>> runMaterialisedParameterisedPaginated(
-            String graph, QueryTemplate template, Map<String, List<String>> params,
+            String graph, QueryTemplate template, uk.ac.ebi.grebi.db.MaterialisedBuild build,
+            Map<String, List<String>> params,
             String searchText, boolean resolve, Pageable pageable) {
 
         if (template.graphs != null && !template.graphs.contains(graph)) {
@@ -288,29 +289,23 @@ public class GrebiPostgresRepo {
             }
         }
 
-        var closureParams = buildClosureParams(template, params);
+        var closureParams = buildClosureParams(template, build, params);
 
         String sortColumn = null;
         boolean sortAsc = true;
-        boolean sortNumeric = false;
         if (pageable.getSort() != null && pageable.getSort().isSorted()) {
             var order = pageable.getSort().iterator().next();
             sortColumn = order.getProperty();
             sortAsc = order.isAscending();
-            final String sc = sortColumn;
-            var col = template.result_columns.stream()
-                    .filter(c -> c.column_id.equals(sc)).findFirst().orElse(null);
-            if (col == null) {
+            if (build.column(sortColumn) == null) {
                 throw new IllegalArgumentException("Sort column " + sortColumn + " not found");
             }
-            String ct = col.column_type == null ? "" : col.column_type.toLowerCase();
-            sortNumeric = ct.equals("float") || ct.equals("int") || ct.equals("integer");
         }
 
         var result = pgClient.searchMaterialisedParameterised(
-                graph, template.id, closureParams,
-                searchText, buildFacetFields(template),
-                sortColumn, sortAsc, sortNumeric,
+                graph, build, closureParams,
+                searchText, buildFacetFields(build),
+                sortColumn, sortAsc,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
         var nodeColumns = template.result_columns.stream()
@@ -363,12 +358,13 @@ public class GrebiPostgresRepo {
      * per-base `_count` histogram over the closure (data is served live).
      */
     public long materialisedParameterisedCount(
-            String graph, QueryTemplate template, Map<String, List<String>> params) {
+            String graph, QueryTemplate template, uk.ac.ebi.grebi.db.MaterialisedBuild build,
+            Map<String, List<String>> params) {
         // Only the counts_only serving path needs a standalone count — full mode
         // takes its total from the data page. The total is the summed per-base
         // histogram over the closure.
         return pgClient.sumMaterialisedParameterisedCounts(
-                graph, template.id, buildClosureParams(template, params));
+                graph, build, buildClosureParams(template, build, params));
     }
 
     /**
@@ -376,24 +372,19 @@ public class GrebiPostgresRepo {
      * paging through the closure-filtered rows. Same CSV shape as the live path.
      */
     public void streamMaterialisedParameterisedCsv(
-            String graph, QueryTemplate template, Map<String, List<String>> params,
+            String graph, QueryTemplate template, uk.ac.ebi.grebi.db.MaterialisedBuild build,
+            Map<String, List<String>> params,
             String searchText, Sort sort, PrintWriter writer) {
 
-        var closureParams = buildClosureParams(template, params);
+        var closureParams = buildClosureParams(template, build, params);
 
         String sortColumn = null;
         boolean sortAsc = true;
-        boolean sortNumeric = false;
         if (sort != null && sort.isSorted()) {
             var order = sort.iterator().next();
-            final String sc = order.getProperty();
-            var col = template.result_columns.stream()
-                    .filter(c -> c.column_id.equals(sc)).findFirst().orElse(null);
-            if (col != null) {
-                sortColumn = sc;
+            if (build.column(order.getProperty()) != null) {
+                sortColumn = order.getProperty();
                 sortAsc = order.isAscending();
-                String ct = col.column_type == null ? "" : col.column_type.toLowerCase();
-                sortNumeric = ct.equals("float") || ct.equals("int") || ct.equals("integer");
             }
         }
 
@@ -401,16 +392,17 @@ public class GrebiPostgresRepo {
         writer.write("\n");
 
         pgClient.streamMaterialisedParameterised(
-                graph, template.id, closureParams, searchText, sortColumn, sortAsc, sortNumeric,
+                graph, build, closureParams, searchText, sortColumn, sortAsc,
                 row -> GrebiCypherRepo.writeCsvRow(template.result_columns, row, writer));
         writer.flush();
     }
 
-    /** The facetable result columns of a template, tagged with how to extract the
+    /** The facetable stored columns of a build, tagged with how to extract the
      *  facet value (array elements / node name / scalar). */
-    private List<GrebiPostgresClient.FacetField> buildFacetFields(QueryTemplate template) {
+    private List<GrebiPostgresClient.FacetField> buildFacetFields(uk.ac.ebi.grebi.db.MaterialisedBuild build) {
         List<GrebiPostgresClient.FacetField> out = new ArrayList<>();
-        for (var c : template.result_columns) {
+        if (build.columns == null) return out;
+        for (var c : build.columns) {
             if (!Boolean.TRUE.equals(c.facet)) continue;
             String type = c.column_type == null ? "" : c.column_type;
             GrebiPostgresClient.FacetKind kind;
@@ -428,28 +420,32 @@ public class GrebiPostgresRepo {
         return out;
     }
 
+    /** The closure filters for a request, from the build's recorded per-param
+     *  directives (filters_column + closure semantics as materialised, not as
+     *  the currently-deployed YAML says). Defaults still come from the template. */
     private List<GrebiPostgresClient.ClosureParam> buildClosureParams(
-            QueryTemplate template, Map<String, List<String>> params) {
-        var closureParams = template.closureParams();
-        if (template.materialise == null || closureParams.isEmpty()) {
+            QueryTemplate template, uk.ac.ebi.grebi.db.MaterialisedBuild build,
+            Map<String, List<String>> params) {
+        if (build.params == null || build.params.isEmpty()) {
             throw new IllegalStateException(
-                    "Template " + template.id + " has no SourceId params; cannot serve from Postgres");
+                    "Materialised build for " + template.id + " has no params; cannot serve from Postgres");
         }
         var prefixService = uk.ac.ebi.grebi.db.PrefixService.get();
         List<GrebiPostgresClient.ClosureParam> out = new ArrayList<>();
-        for (var tp : closureParams) {
-            var values = params.get(tp.param_id);
+        for (var bp : build.params) {
+            var values = params.get(bp.param_id);
             if (values == null || values.isEmpty()) {
-                if (tp.param_default != null) {
+                var tp = template.params == null ? null : template.params.stream()
+                        .filter(p -> p.param_id.equals(bp.param_id)).findFirst().orElse(null);
+                if (tp != null && tp.param_default != null) {
                     values = List.of(tp.param_default);
                 } else {
                     throw new IllegalArgumentException(
-                            "Parameter " + tp.param_id + " is required but not provided");
+                            "Parameter " + bp.param_id + " is required but not provided");
                 }
             }
             String curie = prefixService.reprefix(List.of(values.get(0))).get(0);
-            out.add(new GrebiPostgresClient.ClosureParam(
-                    tp.filtersColumn(), template.derivedClosure(tp), curie));
+            out.add(new GrebiPostgresClient.ClosureParam(bp.filters_column, bp.closure, curie));
         }
         return out;
     }

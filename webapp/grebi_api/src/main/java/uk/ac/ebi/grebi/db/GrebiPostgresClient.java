@@ -1105,99 +1105,113 @@ public class GrebiPostgresClient {
     }
 
     // --- Materialised queries ---
+    //
+    // Each materialised query lives in its own typed table (matq_{sg}_{query});
+    // the table name and column types come from the build's graph_metadata
+    // entry (MaterialisedBuild), never re-derived here. GraphNodeId columns are
+    // stored as "<col>_id" TEXT[] (closure filter target, GIN-indexed) plus
+    // "<col>_name" TEXT; the exact JSON row served to clients sits in a
+    // payload BYTEA column.
 
-    private Table<?> matQueryTable(String graph) {
-        if (!graph.matches("[a-zA-Z0-9_]+")) {
-            throw new IllegalArgumentException("Invalid graph name");
+    /** `ident`, guaranteed safe to interpolate as a quoted SQL identifier. */
+    private static String requireIdent(String ident) {
+        if (ident == null || !ident.matches("[A-Za-z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid identifier: " + ident);
         }
-        return table(name("materialised_queries_" + graph));
+        return ident;
     }
 
-    public Set<String> listMatQueryTables() {
-        Set<String> tables = new LinkedHashSet<>();
-        try (Connection conn = getConnection()) {
-            DatabaseMetaData meta = conn.getMetaData();
-            String schemaPattern = getSchemaPattern(conn);
-            tables.addAll(listTables(meta, schemaPattern, "materialised_queries_%"));
-            if (tables.isEmpty() && schemaPattern != null) {
-                tables.addAll(listTables(meta, null, "materialised_queries_%"));
-            }
-        } catch (SQLException e) {
-            logger.error("Failed to list materialised query tables", e);
-            throw new RuntimeException(e);
+    /** The physical column holding a logical column's filter/sort/facet value. */
+    private static String physicalColumn(MaterialisedBuild build, String columnId) {
+        requireIdent(columnId);
+        String type = build.columnType(columnId);
+        if ("GraphNodeId".equals(type)) {
+            return columnId + "_name";
         }
-        return tables;
+        return columnId;
     }
 
+    /** Browse a standalone materialised query's table (the /tables UI). */
     public MatQueryResult searchMaterialisedQueryResults(
-            String graph, String queryId, String searchText,
+            MaterialisedBuild build, String searchText,
             Map<String, List<String>> filters, List<String> facetFields,
             int offset, int limit) {
-        try {
-            var ctx = dsl();
-            var tbl = matQueryTable(graph);
-            var queryIdField = field(name("query_id"), String.class);
-            var rowNumField = field(name("row_number"), Integer.class);
-            var dataField = field(name("data"), String.class);
-
-            var conditions = new ArrayList<Condition>();
-            conditions.add(queryIdField.eq(queryId));
+        String tbl = "\"" + requireIdent(build.table) + "\"";
+        try (Connection conn = getConnection()) {
+            StringBuilder where = new StringBuilder("TRUE");
+            List<Object> binds = new ArrayList<>();
 
             if (searchText != null && !searchText.isBlank()) {
-                conditions.add(
-                    condition("({0})::text ILIKE {1}",
-                        field(name("data")), val("%" + escapeLike(searchText) + "%"))
-                );
+                where.append(" AND convert_from(payload, 'UTF8') ILIKE ?");
+                binds.add("%" + escapeLike(searchText) + "%");
             }
 
             if (filters != null) {
                 for (var entry : filters.entrySet()) {
-                    String key = entry.getKey();
                     var values = entry.getValue();
                     if (values == null || values.isEmpty()) continue;
+                    String col = entry.getKey();
+                    String type = build.columnType(col);
                     for (String v : values) {
-                        conditions.add(
-                            condition("{0} ->> {1} = {2}",
-                                field(name("data")), val(key), val(v))
-                        );
+                        if ("DatasourceList".equals(type)) {
+                            where.append(" AND ? = ANY(\"").append(requireIdent(col)).append("\")");
+                        } else {
+                            // typed scalar (or a node's display name): compare as text
+                            where.append(" AND \"").append(physicalColumn(build, col)).append("\"::text = ?");
+                        }
+                        binds.add(v);
                     }
                 }
             }
 
-            long totalCount = ctx.select(count())
-                    .from(tbl)
-                    .where(conditions)
-                    .fetchSingle()
-                    .value1();
+            long totalCount;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT count(*) FROM " + tbl + " WHERE " + where)) {
+                bind(ps, binds);
+                try (ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    totalCount = rs.getLong(1);
+                }
+            }
 
             List<Map<String, Object>> results = new ArrayList<>();
-            for (var record : ctx.select(dataField)
-                    .from(tbl)
-                    .where(conditions)
-                    .orderBy(rowNumField.asc())
-                    .limit(limit)
-                    .offset(offset)
-                    .fetch()) {
-                results.add(gson.fromJson(record.value1(),
-                        new TypeToken<Map<String, Object>>() {}.getType()));
+            List<Object> dataBinds = new ArrayList<>(binds);
+            dataBinds.add(limit);
+            dataBinds.add(offset);
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT convert_from(payload, 'UTF8') FROM " + tbl + " WHERE " + where
+                    + " ORDER BY row_number ASC LIMIT ? OFFSET ?")) {
+                bind(ps, dataBinds);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        results.add(gson.fromJson(rs.getString(1),
+                                new TypeToken<Map<String, Object>>() {}.getType()));
+                    }
+                }
             }
 
             Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
             if (facetFields != null && !facetFields.isEmpty() && totalCount < 100_000) {
                 for (String facetField : facetFields) {
-                    var extracted = field("{0} ->> {1}", String.class,
-                            field(name("data")), val(facetField));
-                    var cnt = count().as("cnt");
+                    String type = build.columnType(facetField);
+                    String valueExpr;
+                    String from = tbl;
+                    if ("DatasourceList".equals(type)) {
+                        valueExpr = "elem";
+                        from = tbl + ", LATERAL unnest(\"" + requireIdent(facetField) + "\") AS elem";
+                    } else {
+                        valueExpr = "\"" + physicalColumn(build, facetField) + "\"::text";
+                    }
                     Map<String, Long> counts = new LinkedHashMap<>();
-                    for (var record : ctx.select(extracted, cnt)
-                            .from(tbl)
-                            .where(conditions)
-                            .groupBy(extracted)
-                            .orderBy(cnt.desc())
-                            .fetch()) {
-                        String fval = record.get(extracted);
-                        if (fval != null) {
-                            counts.put(fval, record.get(cnt).longValue());
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "SELECT " + valueExpr + " AS fv, count(*) AS c FROM " + from
+                            + " WHERE " + where + " GROUP BY fv ORDER BY c DESC")) {
+                        bind(ps, binds);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            while (rs.next()) {
+                                String fv = rs.getString("fv");
+                                if (fv != null) counts.put(fv, rs.getLong("c"));
+                            }
                         }
                     }
                     facets.put(facetField, counts);
@@ -1344,19 +1358,20 @@ public class GrebiPostgresClient {
         }
     }
 
-    private ClosureWhere buildClosureWhere(Connection conn, String graph, String queryId,
+    private ClosureWhere buildClosureWhere(Connection conn, String graph,
             List<ClosureParam> params, String searchText) throws SQLException {
-        StringBuilder sql = new StringBuilder("query_id = ?");
+        StringBuilder sql = new StringBuilder("TRUE");
         List<Object> binds = new ArrayList<>();
-        binds.add(queryId);
 
         for (ClosureParam cp : params) {
             Set<String> curies = closureCurieSet(conn, graph, cp.closure, cp.queriedCurie);
             if (curies.isEmpty()) {
                 return new ClosureWhere(null, null, true);
             }
-            sql.append(" AND jsonb_exists_any(data -> ? -> 'id', ?)");
-            binds.add(cp.filtersColumn);
+            // "<col>_id" TEXT[] && closure — array overlap, satisfied by the
+            // column's GIN index (the jsonb_exists_any predicate this replaces
+            // could only ever seq-scan).
+            sql.append(" AND \"").append(requireIdent(cp.filtersColumn)).append("_id\" && ?");
             binds.add(conn.createArrayOf("text", curies.toArray(new String[0])));
         }
 
@@ -1364,7 +1379,7 @@ public class GrebiPostgresClient {
         // browse). Applied on top of the closure filter, so it scans only the
         // already-narrowed subset.
         if (searchText != null && !searchText.isBlank()) {
-            sql.append(" AND (data)::text ILIKE ?");
+            sql.append(" AND convert_from(payload, 'UTF8') ILIKE ?");
             binds.add("%" + escapeLike(searchText) + "%");
         }
         return new ClosureWhere(sql.toString(), binds, false);
@@ -1388,16 +1403,16 @@ public class GrebiPostgresClient {
      * column. The live Cypher /query path can't cheaply do the last two.
      */
     public MatQueryResult searchMaterialisedParameterised(
-            String graph, String queryId, List<ClosureParam> params,
+            String graph, MaterialisedBuild build, List<ClosureParam> params,
             String searchText, List<FacetField> facetFields,
-            String sortColumn, boolean sortAsc, boolean sortNumeric,
+            String sortColumn, boolean sortAsc,
             int offset, int limit) {
         if (!graph.matches("[a-zA-Z0-9_]+")) {
             throw new IllegalArgumentException("Invalid graph name");
         }
-        String tbl = "\"materialised_queries_" + graph + "\"";
+        String tbl = "\"" + requireIdent(build.table) + "\"";
         try (Connection conn = getConnection()) {
-            ClosureWhere w = buildClosureWhere(conn, graph, queryId, params, searchText);
+            ClosureWhere w = buildClosureWhere(conn, graph, params, searchText);
             if (w.impossible) {
                 return new MatQueryResult(List.of(), 0, Map.of());
             }
@@ -1413,13 +1428,14 @@ public class GrebiPostgresClient {
             }
 
             List<Object> dataBinds = new ArrayList<>(w.binds);
-            String orderBy = buildOrderByClause(sortColumn, sortAsc, sortNumeric, dataBinds);
+            String orderBy = buildOrderByClause(build, sortColumn, sortAsc);
             dataBinds.add(limit);
             dataBinds.add(offset);
 
             List<Map<String, Object>> results = new ArrayList<>();
             try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT data FROM " + tbl + " WHERE " + w.sql + orderBy + " LIMIT ? OFFSET ?")) {
+                    "SELECT convert_from(payload, 'UTF8') FROM " + tbl
+                    + " WHERE " + w.sql + orderBy + " LIMIT ? OFFSET ?")) {
                 bind(ps, dataBinds);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
@@ -1432,7 +1448,7 @@ public class GrebiPostgresClient {
             }
 
             Map<String, Map<String, Long>> facets =
-                    computeFacets(conn, tbl, w, facetFields, totalCount);
+                    computeFacets(conn, build, w, facetFields, totalCount);
 
             return new MatQueryResult(results, totalCount, facets);
         } catch (SQLException e) {
@@ -1443,29 +1459,28 @@ public class GrebiPostgresClient {
 
     /** Top-N value breakdown per facet column over the closure-filtered rows.
      *  Skipped above FACET_MAX_ROWS (too big to GROUP BY interactively). */
-    private Map<String, Map<String, Long>> computeFacets(Connection conn, String tbl,
+    private Map<String, Map<String, Long>> computeFacets(Connection conn, MaterialisedBuild build,
             ClosureWhere w, List<FacetField> facetFields, long totalCount) throws SQLException {
         Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
         if (facetFields == null || facetFields.isEmpty() || totalCount > FACET_MAX_ROWS) {
             return facets;
         }
+        String tbl = "\"" + requireIdent(build.table) + "\"";
         for (FacetField f : facetFields) {
             String valueExpr;
             String from = tbl;
             if (f.kind == FacetKind.ARRAY) {
                 valueExpr = "elem";
-                from = tbl + ", LATERAL jsonb_array_elements_text(COALESCE(data -> ?, '[]'::jsonb)) AS elem";
+                from = tbl + ", LATERAL unnest(\"" + requireIdent(f.column) + "\") AS elem";
             } else if (f.kind == FacetKind.NODE_NAME) {
-                valueExpr = "(data -> ? -> 'grebi:name' ->> 0)";
+                valueExpr = "\"" + requireIdent(f.column) + "_name\"";
             } else {
-                valueExpr = "(data ->> ?)";
+                valueExpr = "\"" + requireIdent(f.column) + "\"";
             }
             String sql = "SELECT " + valueExpr + " AS fv, count(*) AS c FROM " + from
                     + " WHERE " + w.sql + " GROUP BY fv ORDER BY c DESC LIMIT ?";
-            List<Object> binds = new ArrayList<>();
-            binds.add(f.column);         // the column placeholder (SELECT or LATERAL)
-            binds.addAll(w.binds);       // WHERE
-            binds.add(FACET_MAX_VALUES); // LIMIT
+            List<Object> binds = new ArrayList<>(w.binds);
+            binds.add(FACET_MAX_VALUES);
             Map<String, Long> counts = new LinkedHashMap<>();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 bind(ps, binds);
@@ -1481,23 +1496,16 @@ public class GrebiPostgresClient {
         return facets;
     }
 
-    /** Build the ORDER BY clause for a closure query, appending any bind values.
-     *  Numeric sort tolerates non-numeric stored values (sorts them NULL, like the
-     *  live toFloat()); a row_number tiebreaker keeps pagination stable. */
-    private String buildOrderByClause(String sortColumn, boolean sortAsc, boolean sortNumeric,
-                                      List<Object> binds) {
-        String dir = sortAsc ? "ASC" : "DESC";
+    /** Build the ORDER BY clause for a closure query. Sorting goes against the
+     *  typed column (a GraphNodeId column sorts by its "_name"); a row_number
+     *  tiebreaker keeps pagination stable. */
+    private String buildOrderByClause(MaterialisedBuild build, String sortColumn, boolean sortAsc) {
         if (sortColumn == null || sortColumn.isBlank()) {
             return " ORDER BY row_number ASC";
         }
-        if (sortNumeric) {
-            binds.add(sortColumn);
-            binds.add(sortColumn);
-            return " ORDER BY (CASE WHEN (data ->> ?) ~ '^-?[0-9]+(\\.[0-9]+)?([eE][-+]?[0-9]+)?$'"
-                    + " THEN (data ->> ?)::numeric END) " + dir + " NULLS LAST, row_number ASC";
-        }
-        binds.add(sortColumn);
-        return " ORDER BY (data ->> ?) " + dir + " NULLS LAST, row_number ASC";
+        String dir = sortAsc ? "ASC" : "DESC";
+        return " ORDER BY \"" + physicalColumn(build, sortColumn) + "\" " + dir
+                + " NULLS LAST, row_number ASC";
     }
 
     /**
@@ -1506,25 +1514,25 @@ public class GrebiPostgresClient {
      * count is run. Used by the CSV export.
      */
     public void streamMaterialisedParameterised(
-            String graph, String queryId, List<ClosureParam> params, String searchText,
-            String sortColumn, boolean sortAsc, boolean sortNumeric,
+            String graph, MaterialisedBuild build, List<ClosureParam> params, String searchText,
+            String sortColumn, boolean sortAsc,
             java.util.function.Consumer<Map<String, Object>> rowConsumer) {
         if (!graph.matches("[a-zA-Z0-9_]+")) {
             throw new IllegalArgumentException("Invalid graph name");
         }
-        String tbl = "\"materialised_queries_" + graph + "\"";
+        String tbl = "\"" + requireIdent(build.table) + "\"";
         try (Connection conn = getConnection()) {
             boolean prevAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false); // required for a server-side (streaming) cursor
             try {
-                ClosureWhere w = buildClosureWhere(conn, graph, queryId, params, searchText);
+                ClosureWhere w = buildClosureWhere(conn, graph, params, searchText);
                 if (w.impossible) {
                     return;
                 }
                 List<Object> binds = new ArrayList<>(w.binds);
-                String orderBy = buildOrderByClause(sortColumn, sortAsc, sortNumeric, binds);
+                String orderBy = buildOrderByClause(build, sortColumn, sortAsc);
                 try (PreparedStatement ps = conn.prepareStatement(
-                        "SELECT data FROM " + tbl + " WHERE " + w.sql + orderBy)) {
+                        "SELECT convert_from(payload, 'UTF8') FROM " + tbl + " WHERE " + w.sql + orderBy)) {
                     ps.setFetchSize(10_000);
                     bind(ps, binds);
                     try (ResultSet rs = ps.executeQuery()) {
@@ -1553,18 +1561,18 @@ public class GrebiPostgresClient {
      * materialised rows are DISTINCT and partitioned by base node.
      */
     public long sumMaterialisedParameterisedCounts(
-            String graph, String queryId, List<ClosureParam> params) {
+            String graph, MaterialisedBuild build, List<ClosureParam> params) {
         if (!graph.matches("[a-zA-Z0-9_]+")) {
             throw new IllegalArgumentException("Invalid graph name");
         }
-        String tbl = "\"materialised_queries_" + graph + "\"";
+        String tbl = "\"" + requireIdent(build.table) + "\"";
         try (Connection conn = getConnection()) {
-            ClosureWhere w = buildClosureWhere(conn, graph, queryId, params, null);
+            ClosureWhere w = buildClosureWhere(conn, graph, params, null);
             if (w.impossible) {
                 return 0;
             }
             try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT COALESCE(SUM((data ->> '_count')::bigint), 0) FROM " + tbl + " WHERE " + w.sql)) {
+                    "SELECT COALESCE(SUM(\"_count\"), 0) FROM " + tbl + " WHERE " + w.sql)) {
                 bind(ps, w.binds);
                 try (ResultSet rs = ps.executeQuery()) {
                     rs.next();

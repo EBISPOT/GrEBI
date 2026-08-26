@@ -31,24 +31,12 @@ public class QueryTemplate {
         public String param_default;
         // Value space of a SourceId parameter (mutually exclusive; both absent
         // = unconstrained). Everything else — which result column it filters,
-        // how serving matches stored rows — is derived (see grebi_materialise.py).
+        // how serving matches stored rows — is derived at dataload (see
+        // grebi_materialise.py) and served from graph_metadata (MaterialisedBuild).
         // values_under: value is this node or a broad_match descendant of it.
         public String values_under;
         // values_with_type: value is any node carrying this type label.
         public String values_with_type;
-
-        public boolean isSourceId() {
-            return "SourceId".equalsIgnoreCase(param_type);
-        }
-
-        /** The result column this parameter filters: param_id minus `_id`. */
-        public String filtersColumn() {
-            if (param_id == null || !param_id.endsWith("_id") || param_id.length() <= 3) {
-                throw new IllegalStateException(
-                        "SourceId parameter '" + param_id + "' must be named <result_column>_id");
-            }
-            return param_id.substring(0, param_id.length() - 3);
-        }
     }
 
     public static class ResultColumn {
@@ -109,29 +97,5 @@ public class QueryTemplate {
     /** Materialised parameterised template (kind 3): derived from fragments. */
     public boolean isParameterisedMaterialised() {
         return materialise != null && params != null && !params.isEmpty();
-    }
-
-    /** The parameters that anchor a base node (all SourceId params). */
-    public List<Parameter> closureParams() {
-        if (params == null) return List.of();
-        return params.stream().filter(Parameter::isSourceId).toList();
-    }
-
-    /**
-     * How serving matches stored base rows against this parameter's queried
-     * value, derived from the anchor's shape in the match fragment (mirrors
-     * grebi_materialise.py): a `broad_match*0..1` closure-root hop before the
-     * `-[:sourceId]->(:Id {id: $param})` anchor means the stored base ranges
-     * over descendants; a bare anchor means it is exactly the queried node.
-     */
-    public String derivedClosure(Parameter p) {
-        if (cypher_match_fragment == null) return "exact";
-        var hopAnchor = java.util.regex.Pattern.compile(
-                "-\\s*\\[\\s*:\\s*`biolink:broad_match`\\s*\\*\\s*0\\s*\\.\\.\\s*1\\s*\\]"
-                + "\\s*->\\s*\\(\\s*\\w+\\s*\\)\\s*"
-                + "-\\s*\\[\\s*:\\s*sourceId\\s*\\]\\s*->\\s*"
-                + "\\(\\s*:\\s*Id\\s*\\{\\s*id\\s*:\\s*\\$" + java.util.regex.Pattern.quote(p.param_id)
-                + "\\s*\\}\\s*\\)");
-        return hopAnchor.matcher(cypher_match_fragment).find() ? "descendants" : "exact";
     }
 }

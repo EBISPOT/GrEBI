@@ -5785,6 +5785,12 @@
     },
     "materialised_queries": [
       {
+        "columns": [
+          {
+            "column_id": "message",
+            "column_type": "string"
+          }
+        ],
         "cypher_query": "RETURN \"Hello, World!\" AS message",
         "description": "Tester query to see if the pipeline is working",
         "end_time": "2026-07-10 15:40:55",
@@ -5792,6 +5798,7 @@
         "num_results": 1,
         "start_time": "2026-07-10 15:40:54",
         "subgraph": "test_ubergraph",
+        "table": "matq_test_ubergraph_hello_world_tester",
         "time": 0.743083,
         "title": "Hello world",
         "uses_datasources": [
@@ -5802,6 +5809,13 @@
     ],
     "materialised_templates": [
       {
+        "columns": [
+          {
+            "column_id": "subtype",
+            "column_type": "GraphNodeId",
+            "facet": true
+          }
+        ],
         "id": "test_ubergraph_subtypes",
         "kind": "parameterised",
         "mode": "full",
@@ -5809,11 +5823,12 @@
           {
             "closure": "descendants",
             "filters_column": "subtype",
-            "param_id": "term_id",
+            "param_id": "subtype_id",
             "param_type": "SourceId"
           }
         ],
         "subgraph": "test_ubergraph",
+        "table": "matq_test_ubergraph_test_ubergraph_subtypes",
         "title": "Subtypes of a term (test)"
       }
     ],

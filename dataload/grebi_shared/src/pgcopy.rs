@@ -50,6 +50,16 @@ impl<W: Write> PgCopyWriter<W> {
         self.writer.write_all(&v.to_be_bytes()).unwrap();
     }
 
+    pub fn write_int64(&mut self, v: i64) {
+        self.writer.write_all(&8i32.to_be_bytes()).unwrap();
+        self.writer.write_all(&v.to_be_bytes()).unwrap();
+    }
+
+    pub fn write_float64(&mut self, v: f64) {
+        self.writer.write_all(&8i32.to_be_bytes()).unwrap();
+        self.writer.write_all(&v.to_be_bytes()).unwrap();
+    }
+
     /// Write a JSONB field. PostgreSQL binary JSONB format is: version byte (1) + JSON text.
     pub fn write_jsonb(&mut self, json_str: &str) {
         let len = 1 + json_str.len();

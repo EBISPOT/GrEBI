@@ -7,3 +7,6 @@ edition = "2021"
 clap = { version = "4.4.11", features = ["derive"] }
 jemallocator = "0.5.4"
 grebi_shared = { path = "../../grebi_shared" }
+serde_json = { version = "1.0.108", features=["preserve_order"] }
+sha1 = "0.10.6"
+hex = "0.4.3"
