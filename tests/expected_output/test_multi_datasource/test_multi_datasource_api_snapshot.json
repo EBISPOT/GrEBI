@@ -2510,6 +2510,12 @@
     },
     "materialised_queries": [
       {
+        "columns": [
+          {
+            "column_id": "message",
+            "column_type": "string"
+          }
+        ],
         "cypher_query": "RETURN \"Hello, World!\" AS message",
         "description": "Tester query to see if the pipeline is working",
         "end_time": "2026-06-25 16:29:52",
@@ -2517,6 +2523,7 @@
         "num_results": 1,
         "start_time": "2026-06-25 16:29:50",
         "subgraph": "test_multi_datasource",
+        "table": "matq_test_multi_datasource_hello_world_tester",
         "time": 2.112508,
         "title": "Hello world",
         "uses_datasources": [
