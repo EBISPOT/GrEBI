@@ -22,13 +22,19 @@ process package_postgres {
     # Postgres data dir is quiesced. Tolerate that specific warning (exit 1) but
     # still fail on fatal tar errors (exit >= 2).
     set +e
-    # xz -T0 (all cores); level tunable (-3 faster, -9e max ratio). See package_neo.nf.
-    tar --warning=no-file-changed -chf - ${postgres_data} | xz -T0 -6 > postgres.tar.xz
-    rc=\${PIPESTATUS[0]}
+    # xz threads = allocated cpus, NOT -T0: -T0 spawns one thread per MACHINE
+    # core, and each -6 thread wants ~100-700 MB — on a shared HPC node that
+    # blew straight through the cgroup memory limit (exit 141, SIGPIPE from tar
+    # after the OOM-killed xz closed the pipe). Level tunable (-3 faster, -9e
+    # max ratio). See package_neo.nf.
+    tar --warning=no-file-changed -chf - ${postgres_data} | xz -T${task.cpus} -6 > postgres.tar.xz
+    tar_rc=\${PIPESTATUS[0]}
+    xz_rc=\${PIPESTATUS[1]}
     set -e
-    if [ "\$rc" -gt 1 ]; then
-        echo "tar failed packaging ${postgres_data} (exit \$rc)" >&2
-        exit "\$rc"
+    # tar can exit 1 for the benign file-changed warning; xz must succeed outright.
+    if [ "\$tar_rc" -gt 1 ] || [ "\$xz_rc" -ne 0 ]; then
+        echo "packaging ${postgres_data} failed (tar exit \$tar_rc, xz exit \$xz_rc)" >&2
+        exit 1
     fi
     echo "Packaged PostgreSQL data: postgres.tar.xz"
     """
