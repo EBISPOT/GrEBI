@@ -1,5 +1,5 @@
 title: Search GWAS reported different from mapped
-question: Which [GWAS reported traits]{reported_trait} under {parent_id} differ from their mapped ontology term?
+question: Which [GWAS reported traits]{reported_trait} under {trait_id} differ from their mapped ontology term?
 graphs:
   - ebi_monarch_xspecies
 topics:
@@ -7,7 +7,7 @@ topics:
   - qc
 cypher_match_fragment: |-
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
-  MATCH (trait)-[:`biolink:broad_match`*0..1]->(parent_term)-[:sourceId]->(:Id { id: $parent_id })
+  MATCH (trait)-[:`biolink:broad_match`*0..1]->(parent_term)-[:sourceId]->(:Id { id: $trait_id })
   UNWIND assoc.`gwas:disease_trait` AS reported_trait
   With trait, reported_trait, [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id, assoc.edge_id AS edge_id
   WHERE NOT reported_trait IN trait.`grebi:name` AND NOT reported_trait IN trait.`grebi:synonym`
@@ -23,7 +23,7 @@ cypher_count_fragment: |-
   WITH DISTINCT reported_trait, trait, edge_id
   RETURN count(*) AS count
 params:
-  - param_id: parent_id
+  - param_id: trait_id
     param_name: Parent Term
     param_type: SourceId
 result_columns:
@@ -41,17 +41,12 @@ result_columns:
 examples:
   - title: experimental factor (all)
     params:
-      parent_id: efo:0000001
+      trait_id: efo:0000001
   - title: response to xenobiotic stimulus
     params:
-      parent_id: go:0009410
+      trait_id: go:0009410
   - title: blood metabolite level
     params:
-      parent_id: oba:2050078
+      trait_id: oba:2050078
 materialise:
   mode: full
-  params:
-    - param_id: parent_id
-      filters_column: trait
-      closure: descendants
-      domain_kind: label

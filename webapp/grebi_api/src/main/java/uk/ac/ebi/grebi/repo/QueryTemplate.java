@@ -29,7 +29,26 @@ public class QueryTemplate {
         public String param_name;
         public String param_type;
         public String param_default;
-        public Map<String, String> param_opts;
+        // Value space of a SourceId parameter (mutually exclusive; both absent
+        // = unconstrained). Everything else — which result column it filters,
+        // how serving matches stored rows — is derived (see grebi_materialise.py).
+        // values_under: value is this node or a broad_match descendant of it.
+        public String values_under;
+        // values_with_type: value is any node carrying this type label.
+        public String values_with_type;
+
+        public boolean isSourceId() {
+            return "SourceId".equalsIgnoreCase(param_type);
+        }
+
+        /** The result column this parameter filters: param_id minus `_id`. */
+        public String filtersColumn() {
+            if (param_id == null || !param_id.endsWith("_id") || param_id.length() <= 3) {
+                throw new IllegalStateException(
+                        "SourceId parameter '" + param_id + "' must be named <result_column>_id");
+            }
+            return param_id.substring(0, param_id.length() - 3);
+        }
     }
 
     public static class ResultColumn {
@@ -69,55 +88,12 @@ public class QueryTemplate {
         // Display-only list of datasources this query draws on.
         public List<String> uses_datasources;
 
-        // Per-parameter serving/materialise directives (parameterised templates).
-        public List<MaterialiseParam> params;
-
         public String getMode() {
             return (mode == null || mode.isBlank()) ? "full" : mode;
         }
 
         public boolean isCountsOnly() {
             return "counts_only".equalsIgnoreCase(getMode());
-        }
-
-        public MaterialiseParam getParam(String paramId) {
-            if (params == null) return null;
-            for (var p : params) {
-                if (p.param_id != null && p.param_id.equals(paramId)) {
-                    return p;
-                }
-            }
-            return null;
-        }
-    }
-
-    public static class MaterialiseParam {
-        public String param_id;
-        // The result column (base node) this parameter constrains.
-        public String filters_column;
-        // Materialise-time domain freeing (used by the dataload derivation, not by
-        // serving): id (CURIE root, substitute/wrap the Id anchor) | label (drop the
-        // Id anchor, keep the type label). Present here so the YAML deserialises.
-        public String domain_kind;
-        // descendants | ancestors | exact
-        // descendants: rows whose base node is the queried node or one of its
-        //   (broad_match) descendants — the common ontology-root case.
-        // ancestors:   rows whose base node is the queried node or one of its
-        //   ancestors.
-        // exact:       rows whose base node is exactly the queried node (used for
-        //   type-label roots like hgnc:Gene where the base has no closure).
-        public String closure;
-        // For descendants/ancestors: the domain-root CURIE substituted for this
-        // parameter's Id anchor when deriving the materialise query. Ignored for
-        // exact (the -[:sourceId]->(:Id {id: $param}) anchor is dropped instead).
-        public String domain_root;
-
-        public String getClosure() {
-            return (closure == null || closure.isBlank()) ? "descendants" : closure;
-        }
-
-        public boolean isExact() {
-            return "exact".equalsIgnoreCase(getClosure());
         }
     }
 
@@ -135,7 +111,27 @@ public class QueryTemplate {
         return materialise != null && params != null && !params.isEmpty();
     }
 
-    public MaterialiseParam getMaterialiseParam(String paramId) {
-        return materialise == null ? null : materialise.getParam(paramId);
+    /** The parameters that anchor a base node (all SourceId params). */
+    public List<Parameter> closureParams() {
+        if (params == null) return List.of();
+        return params.stream().filter(Parameter::isSourceId).toList();
+    }
+
+    /**
+     * How serving matches stored base rows against this parameter's queried
+     * value, derived from the anchor's shape in the match fragment (mirrors
+     * grebi_materialise.py): a `broad_match*0..1` closure-root hop before the
+     * `-[:sourceId]->(:Id {id: $param})` anchor means the stored base ranges
+     * over descendants; a bare anchor means it is exactly the queried node.
+     */
+    public String derivedClosure(Parameter p) {
+        if (cypher_match_fragment == null) return "exact";
+        var hopAnchor = java.util.regex.Pattern.compile(
+                "-\\s*\\[\\s*:\\s*`biolink:broad_match`\\s*\\*\\s*0\\s*\\.\\.\\s*1\\s*\\]"
+                + "\\s*->\\s*\\(\\s*\\w+\\s*\\)\\s*"
+                + "-\\s*\\[\\s*:\\s*sourceId\\s*\\]\\s*->\\s*"
+                + "\\(\\s*:\\s*Id\\s*\\{\\s*id\\s*:\\s*\\$" + java.util.regex.Pattern.quote(p.param_id)
+                + "\\s*\\}\\s*\\)");
+        return hopAnchor.matcher(cypher_match_fragment).find() ? "descendants" : "exact";
     }
 }

@@ -23,7 +23,22 @@ export interface Parameter {
   param_name: string;
   param_type: string;
   param_default?: string;
-  param_opts: Record<string, string>;
+  // Value space of a SourceId parameter (mutually exclusive; both absent =
+  // unconstrained): this node or a broad_match descendant of it / any node
+  // carrying this type label.
+  values_under?: string;
+  values_with_type?: string;
+}
+
+// Search filters narrowing autosuggest to the parameter's declared value space.
+export function paramSuggestFilters(param: Parameter): URLSearchParams | undefined {
+  if (param.values_under) {
+    return new URLSearchParams({ "biolink:broad_match": param.values_under });
+  }
+  if (param.values_with_type) {
+    return new URLSearchParams({ "grebi:type": param.values_with_type });
+  }
+  return undefined;
 }
 
 export interface ResultColumn {
@@ -46,12 +61,4 @@ export interface Materialise {
   budget_rows?: number;
   run_for_subgraphs?: string[];
   uses_datasources?: string[];
-  params?: MaterialiseParam[];
-}
-
-export interface MaterialiseParam {
-  param_id: string;
-  filters_column: string;
-  closure?: 'descendants' | 'ancestors' | 'exact';
-  domain_root?: string;
 }

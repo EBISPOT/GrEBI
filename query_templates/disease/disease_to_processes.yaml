@@ -22,8 +22,7 @@ params:
   - param_id: disease_id
     param_name: Disease
     param_type: SourceId
-    param_opts:
-      'biolink:broad_match': 'mondo:0000001'
+    values_under: 'mondo:0000001'
 result_columns:
   - column_id: disease
     column_type: GraphNodeId
@@ -49,9 +48,3 @@ examples:
       disease_id: mondo:0007739
 materialise:
   mode: full
-  params:
-    - param_id: disease_id
-      filters_column: disease
-      closure: exact
-      domain_kind: id
-      domain_root: 'mondo:0000001'

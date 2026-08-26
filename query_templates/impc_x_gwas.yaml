@@ -1,5 +1,67 @@
 title: Human GWAS variants to mouse models in IMPC
 description: Connects human GWAS variants to mouse models in IMPC using multiple different graph paths through phenotype and disease ontologies
+# Column types drive the typed matq_ table this standalone is stored in; the
+# NULL-padded aliases of the non-matching UNION branches are `optional`.
+result_columns:
+  - column_id: graph_path
+    column_type: string
+  - column_id: gwas_variant
+    column_type: string
+    optional: true
+  - column_id: human_gene_name
+    column_type: string
+    optional: true
+  - column_id: human_gene_id
+    column_type: string
+    optional: true
+  - column_id: disease_id
+    column_type: string
+    optional: true
+  - column_id: disease_name
+    column_type: string
+    optional: true
+  - column_id: trait_id
+    column_type: string
+    optional: true
+  - column_id: trait_name
+    column_type: string
+    optional: true
+  - column_id: trait_ic
+    column_type: float
+    optional: true
+  - column_id: species_neutral_phenotype_id
+    column_type: string
+    optional: true
+  - column_id: species_neutral_phenotype_name
+    column_type: string
+    optional: true
+  - column_id: species_neutral_phenotype_ic
+    column_type: float
+    optional: true
+  - column_id: human_phenotype_id
+    column_type: string
+    optional: true
+  - column_id: human_phenotype_name
+    column_type: string
+    optional: true
+  - column_id: human_phenotype_ic
+    column_type: float
+    optional: true
+  - column_id: mouse_phenotype_id
+    column_type: string
+    optional: true
+  - column_id: mouse_phenotype_name
+    column_type: string
+    optional: true
+  - column_id: mouse_phenotype_ic
+    column_type: float
+    optional: true
+  - column_id: mouse_gene_name
+    column_type: string
+    optional: true
+  - column_id: mouse_gene_id
+    column_type: string
+    optional: true
 materialise:
   run_for_subgraphs:
     - impc_x_gwas

@@ -52,8 +52,3 @@ examples:
       phenotype_id: hp:0002240
 materialise:
   mode: full
-  params:
-    - param_id: phenotype_id
-      filters_column: phenotype
-      closure: exact
-      domain_kind: label

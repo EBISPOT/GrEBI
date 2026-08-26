@@ -6,7 +6,7 @@ topics:
   - gwas_catalog
   - reactome
 cypher_match_fragment: |-
-  MATCH (pathway)-[:sourceId]->(id:Id { id: $pathway_id })
+  MATCH (pathway)-[:sourceId]->(:Id { id: $pathway_id })
   MATCH (pathway)-[:`reactome:hasEvent`*]->(reaction_like_event)
   MATCH (reaction_like_event)-[:`reactome:input`|`reactome:output`|`reactome:catalystActivity`|`reactome:physicalEntity`|`reactome:regulatedBy`|`reactome:regulator`|`reactome:hasComponent`|`reactome:hasMember`|`reactome:hasCandidate`*]->(physical_entity)
   MATCH (physical_entity)-[:`reactome:referenceEntity`]->(reference_gene_product)
@@ -54,8 +54,7 @@ params:
   - param_id: pathway_id
     param_name: Reactome Pathway
     param_type: SourceId
-    param_opts:
-      'grebi:type': 'reactome:Pathway'
+    values_with_type: 'reactome:Pathway'
 result_columns:
   - column_id: gene
     column_type: GraphNodeId

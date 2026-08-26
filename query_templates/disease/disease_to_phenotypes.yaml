@@ -7,9 +7,13 @@ topics:
   - phenomics
   - dismech
 cypher_match_fragment: |-
-  MATCH (disease)-[:sourceId]->(:Id {id: $disease_id})
-  MATCH (disease)<-[:`biolink:broad_match`*0..1]-(specific_disease)
-  MATCH (specific_disease)-[r:(
+  // base-keyed / param-as-closure-root form: disease is the base the row is
+  // about; the queried disease (disease_root) is reached via the precomputed
+  // broad_match closure, so disease is the queried term or one of its
+  // subtypes. A single broad_match hop suffices (it is a full transitive
+  // closure).
+  MATCH (disease)-[:`biolink:broad_match`*0..1]->(disease_root)-[:sourceId]->(:Id {id: $disease_id})
+  MATCH (disease)-[r:(
     `biolink:has_phenotype`|
     `ro:disease_has_feature`|
     `ncit:Disease_Has_Finding`|
@@ -20,20 +24,19 @@ cypher_match_fragment: |-
   AND ALL(rel IN r WHERE NOT "CTD" IN coalesce(rel.`grebi:datasources`, []))
 cypher_return_fragment: |-
   RETURN DISTINCT
-      specific_disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(specific_disease) } AS disease,
+      disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
       phenotype { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(phenotype) } AS phenotype,
       REDUCE(all_ds = [], rel IN r | all_ds + coalesce(rel.`grebi:datasources`, [])) AS from_datasources,
       REDUCE(ev = null, rel IN r | CASE WHEN rel.`dismech:supporting_text` IS NOT NULL THEN rel.`dismech:supporting_text`[0] ELSE ev END) AS evidence,
       REDUCE(fq = null, rel IN r | CASE WHEN rel.`dismech:frequency_qualifier` IS NOT NULL THEN rel.`dismech:frequency_qualifier`[0] ELSE fq END) AS frequency
 cypher_count_fragment: |-
-  WITH DISTINCT specific_disease, phenotype
+  WITH DISTINCT disease, phenotype
   RETURN count(*) AS count
 params:
   - param_id: disease_id
     param_name: Disease
     param_type: SourceId
-    param_opts:
-      'biolink:broad_match': 'mondo:0000001'
+    values_under: 'mondo:0000001'
 result_columns:
   - column_id: disease
     column_type: GraphNodeId
@@ -61,9 +64,3 @@ examples:
       disease_id: mondo:0005180
 materialise:
   mode: full
-  params:
-    - param_id: disease_id
-      filters_column: disease
-      closure: descendants
-      domain_kind: id
-      domain_root: 'mondo:0000001'

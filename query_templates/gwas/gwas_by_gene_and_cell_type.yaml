@@ -51,13 +51,11 @@ params:
   - param_id: gene_id
     param_name: Gene
     param_type: SourceId
-    param_opts:
-      'biolink:broad_match': 'hgnc:Gene'
+    values_with_type: 'hgnc:Gene'
   - param_id: cell_type_id
     param_name: Cell Type
     param_type: SourceId
-    param_opts:
-      'biolink:broad_match': 'cl:0000000'
+    values_under: 'cl:0000000'
 result_columns:
   - column_id: cell_type
     column_type: GraphNodeId
@@ -84,17 +82,6 @@ result_columns:
     column_type: EdgeId
 materialise:
   mode: full
-  params:
-    - param_id: gene_id
-      filters_column: gene
-      closure: exact
-      domain_kind: label
-      domain_root: 'hgnc:Gene'
-    - param_id: cell_type_id
-      filters_column: cell_type
-      closure: descendants
-      domain_kind: id
-      domain_root: 'cl:0000000'
 examples:
   - title: IRF4 in leukocyte
     params:

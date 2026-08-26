@@ -42,13 +42,11 @@ params:
   - param_id: gene_id
     param_name: Gene
     param_type: SourceId
-    param_opts:
-      'biolink:broad_match': 'hgnc:Gene'
+    values_with_type: 'hgnc:Gene'
   - param_id: location_id
     param_name: Anatomical Location
     param_type: SourceId
-    param_opts:
-      'biolink:broad_match': 'uberon:0001062'
+    values_under: 'uberon:0001062'
 result_columns:
   - column_id: location
     column_type: GraphNodeId
@@ -84,14 +82,3 @@ examples:
       location_id: uberon:0000966
 materialise:
   mode: full
-  params:
-    - param_id: gene_id
-      filters_column: gene
-      closure: exact
-      domain_kind: label
-      domain_root: 'hgnc:Gene'
-    - param_id: location_id
-      filters_column: location
-      closure: exact
-      domain_kind: id
-      domain_root: 'uberon:0001062'

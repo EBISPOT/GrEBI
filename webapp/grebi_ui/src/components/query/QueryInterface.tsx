@@ -1,7 +1,7 @@
 
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { QueryTemplate } from "../../model/QueryTemplate";
+import { QueryTemplate, paramSuggestFilters } from "../../model/QueryTemplate";
 import QueryTopic from "../../model/QueryTopic";
 import {get, getPaginated} from "../../app/api";
 import NodeSelectorBox from "../NodeSelectorBox";
@@ -175,7 +175,7 @@ return (
                             [param.param_id]: undefined,
                         });
                     }}
-                    additionalParams={param.param_opts ? new URLSearchParams(param.param_opts) : undefined}
+                    additionalParams={paramSuggestFilters(param)}
                   />
                 )}
               </TableCell>

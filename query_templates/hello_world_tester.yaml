@@ -4,6 +4,9 @@ description: Tester query to see if the pipeline is working
 # subgraph: it is the pipeline health-check and it guarantees every subgraph
 # produces at least one materialised-query row (the run_materialised_queries
 # process requires a non-empty results glob). Keep it unconstrained.
+result_columns:
+  - column_id: message
+    column_type: string
 materialise:
   uses_datasources:
     - IMPC

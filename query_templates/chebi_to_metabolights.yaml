@@ -7,22 +7,26 @@ topics:
   - metabolights
   - metabolomics
 cypher_match_fragment: |-
-  MATCH (chemical:`biolink:ChemicalEntity`)-[:sourceId]->(:Id { id: $chemical_id })
-  MATCH (subclass)-[:`biolink:broad_match`*0..]->(chemical)
-  MATCH (study:`metabolights:Study`)-[:`metabolights:ref`]->(subclass)
+  // base-keyed / param-as-closure-root form: chemical is the base the row is
+  // about; the queried chemical (chemical_root) is reached via the precomputed
+  // broad_match closure, so chemical is the queried term or one of its
+  // subclasses. A single broad_match hop suffices (it is a full transitive
+  // closure) and, unlike the old unbounded `*0..` roll-up, produces one path
+  // per (chemical, study) pair instead of one per subclass chain.
+  MATCH (chemical:`biolink:ChemicalEntity`)-[:`biolink:broad_match`*0..1]->(chemical_root)-[:sourceId]->(:Id { id: $chemical_id })
+  MATCH (study:`metabolights:Study`)-[:`metabolights:ref`]->(chemical)
 cypher_return_fragment: |-
   RETURN DISTINCT
-    subclass { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(subclass) } AS chemical,
+    chemical { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(chemical) } AS chemical,
     study { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study
 cypher_count_fragment: |-
-  WITH DISTINCT subclass, study
+  WITH DISTINCT chemical, study
   RETURN count(*) AS count
 params:
   - param_id: chemical_id
     param_name: Chemical
     param_type: SourceId
-    param_opts:
-      'biolink:broad_match': 'biolink:ChemicalEntity'
+    values_with_type: 'biolink:ChemicalEntity'
 result_columns:
   - column_id: chemical
     column_type: GraphNodeId
@@ -41,9 +45,3 @@ examples:
       chemical_id: chebi:15422
 materialise:
   mode: full
-  params:
-    - param_id: chemical_id
-      filters_column: chemical
-      closure: descendants
-      domain_kind: label
-      domain_root: 'biolink:ChemicalEntity'

@@ -7,7 +7,7 @@ import { getPaginated } from "../../app/api";
 import { joinSearchParams, randomString } from "../../app/util";
 
 import GraphNodeRef from "../../model/GraphNodeRef";
-import { QueryTemplate, Parameter, Example } from "../../model/QueryTemplate";
+import { QueryTemplate, Parameter, Example, paramSuggestFilters } from "../../model/QueryTemplate";
 import { DatasourceTags } from "../DatasourceTag";
 import NodeTypeChip from "../NodeTypeChip";
 
@@ -352,9 +352,7 @@ export default function QueryQuestion({
         searchTokenRefs.current[paramId] = token;
 
         try {
-          const additionalParams = param.param_opts
-            ? new URLSearchParams(param.param_opts)
-            : undefined;
+          const additionalParams = paramSuggestFilters(param);
           const nodes = await getPaginated<any>(
             `api/v1/graphs/${graph}/search?${joinSearchParams(
               new URLSearchParams({ q, resolve: "false", size: "5", lang: "en" }),

@@ -430,26 +430,26 @@ public class GrebiPostgresRepo {
 
     private List<GrebiPostgresClient.ClosureParam> buildClosureParams(
             QueryTemplate template, Map<String, List<String>> params) {
-        if (template.materialise == null || template.materialise.params == null) {
+        var closureParams = template.closureParams();
+        if (template.materialise == null || closureParams.isEmpty()) {
             throw new IllegalStateException(
-                    "Template " + template.id + " has no materialise params; cannot serve from Postgres");
+                    "Template " + template.id + " has no SourceId params; cannot serve from Postgres");
         }
         var prefixService = uk.ac.ebi.grebi.db.PrefixService.get();
         List<GrebiPostgresClient.ClosureParam> out = new ArrayList<>();
-        for (var mp : template.materialise.params) {
-            var values = params.get(mp.param_id);
-            var tp = template.params.stream()
-                    .filter(p -> p.param_id.equals(mp.param_id)).findFirst().orElse(null);
+        for (var tp : closureParams) {
+            var values = params.get(tp.param_id);
             if (values == null || values.isEmpty()) {
-                if (tp != null && tp.param_default != null) {
+                if (tp.param_default != null) {
                     values = List.of(tp.param_default);
                 } else {
                     throw new IllegalArgumentException(
-                            "Parameter " + mp.param_id + " is required but not provided");
+                            "Parameter " + tp.param_id + " is required but not provided");
                 }
             }
             String curie = prefixService.reprefix(List.of(values.get(0))).get(0);
-            out.add(new GrebiPostgresClient.ClosureParam(mp.filters_column, mp.getClosure(), curie));
+            out.add(new GrebiPostgresClient.ClosureParam(
+                    tp.filtersColumn(), template.derivedClosure(tp), curie));
         }
         return out;
     }

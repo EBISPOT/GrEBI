@@ -373,45 +373,56 @@ result_columns: [...]
 examples: [...]
 
 # --- standalone materialised (kind 2): a body with no params ---
+result_columns: [...]               # required: they define its typed storage table
 materialise:
   cypher: |-  RETURN ...            # the query to run (was cypher_query)
   run_for_subgraphs: [impc_x_gwas]  # optional; absent => every subgraph
   uses_datasources: [IMPC, GWAS]    # display only
 
 # --- materialised parameterised (kind 3): its own body doubles as the materialise query ---
+params:
+  - param_id: cell_type_id
+    param_name: Cell Type
+    param_type: SourceId
+    values_under: 'cl:0000000'      # value space: this node or a broad_match descendant
+  # values_with_type: 'hgnc:Gene'   # ...or: any node carrying this type label
+  # (neither)                       # ...or: unconstrained
 materialise:
   mode: full                # full (store rows) | counts_only (store per-base-node counts)
   budget_rows: 15000000     # optional per-template row budget override
-  params:
-    - param_id: cell_type_id
-      filters_column: cell_type   # the base result-column this param constrains at serving
-      closure: descendants        # descendants | ancestors | exact (serving semantics)
-      domain_kind: id             # id (CURIE root) | label (type label)
-      domain_root: 'cl:0000000'   # domain root substituted when deriving the materialise query
 ```
 
-**Derivation (no separate materialise Cypher).** At dataload the materialise query
-is derived from the template's own match fragment by rewriting each param's Id
-anchor so the base ranges over its whole domain
+Each SourceId parameter declares **only its value space** (`values_under` /
+`values_with_type` / neither). Everything else is derived
 (`dataload/07_run_queries/grebi_materialise.py`):
 
-- `domain_kind: id`, `closure: descendants|ancestors` — the body is authored in
-  closure-root form (`(base)-[:broad_match*0..1]->(x)-[:sourceId]->(:Id {id: $p})`);
-  substitute `$p` → the domain-root CURIE literal.
-- `domain_kind: id`, `closure: exact` — the base is anchored directly; the anchor
-  `-[:sourceId]->(:Id {id: $p})` is wrapped into
-  `-[:broad_match*0..1]->(__p_dom)-[:sourceId]->(:Id {id: 'root'})`.
-- `domain_kind: label` — drop the `-[:sourceId]->(:Id {id: $p})` anchor; the base
-  keeps its type label (e.g. `(gene:\`hgnc:Gene\`)`).
+- **filters_column** — the result column the parameter constrains at serving —
+  is the param_id minus its `_id` suffix, validated against `result_columns`.
+- **matching** follows from the anchor's shape in the match fragment:
+  closure-root form `(base)-[:broad_match*0..1]->(x)-[:sourceId]->(:Id {id: $p})`
+  serves *descendants* (stored base = queried node or a descendant); a bare
+  anchor `(base)-[:sourceId]->(:Id {id: $p})` serves *exact*. The body is the
+  declaration, so the two cannot disagree. Guard: the variable returned
+  `AS <filters_column>` must be the anchored variable — a template returning a
+  separate roll-up variable under that alias (the old reversed-broad_match
+  style) is rejected; rewrite it in closure-root form.
 
-Remaining non-closure params are substituted with their `param_default`. The derived
-query is validated (no unbound `$params`; `filters_column` is a real result column)
-before it runs. `closure: ancestors` with `domain_kind: id` is rejected — no single
-domain-root substitution frees the base over the whole domain, so use `domain_kind:
-label` for an ancestors base. A build-size budget gates parameterised templates (fail
-unless `GREBI_MATERIALISE_BUDGET_OVERRIDE=true`); standalone queries are budgeted only
-if they set `materialise.budget_rows`. Opt a template out entirely with
-`materialise: false`.
+**Derivation (no separate materialise Cypher).** At dataload each param's Id
+anchor is rewritten so the base ranges over its whole value space:
+
+- `values_under` + closure-root anchor — substitute `$p` → the root CURIE literal.
+- `values_under` + bare anchor — wrap the anchor into
+  `-[:broad_match*0..1]->(__p_dom)-[:sourceId]->(:Id {id: 'root'})`.
+- `values_with_type` (or no values at all) — drop the anchor, hop included; the
+  base keeps its type label (e.g. `(gene:\`hgnc:Gene\`)`, required to match
+  `values_with_type`) or, unconstrained, whatever the rest of the body allows.
+
+Remaining non-SourceId params are substituted with their `param_default`. The
+derived query is validated (no unbound `$params`; the derived filter column is a
+real result column) before it runs. A build-size budget gates parameterised
+templates (fail unless `GREBI_MATERIALISE_BUDGET_OVERRIDE=true`); standalone
+queries are budgeted only if they set `materialise.budget_rows`. Opt a template
+out entirely with `materialise: false`.
 
 ### Serving (closure-at-query-time)
 

@@ -52,8 +52,7 @@ params:
   - param_id: gene_id
     param_name: Gene
     param_type: SourceId
-    param_opts:
-      'biolink:broad_match': 'hgnc:Gene'
+    values_with_type: 'hgnc:Gene'
 result_columns:
   - column_id: disease
     column_type: GraphNodeId

@@ -47,8 +47,7 @@ params:
   - param_id: location_id
     param_name: Anatomical Location
     param_type: SourceId
-    param_opts:
-      'biolink:broad_match': 'uberon:0001062'
+    values_under: 'uberon:0001062'
 result_columns:
   - column_id: location
     column_type: GraphNodeId
@@ -76,12 +75,6 @@ result_columns:
     column_type: EdgeId
 materialise:
   mode: full
-  params:
-    - param_id: location_id
-      filters_column: location
-      closure: descendants
-      domain_kind: id
-      domain_root: 'uberon:0001062'
 examples:
   - title: lung
     params:

@@ -12,10 +12,36 @@ block (see docs/materialise-query-templates.md). There are three kinds:
    the body *is* the materialise query (this is the old ``materialised_queries/``
    concept). Run verbatim.
 
-3. **Materialised parameterised** (``params`` + per-param ``materialise.params``
-   directives) — the template's own body doubles as the materialise query with
-   each parameter's Id anchor rewritten so the base node ranges over its whole
-   domain (a "closure root" substitution). No hand-written second query.
+3. **Materialised parameterised** (``params`` + a ``materialise`` block) — the
+   template's own body doubles as the materialise query with each SourceId
+   parameter's Id anchor rewritten so the base node ranges over the parameter's
+   whole value space. No hand-written second query.
+
+Each SourceId parameter declares only its value space, one flat field:
+
+  values_under: '<curie>'      value is that node or a broad_match descendant
+  values_with_type: '<label>'  value is any node carrying that type label
+  (neither)                    unconstrained
+
+Everything else is derived:
+
+  * ``filters_column`` — the result column this parameter filters — is the
+    param_id minus its ``_id`` suffix (``cell_type_id`` filters ``cell_type``),
+    validated against ``result_columns``.
+
+  * how serving matches stored rows against the queried value follows from the
+    anchor's shape in the match fragment:
+
+      (base)-[:`biolink:broad_match`*0..1]->(x)-[:sourceId]->(:Id {id: $p})
+          -> rows whose base is the queried node or a descendant
+      (base)-[:sourceId]->(:Id {id: $p})
+          -> rows whose base is exactly the queried node
+
+    so the body *is* the declaration; the two cannot disagree. As a guard, the
+    variable returned ``AS <filters_column>`` must be the anchored variable
+    itself — a template that returns some *other* roll-up variable under that
+    alias (the old separate reversed-broad_match style) is rejected: rewrite it
+    in the canonical closure-root (first) form instead.
 
 The functions here are pure string transforms so they can be unit-tested without
 Neo4j (see test_grebi_materialise.py).
@@ -72,19 +98,21 @@ def runs_for_subgraph(template, subgraph):
     return True
 
 
-def _param_by_id(template, param_id):
-    for p in template.get("params") or []:
-        if p.get("param_id") == param_id:
-            return p
-    return None
+def closure_params(template):
+    """The parameters that anchor a base node (all SourceId params)."""
+    return [p for p in template.get("params") or []
+            if (p.get("param_type") or "").lower() == "sourceid"]
 
 
-def _materialise_param(template, param_id):
-    m = template.get("materialise") or {}
-    for mp in m.get("params") or []:
-        if mp.get("param_id") == param_id:
-            return mp
-    return None
+def filters_column(param):
+    """The result column a SourceId parameter filters: param_id minus `_id`."""
+    pid = param.get("param_id") or ""
+    if not pid.endswith("_id") or len(pid) <= 3:
+        raise ValueError(
+            f"SourceId parameter '{pid}' must be named <result_column>_id so its "
+            f"filter column can be derived"
+        )
+    return pid[:-3]
 
 
 def _sub_param_token(text, param_id, replacement):
@@ -98,11 +126,87 @@ def _sub_param_token(text, param_id, replacement):
 
 
 def _anchor_regex(param_id):
-    """Match `-[:sourceId]->(:Id {id: $param_id})` with flexible whitespace."""
+    """The parameter's Id anchor: base node, optional broad_match hop, sourceId.
+
+    Groups: base (the base node pattern, kept by the drop/wrap transforms),
+    var / label (its variable and optional type label), hop / hopvar (the
+    closure-root hop, when the template is in closure-root form).
+    """
     return re.compile(
+        r"(?P<base>\(\s*(?P<var>[A-Za-z_][A-Za-z0-9_]*)\s*"
+        r"(?::\s*(?P<label>`[^`]+`|[A-Za-z_][A-Za-z0-9_:]*))?\s*\))"
+        r"(?P<hop>\s*-\s*\[\s*:\s*`biolink:broad_match`\s*\*\s*0\s*\.\.\s*1\s*\]"
+        r"\s*->\s*\(\s*(?P<hopvar>[A-Za-z_][A-Za-z0-9_]*)\s*\)\s*)?"
         r"-\s*\[\s*:\s*sourceId\s*\]\s*->\s*"
         r"\(\s*:\s*Id\s*\{\s*id\s*:\s*\$" + re.escape(param_id) + r"\s*\}\s*\)"
     )
+
+
+def _find_anchor(template, param):
+    pid = param["param_id"]
+    fragment = template["cypher_match_fragment"]
+    matches = list(_anchor_regex(pid).finditer(fragment))
+    if not matches:
+        raise ValueError(
+            f"parameter {pid}: no `-[:sourceId]->(:Id {{id: ${pid}}})` anchor found "
+            f"in cypher_match_fragment; a materialised template must anchor each "
+            f"SourceId parameter"
+        )
+    if len(matches) > 1:
+        raise ValueError(
+            f"parameter {pid}: anchor appears {len(matches)} times in "
+            f"cypher_match_fragment; expected exactly one"
+        )
+    return matches[0]
+
+
+def _strip_backticks(label):
+    return label.strip("`") if label else None
+
+
+def _strip_line_comments(cypher):
+    return re.sub(r"^\s*//[^\n]*$", "", cypher or "", flags=re.MULTILINE)
+
+
+def _assert_anchor_var_is_returned(template, param, anchor):
+    """The variable projected `AS <filters_column>` must be the anchored one.
+
+    In the old non-canonical style the anchor bound one variable while a
+    separate reversed broad_match roll-up produced the variable actually
+    returned under the filter column's alias — so the anchor's shape said
+    "exact" while the rows really covered descendants. Deriving matching from
+    the anchor shape would then silently serve wrong rows; reject and require
+    the canonical closure-root form.
+    """
+    pid = param["param_id"]
+    var = anchor.group("var")
+    fc = filters_column(param)
+    ret = _strip_line_comments(template.get("cypher_return_fragment"))
+    m = re.search(
+        r"([A-Za-z_][A-Za-z0-9_]*)\s*\{[^}]*\}\s+AS\s+`?" + re.escape(fc)
+        + r"`?(?![A-Za-z0-9_])", ret)
+    if m and m.group(1) != var:
+        raise ValueError(
+            f"parameter {pid}: the anchor binds ({var}) but the return fragment "
+            f"projects ({m.group(1)}) AS {fc}, so the anchor's shape does not "
+            f"describe the rows. Rewrite the template in the canonical "
+            f"closure-root form:\n"
+            f"  MATCH ({m.group(1)})-[:`biolink:broad_match`*0..1]->(root)"
+            f"-[:sourceId]->(:Id {{id: ${pid}}})"
+        )
+
+
+def derived_matches(template, param):
+    """How serving matches stored base rows against the queried value.
+
+    descendants — the anchor is in closure-root form (broad_match hop), so the
+                  stored base is the queried node or one of its descendants.
+    exact       — the anchor binds the base directly, so the stored base is
+                  exactly the queried node.
+    """
+    anchor = _find_anchor(template, param)
+    _assert_anchor_var_is_returned(template, param, anchor)
+    return "descendants" if anchor.group("hop") else "exact"
 
 
 def _value_literal(param):
@@ -110,8 +214,8 @@ def _value_literal(param):
     default = param.get("param_default")
     if default is None:
         raise ValueError(
-            f"Parameter {param.get('param_id')} has no materialise directive and "
-            f"no param_default, so the template cannot be materialised"
+            f"Parameter {param.get('param_id')} has no param_default, so the "
+            f"template cannot be materialised"
         )
     ptype = (param.get("param_type") or "").lower()
     if ptype in ("float", "int", "integer"):
@@ -123,72 +227,85 @@ def _value_literal(param):
 def derive_materialise_match(template):
     """Rewrite the template's match fragment into its materialise form.
 
-    Each parameter's Id anchor is rewritten so the base node ranges over the
-    parameter's whole `param_opts` domain, per its materialise directive:
+    Each SourceId parameter's Id anchor is rewritten so the base node ranges
+    over the parameter's whole value space:
 
-      * domain_kind=id,  closure=descendants|ancestors:
-            $param  ->  'domain_root'
-        (the template is authored in closure-root form
-         `(base)-[:broad_match*0..1]->(x)-[:sourceId]->(:Id {id: $param})`, so
-         substituting the root Id makes base range over the whole domain)
+      * values_under + closure-root anchor:
+            $param  ->  'values_under'
+        (substituting the root Id makes the base range over the whole subtree)
 
-      * domain_kind=id,  closure=exact:
+      * values_under + bare anchor:
             -[:sourceId]->(:Id {id: $param})
-              ->  -[:`biolink:broad_match`*0..1]->(__param_dom)-[:sourceId]->(:Id {id: 'domain_root'})
-        (base was anchored exactly; wrap it so it ranges over the domain while
-         serving still filters it exactly)
+              ->  -[:`biolink:broad_match`*0..1]->(__param_dom)-[:sourceId]->(:Id {id: 'values_under'})
+        (the base stays exactly-matched at serving; the wrap only frees it over
+         the subtree at materialise time)
 
-      * domain_kind=label:
-            drop the `-[:sourceId]->(:Id {id: $param})` anchor entirely; the base
-            keeps its type label (e.g. `(gene:`hgnc:Gene`)`) so it ranges over the
-            whole labelled domain.
+      * values_with_type (or no values_* at all):
+            drop the anchor — hop included — so the base ranges over its whole
+            labelled domain (values_with_type requires the base to carry the
+            declared label) or, unconstrained, over whatever the rest of the
+            fragment allows.
 
-    Any remaining (non-closure) parameters are replaced by their param_default
+    Any remaining (non-SourceId) parameters are replaced by their param_default
     literal so the derived query has no unbound $parameters.
     """
     match = template["cypher_match_fragment"]
 
-    materialised_ids = set()
-    for mp in (template.get("materialise") or {}).get("params") or []:
-        pid = mp["param_id"]
-        materialised_ids.add(pid)
-        closure = (mp.get("closure") or "descendants").lower()
-        domain_kind = (mp.get("domain_kind") or "id").lower()
-        domain_root = mp.get("domain_root")
+    closure_ids = set()
+    for p in closure_params(template):
+        pid = p["param_id"]
+        closure_ids.add(pid)
+        values_under = p.get("values_under")
+        values_with_type = p.get("values_with_type")
+        if values_under and values_with_type:
+            raise ValueError(
+                f"parameter {pid}: values_under and values_with_type are mutually "
+                f"exclusive"
+            )
 
-        if domain_kind == "label":
-            match = _anchor_regex(pid).sub("", match)
-        elif domain_kind == "id":
-            if not domain_root:
-                raise ValueError(
-                    f"materialise param {pid}: domain_kind=id requires domain_root"
-                )
-            if closure == "exact":
+        anchor = _anchor_regex(pid).search(match)
+        if anchor is None:
+            raise ValueError(
+                f"parameter {pid}: no Id anchor found in cypher_match_fragment"
+            )
+
+        if values_under:
+            if anchor.group("hop"):
+                # closure-root form: substituting the subtree root makes the base
+                # range over all its descendants (= the whole value space).
+                match = _sub_param_token(match, pid, "'" + values_under + "'")
+            else:
                 repl = (
                     "-[:`biolink:broad_match`*0..1]->(__" + pid + "_dom)"
-                    "-[:sourceId]->(:Id {id: '" + domain_root + "'})"
+                    "-[:sourceId]->(:Id {id: '" + values_under + "'})"
                 )
-                match = _anchor_regex(pid).sub(repl, match)
-            elif closure == "descendants":
-                # closure-root form: substituting the domain-top root makes the base
-                # range over all its descendants (= the whole domain).
-                match = _sub_param_token(match, pid, "'" + domain_root + "'")
-            else:
-                # `ancestors` has no single domain-root substitution that frees the
-                # base over the whole domain; use domain_kind=label for that case.
-                raise ValueError(
-                    f"materialise param {pid}: closure '{closure}' with domain_kind=id "
-                    f"is not supported (use 'descendants', 'exact', or domain_kind=label)"
-                )
+                match = _anchor_regex(pid).sub(
+                    lambda m: m.group("base") + repl, match, count=1)
         else:
-            raise ValueError(
-                f"materialise param {pid}: unknown domain_kind '{domain_kind}'"
-            )
+            if values_with_type:
+                label = _strip_backticks(anchor.group("label"))
+                if label != values_with_type:
+                    raise ValueError(
+                        f"parameter {pid}: values_with_type '{values_with_type}' "
+                        f"requires the anchored base node to carry that label "
+                        f"(found: {label})"
+                    )
+            hopvar = anchor.group("hopvar")
+            if hopvar:
+                residue = _strip_line_comments(
+                    match[:anchor.start()] + match[anchor.end():])
+                if re.search(r"\b" + re.escape(hopvar) + r"\b", residue):
+                    raise ValueError(
+                        f"parameter {pid}: cannot drop the anchor because its "
+                        f"closure-root variable ({hopvar}) is referenced elsewhere"
+                    )
+            match = _anchor_regex(pid).sub(
+                lambda m: m.group("base"), match, count=1)
 
     # Substitute any remaining value params (defaults) so nothing is unbound.
     for p in template.get("params") or []:
         pid = p["param_id"]
-        if pid in materialised_ids:
+        if pid in closure_ids:
             continue
         match = _sub_param_token(match, pid, _value_literal(p))
 
@@ -196,31 +313,42 @@ def derive_materialise_match(template):
 
 
 def _base_columns(template):
-    """Result-column ids that a materialise param filters (the base nodes)."""
+    """Result-column ids that the closure params filter (the base nodes)."""
     cols = []
-    for mp in (template.get("materialise") or {}).get("params") or []:
-        col = mp.get("filters_column")
-        if col and col not in cols:
+    for p in closure_params(template):
+        col = filters_column(p)
+        if col not in cols:
             cols.append(col)
     return cols
 
 
 def _validate_materialise(template):
-    """Fail fast on a mis-declared materialise block (before we run the query)."""
+    """Fail fast on a mis-declared template (before we run the query)."""
+    m = template.get("materialise") or {}
+    if m.get("params"):
+        raise ValueError(
+            "materialise.params is no longer supported; declare the value space "
+            "on each param instead (values_under / values_with_type)"
+        )
+    cps = closure_params(template)
+    if not cps:
+        raise ValueError(
+            "a materialised parameterised template needs at least one SourceId "
+            "parameter"
+        )
     result_cols = {c.get("column_id") for c in template.get("result_columns") or []}
-    param_ids = {p.get("param_id") for p in template.get("params") or []}
-    for mp in (template.get("materialise") or {}).get("params") or []:
-        pid = mp.get("param_id")
-        if pid not in param_ids:
-            raise ValueError(f"materialise param '{pid}' is not a template param")
-        fc = mp.get("filters_column")
+    for p in cps:
+        fc = filters_column(p)
         # Real templates always declare result_columns; validate the base column
         # against them when present.
         if result_cols and fc not in result_cols:
             raise ValueError(
-                f"materialise param '{pid}': filters_column '{fc}' is not a result "
-                f"column (columns: {sorted(result_cols)})"
+                f"parameter '{p.get('param_id')}': derived filter column '{fc}' is "
+                f"not a result column (columns: {sorted(result_cols)})"
             )
+        # Derivation side effects: anchor presence/uniqueness + canonical-form
+        # guard for bare anchors.
+        derived_matches(template, p)
 
 
 def _assert_no_unbound_params(template, query):
@@ -304,8 +432,8 @@ def derive_materialise_query(template):
         bases = _base_columns(template)
         if len(bases) != 1:
             raise ValueError(
-                "counts_only requires exactly one materialise param (base column); "
-                f"found {bases}"
+                "counts_only requires exactly one SourceId parameter (base "
+                f"column); found {bases}"
             )
         base_col = bases[0]
         # Turn the DISTINCT projection into an intermediate WITH, then group by the
@@ -332,6 +460,11 @@ def derive_materialise_query(template):
 
 
 def standalone_query(template):
+    if not template.get("result_columns"):
+        raise ValueError(
+            f"standalone materialised query '{template.get('id')}' must declare "
+            f"result_columns (they define its typed storage table)"
+        )
     cypher = (template.get("materialise") or {}).get("cypher")
     warn_on_unrecognised_datasource_literals(template.get("id") or "<unknown>", cypher)
     return normalise_ontology_datasource_names(cypher)
@@ -354,13 +487,11 @@ def serving_metadata(template):
         return {"kind": "standalone"}
 
     params_meta = []
-    for mp in (template.get("materialise") or {}).get("params") or []:
-        pid = mp["param_id"]
-        p = _param_by_id(template, pid) or {}
+    for p in closure_params(template):
         params_meta.append({
-            "param_id": pid,
-            "filters_column": mp.get("filters_column"),
-            "closure": (mp.get("closure") or "descendants").lower(),
+            "param_id": p["param_id"],
+            "filters_column": filters_column(p),
+            "closure": derived_matches(template, p),
             "param_type": p.get("param_type"),
         })
     return {
