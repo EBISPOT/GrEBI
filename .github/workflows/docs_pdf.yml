@@ -59,17 +59,16 @@ jobs:
         id: find-pdf
         run: |
           # publishDir is the flat out/ dir (GREBI_OUT_DIR has no per-subgraph
-          # component), so search the whole tree rather than out/<subgraph>.
-          PDF_PATH=$(find out -name 'grebi-docs.pdf' -type f | head -1)
+          # component) and Nextflow publishes SYMLINKS by default — so no
+          # -type f (it silently excludes them), and resolve to the real file
+          # for the upload steps.
+          PDF_PATH=$(find out -name 'grebi-docs.pdf' | head -1)
           if [ -z "$PDF_PATH" ]; then
-            echo "ERROR: grebi-docs.pdf not found in output; diagnostics follow"
-            echo "--- out/ tree (2 levels):"; find out -maxdepth 2 | sort || true
-            echo "--- pdfs anywhere under the scratch:"
-            find /mnt/grebi-tmp -name '*.pdf' -type f 2>/dev/null | head || true
-            echo "--- publish-related nextflow log lines:"
-            grep -i publish .nextflow.log | tail -20 || true
+            echo "ERROR: grebi-docs.pdf not found in output"
+            find out -maxdepth 2 | sort || true
             exit 1
           fi
+          PDF_PATH=$(readlink -f "$PDF_PATH")
           echo "pdf_path=$PDF_PATH" >> "$GITHUB_OUTPUT"
           echo "Found PDF: $PDF_PATH"
 
@@ -84,7 +83,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: docs-${{ github.sha }}
-          name: "Documentation ($(date -u +%Y-%m-%d))"
+          # NB: plain string — GitHub Actions does not shell-substitute $(date)
+          name: "Documentation (${{ github.sha }})"
           files: ${{ steps.find-pdf.outputs.pdf_path }}
           draft: false
           prerelease: ${{ github.ref != 'refs/heads/stable' }}
