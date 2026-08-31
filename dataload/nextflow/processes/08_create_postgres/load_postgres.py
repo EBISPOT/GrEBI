@@ -142,6 +142,14 @@ def create_indexes_for_subgraph(
     stmts.append(f'CREATE INDEX "idx_edges_{sg}_toNodeId" ON "edges_{sg}" USING btree ("grebi:toNodeId");')
     stmts.append(f'CREATE INDEX "idx_edges_{sg}_type" ON "edges_{sg}" USING btree ("grebi:type");')
     stmts.append(f'CREATE INDEX "idx_edges_{sg}_datasources_gin" ON "edges_{sg}" USING gin ("grebi:datasources");')
+    # Partial indexes for closure resolution at serving time
+    # (GrebiPostgresClient.closureCurieSet): with only the plain toNodeId btree,
+    # Postgres heap-fetches EVERY edge touching the queried node just to filter
+    # by type — 78s cold for a hub node with ~50k edges of other types.
+    stmts.append(f'CREATE INDEX "idx_edges_{sg}_broad_match_to" ON "edges_{sg}" ("grebi:toNodeId") '
+                 f"WHERE \"grebi:type\" = 'biolink:broad_match';")
+    stmts.append(f'CREATE INDEX "idx_edges_{sg}_broad_match_from" ON "edges_{sg}" ("grebi:fromNodeId") '
+                 f"WHERE \"grebi:type\" = 'biolink:broad_match';")
 
     # Node indexes
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_nodeId" ON "nodes_{sg}" USING btree ("grebi:nodeId");')
