@@ -67,6 +67,11 @@ params.downloads_path = "$GREBI_DOWNLOADS_PATH"
 params.external_postgres = false
 params.export_snapshots = false
 params.make_docs = false
+// The standalone postgres.tar.xz artifact (not part of release.tar.xz —
+// construct_release packages postgres_data directly). Disabled on codon for
+// now: the tarball put the scratch over its /hps/nobackup disk quota and
+// nothing downstream consumes it yet.
+params.package_postgres = true
 
 workflow {
 
@@ -438,7 +443,9 @@ workflow {
 
     // === PACKAGE OUTPUTS ===
     neo_tgz = package_neo(neo_db, Channel.value(params.out))
-    postgres_tgz = package_postgres(postgres_db, Channel.value(params.out))
+    if (params.package_postgres) {
+        package_postgres(postgres_db, Channel.value(params.out))
+    }
 
     // === CONSTRUCT & PACKAGE RELEASE ===
     release_dir = construct_release(
