@@ -21,10 +21,10 @@ def main():
 
     # Parameterised materialised templates are a serving/routing descriptor, so we
     # keep only stable fields (no run-dependent num_results / timings): the API
-    # needs `id` to route, mode/params for the closure filter, and table/columns
-    # to address + project the typed storage table.
+    # needs `id` to route, mode/params/closure_key for the closure filter, and
+    # table/columns to address + project the typed storage table.
     stable_template_fields = ["id", "subgraph", "title", "kind", "mode", "params",
-                              "table", "columns"]
+                              "table", "columns", "closure_key"]
 
     for query_metadata_filename in query_metadata_filenames:
         with open(query_metadata_filename, 'r') as file:
