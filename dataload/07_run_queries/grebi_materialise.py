@@ -550,4 +550,9 @@ def serving_metadata(template):
         "kind": "parameterised",
         "mode": materialise_mode(template),
         "params": params_meta,
+        # How serving matches a stored row's base against the queried closure:
+        # by the base node's id ("<col>_nid" = ANY(closure node ids)). Builds
+        # that predate this key stored curie arrays instead and are served with
+        # the older overlap predicate.
+        "closure_key": "nid",
     }

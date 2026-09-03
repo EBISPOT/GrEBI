@@ -33,9 +33,11 @@ class MaterialisedClosureServingTest {
     static final String GRAPH = "itclosure";
     static final String Q1_TABLE = "matq_" + GRAPH + "_q1";
     static final String Q2_TABLE = "matq_" + GRAPH + "_q2";
+    static final String Q3_TABLE = "matq_" + GRAPH + "_q3";
     static GrebiPostgresClient pg;
-    static MaterialisedBuild q1;
-    static MaterialisedBuild q2;
+    static MaterialisedBuild q1;   // older build: curie arrays, && overlap
+    static MaterialisedBuild q2;   // counts_only histogram (curie arrays)
+    static MaterialisedBuild q3;   // current build: node ids, closure_key=nid
 
     static boolean enabled() {
         return "true".equalsIgnoreCase(System.getenv("GREBI_TEST_POSTGRES"));
@@ -61,12 +63,17 @@ class MaterialisedClosureServingTest {
                 + "{\"column_id\":\"cell\",\"column_type\":\"GraphNodeId\"},"
                 + "{\"column_id\":\"_count\",\"column_type\":\"int\"}],"
                 + "\"params\":[{\"param_id\":\"cell_id\",\"filters_column\":\"cell\",\"closure\":\"descendants\",\"param_type\":\"SourceId\"}]}");
+        q3 = buildFromJson("{\"id\":\"q3\",\"table\":\"" + Q3_TABLE + "\",\"mode\":\"full\",\"closure_key\":\"nid\",\"columns\":["
+                + "{\"column_id\":\"cell\",\"column_type\":\"GraphNodeId\",\"facet\":true},"
+                + "{\"column_id\":\"trait\",\"column_type\":\"string\",\"facet\":true}],"
+                + "\"params\":[{\"param_id\":\"cell_id\",\"filters_column\":\"cell\",\"closure\":\"descendants\",\"param_type\":\"SourceId\"}]}");
 
         try (Connection conn = pg.getConnection(); Statement st = conn.createStatement()) {
             st.execute("DROP TABLE IF EXISTS \"nodes_" + GRAPH + "\"");
             st.execute("DROP TABLE IF EXISTS \"edges_" + GRAPH + "\"");
             st.execute("DROP TABLE IF EXISTS \"" + Q1_TABLE + "\"");
             st.execute("DROP TABLE IF EXISTS \"" + Q2_TABLE + "\"");
+            st.execute("DROP TABLE IF EXISTS \"" + Q3_TABLE + "\"");
             st.execute("CREATE TABLE \"nodes_" + GRAPH + "\" (\"grebi:nodeId\" TEXT, \"grebi:sourceIds\" TEXT[])");
             st.execute("CREATE TABLE \"edges_" + GRAPH + "\" (\"grebi:type\" TEXT, \"grebi:fromNodeId\" TEXT, \"grebi:toNodeId\" TEXT)");
             // The typed per-query tables the pgcopy writer would produce.
@@ -99,7 +106,55 @@ class MaterialisedClosureServingTest {
                     "(2, ARRAY['ex:B'], 'B', 20, convert_to('{}','UTF8'))," +
                     "(3, ARRAY['ex:C'], 'C', 30, convert_to('{}','UTF8'))," +
                     "(4, ARRAY['ex:D'], 'D', 40, convert_to('{}','UTF8'))");
+
+            // Current writer layout: the base node's bare id in cell_nid (no
+            // curie array), matched by node id against the closure.
+            st.execute("CREATE TABLE \"" + Q3_TABLE + "\" (row_number INT NOT NULL,"
+                    + " cell_nid TEXT, cell_name TEXT, trait TEXT, payload BYTEA NOT NULL)");
+            st.execute("CREATE INDEX ON \"" + Q3_TABLE + "\" (cell_nid)");
+            for (String[] r : new String[][]{{"1","grp_A","A","alpha"},{"2","grp_B","B","bravo"},
+                    {"3","grp_C","C","charlie"},{"4","grp_D","D","delta"},{"5","grp_X","X","xray"}}) {
+                String payload = "{\"cell\":{\"grebi:nodeId\":\"" + GRAPH + ":" + r[1]
+                        + "\",\"grebi:name\":[\"" + r[2] + "\"]},\"trait\":\"" + r[3] + "\"}";
+                st.execute("INSERT INTO \"" + Q3_TABLE + "\" VALUES (" + r[0] + ", '" + r[1] + "', '"
+                        + r[2] + "', '" + r[3] + "', convert_to('" + payload + "','UTF8'))");
+            }
         }
+    }
+
+    private long countNid(String closure, String curie) {
+        var res = pg.searchMaterialisedParameterised(GRAPH, q3,
+                List.of(new ClosureParam("cell", closure, curie)),
+                null, List.of(), null, true, 0, 100);
+        return res.totalCount;
+    }
+
+    @Test
+    void nodeIdClosureMatchesCurieClosure() {
+        assumeTrue(enabled());
+        // the nid build must answer exactly like the curie-array build
+        for (String curie : List.of("ex:A", "ex:B", "ex:C", "ex:D", "ex:X", "ex:UNKNOWN")) {
+            assertEquals(count("descendants", curie), countNid("descendants", curie), "descendants " + curie);
+            assertEquals(count("exact", curie), countNid("exact", curie), "exact " + curie);
+        }
+        assertEquals(1, countNid("exact", "EX:A"), "exact via a clique-member curie");
+        assertEquals(4, countNid("ancestors", "ex:D"));
+    }
+
+    @Test
+    void nodeIdBuildServesRowsAndFacets() {
+        assumeTrue(enabled());
+        var res = pg.searchMaterialisedParameterised(GRAPH, q3,
+                List.of(new ClosureParam("cell", "descendants", "ex:B")),
+                null,
+                List.of(new GrebiPostgresClient.FacetField("cell", GrebiPostgresClient.FacetKind.NODE_NAME)),
+                "trait", false, 0, 100);
+        assertEquals(3, res.totalCount);
+        // sorted by trait desc: delta, charlie, bravo — payload nodeIds prefix-stripped
+        var order = res.results.stream()
+                .map(r -> ((Map<?, ?>) r.get("cell")).get("grebi:nodeId")).toList();
+        assertEquals(List.of("grp_D", "grp_C", "grp_B"), order);
+        assertEquals(Map.of("B", 1L, "C", 1L, "D", 1L), res.facets.get("cell"));
     }
 
     private static void insertQ1Row(Statement st, int rowNum, String name, String curie,

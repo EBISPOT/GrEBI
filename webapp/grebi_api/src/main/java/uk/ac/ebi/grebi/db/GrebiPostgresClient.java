@@ -1294,7 +1294,14 @@ public class GrebiPostgresClient {
      * via the precomputed `biolink:broad_match` closure. Empty if the queried node
      * is unknown to this graph.
      */
-    private Set<String> closureCurieSet(Connection conn, String graph, String closure, String queriedCurie)
+    /**
+     * The node ids in the closure of `queriedCurie`: the queried node itself
+     * plus (for descendants/ancestors) the nodes reached via the precomputed
+     * `biolink:broad_match` closure. Empty if the node is unknown to this graph.
+     * Cheap even for an ontology root (~80k nodes in well under a second via the
+     * partial broad_match indexes).
+     */
+    private Set<String> closureNodeIdSet(Connection conn, String graph, String closure, String queriedCurie)
             throws SQLException {
         String nodesTbl = "\"nodes_" + graph + "\"";
         String edgesTbl = "\"edges_" + graph + "\"";
@@ -1328,6 +1335,22 @@ public class GrebiPostgresClient {
                 }
             }
         }
+        return nodeIds;
+    }
+
+    /**
+     * The closure of `queriedCurie` as source CURIEs — every clique id of every
+     * closure node. Only needed by builds that stored curie arrays; expanding a
+     * large closure this way is expensive (an ontology root: ~360k curies, ~50s),
+     * which is why newer builds match by node id instead.
+     */
+    private Set<String> closureCurieSet(Connection conn, String graph, String closure, String queriedCurie)
+            throws SQLException {
+        String nodesTbl = "\"nodes_" + graph + "\"";
+        Set<String> nodeIds = closureNodeIdSet(conn, graph, closure, queriedCurie);
+        if (nodeIds.isEmpty()) {
+            return Set.of();
+        }
 
         Set<String> curies = new HashSet<>();
         curies.add(queriedCurie);
@@ -1358,21 +1381,32 @@ public class GrebiPostgresClient {
         }
     }
 
-    private ClosureWhere buildClosureWhere(Connection conn, String graph,
+    private ClosureWhere buildClosureWhere(Connection conn, String graph, MaterialisedBuild build,
             List<ClosureParam> params, String searchText) throws SQLException {
         StringBuilder sql = new StringBuilder("TRUE");
         List<Object> binds = new ArrayList<>();
 
         for (ClosureParam cp : params) {
-            Set<String> curies = closureCurieSet(conn, graph, cp.closure, cp.queriedCurie);
-            if (curies.isEmpty()) {
-                return new ClosureWhere(null, null, true);
+            if (build.usesNodeIdClosure()) {
+                // "<col>_nid" = ANY(closure node ids) — a btree probe per node,
+                // no curie expansion, so an ontology-root closure is as cheap to
+                // resolve as a leaf's.
+                Set<String> nodeIds = closureNodeIdSet(conn, graph, cp.closure, cp.queriedCurie);
+                if (nodeIds.isEmpty()) {
+                    return new ClosureWhere(null, null, true);
+                }
+                sql.append(" AND \"").append(requireIdent(cp.filtersColumn)).append("_nid\" = ANY(?)");
+                binds.add(conn.createArrayOf("text", nodeIds.toArray(new String[0])));
+            } else {
+                // Older builds: "<col>_id" TEXT[] && closure curies — array
+                // overlap on the column's GIN index.
+                Set<String> curies = closureCurieSet(conn, graph, cp.closure, cp.queriedCurie);
+                if (curies.isEmpty()) {
+                    return new ClosureWhere(null, null, true);
+                }
+                sql.append(" AND \"").append(requireIdent(cp.filtersColumn)).append("_id\" && ?");
+                binds.add(conn.createArrayOf("text", curies.toArray(new String[0])));
             }
-            // "<col>_id" TEXT[] && closure — array overlap, satisfied by the
-            // column's GIN index (the jsonb_exists_any predicate this replaces
-            // could only ever seq-scan).
-            sql.append(" AND \"").append(requireIdent(cp.filtersColumn)).append("_id\" && ?");
-            binds.add(conn.createArrayOf("text", curies.toArray(new String[0])));
         }
 
         // Optional free-text narrow over the stored row (coarse, like the /tables
@@ -1412,7 +1446,7 @@ public class GrebiPostgresClient {
         }
         String tbl = "\"" + requireIdent(build.table) + "\"";
         try (Connection conn = getConnection()) {
-            ClosureWhere w = buildClosureWhere(conn, graph, params, searchText);
+            ClosureWhere w = buildClosureWhere(conn, graph, build, params, searchText);
             if (w.impossible) {
                 return new MatQueryResult(List.of(), 0, Map.of());
             }
@@ -1544,7 +1578,7 @@ public class GrebiPostgresClient {
             boolean prevAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false); // required for a server-side (streaming) cursor
             try {
-                ClosureWhere w = buildClosureWhere(conn, graph, params, searchText);
+                ClosureWhere w = buildClosureWhere(conn, graph, build, params, searchText);
                 if (w.impossible) {
                     return;
                 }
@@ -1586,7 +1620,7 @@ public class GrebiPostgresClient {
         }
         String tbl = "\"" + requireIdent(build.table) + "\"";
         try (Connection conn = getConnection()) {
-            ClosureWhere w = buildClosureWhere(conn, graph, params, null);
+            ClosureWhere w = buildClosureWhere(conn, graph, build, params, null);
             if (w.impossible) {
                 return 0;
             }

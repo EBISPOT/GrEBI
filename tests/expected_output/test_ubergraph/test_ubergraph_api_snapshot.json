@@ -5809,6 +5809,7 @@
     ],
     "materialised_templates": [
       {
+        "closure_key": "nid",
         "columns": [
           {
             "column_id": "subtype",

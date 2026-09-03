@@ -383,6 +383,7 @@ class TestServingMetadata(unittest.TestCase):
         self.assertEqual(md["params"][0]["filters_column"], "cell_type")
         self.assertEqual(md["params"][0]["closure"], "descendants")
         self.assertEqual(md["params"][0]["param_type"], "SourceId")
+        self.assertEqual(md["closure_key"], "nid")
 
     def test_standalone_metadata(self):
         t = {"materialise": {"cypher": "RETURN 1 AS a"}}

@@ -432,8 +432,9 @@ table `matq_{sg}_{query_id}` (truncated + 8-char sha1 suffix only past Postgres'
 recorded in the metadata, never re-derived). The physical schema is derived from
 `result_columns` by `grebi_make_postgres_mat_queries`:
 
-- `GraphNodeId` → `"<col>_id" TEXT[]` (source ids; GIN-indexed when it is a
-  closure filter column) + `"<col>_name" TEXT`
+- `GraphNodeId` → `"<col>_nid" TEXT` (the base node's id, graph prefix
+  stripped; btree-indexed when it is a closure filter column) +
+  `"<col>_name" TEXT`
 - `DatasourceList` → `"<col>" TEXT[]`; `float` → `double precision`;
   `string`/`EdgeId` → `TEXT`
 - plus `row_number INT` and `payload BYTEA` — the row's exact linked JSON,
@@ -451,10 +452,14 @@ update-query-templates has moved the templates on since the dataload. Metadata
 without a `table` (a pre-typed-table build) falls back to live Cypher.
 
 `GrebiPostgresClient.searchMaterialisedParameterised` resolves the queried value P
-to the set of source CURIEs in its closure — P plus its `biolink:broad_match`
-descendants (or just P for `exact`) via the precomputed closure in `edges_{sg}` —
-then keeps the stored rows where `"<col>_id" && curies` (array overlap, satisfied
-by the GIN index). Counts are `count(*)` over the filtered rows (flat, cheap).
+to the set of node ids in its closure — P plus its `biolink:broad_match`
+descendants (or just P for `exact`) via partial broad_match indexes on
+`edges_{sg}`, ~0.2s even for an ontology root's ~80k nodes — then keeps the
+stored rows where `"<col>_nid" = ANY(node ids)` (btree). A node is in the
+closure exactly when its clique ids overlap the closure's curies, so this is
+equivalent to the curie-array overlap older builds used (`closure_key` absent in
+their metadata; still served that way) without the ~360k-curie expansion an
+ontology root needed. Counts are `count(*)` over the filtered rows (flat, cheap).
 `counts_only` stores a per-base `_count` histogram and sums it over the closure
 (data served live). `GrebiApi.serveQueryTemplate` routes `/query/{id}` and `.csv`
 to Postgres when a build exists in `graph_metadata.materialised_templates`, else

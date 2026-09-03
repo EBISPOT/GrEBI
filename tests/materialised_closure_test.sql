@@ -2,10 +2,10 @@
 -- materialised parameterised templates (docs/materialise-query-templates.md).
 --
 -- Reproduces the descendant/ancestor/exact closure over the biolink:broad_match
--- transitive closure and the typed `"<col>_id" && curies` row filter (each
--- materialised query is its own typed matq_ table; GraphNodeId columns store
--- their source ids as a GIN-indexable TEXT[]), against a tiny A<-B<-C<-D
--- hierarchy (matching tests/expected_output/test_ubergraph).
+-- transitive closure and the typed `"<col>_nid" = ANY(node ids)` row filter
+-- (each materialised query is its own typed matq_ table; GraphNodeId columns
+-- store the base node's id), against a tiny A<-B<-C<-D hierarchy (matching
+-- tests/expected_output/test_ubergraph).
 --
 -- Run:  psql -f tests/materialised_closure_test.sql   (raises on any mismatch)
 
@@ -13,7 +13,7 @@ BEGIN;
 
 CREATE TEMP TABLE "nodes_x" ("grebi:nodeId" TEXT, "grebi:sourceIds" TEXT[]) ON COMMIT DROP;
 CREATE TEMP TABLE "edges_x" ("grebi:type" TEXT, "grebi:fromNodeId" TEXT, "grebi:toNodeId" TEXT) ON COMMIT DROP;
-CREATE TEMP TABLE "matq_x_q1" (row_number INT, cell_id TEXT[], "_count" BIGINT) ON COMMIT DROP;
+CREATE TEMP TABLE "matq_x_q1" (row_number INT, cell_nid TEXT, "_count" BIGINT) ON COMMIT DROP;
 
 -- nodeId distinct from curie, to exercise the curie<->nodeId mapping; X is isolated
 INSERT INTO "nodes_x" VALUES
@@ -27,14 +27,14 @@ INSERT INTO "edges_x" VALUES
  ('biolink:broad_match','grp_D','grp_B'),('biolink:broad_match','grp_D','grp_C');
 
 INSERT INTO "matq_x_q1" VALUES
- (1, ARRAY['ex:A'], 10),
- (2, ARRAY['ex:B'], 20),
- (3, ARRAY['ex:C'], 30),
- (4, ARRAY['ex:D'], 40),
- (5, ARRAY['ex:X'], 99);
+ (1, 'grp_A', 10),
+ (2, 'grp_B', 20),
+ (3, 'grp_C', 30),
+ (4, 'grp_D', 40),
+ (5, 'grp_X', 99);
 
 -- closure(queried, kind) -> matching row count and summed _count, mirroring
--- GrebiPostgresClient.closureCurieSet + the `cell_id && curies` filter.
+-- GrebiPostgresClient.closureNodeIdSet + the `cell_nid = ANY(node ids)` filter.
 CREATE FUNCTION pg_temp.hits(queried TEXT, kind TEXT, OUT n BIGINT, OUT total BIGINT) AS $$
   WITH pnodes AS (SELECT "grebi:nodeId" AS nid FROM "nodes_x" WHERE "grebi:sourceIds" && ARRAY[queried]),
        nn AS (
@@ -45,11 +45,10 @@ CREATE FUNCTION pg_temp.hits(queried TEXT, kind TEXT, OUT n BIGINT, OUT total BI
          WHERE kind IN ('descendants','ancestors') AND "grebi:type"='biolink:broad_match'
            AND (CASE WHEN kind='descendants' THEN "grebi:toNodeId" ELSE "grebi:fromNodeId" END)
                IN (SELECT nid FROM pnodes)
-       ),
-       curies AS (SELECT DISTINCT unnest("grebi:sourceIds") AS c FROM "nodes_x" WHERE "grebi:nodeId" IN (SELECT nid FROM nn))
+       )
   SELECT count(*), COALESCE(SUM("_count"),0)
   FROM "matq_x_q1"
-  WHERE cell_id && (ARRAY(SELECT c FROM curies) || ARRAY[queried]);
+  WHERE cell_nid IN (SELECT nid FROM nn);
 $$ LANGUAGE sql;
 
 DO $$

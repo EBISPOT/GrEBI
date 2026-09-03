@@ -15,7 +15,8 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 /// The query's metadata JSON (written by run_queries) names the storage table
 /// and the logical columns; the physical schema is derived per column type:
 ///
-///   GraphNodeId    -> "<col>_id" TEXT[]  (source ids; the closure filter target)
+///   GraphNodeId    -> "<col>_nid" TEXT   (the node's grebi:nodeId, graph prefix
+///                                         stripped; the closure filter target)
 ///                     "<col>_name" TEXT  (display name; facet/sort target)
 ///   DatasourceList -> "<col>" TEXT[]
 ///   float          -> "<col>" double precision
@@ -76,6 +77,14 @@ fn main() {
         .expect("metadata json has no `table`")
         .to_string();
 
+    // Result rows carry node ids as "<subgraph>:<nodeId>"; the nodes/edges
+    // tables (which closure resolution runs against) use the bare nodeId.
+    let nid_prefix = metadata
+        .get("subgraph")
+        .and_then(|v| v.as_str())
+        .map(|s| format!("{}:", s))
+        .unwrap_or_default();
+
     let cols: Vec<Col> = metadata
         .get("columns")
         .and_then(|v| v.as_array())
@@ -115,7 +124,7 @@ fn main() {
     let out_file = File::create(format!("{}.pgbin", table)).unwrap();
     let mut pgw = PgCopyWriter::new(BufWriter::with_capacity(1024 * 1024 * 32, out_file));
 
-    // row_number + typed columns (Node counts double) + payload
+    // row_number + typed columns (Node counts double: _nid + _name) + payload
     let nfields: i16 = (2 + cols
         .iter()
         .map(|c| if matches!(c.kind, ColKind::Node) { 2 } else { 1 })
@@ -137,12 +146,10 @@ fn main() {
             let v = json.get(&col.id);
             match col.kind {
                 ColKind::Node => {
-                    let ids = v
-                        .and_then(|v| v.get("id"))
-                        .map(flatten_to_strings)
-                        .unwrap_or_default();
-                    let refs: Vec<&str> = ids.iter().map(|s| s.as_str()).collect();
-                    pgw.write_text_array(&refs);
+                    match v.and_then(|v| v.get("grebi:nodeId")).and_then(|n| n.as_str()) {
+                        Some(nid) => pgw.write_text(nid.strip_prefix(nid_prefix.as_str()).unwrap_or(nid)),
+                        None => pgw.write_null(),
+                    }
                     match v.and_then(|v| v.get("grebi:name")).map(flatten_to_strings) {
                         Some(names) if !names.is_empty() => pgw.write_text(&names[0]),
                         _ => pgw.write_null(),
@@ -181,7 +188,7 @@ fn write_columns_sidecar(table: &str, cols: &[Col]) {
     for col in cols {
         match col.kind {
             ColKind::Node => {
-                writeln!(w, "\"{}_id\" TEXT[] NOT NULL DEFAULT '{{}}'", col.id).unwrap();
+                writeln!(w, "\"{}_nid\" TEXT", col.id).unwrap();
                 writeln!(w, "\"{}_name\" TEXT", col.id).unwrap();
             }
             ColKind::TextArray => {
@@ -209,8 +216,8 @@ fn write_indexes_sidecar(table: &str, filter_columns: &[String]) {
     for fc in filter_columns {
         writeln!(
             w,
-            "CREATE INDEX \"{}\" ON \"{}\" USING gin (\"{}_id\");",
-            pg_identifier(&format!("idx_{}_{}_id_gin", table, fc)),
+            "CREATE INDEX \"{}\" ON \"{}\" USING btree (\"{}_nid\");",
+            pg_identifier(&format!("idx_{}_{}_nid", table, fc)),
             table,
             fc
         )

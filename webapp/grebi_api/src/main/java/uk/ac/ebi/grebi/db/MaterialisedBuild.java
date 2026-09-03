@@ -23,6 +23,10 @@ public class MaterialisedBuild {
     public String table;   // matq_{sg}_{query}; computed once at materialise time
     public List<Column> columns;
     public List<Param> params;
+    // "nid": rows store the base node's id in "<col>_nid" and are matched by
+    // node id against the closure. Absent (older builds): rows store the
+    // base's curie array in "<col>_id" and are matched by array overlap.
+    public String closure_key;
 
     public static class Column {
         public String column_id;
@@ -61,6 +65,10 @@ public class MaterialisedBuild {
 
     public boolean isCountsOnly() {
         return "counts_only".equalsIgnoreCase(mode == null ? "" : mode);
+    }
+
+    public boolean usesNodeIdClosure() {
+        return "nid".equalsIgnoreCase(closure_key == null ? "" : closure_key);
     }
 
     public Column column(String columnId) {
