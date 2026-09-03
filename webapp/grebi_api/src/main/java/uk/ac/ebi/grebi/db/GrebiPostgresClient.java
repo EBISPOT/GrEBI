@@ -1417,32 +1417,51 @@ public class GrebiPostgresClient {
                 return new MatQueryResult(List.of(), 0, Map.of());
             }
 
-            long totalCount;
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT count(*) FROM " + tbl + " WHERE " + w.sql)) {
-                bind(ps, w.binds);
-                try (ResultSet rs = ps.executeQuery()) {
-                    rs.next();
-                    totalCount = rs.getLong(1);
-                }
-            }
-
+            // One scan for count + page. The matching (row_number, sort key) set
+            // is computed in a MATERIALIZED CTE, which pins the planner to the
+            // GIN bitmap scan; the page is then picked from that in memory and
+            // only its payloads are fetched, by row_number. Left to itself the
+            // planner would sometimes walk the row_number btree filtering each
+            // row by the closure predicate — and because materialised rows are
+            // clustered by base node, a big closure deep in the ordering meant
+            // skipping 145k rows to find the first page (9.5s for leukocyte).
+            String sortKey = (sortColumn == null || sortColumn.isBlank())
+                    ? "row_number"
+                    : "\"" + physicalColumn(build, sortColumn) + "\"";
+            String dir = sortAsc ? "ASC" : "DESC";
+            String pageOrder = " ORDER BY sk " + dir + " NULLS LAST, row_number ASC";
+            String sql = "WITH m AS MATERIALIZED (SELECT row_number, " + sortKey + " AS sk FROM " + tbl
+                    + " WHERE " + w.sql + "),"
+                    + " page AS (SELECT row_number, sk FROM m" + pageOrder + " LIMIT ? OFFSET ?)"
+                    + " SELECT (SELECT count(*) FROM m) AS total, convert_from(t.payload, 'UTF8') AS payload"
+                    + " FROM page JOIN " + tbl + " t ON t.row_number = page.row_number"
+                    + " ORDER BY page.sk " + dir + " NULLS LAST, page.row_number ASC";
             List<Object> dataBinds = new ArrayList<>(w.binds);
-            String orderBy = buildOrderByClause(build, sortColumn, sortAsc);
             dataBinds.add(limit);
             dataBinds.add(offset);
 
+            long totalCount = -1;
             List<Map<String, Object>> results = new ArrayList<>();
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT convert_from(payload, 'UTF8') FROM " + tbl
-                    + " WHERE " + w.sql + orderBy + " LIMIT ? OFFSET ?")) {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 bind(ps, dataBinds);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
-                        Map<String, Object> row = gson.fromJson(rs.getString(1),
+                        totalCount = rs.getLong("total");
+                        Map<String, Object> row = gson.fromJson(rs.getString("payload"),
                                 new TypeToken<Map<String, Object>>() {}.getType());
                         stripGraphPrefix(row, graph);
                         results.add(row);
+                    }
+                }
+            }
+            if (totalCount < 0) {
+                // Empty page (no matches, or offset past the end): count separately.
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT count(*) FROM " + tbl + " WHERE " + w.sql)) {
+                    bind(ps, w.binds);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        rs.next();
+                        totalCount = rs.getLong(1);
                     }
                 }
             }
