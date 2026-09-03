@@ -7,13 +7,25 @@ topics:
   - impc
 cypher_match_fragment: |-
   MATCH (trait)-[:sourceId]->(:Id {id: $trait_id})
+  // Only GWAS traits can produce rows (the final MATCH needs an association),
+  // and saying so up front bounds the materialised domain to those ~50k traits
+  // rather than every term that has embedding matches.
+  MATCH (:`gwas:SNP`)-[:`gwas:associated_with`]->(trait)
+  WITH DISTINCT trait
   MATCH (trait)-[emb:`ols_top_k:matches`]->(any_term)
-  WITH trait, emb, any_term, toFloat(emb.`ols_top_k:distance`[0]) AS emb_dist
-  ORDER BY emb_dist ASC LIMIT toInteger($n_embedding_candidates)
-  WITH trait, emb_dist, any_term
+  WITH trait, any_term, toFloat(emb.`ols_top_k:distance`[0]) AS emb_dist
+  ORDER BY emb_dist ASC
+  // Per-trait top-N via collect/slice: a plain ORDER BY ... LIMIT would become
+  // one global top-N once the anchor is dropped for materialisation.
+  WITH trait, collect({term: any_term, dist: emb_dist})[0..toInteger($n_embedding_candidates)] AS candidates
+  UNWIND candidates AS cand
+  WITH trait, cand.term AS any_term, cand.dist AS emb_dist
   WHERE "Ontologies.mp" IN any_term.`grebi:datasources`
-  WITH trait, any_term AS mp_phenotype, emb_dist
-  ORDER BY emb_dist ASC LIMIT toInteger($n_top_mp_hits)
+  WITH trait, any_term, emb_dist
+  ORDER BY emb_dist ASC
+  WITH trait, collect({mp: any_term, dist: emb_dist})[0..toInteger($n_top_mp_hits)] AS hits
+  UNWIND hits AS hit
+  WITH trait, hit.mp AS mp_phenotype, hit.dist AS emb_dist
   MATCH (mouse_gene:`impc:MouseGene`)-[:`biolink:has_phenotype`]->(mp_phenotype)
   MATCH (mouse_gene)-[:`impc:humanGeneOrthologues`]->(human_gene:`hgnc:Gene`)
   // Collapse to distinct human genes before touching GWAS. The (phenotype,
@@ -100,3 +112,8 @@ examples:
       trait_id: efo:0004611
       n_embedding_candidates: '50'
       n_top_mp_hits: '5'
+# Materialised at the parameter defaults (50 candidates, top 5 MP hits); the
+# Postgres path serves those defaults regardless of the numeric params passed.
+materialise:
+  mode: full
+  budget_rows: 40000000
