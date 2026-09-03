@@ -14,7 +14,10 @@ process construct_release {
     val(docker_image)
     val(dataload_home)
 
-    publishDir "${out_dir}", overwrite: true, mode: 'copy'
+    // Symlinks, not a copy: nothing downstream reads out/release (staging and
+    // the FTP push both consume the tarballs), and a copy dereferences the
+    // store symlinks below into ~4 TB of duplicate data per run.
+    publishDir "${out_dir}", overwrite: true, mode: 'symlink'
 
     output:
     path("release")

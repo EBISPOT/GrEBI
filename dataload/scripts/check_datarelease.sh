@@ -29,9 +29,15 @@ for SUBGRAPH in "${SUBGRAPHS[@]}"; do
     fi
   done
 done
-if [ ! -f "$DATARELEASE_PATH/postgres.tar.xz" ]; then
-  echo "postgres.tar.xz not found in $DATARELEASE_PATH"
+# postgres.tar.xz is optional: the Postgres data ships inside release.tar.xz,
+# and the standalone archive is only produced when params.package_postgres is
+# on (off on codon, where it overflowed the scratch quota).
+if [ ! -f "$DATARELEASE_PATH/release.tar.xz" ]; then
+  echo "release.tar.xz not found in $DATARELEASE_PATH"
   exit 1
+fi
+if [ ! -f "$DATARELEASE_PATH/postgres.tar.xz" ]; then
+  echo "note: no standalone postgres.tar.xz in $DATARELEASE_PATH (postgres data is inside release.tar.xz)"
 fi
 if [ ! -d "$DATARELEASE_PATH/query_results" ]; then
   echo "query_results/ not found in $DATARELEASE_PATH"
