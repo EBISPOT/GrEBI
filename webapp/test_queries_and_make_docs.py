@@ -43,6 +43,13 @@ def main():
         help="Output HTML filename (default: grebi-docs.html). PDF rendering "
         "is performed separately by render_pdf.mjs.",
     )
+    parser.add_argument(
+        "--materialised-only",
+        action="store_true",
+        default=False,
+        help="Only test templates the graph metadata records a materialised "
+        "build for (served from Postgres); no Neo4j is expected to be running.",
+    )
     args = parser.parse_args()
 
     # ── Phase 1: Run integration tests (always) ──────────────────────
@@ -68,11 +75,12 @@ def main():
     spec.loader.exec_module(test_mod)
 
     # Run tests
-    if not test_mod.wait_for_all_services():
+    if not test_mod.wait_for_all_services(require_neo4j=not args.materialised_only):
         print("\nServices failed to start. Exiting.")
         sys.exit(1)
 
-    passed, total = test_mod.test_query_templates(args.api_url)
+    passed, total = test_mod.test_query_templates(
+        args.api_url, materialised_only=args.materialised_only)
 
     if total == 0:
         print("No tests were run (none matched this graph)")

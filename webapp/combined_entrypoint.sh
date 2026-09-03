@@ -64,6 +64,25 @@ if [ -n "${GREBI_SERVICES:-}" ]; then
     done
 fi
 
+# Point the API at an external Postgres when one is given. The supervisord
+# block hardcodes localhost, and supervisord's environment= overrides the
+# inherited env, so it has to be rewritten rather than just exported.
+if [ -n "${GREBI_POSTGRES_HOST:-}" ]; then
+    api_env="GREBI_CYPHER_HOST=\"http://localhost:8085\""
+    api_env="$api_env,GREBI_POSTGRES_HOST=\"$GREBI_POSTGRES_HOST\""
+    api_env="$api_env,GREBI_POSTGRES_PORT=\"${GREBI_POSTGRES_PORT:-5432}\""
+    api_env="$api_env,GREBI_POSTGRES_USER=\"${GREBI_POSTGRES_USER:-grebi}\""
+    api_env="$api_env,GREBI_POSTGRES_DB=\"${GREBI_POSTGRES_DB:-grebi}\""
+    if [ -n "${GREBI_POSTGRES_PASSWORD:-}" ]; then
+        api_env="$api_env,GREBI_POSTGRES_PASSWORD=\"$GREBI_POSTGRES_PASSWORD\""
+    fi
+    if [ -n "${GREBI_POSTGRES_SSLMODE:-}" ]; then
+        api_env="$api_env,GREBI_POSTGRES_SSLMODE=\"$GREBI_POSTGRES_SSLMODE\""
+    fi
+    sed -i "/^\[program:api\]$/,/^\[/ s|^environment=.*|environment=$api_env|" "$SUPERVISORD_CONF"
+    echo "API configured for external Postgres at $GREBI_POSTGRES_HOST"
+fi
+
 # Configure cypher_service mode based on whether neo4j is running
 # Neo4j Community only supports a single database, so if there are multiple
 # neo4j directories we use embedded mode (cypher_service opens each one).
@@ -166,9 +185,15 @@ case "$MODE" in
         if [ "${GREBI_MAKE_DOCS:-}" = "true" ]; then
             MAKE_DOCS_ARG="--make-docs --docs-dir /opt/docs --output grebi-docs.html"
         fi
+        # Materialised-only: exercise just the templates served from Postgres
+        # (no Neo4j/cypher in this stack), e.g. against an external DB.
+        MATERIALISED_ONLY_ARG=""
+        if [ "${GREBI_TEST_MATERIALISED_ONLY:-}" = "true" ]; then
+            MATERIALISED_ONLY_ARG="--materialised-only"
+        fi
 
         set +e
-        python3 -u /opt/test_queries_and_make_docs.py --api-url http://localhost:8090 $MAKE_DOCS_ARG
+        python3 -u /opt/test_queries_and_make_docs.py --api-url http://localhost:8090 $MAKE_DOCS_ARG $MATERIALISED_ONLY_ARG
         TEST_EXIT_CODE=$?
         set -e
         echo ""

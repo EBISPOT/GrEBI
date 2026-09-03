@@ -112,13 +112,14 @@ def dump_service_logs():
     print_colored("\n" + "="*80, Colors.YELLOW)
 
 
-def wait_for_all_services(base_url: str = "http://localhost") -> bool:
+def wait_for_all_services(base_url: str = "http://localhost", require_neo4j: bool = True) -> bool:
     services = [
         (f"{base_url}:8090/api/health", "GrEBI API"),
     ]
 
-    # Only check Neo4j Browser when Neo4j server is running (not embedded mode)
-    if not os.environ.get("GREBI_NEO4J_EMBEDDED"):
+    # Only check Neo4j Browser when a Neo4j server is expected (not embedded
+    # mode, and not a materialised-only stack with no Neo4j at all)
+    if require_neo4j and not os.environ.get("GREBI_NEO4J_EMBEDDED"):
         services.insert(0, (f"{base_url}:7474", "Neo4j Browser"))
     
     all_ready = True
@@ -140,6 +141,19 @@ def get_available_graphs(api_url: str) -> List[str]:
     except Exception as e:
         print_colored(f"Warning: Could not get graphs from API: {e}", Colors.YELLOW)
         return []
+
+
+def get_materialised_template_ids(api_url: str, graph: str) -> set:
+    """Template ids the graph's metadata records a materialised build for —
+    i.e. the ones the API serves from Postgres rather than live Cypher."""
+    try:
+        response = requests.get(f"{api_url}/api/v1/graphs/{graph}", params={"full": "true"}, timeout=30)
+        response.raise_for_status()
+        entries = response.json().get("materialised_templates") or []
+        return {e.get("id") for e in entries if isinstance(e, dict) and e.get("id")}
+    except Exception as e:
+        print_colored(f"Warning: Could not read materialised templates for {graph}: {e}", Colors.YELLOW)
+        return set()
 
 
 def load_query_templates(templates_dir: Path) -> List[Dict[str, Any]]:
@@ -186,20 +200,27 @@ def execute_query(
 
 
 def test_query_templates(
-    api_url: str = "http://localhost:8090"
+    api_url: str = "http://localhost:8090",
+    materialised_only: bool = False,
 ) -> tuple[int, int]:
     templates_dir = Path(os.environ.get("GREBI_QUERY_TEMPLATES_PATH", "/opt/query_templates"))
-    
+
     print_colored("\n" + "="*80, Colors.BOLD)
-    print_colored("GrEBI Integration Tests", Colors.BOLD)
+    print_colored("GrEBI Integration Tests" + (" (materialised templates only)" if materialised_only else ""), Colors.BOLD)
     print_colored("="*80 + "\n", Colors.BOLD)
-    
+
     available_graphs = get_available_graphs(api_url)
     if not available_graphs:
         print_colored("No graphs available from backend!", Colors.RED)
         return 0, 0
-    
+
     print_colored(f"Available graphs: {', '.join(available_graphs)}\n", Colors.BLUE)
+
+    materialised_ids: Dict[str, set] = {}
+    if materialised_only:
+        for g in available_graphs:
+            materialised_ids[g] = get_materialised_template_ids(api_url, g)
+            print_colored(f"{g}: {len(materialised_ids[g])} materialised templates", Colors.BLUE)
     
     templates = load_query_templates(templates_dir)
     
@@ -219,7 +240,11 @@ def test_query_templates(
         template_graphs = template.get('graphs', [])
         
         matching_graphs = [sg for sg in template_graphs if sg in available_graphs] if template_graphs else available_graphs
-        
+        if materialised_only:
+            matching_graphs = [sg for sg in matching_graphs if query_id in materialised_ids.get(sg, set())]
+            if not matching_graphs:
+                continue  # live-only template: not served from Postgres, not tested here
+
         print_colored(f"\n{Colors.BOLD}Testing: {title}{Colors.RESET}", Colors.BLUE)
         print(f"Query ID: {query_id}")
         print(f"File: {template['_file']}")
