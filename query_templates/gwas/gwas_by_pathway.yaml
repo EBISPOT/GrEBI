@@ -6,7 +6,7 @@ topics:
   - gwas_catalog
   - reactome
 cypher_match_fragment: |-
-  MATCH (pathway)-[:sourceId]->(:Id { id: $pathway_id })
+  MATCH (pathway:`reactome:Pathway`)-[:sourceId]->(:Id { id: $pathway_id })
   MATCH (pathway)-[:`reactome:hasEvent`*]->(reaction_like_event)
   MATCH (reaction_like_event)-[:`reactome:input`|`reactome:output`|`reactome:catalystActivity`|`reactome:physicalEntity`|`reactome:regulatedBy`|`reactome:regulator`|`reactome:hasComponent`|`reactome:hasMember`|`reactome:hasCandidate`*]->(physical_entity)
   MATCH (physical_entity)-[:`reactome:referenceEntity`]->(reference_gene_product)
@@ -26,6 +26,7 @@ cypher_match_fragment: |-
   MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
   MATCH (snp)-[assoc:`gwas:associated_with`]->(trait)
   WITH
+      pathway,
       gene,
       snp,
       trait,
@@ -38,6 +39,7 @@ cypher_match_fragment: |-
       (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
 cypher_return_fragment: |-
   RETURN DISTINCT
+      pathway { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(pathway) } AS pathway,
       gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
       snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
       effect_allele,
@@ -48,7 +50,7 @@ cypher_return_fragment: |-
       or_or_beta,
       edge_id
 cypher_count_fragment: |-
-  WITH DISTINCT gene, snp, trait, study, or_or_beta, edge_id
+  WITH DISTINCT pathway, gene, snp, trait, study, or_or_beta, edge_id
   RETURN count(*) AS count
 params:
   - param_id: pathway_id
@@ -56,6 +58,9 @@ params:
     param_type: SourceId
     values_with_type: 'reactome:Pathway'
 result_columns:
+  - column_id: pathway
+    column_type: GraphNodeId
+    facet: true
   - column_id: gene
     column_type: GraphNodeId
   - column_id: snp
@@ -85,3 +90,11 @@ examples:
   - title: Wnt signaling
     params:
       pathway_id: reactome:R-HSA-195721
+# Materialised over every Reactome pathway (values_with_type drops the Id
+# anchor, keeping the label). Size is unknown until the first run — per-pathway
+# results run 6k-21k rows and hasEvent* rolls sub-pathways up into their
+# parents — so the budget is generous; the recorded num_results decides whether
+# it stays.
+materialise:
+  mode: full
+  budget_rows: 40000000

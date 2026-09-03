@@ -225,6 +225,23 @@ def create_indexes_for_subgraph(
     print(f"  Indexes for {sg} created in {elapsed:.1f}s", flush=True)
 
 
+def report_gene_disease_sizing(sg: str, psql_base: list[str] | None = None):
+    """Log how many gene-disease association edges survive the CTD exclusion."""
+    sql = (
+        f'SELECT count(*) FILTER (WHERE NOT (\'CTD\' = ANY("grebi:datasources"))) AS non_ctd, '
+        f'count(*) AS total FROM "edges_{sg}" '
+        f'WHERE "grebi:type" = \'biolink:gene_to_disease_association\';'
+    )
+    cmd = list(psql_base) if psql_base else ["psql", "-v", "ON_ERROR_STOP=1"]
+    proc = subprocess.run(cmd + ["-t", "-A", "-c", sql], text=True, capture_output=True)
+    if proc.returncode != 0:
+        print(f"  sizing report skipped for {sg}: {proc.stderr.strip()}", flush=True)
+        return
+    non_ctd, total = (proc.stdout.strip().split("|") + ["?", "?"])[:2]
+    print(f"  SIZING {sg}: biolink:gene_to_disease_association edges = {total}, "
+          f"non-CTD = {non_ctd} (materialised disease_to_genes/gene_to_diseases rows)", flush=True)
+
+
 # ---------------------------------------------------------------------------
 # Main loading function
 # ---------------------------------------------------------------------------
@@ -337,6 +354,14 @@ def load_all(
             f'ANALYZE "autocomplete_{sg}";',
         ] + [f'ANALYZE "{table}";' for table in discover_matq_tables(sg)])
         run_psql(analyze_stmts, f"analyze_{sg}", psql_base)
+
+        # --- SIZING REPORT (local build only; too heavy for a shared server) ---
+        # disease_to_genes / gene_to_diseases are still served live because their
+        # base — every gene_to_disease_association edge — would be ~130M rows
+        # materialised. Both templates exclude CTD, so the number that decides
+        # whether they can be materialised in full is the non-CTD count.
+        if not drop_existing:
+            report_gene_disease_sizing(sg, psql_base)
 
     # --- GRAPH METADATA TABLE ---
     print("=== Loading graph metadata ===", flush=True)
