@@ -6,7 +6,10 @@ download:
     sources:
       - /nfs/production/parkinso/spot/jmcl/otar/output/evidence_*/*.parquet
 ingests:
-  - globs: ["otar/evidence/*/*.parquet"]
+  # The download stage links every source file flat into otar/evidence/, so
+  # the glob is one level deep (a */*.parquet here matched nothing and the
+  # evidence silently never ingested).
+  - globs: ["otar/evidence/*.parquet"]
     command: '
       cat $GREBI_INGEST_FILENAME |
       grebi_parquet2jsonl |
