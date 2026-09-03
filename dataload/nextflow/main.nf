@@ -465,7 +465,14 @@ workflow {
     )
 
     // === RUN INTEGRATION TESTS ===
+    // Runs the stack straight out of the release directory rather than
+    // re-extracting the tarball (a multi-hour, multi-TB round trip at codon
+    // scale). Booting Neo4j/Postgres mutates the stores, which is fine once
+    // the tarball — the actual release artifact — has been written: release_tgz
+    // is passed purely as an ordering dependency so the test cannot start
+    // before package_release has finished reading the directory.
     test_query_templates(
+        release_dir,
         release_tgz,
         Channel.value(params.subgraphs),
         Channel.value(params.out),

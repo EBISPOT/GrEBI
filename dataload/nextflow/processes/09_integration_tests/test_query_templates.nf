@@ -5,6 +5,9 @@ process test_query_templates {
     cpus "4"
 
     input:
+    path(release_dir)
+    // ordering only: the packaged artifact must exist before we boot (and so
+    // mutate) the stores in release_dir
     path(release_tgz)
     val(subgraphs)
     val(out_dir)
@@ -31,9 +34,7 @@ process test_query_templates {
     #!/usr/bin/env bash
     set -Eeuo pipefail
     
-    echo "Extracting release tarball..."
-    cat ${release_tgz} | xz -d -T0 | tar -xf -
-    cd release
+    cd ${release_dir}
 
     # Configure environment for the entrypoint
     export GREBI_SUBGRAPHS=${subgraphs}
