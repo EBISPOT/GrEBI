@@ -37,6 +37,16 @@ def run_psql(script: str, label: str = "", psql_base: list[str] | None = None):
         print(f"  {label} done.", flush=True)
 
 
+def psql_query(sql: str, psql_base: list[str] | None = None) -> list[str]:
+    """Run a single-column query and return its rows (psql -At)."""
+    cmd = list(psql_base) if psql_base else ["psql", "-v", "ON_ERROR_STOP=1"]
+    proc = subprocess.run(cmd + ["-At", "-c", sql], text=True, capture_output=True)
+    if proc.returncode != 0:
+        msg = proc.stderr.strip() or proc.stdout.strip()
+        raise RuntimeError(f"psql query failed: {msg}")
+    return [line for line in proc.stdout.splitlines() if line.strip()]
+
+
 def sizeof_fmt(num: float) -> str:
     for unit in ("B", "KB", "MB", "GB", "TB"):
         if abs(num) < 1024:
@@ -54,8 +64,16 @@ def load_table(
     create_sql: str,
     pgbin_files: list[Path],
     psql_base: list[str] | None = None,
+    drop_existing: bool = False,
 ) -> None:
-    """Load a single table: BEGIN, CREATE TABLE, \\copy FREEZE all files, COMMIT."""
+    """Load a single table: [DROP;] BEGIN, CREATE TABLE, \\copy FREEZE all files, COMMIT.
+
+    The DROP (external postgres refresh) runs as its own autocommit statement
+    BEFORE the load transaction. Inside the transaction the old table's files
+    would only be unlinked at COMMIT, so old + new would coexist on disk for the
+    whole COPY — for the xspecies edges table that peaks at ~2x 1.5TB and filled
+    the 5TB dev server. Dropping first bounds the peak to (everything else + new).
+    """
     if not pgbin_files:
         print(f"  {table_name}: no files, skipping.", flush=True)
         return
@@ -65,8 +83,11 @@ def load_table(
 
     t0 = time.time()
 
-    # Build a psql script: single transaction with CREATE + \copy FREEZE
-    lines = ["BEGIN;", create_sql]
+    # Build a psql script: (autocommitted DROP) + single transaction with CREATE + \copy FREEZE
+    lines = []
+    if drop_existing:
+        lines.append(f'DROP TABLE IF EXISTS "{table_name}" CASCADE;')
+    lines += ["BEGIN;", create_sql]
     for pgbin in pgbin_files:
         abs_path = str(pgbin.resolve())
         lines.append(
@@ -119,6 +140,24 @@ def discover_matq_tables(sg: str) -> list[str]:
         os.path.basename(f).removesuffix(".pgbin")
         for f in glob.glob(f"matq_{sg}_*.pgbin")
     )
+
+
+def list_query_tables(sg: str, psql_base: list[str] | None = None) -> list[str]:
+    """Query tables that already exist in the database for this subgraph.
+
+    Includes the pre-typed-table `materialised_queries_{sg}` so an upgrade from
+    that layout reclaims its space. Matching is done in Python because LIKE
+    treats the `_` in subgraph names as a wildcard.
+    """
+    existing = psql_query(
+        "select relname from pg_class "
+        "where relkind = 'r' and pg_table_is_visible(oid) "
+        "and (relname like 'matq!_%' escape '!' "
+        "or relname like 'materialised!_queries!_%' escape '!')",
+        psql_base,
+    )
+    return [t for t in existing
+            if t.startswith(f"matq_{sg}_") or t == f"materialised_queries_{sg}"]
 
 
 # ---------------------------------------------------------------------------
@@ -294,12 +333,22 @@ def load_all(
         blobs_pgbins = sorted(Path(p) for p in glob.glob(f"postgres_blobs_{sg}_*.pgbin") if os.path.getsize(p) > 0)
         autocomplete_pgbins = sorted(Path(p) for p in glob.glob(f"autocomplete_{sg}_*.pgbin") if os.path.getsize(p) > 0)
 
-        drop_prefix = f'DROP TABLE IF EXISTS "{{table}}" CASCADE;\n' if drop_existing else ""
+        # --- DROP ORPHANED QUERY TABLES ---
+        # An external database is refreshed in place, so a matq_ table whose query
+        # was renamed or removed is never dropped by the per-table DROP below and
+        # sits there forever (as materialised_queries_{sg} did after the typed-table
+        # switch: 11GB of dead rows on a 5TB server).
+        if drop_existing:
+            keep = set(discover_matq_tables(sg))
+            orphans = [t for t in list_query_tables(sg, psql_base) if t not in keep]
+            if orphans:
+                print(f"  dropping {len(orphans)} orphaned query table(s): {' '.join(orphans)}", flush=True)
+                run_psql("\n".join(f'DROP TABLE IF EXISTS "{t}" CASCADE;' for t in orphans),
+                         f"drop_orphans_{sg}", psql_base)
 
         # --- EDGES TABLE ---
-        create_edges = drop_prefix.format(table=f"edges_{sg}") + \
-            f'CREATE TABLE "edges_{sg}" ({edges_cols}) WITH (fillfactor=100);'
-        load_table(f"edges_{sg}", create_edges, edges_pgbins, psql_base)
+        create_edges = f'CREATE TABLE "edges_{sg}" ({edges_cols}) WITH (fillfactor=100);'
+        load_table(f"edges_{sg}", create_edges, edges_pgbins, psql_base, drop_existing=drop_existing)
 
         # --- NODES TABLE ---
         # SET STORAGE EXTERNAL on embedding vectors to prevent TOAST compression
@@ -310,22 +359,20 @@ def load_all(
                 if line.startswith('"embedding:'):
                     col_name = line.split('"')[1]
                     nodes_storage_stmts += f'\nALTER TABLE "nodes_{sg}" ALTER COLUMN "{col_name}" SET STORAGE EXTERNAL;'
-        create_nodes = drop_prefix.format(table=f"nodes_{sg}") + \
-            f'CREATE TABLE "nodes_{sg}" ({nodes_cols}) WITH (fillfactor=100);' + \
+        create_nodes = f'CREATE TABLE "nodes_{sg}" ({nodes_cols}) WITH (fillfactor=100);' + \
             nodes_storage_stmts
-        load_table(f"nodes_{sg}", create_nodes, nodes_pgbins, psql_base)
+        load_table(f"nodes_{sg}", create_nodes, nodes_pgbins, psql_base, drop_existing=drop_existing)
 
         # --- BLOBS TABLE ---
         # SET STORAGE EXTERNAL on json column: data is already zlib-compressed
-        create_blobs = drop_prefix.format(table=f"blobs_{sg}") + \
-            f'CREATE TABLE "blobs_{sg}" (id bytea NOT NULL, json bytea NOT NULL);' + \
+        create_blobs = f'CREATE TABLE "blobs_{sg}" (id bytea NOT NULL, json bytea NOT NULL);' + \
             f'\nALTER TABLE "blobs_{sg}" ALTER COLUMN json SET STORAGE EXTERNAL;'
-        load_table(f"blobs_{sg}", create_blobs, blobs_pgbins, psql_base)
+        load_table(f"blobs_{sg}", create_blobs, blobs_pgbins, psql_base, drop_existing=drop_existing)
 
         # --- AUTOCOMPLETE TABLE ---
-        create_autocomplete = drop_prefix.format(table=f"autocomplete_{sg}") + \
-            f'CREATE TABLE "autocomplete_{sg}" (label TEXT NOT NULL) WITH (fillfactor=100);'
-        load_table(f"autocomplete_{sg}", create_autocomplete, autocomplete_pgbins, psql_base)
+        create_autocomplete = f'CREATE TABLE "autocomplete_{sg}" (label TEXT NOT NULL) WITH (fillfactor=100);'
+        load_table(f"autocomplete_{sg}", create_autocomplete, autocomplete_pgbins, psql_base,
+                   drop_existing=drop_existing)
 
         # --- MATERIALISED QUERY TABLES (one typed table per query) ---
         # A header-only pgbin (a query that legitimately materialised 0 rows)
@@ -333,9 +380,9 @@ def load_all(
         for table in discover_matq_tables(sg):
             with open(f"{table}.columns") as f:
                 matq_cols = ",".join(line.strip() for line in f if line.strip())
-            create_matq = drop_prefix.format(table=table) + \
-                f'CREATE TABLE "{table}" ({matq_cols}) WITH (fillfactor=100);'
-            load_table(table, create_matq, [Path(f"{table}.pgbin")], psql_base)
+            create_matq = f'CREATE TABLE "{table}" ({matq_cols}) WITH (fillfactor=100);'
+            load_table(table, create_matq, [Path(f"{table}.pgbin")], psql_base,
+                       drop_existing=drop_existing)
 
         # --- INDEXES ---
         create_indexes_for_subgraph(
