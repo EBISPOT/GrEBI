@@ -14,11 +14,12 @@ cypher_match_fragment: |-
   WHERE toFloat(evidence.`otar:score`[0]) >= $min_score
 cypher_return_fragment: |-
   RETURN DISTINCT
+    mouse_gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(mouse_gene) } AS mouse_gene,
     human_gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(human_gene) } AS human_gene,
     disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
     evidence.`otar:score`[0] AS score
 cypher_count_fragment: |-
-  WITH DISTINCT human_gene, disease, evidence
+  WITH DISTINCT mouse_gene, human_gene, disease, evidence
   RETURN count(*) AS count
 params:
   - param_id: mouse_gene_id
@@ -30,6 +31,8 @@ params:
     param_type: float
     param_default: '0.9'
 result_columns:
+  - column_id: mouse_gene
+    column_type: GraphNodeId
   - column_id: human_gene
     column_type: GraphNodeId
   - column_id: disease
@@ -46,4 +49,11 @@ examples:
   - title: Htt
     params:
       mouse_gene_id: mgi:96067
+# Materialised at the min_score default (0.9); the Postgres path serves that
+# threshold regardless of the value passed. Upper bound on the Sept 2026
+# xspecies build: 32.5M otar:targetId evidence edges before the score filter,
+# so the budget is set above that rather than to the (unknown) filtered count.
+materialise:
+  mode: full
+  budget_rows: 40000000
   
