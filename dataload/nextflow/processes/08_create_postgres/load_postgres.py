@@ -181,13 +181,24 @@ def create_indexes_for_subgraph(
     stmts.append(f'CREATE INDEX "idx_edges_{sg}_toNodeId" ON "edges_{sg}" USING btree ("grebi:toNodeId");')
     stmts.append(f'CREATE INDEX "idx_edges_{sg}_type" ON "edges_{sg}" USING btree ("grebi:type");')
     stmts.append(f'CREATE INDEX "idx_edges_{sg}_datasources_gin" ON "edges_{sg}" USING gin ("grebi:datasources");')
-    # Partial indexes for closure resolution at serving time
-    # (GrebiPostgresClient.closureCurieSet): with only the plain toNodeId btree,
-    # Postgres heap-fetches EVERY edge touching the queried node just to filter
-    # by type — 78s cold for a hub node with ~50k edges of other types.
+    # Partial covering indexes for closure resolution at serving time
+    # (GrebiPostgresClient.closureNodeIdSet). Two problems they solve:
+    #
+    #  - with only the plain toNodeId btree, Postgres heap-fetches EVERY edge
+    #    touching the queried node just to filter by type (78s cold for a hub
+    #    node with ~50k edges of other types);
+    #  - without INCLUDE, reading the other endpoint still costs one random heap
+    #    fetch per matched edge. An ontology root has ~80k descendants, so that
+    #    is ~80k random reads into a 1.8TB heap: 55ms fully cached, 112s cold,
+    #    which is what made efo:0000001 exceed the API's 30s timeout.
+    #
+    # With the endpoint INCLUDEd the lookup is an index-only scan over ~500MB
+    # that stays resident, so a root closure costs the same as a leaf's.
     stmts.append(f'CREATE INDEX "idx_edges_{sg}_broad_match_to" ON "edges_{sg}" ("grebi:toNodeId") '
+                 f'INCLUDE ("grebi:fromNodeId") '
                  f"WHERE \"grebi:type\" = 'biolink:broad_match';")
     stmts.append(f'CREATE INDEX "idx_edges_{sg}_broad_match_from" ON "edges_{sg}" ("grebi:fromNodeId") '
+                 f'INCLUDE ("grebi:toNodeId") '
                  f"WHERE \"grebi:type\" = 'biolink:broad_match';")
 
     # Node indexes

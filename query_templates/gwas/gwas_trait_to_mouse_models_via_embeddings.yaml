@@ -107,9 +107,12 @@ examples:
       trait_id: efo:0004309
       n_embedding_candidates: '50'
       n_top_mp_hits: '5'
-  - title: LDL cholesterol measurement
+  # HDL rather than LDL: the trait must have MP phenotypes among its top
+  # embedding neighbours AND a human ortholog with a SNP for the same trait, and
+  # efo:0004611 (LDL) clears the first gate but not the second.
+  - title: HDL cholesterol measurement
     params:
-      trait_id: efo:0004611
+      trait_id: efo:0004612
       n_embedding_candidates: '50'
       n_top_mp_hits: '5'
 # Materialised at the parameter defaults (50 candidates, top 5 MP hits); the
