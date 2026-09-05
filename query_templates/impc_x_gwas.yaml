@@ -68,13 +68,13 @@ materialise:
   uses_datasources:
     - IMPC
     - GWAS
-    - OLS.mp
-    - OLS.hp
-    - OLS.upheno
-    - OLS.efo
-    - OLS.mondo
-    - OLS.doid
-    - OLS.oba
+    - Ontologies.mp
+    - Ontologies.hp
+    - Ontologies.upheno
+    - Ontologies.efo
+    - Ontologies.mondo
+    - Ontologies.doid
+    - Ontologies.oba
   cypher: |-
     ////
     //// gwas->oba->upheno->mp->impc
@@ -83,7 +83,7 @@ materialise:
     MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
     MATCH (trait)-[:`biolink:broad_match` *0..1]->(trait_or_ancestor)<-[:`upheno:phenotypeToTrait`]-(speciesNeutralPhenotype)
     MATCH (speciesNeutralPhenotype)<-[:`biolink:broad_match`]-(descendantPhenotype)-[:sourceId]->(descendantSourceId)
-    WHERE "OLS.mp" IN descendantPhenotype.`grebi:datasources`
+    WHERE "Ontologies.mp" IN descendantPhenotype.`grebi:datasources`
     MATCH (descendantPhenotype)<-[:`impc:phenotype`]-(mouseGene)
     MATCH (mouseGene)-[:`impc:humanGeneOrthologues`]->(humanGene)<-[`gwas:snp_gene_ids`]-(snp)
     RETURN DISTINCT
@@ -114,7 +114,7 @@ materialise:
     MATCH (snp:`gwas:SNP`)-[:`gwas:associated_with`]->(humanPhenotype)
     MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
     MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
-    WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources`
+    WHERE "Ontologies.mp" IN mousePhenotype.`grebi:datasources`
     MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
     MATCH (mouseGene)-[:`impc:humanGeneOrthologues`]->(humanGene)<-[`gwas:snp_gene_ids`]-(snp)
     RETURN DISTINCT "gwas->hp->mp->impc" AS graph_path,
@@ -145,7 +145,7 @@ materialise:
     MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
     MATCH (trait)-[:`biolink:broad_match` *0..1]->(trait_or_ancestor)<-[:`upheno:phenotypeToTrait`]-(humanPhenotype)
     MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
-    WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources` AND "OLS.hp" IN humanPhenotype.`grebi:datasources`
+    WHERE "Ontologies.mp" IN mousePhenotype.`grebi:datasources` AND "Ontologies.hp" IN humanPhenotype.`grebi:datasources`
     MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
     MATCH (mouseGene)-[:`impc:humanGeneOrthologues`]->(humanGene)<-[`gwas:snp_gene_ids`]-(snp)
       RETURN DISTINCT "gwas->oba->hp->mp->impc" AS graph_path,
@@ -176,7 +176,7 @@ materialise:
     MATCH (humanGene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
     MATCH (humanPhenotype)<-[:(`biolink:has_phenotype`|`ro:disease_has_feature`)]-(disease)
     MATCH (humanPhenotype)-[:`semapv:crossSpeciesExactMatch`]-(mousePhenotype)
-    WHERE "OLS.mp" IN mousePhenotype.`grebi:datasources`
+    WHERE "Ontologies.mp" IN mousePhenotype.`grebi:datasources`
     MATCH (mousePhenotype)<-[:`impc:phenotype`]-(mouseGene)
     MATCH (mouseGene)-[:`impc:humanGeneOrthologues`]->(humanGene)<-[`gwas:snp_gene_ids`]-(snp)
         RETURN DISTINCT "gwas->{mondo,doid,efo}->hp->mp->impc" AS graph_path,

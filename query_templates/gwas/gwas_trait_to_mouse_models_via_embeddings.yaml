@@ -20,9 +20,7 @@ cypher_match_fragment: |-
   WITH trait, collect({term: any_term, dist: emb_dist})[0..toInteger($n_embedding_candidates)] AS candidates
   UNWIND candidates AS cand
   WITH trait, cand.term AS any_term, cand.dist AS emb_dist
-  // datasource ids are OLS.<ontology>; the old "Ontologies.mp" name matches no
-  // node, which silently emptied this gate for almost every trait.
-  WHERE "OLS.mp" IN any_term.`grebi:datasources`
+  WHERE "Ontologies.mp" IN any_term.`grebi:datasources`
   WITH trait, any_term, emb_dist
   ORDER BY emb_dist ASC
   WITH trait, collect({mp: any_term, dist: emb_dist})[0..toInteger($n_top_mp_hits)] AS hits
