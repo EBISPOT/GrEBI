@@ -5,7 +5,7 @@ graphs:
 topics:
   - gwas_catalog
 cypher_match_fragment: |-
-  MATCH (gene)-[:sourceId]->(:Id {id: $gene_id})
+  MATCH (gene:`hgnc:Gene`)-[:sourceId]->(:Id {id: $gene_id})
 
   // Gather diseases from three sources via a UNION subquery. This streams rows
   // directly instead of materialising large collect()'d lists-of-maps on the
@@ -72,3 +72,8 @@ examples:
   - title: BRCA1
     params:
       gene_id: hgnc:1100
+# Same base as disease_to_genes (see the sizing note there): ~60k non-CTD
+# curated edges plus a GWAS branch bounded by gwas_by_gene_and_disease's 3.8M.
+materialise:
+  mode: full
+  budget_rows: 20000000

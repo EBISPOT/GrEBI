@@ -5,11 +5,13 @@ graphs:
 topics:
   - gwas_catalog
 cypher_match_fragment: |-
-  MATCH (disease)-[:sourceId]->(:Id {id: $disease_id})
-  WHERE 'Ontologies.mondo' IN disease.`grebi:datasources`
-
-  // find subclasses
-  MATCH (disease)<-[:`biolink:broad_match`*0..1]-(specific_disease)
+  // closure-root form: specific_disease is the base the row is about — the
+  // queried disease or one of its subclasses via the precomputed broad_match
+  // closure (one hop suffices: it is a full transitive closure).
+  MATCH (specific_disease)-[:`biolink:broad_match`*0..1]->(disease)-[:sourceId]->(:Id {id: $disease_id})
+  // datasource ids are OLS.<ontology> (the old Ontologies.<ontology> names no
+  // longer exist on any node, which made this template return nothing).
+  WHERE 'OLS.mondo' IN disease.`grebi:datasources`
   WITH DISTINCT specific_disease
 
   // Gather genes from three sources via a UNION subquery. This streams rows
@@ -77,3 +79,10 @@ examples:
   - title: thrombotic microangiopathy
     params:
       disease_id: mondo:0019737
+# Sized on the Sept 2026 xspecies build: the gene_to_disease_association base
+# is 129.7M edges but only 28,826 once CTD is excluded (which the WHERE above
+# does); Disease_Mapped_To_Gene adds 30,542 and the GWAS branch is bounded by
+# gwas_by_gene_and_disease's 3.8M rows.
+materialise:
+  mode: full
+  budget_rows: 20000000
