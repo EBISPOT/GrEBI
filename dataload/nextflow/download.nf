@@ -12,7 +12,12 @@ process download_file {
     cache "lenient"
     memory 2.GB
     time { 2.hour + 4.hour * (task.attempt-1) }
-    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    // Retry any failure, not just OOM/timeout: a download task that lands on
+    // a node with a stale NFS mount fails with exit 1 in seconds ("all sources
+    // exhausted" for a local path that is fine everywhere else), and a retry
+    // is rescheduled elsewhere. A genuinely dead source still fails, three
+    // attempts later.
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'terminate' }
     maxRetries 3
 
     input:
