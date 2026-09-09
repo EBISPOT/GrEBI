@@ -16,8 +16,12 @@ ARG BASE_IMAGE=ghcr.io/ebispot/grebi_base:dev
 ###############################################################################
 FROM rust:1.90.0-bullseye AS chef
 
-# Retry transient apt mirror errors instead of aborting the build.
-RUN printf 'Acquire::Retries "5";\n' > /etc/apt/apt.conf.d/99-grebi-retries
+# Retry transient apt mirror errors instead of aborting the build, and accept
+# bullseye's expired Release files: Debian 11 left LTS in Aug 2026, so its
+# security repository's InRelease is no longer re-signed and a fresh
+# `apt-get update` fails with "Release file ... is expired". The packages
+# themselves are still served.
+RUN printf 'Acquire::Retries "5";\nAcquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99-grebi-retries
 
 # cmake is needed by some crates.
 RUN apt-get update -y && apt-get install -y --no-install-recommends cmake && rm -rf /var/lib/apt/lists/*
