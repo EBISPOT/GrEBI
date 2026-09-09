@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import {Helmet} from "react-helmet";
 
-import MuiThemeProvider from '@mui/styles/ThemeProvider'
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'
 import createTheme from '@mui/material/styles/createTheme'
 import EbiDownloadsPage from "./pages/EbiDownloadsPage";
 import EbiErrorPage from "./pages/EbiErrorPage";
