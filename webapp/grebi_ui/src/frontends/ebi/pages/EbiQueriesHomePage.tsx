@@ -14,7 +14,11 @@ import QueryTopic from "../../../model/QueryTopic";
 import { QueryTemplate } from "../../../model/QueryTemplate";
 import { get } from "../../../app/api";
 
-export default function EbiQueriesHomePage() {
+/**
+ * `initialTopic` pre-ticks a topic on arrival (from a /queries/<topic> link);
+ * after that the facets are the user's to change.
+ */
+export default function EbiQueriesHomePage({ initialTopic }: { initialTopic?: string } = {}) {
   const params = useParams();
   const graph: string | undefined = params.graph;
 
@@ -36,10 +40,10 @@ export default function EbiQueriesHomePage() {
   }, [graph]);
 
   useEffect(() => {
-    setSelectedTopics(new Set());
+    setSelectedTopics(initialTopic ? new Set([initialTopic]) : new Set());
     setSelectedInputs(new Set());
     setSelectedOutputs(new Set());
-  }, [graph]);
+  }, [graph, initialTopic]);
 
   const availableInputs = useMemo(() => {
     return queries ? getAvailableQueryTemplateInputs(queries) : [];

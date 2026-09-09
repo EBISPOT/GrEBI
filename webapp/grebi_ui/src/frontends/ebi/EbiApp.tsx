@@ -16,7 +16,7 @@ import EbiNodePage from "./pages/EbiNodePage";
 import EbiSearchPage from "./pages/EbiSearchPage";
 import EbiTablesPage from "./pages/EbiTablesPage";
 import EbiTablesHomePage from "./pages/EbiTablesHomePage";
-import EbiQueryPage from "./pages/EbiQueryPage";
+import EbiQueryOrTopicPage from "./pages/EbiQueryOrTopicPage";
 import EbiQueriesHomePage from "./pages/EbiQueriesHomePage";
 import EbiDatasourcesPage from "./pages/EbiDatasourcesPage";
 import EbiGraphPage from "./pages/EbiGraphPage";
@@ -64,7 +64,7 @@ class EbiApp extends React.Component {
             <Route path={`/graphs/:graph/tables/:queryid`} element={<EbiTablesPage />} />
 
             <Route path={`/graphs/:graph/queries`} element={<EbiQueriesHomePage />} />
-            <Route path={`/graphs/:graph/queries/:queryid`} element={<EbiQueryPage />} />
+            <Route path={`/graphs/:graph/queries/:queryid`} element={<EbiQueryOrTopicPage />} />
 
             <Route path={`/graphs/:graph/downloads`} element={<EbiDownloadsPage />} />
 
