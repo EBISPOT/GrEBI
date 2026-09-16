@@ -7110,7 +7110,7 @@
           "id": "PrimeKG",
           "ingests": [
             {
-              "command": " cat $GREBI_INGEST_FILENAME | $GREBI_DATALOAD_HOME/01_ingest/primekg.py",
+              "command": " cat $GREBI_INGEST_FILENAME | grebi_ingest_primekg",
               "globs": [
                 "test_primekg/kg.csv"
               ]

@@ -38,8 +38,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run datasource parser unit tests
-        run: python3 -m unittest discover -s tests -p 'test_*_ingest.py'
+      # The ingest parsers are Rust crates tested by rust_tests.yml; the download
+      # scripts and the download stage of the workflow are still Python.
+      - name: Run download script unit tests
+        run: python3 -m unittest discover -s tests -p 'test_*download*.py'
 
       - name: Free up disk space
         run: |
