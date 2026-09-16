@@ -10,4 +10,4 @@ ingests:
   - globs: ["test_primekg/kg.csv"]
     command: '
       cat $GREBI_INGEST_FILENAME |
-      $GREBI_DATALOAD_HOME/01_ingest/primekg.py'
+      grebi_ingest_primekg'

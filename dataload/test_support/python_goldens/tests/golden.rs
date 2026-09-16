@@ -13,14 +13,6 @@ fn python(script_path: &str, case: &str) -> GoldenCase {
         .env("GREBI_DATALOAD_HOME", format!("{}/../..", env!("CARGO_MANIFEST_DIR")))
 }
 
-/// PrimeKG's kg.csv rows: the source node with the edge as a reified property
-/// and a bare record for the target node.
-#[test]
-fn primekg() {
-    python("01_ingest/primekg.py", "primekg")
-        .env("GREBI_DATASOURCE_ID", "PrimeKG").env("GREBI_INGEST_DATASOURCE_NAME", "PrimeKG")
-        .stdin("kg.csv").stdout("output.jsonl").run();
-}
 
 /// A BioStudies FTP tree walked for accession-level PageTab JSON files.
 #[test]
@@ -74,11 +66,6 @@ fn biomappings_transform() {
         .env("GREBI_INGEST_FILENAME", "$CASE/mappings.tsv").stdout("output.jsonl").run();
 }
 
-/// Query result rows to CSV: lists joined with semicolons, objects as JSON.
-#[test]
-fn jsonl_to_csv() {
-    python("07_run_queries/jsonl_to_csv.py", "jsonl_to_csv").stdin("results.jsonl").stdout("results.csv").run();
-}
 
 /// The three pesticide registers, read from spreadsheets.
 #[test]

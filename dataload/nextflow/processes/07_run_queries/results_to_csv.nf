@@ -19,7 +19,7 @@ process results_to_csv {
     set -Eeuo pipefail
     mkdir query_results
     cat ${results_jsonl} | \
-    python3 /opt/grebi_dataload/07_run_queries/jsonl_to_csv.py \
+    grebi_jsonl2csv \
     | pigz --best > query_results/${results_jsonl.simpleName}.results.csv.gz
     """
 }
