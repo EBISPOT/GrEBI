@@ -1,0 +1,116 @@
+title: Search GWAS Catalog studies by drugs or drug classes indicated for a disease
+question: What GWAS [studies]{study} report traits involving [drugs or drug classes]{drug} used to treat {disease_id}?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+  - chebi
+# Study-level counterpart of gwas_by_drugs_indicated_for_disease (issue #31):
+# the same drug and trait matching, but each row is a study annotated with the
+# trait rather than one of its associations.
+cypher_match_fragment: |-
+  MATCH (disease)-[:sourceId]->(:Id {id: $disease_id })
+  MATCH (treatment_drug)-[:(
+        `biolink:treats` |
+        `biolink:applied_to_treat` |
+        `biolink:treats_or_applied_or_studied_to_treat` |
+        `primekg:indication`
+      )]->(disease)
+  WITH DISTINCT disease, treatment_drug
+  CALL {
+      WITH treatment_drug
+      RETURN treatment_drug AS trait_input, treatment_drug AS drug
+      UNION
+      WITH treatment_drug
+      MATCH (treatment_drug)-[:`mesh.vocab:pharmacologicalAction`]->(role_input)
+      RETURN DISTINCT role_input AS trait_input, role_input AS drug
+      UNION
+      WITH treatment_drug
+      MATCH (treatment_drug)-[:`mesh.vocab:pharmacologicalAction`]->(role)
+      WITH DISTINCT
+          role,
+          [role_id IN role.id WHERE role_id =~ "chebi:[0-9]+" | role_id][0] AS chebi_role_id
+      WHERE chebi_role_id IS NOT NULL
+      MATCH (goche_role)-[:sourceId]->(:Id { id: replace(chebi_role_id, "chebi:", "goche:") })
+      RETURN DISTINCT goche_role AS trait_input, role AS drug
+  }
+  MATCH (matched_trait)-[:`ro:has_primary_input`]->(trait_input)
+  MATCH (trait)-[:(`biolink:subclass_of`|`biolink:broad_match`)*0..1]->(matched_trait)
+  MATCH (study:`gwas:Study`)-[:`gwas:mapped_trait`]->(trait)
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
+      trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
+      drug { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(drug) } AS drug,
+      study { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study,
+      [id IN study.id WHERE id =~ "GCST.*" | id][0] AS study_accession,
+      study.`gwas:disease_trait`[0] AS reported_trait,
+      // property names differ between builds: ontology property equivalences
+      // rename dcterms:creator/modified on graphs that load the biolink model
+      coalesce(study.`biolink:author`, study.`dcterms:creator`)[0] AS first_author,
+      study.`gwas:journal`[0] AS journal,
+      coalesce(study.`dcterms:Date_Modified`, study.`dcterms:modified`)[0] AS publication_date,
+      study.`gwas:pubmedid`[0] AS pubmed_id,
+      study.`gwas:initial_sample_size`[0] AS initial_sample_size,
+      study.`gwas:replication_sample_size`[0] AS replication_sample_size,
+      study.`gwas:association_count`[0] AS association_count,
+      study.`gwas:full_summary_statistics`[0] AS full_summary_statistics,
+      study.`gwas:genotyping_technology`[0] AS genotyping_technology
+cypher_count_fragment: |-
+  WITH DISTINCT disease, trait, drug, study
+  RETURN count(*) AS count
+params:
+  - param_id: disease_id
+    param_name: Disease
+    param_type: SourceId
+    values_under: 'mondo:0000001'
+result_columns:
+  - column_id: disease
+    column_type: GraphNodeId
+    facet: true
+  - column_id: trait
+    column_type: GraphNodeId
+  - column_id: drug
+    column_type: GraphNodeId
+  - column_id: study
+    column_type: GraphNodeId
+  - column_id: study_accession
+    column_type: string
+  - column_id: reported_trait
+    column_type: string
+  - column_id: first_author
+    column_type: string
+  - column_id: journal
+    column_type: string
+  - column_id: publication_date
+    column_type: string
+  - column_id: pubmed_id
+    column_type: string
+  - column_id: initial_sample_size
+    column_type: string
+  - column_id: replication_sample_size
+    column_type: string
+    optional: true
+  - column_id: association_count
+    column_type: string
+  - column_id: full_summary_statistics
+    column_type: string
+  - column_id: genotyping_technology
+    column_type: string
+examples:
+  - title: stroke
+    params:
+      disease_id: efo:0000712
+  - title: asthma
+    params:
+      disease_id: mondo:0004979
+  - title: major depressive disorder
+    params:
+      disease_id: mondo:0002009
+  - title: lung cancer
+    params:
+      disease_id: mondo:0008903
+# Materialised over every disease under mondo:0000001, like the association
+# version; far fewer rows than that one, so the default budget suffices.
+materialise:
+  mode: full

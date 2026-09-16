@@ -1,0 +1,86 @@
+title: Search GWAS Catalog studies by disease location
+question: What GWAS [studies]{study} report diseases located in {location_id}?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+  - uberon
+# Study-level counterpart of gwas_by_disease_location (issue #31): the same
+# disease matching, but each row is a study annotated with the disease rather
+# than one of its associations.
+cypher_match_fragment: |-
+  MATCH (location)-[:`biolink:broad_match`*0..1]->(location_root)-[:sourceId]->(:Id {id: $location_id })
+  MATCH (matched_disease)-[:`biolink:disease_has_location`]->(location)
+  // include subclasses of the matched disease
+  MATCH (disease)-[:`biolink:broad_match`*0..1]->(matched_disease)
+  MATCH (study:`gwas:Study`)-[:`gwas:mapped_trait`]->(disease)
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      location { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(location) } AS location,
+      disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
+      study { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study,
+      [id IN study.id WHERE id =~ "GCST.*" | id][0] AS study_accession,
+      study.`gwas:disease_trait`[0] AS reported_trait,
+      // property names differ between builds: ontology property equivalences
+      // rename dcterms:creator/modified on graphs that load the biolink model
+      coalesce(study.`biolink:author`, study.`dcterms:creator`)[0] AS first_author,
+      study.`gwas:journal`[0] AS journal,
+      coalesce(study.`dcterms:Date_Modified`, study.`dcterms:modified`)[0] AS publication_date,
+      study.`gwas:pubmedid`[0] AS pubmed_id,
+      study.`gwas:initial_sample_size`[0] AS initial_sample_size,
+      study.`gwas:replication_sample_size`[0] AS replication_sample_size,
+      study.`gwas:association_count`[0] AS association_count,
+      study.`gwas:full_summary_statistics`[0] AS full_summary_statistics,
+      study.`gwas:genotyping_technology`[0] AS genotyping_technology
+cypher_count_fragment: |-
+  WITH DISTINCT location, disease, study
+  RETURN count(*) AS count
+params:
+  - param_id: location_id
+    param_name: Anatomical Location
+    param_type: SourceId
+    values_under: 'uberon:0001062'
+result_columns:
+  - column_id: location
+    column_type: GraphNodeId
+    facet: true
+  - column_id: disease
+    column_type: GraphNodeId
+    facet: true
+  - column_id: study
+    column_type: GraphNodeId
+  - column_id: study_accession
+    column_type: string
+  - column_id: reported_trait
+    column_type: string
+  - column_id: first_author
+    column_type: string
+  - column_id: journal
+    column_type: string
+  - column_id: publication_date
+    column_type: string
+  - column_id: pubmed_id
+    column_type: string
+  - column_id: initial_sample_size
+    column_type: string
+  - column_id: replication_sample_size
+    column_type: string
+    optional: true
+  - column_id: association_count
+    column_type: string
+  - column_id: full_summary_statistics
+    column_type: string
+  - column_id: genotyping_technology
+    column_type: string
+materialise:
+  mode: full
+examples:
+  - title: lung
+    params:
+      location_id: uberon:0002048
+  - title: liver
+    params:
+      location_id: uberon:0002107
+  - title: retina
+    params:
+      location_id: uberon:0000966
