@@ -31,6 +31,8 @@ run_backend_with_k8s_pg.sh
 # Committed E2E test expected-output snapshots (override *.jsonl / *.json ignores above)
 !tests/expected_output/**/*.jsonl
 !tests/expected_output/**/*.json
+# ...but never the diff aid the API snapshot test writes when a comparison fails
+*.actual.json
 # Committed E2E test fixtures: nothing under tests/data is scratch, so none of the
 # *.tsv / *.txt / *.jsonl rules above may apply there (git add silently skips
 # ignored files inside a directory, which is how test_gwas shipped without its data)

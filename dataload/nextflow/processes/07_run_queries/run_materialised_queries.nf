@@ -6,7 +6,10 @@ process run_materialised_queries {
     stageInMode "copy"
 
     input:
-    tuple val(subgraph), path(neo_db), path(query_yamls_path)
+    // query_templates_fingerprint is a content hash of query_yamls_path: a
+    // directory input is hashed by path only, so without it an edited template
+    // was served from cache on resume.
+    tuple val(subgraph), path(neo_db), path(query_yamls_path), val(query_templates_fingerprint)
     val(neo_query_mem)
     val(out_dir)
 

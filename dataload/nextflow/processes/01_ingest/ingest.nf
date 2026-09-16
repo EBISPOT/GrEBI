@@ -6,7 +6,9 @@ process ingest {
     maxRetries 5
     
     input:
-    tuple val(subgraph), val(file_listing), val(identifier_props), val(bytes_per_merged_file)
+    // input_file is the same file as file_listing.filename, declared as a path
+    // so that resume tracks its content; the script reads it by absolute path.
+    tuple val(subgraph), val(file_listing), val(identifier_props), val(bytes_per_merged_file), path(input_file, stageAs: 'input/*')
 
     output:
     tuple val(subgraph), val(file_listing.datasource.id), path("nodes_${task.index}.jsonl.*"), emit: nodes

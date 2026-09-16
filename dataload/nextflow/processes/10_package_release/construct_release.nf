@@ -13,6 +13,9 @@ process construct_release {
     val(out_dir)
     val(docker_image)
     val(dataload_home)
+    // content hash of query_templates (a directory input is hashed by path
+    // only), so an added or edited template re-builds the release on resume
+    val(query_templates_fingerprint)
 
     // Symlinks, not a copy: nothing downstream reads out/release (staging and
     // the FTP push both consume the tarballs), and a copy dereferences the
