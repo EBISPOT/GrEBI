@@ -13,7 +13,7 @@ export default class Refs {
 
 	mergeWith(refs:any):Refs {
 		if(refs)
-			return new Refs({ ...this.refs, refs })
+			return new Refs({ ...this.refs, ...refs })
 		else
 			return new Refs({ ...this.refs })
 	}

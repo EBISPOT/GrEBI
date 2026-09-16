@@ -74,7 +74,7 @@ describe('EdgeExpandPanel', () => {
     mockedGetPaginated.mockResolvedValue(page([edge('e1', 'a', 'b')]))
     const props = renderPanel({ direction: 'incoming' })
     fireEvent.click(await screen.findByText('A'))
-    expect(props.onSelectNode.mock.calls[0][0].getNodeId()).toBe('a')
+    expect(vi.mocked(props.onSelectNode).mock.calls[0][0].getNodeId()).toBe('a')
     expect(lastRequest().pathname).toBe('/api/v1/graphs/g/nodes/ENC/incoming_edge_refs')
   })
 
@@ -87,15 +87,12 @@ describe('EdgeExpandPanel', () => {
   it('pages through large result sets', async () => {
     mockedGetPaginated.mockResolvedValue(page([edge('e1', 'a', 'b')], 120))
     renderPanel()
-    // NOTE: current behaviour, looks like a bug: the range separator is written as
-    // "–" inside JSX text, which is not an escape sequence there, so the
-    // literal characters "–" are rendered instead of an en dash.
-    expect(await screen.findByText('1\\u201350 of 120')).toBeInTheDocument()
+    expect(await screen.findByText('1\u201350 of 120')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Prev' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     await waitFor(() => expect(lastRequest().params.get('page')).toBe('1'))
-    expect(await screen.findByText('51\\u2013100 of 120')).toBeInTheDocument()
+    expect(await screen.findByText('51\u2013100 of 120')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Prev' })).toBeEnabled()
   })
 

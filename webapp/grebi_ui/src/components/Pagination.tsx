@@ -17,7 +17,7 @@ export function Pagination({
   );
 
   useEffect(() => {
-    setPageCount(Math.ceil(dataCount / rowsPerPage));
+    setPageCount(Math.max(1, Math.ceil(dataCount / rowsPerPage)));
   }, [rowsPerPage, dataCount]);
 
   return (
@@ -118,9 +118,9 @@ export function Pagination({
         onClick={() => {
           onPageChange(page + 1);
         }}
-        disabled={page === pageCount - 1}
+        disabled={page >= pageCount - 1}
         className={`px-4 py-1 text-neutral-default ${
-          page === pageCount - 1
+          page >= pageCount - 1
             ? "cursor-not-allowed"
             : "hover:bg-neutral-default hover:rounded-md hover:text-white"
         }`}

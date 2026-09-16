@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import QueryInterface from './QueryInterface'
 import { Page } from '../../app/api'
@@ -120,10 +120,9 @@ describe('QueryInterface', () => {
     renderInterface(noParams)
     expect(screen.queryByText('Inputs')).toBeNull()
     expect(await screen.findByRole('link', { name: 'Study one' })).toBeInTheDocument()
-    // NOTE: current behaviour, looks like a bug: the submit effect runs for the initial {}
-    // state and again when the query-string effect replaces it with an equal but new object
-    // (QueryInterface.tsx:59,66-68), so a parameter-less template is queried twice on mount
-    await waitFor(() => expect(queryCalls()).toHaveLength(2))
+    // exactly one query on mount: the submit waits for the query string to have been read
+    await act(async () => {})
+    expect(queryCalls()).toHaveLength(1)
     for (const [, params] of queryCalls()) {
       expect(params.toString()).toBe('page=0&size=10&resolve=false')
     }

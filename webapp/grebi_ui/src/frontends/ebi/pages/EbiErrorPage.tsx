@@ -8,13 +8,13 @@ export default function EbiErrorPage() {
   const location = useLocation();
   const message = location.state?.message;
 
-  document.title = "Ontology Lookup Service (OLS)";
+  document.title = "GrEBI";
   return (
     <Fragment>
       <Header section="error" />
       <main className="container mx-auto px-4">
         <img
-          src={urlJoin(process.env.PUBLIC_URL!, "/not-found.jpg")}
+          src={urlJoin((process.env.PUBLIC_URL || "/"), "/not-found.jpg")}
           className="md:max-w-lg mx-auto rounded-lg mb-4"
           alt="person using microscope by rawpixel.com on freepik.com"
         />
@@ -24,7 +24,7 @@ export default function EbiErrorPage() {
         <div className="text-center text-2xl mx-3 mb-8">
           <a
             className="link-default text-center text-3xl"
-            href={urlJoin(process.env.PUBLIC_URL!, "/")}
+            href={urlJoin((process.env.PUBLIC_URL || "/"), "/")}
           >
             Return to home
           </a>

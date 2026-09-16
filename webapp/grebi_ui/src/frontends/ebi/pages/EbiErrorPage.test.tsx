@@ -33,8 +33,6 @@ describe('EbiErrorPage', () => {
 
   it('sets the document title', () => {
     render(<MemoryRouter><EbiErrorPage /></MemoryRouter>)
-    // NOTE: current behaviour, looks like a bug: the title names the Ontology
-    // Lookup Service (copied from OLS) rather than GrEBI.
-    expect(document.title).toBe('Ontology Lookup Service (OLS)')
+    expect(document.title).toBe('GrEBI')
   })
 })

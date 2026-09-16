@@ -76,30 +76,21 @@ describe('DocsContent', () => {
     expect(screen.getByText('POST')).toBeInTheDocument()
     expect(screen.getByText('/api/v1/graphs/g1/search')).toBeInTheDocument()
     expect(paramInput('q')).toHaveValue('BRCA1')
-    // NOTE: current behaviour, looks like a bug: `size` is a known HTML attribute, so
-    // rehype hands it to ApiExample as a number, and ApiExample only keeps string
-    // props as parameters. The docs' search example (`q="BRCA1" size="5"`) therefore
-    // loses its size parameter.
-    expect(screen.queryByText('size', { selector: 'label' })).toBeNull()
+    // `size` reaches ApiExample as a number (a known HTML attribute) and is still a parameter
+    expect(paramInput('size')).toHaveValue('5')
     expect(screen.getByText('gwas_by_trait')).toBeInTheDocument()
     expect(screen.getByText('graph: g1')).toBeInTheDocument()
     expect(paramInput('trait_id')).toHaveValue('mondo:1')
     await act(async () => {})
   })
 
-  it('numbers pubmed citations, but the reference list only appears on a later render', async () => {
+  it('numbers pubmed citations and lists the references straight away', async () => {
     const markdown = 'As shown<pubmed id="40323307"></pubmed> before.'
-    const { rerender } = renderDocs(markdown)
+    renderDocs(markdown)
     await act(async () => {})
     const cite = screen.getByRole('link', { name: '[1]' })
     expect(cite).toHaveAttribute('href', '#ref-1')
 
-    // NOTE: current behaviour, looks like a bug: PubmedReferences subscribes to the
-    // registry in an effect that runs after the citation's registration has already
-    // notified, and it never re-reads on subscribe, so the list is missing until
-    // something else re-renders the page.
-    expect(screen.queryByText(/OLS4: a new Ontology Lookup Service/)).toBeNull()
-    rerender(<DocsContent markdown={markdown} images={{}} />)
     expect(screen.getByText(/OLS4: a new Ontology Lookup Service/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /McLaughlin J/ })).toHaveAttribute('href', 'https://pubmed.ncbi.nlm.nih.gov/40323307/')
   })
@@ -114,10 +105,7 @@ describe('DocsContent', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
     })
     expect(writeText).toHaveBeenCalledTimes(1)
-    // NOTE: current behaviour, looks like a bug: the copy button reads the code
-    // element's children expecting a string, but react-markdown hands over an
-    // array, so an empty string is copied to the clipboard.
-    expect(writeText).toHaveBeenCalledWith('')
+    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^print\(1\)\n?$/))
     expect(screen.getByRole('button', { name: 'Copied!' })).toBeInTheDocument()
     act(() => { vi.advanceTimersByTime(1500) })
     expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument()

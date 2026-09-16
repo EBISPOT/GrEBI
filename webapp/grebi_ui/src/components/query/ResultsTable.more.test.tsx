@@ -164,10 +164,7 @@ describe('ResultsTable narrowing, sorting and export', () => {
     await waitFor(() => expect(screen.queryByText('Loading results...')).toBeNull())
     expect(screen.queryByText('Filter results')).toBeNull()
     expect(screen.queryByRole('link', { name: 'glucose' })).toBeNull()
-    // NOTE: current behaviour, looks like a bug: the "No results found" placeholder is passed to
-    // DataTable, which only uses it for a filter box ResultsTable never enables, so an empty
-    // result set is an empty table with no message (ResultsTable.tsx:313, DataTable.tsx:127)
-    expect(screen.queryByText('No results found')).toBeNull()
+    expect(screen.getByText('No results found')).toBeInTheDocument()
   })
 
   it('ignores a slow earlier response that arrives after a newer one', async () => {

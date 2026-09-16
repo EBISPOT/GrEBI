@@ -23,7 +23,7 @@ export default function EbiFooter() {
       <div className="flex flex-row gap-4 h-6 items-center">
         <span>
           <i className="icon icon-common icon-copyright icon-spacer" />
-          EMBL-EBI&nbsp;2024
+          EMBL-EBI&nbsp;{new Date().getFullYear()}
         </span>
         <a
           href={process.env.REACT_APP_EBI_LICENSING}

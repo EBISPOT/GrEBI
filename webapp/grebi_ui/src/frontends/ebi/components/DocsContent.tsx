@@ -33,6 +33,15 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+// The plain text inside a React node tree (strings, arrays, elements).
+function nodeText(node: any): string {
+  if (node === null || node === undefined || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(nodeText).join("");
+  if (typeof node === "object" && node.props) return nodeText(node.props.children);
+  return "";
+}
+
 export default function DocsContent({
   markdown,
   images,
@@ -86,12 +95,12 @@ export default function DocsContent({
     () => ({
       // Code blocks with copy button and syntax highlighting
       pre({ children, ...props }: any) {
-        // Extract text content for the copy button
-        const codeEl = children?.props;
-        const text = codeEl?.children || "";
+        // Extract text content for the copy button (react-markdown hands over
+        // an array of children, not a string)
+        const text = nodeText(children);
         return (
           <div className="relative group">
-            <CopyButton text={typeof text === "string" ? text : ""} />
+            <CopyButton text={text} />
             <pre
               className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm my-4"
               {...props}

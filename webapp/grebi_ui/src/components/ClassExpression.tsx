@@ -18,11 +18,15 @@ export default function ClassExpression({
 
 
   if (typeof expr !== "object") {
+    if (typeof expr !== "string") {
+      // a literal, e.g. a cardinality
+      return <Fragment>{String(expr)}</Fragment>
+    }
     let mapped_value = refs?.get(expr);
     if(mapped_value) {
       return <Link className="link-default" style={{color:'black'}} to={"/graphs/" + graph + "/nodes/" + encodeNodeId(expr)}>{mapped_value.getName()}</Link>
     } else {
-      return <Link className="link-default" style={{color:'black'}} to={"https://www.ebi.ac.uk/ols4/search?q=" + encodeURIComponent(expr)}>expr</Link>
+      return <Link className="link-default" style={{color:'black'}} to={"https://www.ebi.ac.uk/ols4/search?q=" + encodeURIComponent(expr)}>{expr}</Link>
     }
   }
 

@@ -21,7 +21,7 @@ describe('EbiFooter', () => {
   it('shows the EMBL-EBI copyright line', () => {
     render(<EbiFooter />)
     // the source uses a non-breaking space, which the text matcher normalises
-    expect(screen.getByText(/EMBL-EBI 2024/)).toBeInTheDocument()
+    expect(screen.getByText(new RegExp('EMBL-EBI ' + new Date().getFullYear()))).toBeInTheDocument()
     expect(screen.getByText('Follow us')).toBeInTheDocument()
   })
 })

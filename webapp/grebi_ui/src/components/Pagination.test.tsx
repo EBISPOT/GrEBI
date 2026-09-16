@@ -66,11 +66,10 @@ describe('Pagination', () => {
     expect(numbered()).toEqual(['1'])
   })
 
-  it('shows no page buttons at all with no rows', () => {
-    // NOTE: current behaviour, looks like a bug: the initial state falls back to 1 page but the
-    // effect recomputes 0, so the "1" button disappears and Next is enabled on an empty table.
+  it('shows a single page and disables both arrows with no rows', () => {
     renderPagination(0, 0)
-    expect(numbered()).toEqual([])
-    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
+    expect(numbered()).toEqual(['1'])
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
   })
 })

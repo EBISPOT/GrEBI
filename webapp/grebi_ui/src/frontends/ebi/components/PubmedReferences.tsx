@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { subscribe, getRegisteredRefs } from "./pubmedRegistry";
+import React, { useSyncExternalStore } from "react";
+import { subscribe, getSnapshot, getRegisteredRefs } from "./pubmedRegistry";
 
 function LinkOutIcon() {
   return (
@@ -29,8 +29,8 @@ function FormatCitation({ entry }: { entry: any }) {
 }
 
 export default function PubmedReferences() {
-  const [, setTick] = useState(0);
-  useEffect(() => subscribe(() => setTick((t) => t + 1)), []);
+  // re-render on every registration, including ones that happened before mount
+  useSyncExternalStore(subscribe, getSnapshot);
   const refs = getRegisteredRefs();
 
   if (refs.length === 0) return null;

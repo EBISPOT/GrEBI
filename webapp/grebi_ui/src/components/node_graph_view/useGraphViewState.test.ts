@@ -85,10 +85,10 @@ describe('useGraphViewState', () => {
     )
     expect(result.current.autoExpandedNodes.get(expandedKey('root', 'incoming', 'mentioned_by'))?.getName()).toBe('Paper')
 
-    // NOTE: current behaviour, looks like a bug: the resolve effect re-requests the
-    // root's count=1 edges after loadEdgeCounts already resolved them, because it
-    // only checks expandedNodes (not autoExpandedNodes) for root edges.
-    await waitFor(() => expect(mockedPost).toHaveBeenCalledTimes(2))
+    // the resolve effect must not request the root's count=1 edges again once
+    // loadEdgeCounts has auto-expanded them
+    await act(async () => {})
+    expect(mockedPost).toHaveBeenCalledTimes(1)
   })
 
   it('expands an edge: the node is marked loading until its counts arrive, then its datasources are merged', async () => {

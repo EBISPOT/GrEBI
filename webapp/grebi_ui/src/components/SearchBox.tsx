@@ -205,10 +205,11 @@ export default function SearchBox({
   let autocompleteToShow = autocomplete?.slice(0, 5) || [];
   let autocompleteElements = autocompleteToShow.map(
     (text, i): SearchBoxEntry => {
-      searchParams.set("q", text);
-      if (collectionId) searchParams.set("collection", collectionId);
+      const p = new URLSearchParams(searchParams);
+      p.set("q", text);
+      if (collectionId) p.set("collection", collectionId);
 
-      var linkUrl = `/graphs/${graph}/search?${new URLSearchParams(searchParams)}`;
+      var linkUrl = `/graphs/${graph}/search?${p}`;
 
       return {
         linkUrl,
@@ -318,15 +319,16 @@ export default function SearchBox({
                   ) {
                     navigate(allDropdownElements[arrowKeySelectedN].linkUrl);
                   } else if (query) {
-                    searchParams.set("q", query);
-                    if (collectionId) searchParams.set("collection", collectionId);
+                    const p = new URLSearchParams(searchParams);
+                    p.set("q", query);
+                    if (collectionId) p.set("collection", collectionId);
                     if (isEmbeddingSearch) {
-                      searchParams.set("model", selectedModel);
+                      p.set("model", selectedModel);
                     } else {
-                      searchParams.delete("model");
+                      p.delete("model");
                     }
 
-                    var linkUrl = `/graphs/${graph}/search?${new URLSearchParams(searchParams)}`;
+                    var linkUrl = `/graphs/${graph}/search?${p}`;
                     navigate(linkUrl);
                   }
                 } else if (ev.key === "ArrowDown") {

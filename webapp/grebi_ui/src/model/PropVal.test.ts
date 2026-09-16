@@ -39,13 +39,11 @@ describe('PropVal.from', () => {
     expect(PropVal.from(p)).toBe(p)
   })
 
-  it('stringifies falsy input', () => {
-    // NOTE: current behaviour, looks like a bug: null/undefined/0/false become the
-    // strings 'null'/'undefined'/'0'/'false' rather than being kept or dropped.
-    expect(PropVal.from(null).value).toBe('null')
-    expect(PropVal.from(undefined).value).toBe('undefined')
-    expect(PropVal.from(0).value).toBe('0')
-    expect(PropVal.from(false).value).toBe('false')
+  it('treats null and undefined as empty and keeps other falsy values', () => {
+    expect(PropVal.from(null).value).toBe('')
+    expect(PropVal.from(undefined).value).toBe('')
+    expect(PropVal.from(0).value).toBe(0)
+    expect(PropVal.from(false).value).toBe(false)
     expect(PropVal.from('').value).toBe('')
   })
 })

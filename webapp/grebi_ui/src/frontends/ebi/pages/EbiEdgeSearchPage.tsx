@@ -1,4 +1,4 @@
-import React, { Fragment, useCallback, useEffect, useState } from "react";
+import React, { Fragment, useCallback, useEffect, useState, useRef } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { get, getPaginated } from "../../../app/api";
 import { difference } from "../../../app/util";
@@ -9,6 +9,10 @@ import { DatasourceTags } from "../../../components/DatasourceTag";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import { Pagination } from "@mui/material";
 import { Close, KeyboardArrowDown } from "@mui/icons-material";
+
+function hasFacetData(f: any): boolean {
+  return Object.keys(f || {}).some(k => Object.keys(f[k] || {}).length > 0);
+}
 
 export default function EbiEdgeSearchPage() {
   let params = useParams();
@@ -36,14 +40,22 @@ export default function EbiEdgeSearchPage() {
 
   // Fetch stats for sidebar facets (used when API skips expensive facet computation)
   const [statsFacets, setStatsFacets] = useState<any>({});
+  // read by the edge fetch without being one of its triggers, so the arrival
+  // of the stats does not re-run the search
+  const statsFacetsRef = useRef<any>({});
   useEffect(() => {
     get<any>(`api/v1/graphs/${graph}/stats`).then((stats) => {
       const f: any = {};
       if (stats.edge_counts_by_type) f["grebi:type"] = stats.edge_counts_by_type;
       if (stats.edge_counts_by_datasource) f["grebi:datasources"] = stats.edge_counts_by_datasource;
+      statsFacetsRef.current = f;
       setStatsFacets(f);
     }).catch(() => {});
   }, [graph]);
+  // stats arriving after a search that had no facets of its own fill them in
+  useEffect(() => {
+    setFacets((prev: any) => hasFacetData(prev) ? prev : statsFacets);
+  }, [statsFacets]);
 
   useEffect(() => {
     setPage(0);
@@ -68,12 +80,11 @@ export default function EbiEdgeSearchPage() {
       setTotalResults(res.totalElements);
       const apiFacets = res.facetFieldsToCounts || {};
       // Use API facets if returned, otherwise fall back to stats
-      const hasFacetData = Object.keys(apiFacets).some(k => Object.keys(apiFacets[k] || {}).length > 0);
-      setFacets(hasFacetData ? apiFacets : statsFacets);
+      setFacets(hasFacetData(apiFacets) ? apiFacets : statsFacetsRef.current);
       setLoading(false);
     }
     fetchEdges();
-  }, [graph, typeFilter, dsFilter, page, rowsPerPage, statsFacets]);
+  }, [graph, typeFilter, dsFilter, page, rowsPerPage]);
 
   const setFilter = useCallback(
     (key: string, value: string) => {

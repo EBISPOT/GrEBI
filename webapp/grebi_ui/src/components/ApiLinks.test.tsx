@@ -35,14 +35,12 @@ describe('ApiLinks', () => {
     expect(screen.getByRole('img')).toHaveAttribute('src', '/kg/json.svg')
   })
 
-  it('cannot render at all without a PUBLIC_URL', () => {
-    // NOTE: current behaviour, looks like a bug: url-join throws on undefined, so a build
-    // without PUBLIC_URL in the environment crashes this component at render time.
+  it('falls back to the site root without a PUBLIC_URL', () => {
     const saved = process.env.PUBLIC_URL
     delete process.env.PUBLIC_URL
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     try {
-      expect(() => renderLinks()).toThrow(/Url must be a string/)
+      renderLinks()
+      expect(screen.getByRole('img')).toHaveAttribute('src', '/json.svg')
     } finally {
       process.env.PUBLIC_URL = saved
     }

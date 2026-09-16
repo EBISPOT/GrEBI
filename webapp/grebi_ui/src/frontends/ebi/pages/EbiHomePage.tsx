@@ -61,6 +61,7 @@ function selectGraph(sg: string) {
 
   const ensureNodeLoaded = useCallback((sourceId: string, makeActive = false) => {
     if (!graph) return Promise.resolve<GraphNode | null>(null);
+    const currentGraph = graph;
 
     const cacheKey = buildNodeCacheKey(graph, sourceId);
     if (makeActive) {
@@ -97,7 +98,7 @@ function selectGraph(sg: string) {
         if (r.elements.length === 0) return null;
         const node = new GraphNode(r.elements[0]);
         nodeCacheRef.current[cacheKey] = node;
-        prefetchNodeEdgeCounts(graph, node.getEncodedNodeId());
+        prefetchNodeEdgeCounts(currentGraph, node.getEncodedNodeId());
         if (activeNodeKeyRef.current === cacheKey) {
           setGraphNode(node);
         }
@@ -276,13 +277,13 @@ function selectGraph(sg: string) {
               </div>
               <div className="flex items-center gap-12 mt-8 mb-4">
                 <a target="_blank" href="https://www.ebi.ac.uk/">
-                  <img style={{ width: "100px" }} src={urlJoin(process.env.PUBLIC_URL!, "/ebi.png")} alt="EMBL-EBI" />
+                  <img style={{ width: "100px" }} src={urlJoin((process.env.PUBLIC_URL || "/"), "/ebi.png")} alt="EMBL-EBI" />
                 </a>
                 <a target="_blank" href="https://monarchinitiative.org/">
-                  <img style={{ width: "100px" }} src={urlJoin(process.env.PUBLIC_URL!, "/monarch.png")} alt="MONARCH Initiative" />
+                  <img style={{ width: "100px" }} src={urlJoin((process.env.PUBLIC_URL || "/"), "/monarch.png")} alt="MONARCH Initiative" />
                 </a>
                 <a target="_blank" href="https://mousephenotype.org/">
-                  <img style={{ width: "100px" }} src={urlJoin(process.env.PUBLIC_URL!, "/impc.svg")} alt="International Mouse Phenotyping Consortium (IMPC)" />
+                  <img style={{ width: "100px" }} src={urlJoin((process.env.PUBLIC_URL || "/"), "/impc.svg")} alt="International Mouse Phenotyping Consortium (IMPC)" />
                 </a>
               </div>
             </Fragment>

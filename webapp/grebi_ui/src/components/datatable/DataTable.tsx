@@ -1,8 +1,6 @@
 import { ArrowDownward, ArrowUpward, KeyboardArrowDown, SwapVert } from "@mui/icons-material";
-import { randomString } from "../../app/util";
 import { Pagination } from "../Pagination";
 import React, { Fragment, useEffect, useState } from "react";
-import DtSortIcon from "./DtSortIcon";
 
 export interface Column {
   id: string;
@@ -93,7 +91,7 @@ export default function DataTable({
   }, [data, addColumnsFromData]);
 
 
-  columns = [...(columns || []), ...autoAddedColumns]
+  const allColumns: Column[] = [...(columns || []), ...autoAddedColumns]
 
   return (
     <div>
@@ -139,11 +137,11 @@ export default function DataTable({
       <div className="mx-2 overflow-x-auto">
         <table className="table-auto border-collapse border-spacing-1 w-full mb-2">
           <thead>
-            <tr key={randomString()} className="border-b-2 border-grey-default">
-              {columns.map((column) => (
+            <tr className="border-b-2 border-grey-default">
+              {allColumns.map((column) => (
                 <td
                   className="text-lg font-bold py-2 px-4"
-                  key={column.name}
+                  key={column.id}
                 >
                   <div className="flex justify-between">
                   <div>
@@ -170,11 +168,11 @@ export default function DataTable({
             </tr>
           </thead>
           <tbody>
-            {data.map((row: any) => {
+            {data.map((row: any, rowIndex: number) => {
               return (
                 <tr
                   tabIndex={-1}
-                  key={randomString()}
+                  key={rowIndex}
                   onClick={() => {
                     if (onSelectRow) onSelectRow(row);
                   }}
@@ -182,16 +180,17 @@ export default function DataTable({
                     onSelectRow ? "cursor-pointer grebi-row-highlight" : ""
                   }`}
                 >
-                  {columns.map((column: any) => {
+                  {allColumns.map((column: any) => {
+                    const cell = column.selector(row, column.id);
                     return (
                       <td
                         className="text-md align-top py-2 px-4"
-                        key={randomString()}
+                        key={column.id}
                       >
                         <div className={column.className||""} style={{ ...( maxRowHeight ? {maxHeight: maxRowHeight, overflowY:"auto"} : {}) }}>
-                        {column.selector(row, column.id)
-                          ? column.selector(row, column.id)
-                          : "(no data)"}
+                        {cell === undefined || cell === null || cell === ""
+                          ? "(no data)"
+                          : cell}
                         </div>
                       </td>
                     );

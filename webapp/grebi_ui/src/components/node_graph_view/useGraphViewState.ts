@@ -339,7 +339,7 @@ export default function useGraphViewState(graph: string) {
     // Root node's own edges
     for (const agg of incomingAggregated) {
       const key = expandedKey(root.getNodeId(), "incoming", agg.edgeType);
-      if (agg.totalCount === 1 && !expandedNodes.has(key)) {
+      if (agg.totalCount === 1 && !expandedNodes.has(key) && !autoExpandedNodes.has(key)) {
         toResolve.push({
           parentNodeId: root.getNodeId(),
           encodedNodeId: root.getEncodedNodeId(),
@@ -350,7 +350,7 @@ export default function useGraphViewState(graph: string) {
     }
     for (const agg of outgoingAggregated) {
       const key = expandedKey(root.getNodeId(), "outgoing", agg.edgeType);
-      if (agg.totalCount === 1 && !expandedNodes.has(key)) {
+      if (agg.totalCount === 1 && !expandedNodes.has(key) && !autoExpandedNodes.has(key)) {
         toResolve.push({
           parentNodeId: root.getNodeId(),
           encodedNodeId: root.getEncodedNodeId(),

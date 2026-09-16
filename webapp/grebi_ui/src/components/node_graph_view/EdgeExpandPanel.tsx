@@ -297,7 +297,7 @@ export default function EdgeExpandPanel({
               Prev
             </button>
             <span style={{ fontSize: "12px", color: "#888", alignSelf: "center" }}>
-              {page * pageSize + 1}\u2013{Math.min((page + 1) * pageSize, total)} of {total}
+              {page * pageSize + 1}{'\u2013'}{Math.min((page + 1) * pageSize, total)} of {total}
             </span>
             <button
               disabled={(page + 1) * pageSize >= total}

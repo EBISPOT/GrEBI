@@ -59,7 +59,7 @@ export default function MaterialisedQueryTable({
   const navigate = useNavigate();
 
     useEffect(() => {
-        get<MaterialisedQuery[]>(`api/v1/graphs/${graph}/materialised_queries`).then(r => setMatQs(r));
+        get<MaterialisedQuery[]>(graph ? `api/v1/graphs/${graph}/materialised_queries` : `api/v1/materialised_queries`).then(r => setMatQs(r));
     }, [graph]);
 
     useEffect(() => {

@@ -54,9 +54,7 @@ describe('ClassExpression', () => {
     renderExpr('obo:UBERON_9999999')
     const link = screen.getByRole('link')
     expect(link).toHaveAttribute('href', 'https://www.ebi.ac.uk/ols4/search?q=obo%3AUBERON_9999999')
-    // NOTE: current behaviour, looks like a bug: the link text is the literal word "expr"
-    // instead of the IRI (ClassExpression.tsx:25)
-    expect(link).toHaveTextContent(/^expr$/)
+    expect(link).toHaveTextContent('obo:UBERON_9999999')
   })
 
   it('renders an intersection with a nested restriction in parentheses', () => {
@@ -98,17 +96,15 @@ describe('ClassExpression', () => {
     }
   })
 
-  it('renders cardinality restrictions, but cannot show the number itself', () => {
+  it('renders cardinality restrictions with their number', () => {
     const min = renderExpr(restriction({ 'owl:onProperty': 'obo:BFO_0000050', 'owl:minCardinality': 2 }))
-    // NOTE: current behaviour, looks like a bug: a literal such as the number 2 is not in refs, so
-    // the non-object branch renders the word "expr" instead of the value (ClassExpression.tsx:25)
-    expect(min.text()).toBe('part ofminexpr')
+    expect(min.text()).toBe('part ofmin2')
     min.unmount()
 
     const qualified = renderExpr(
       restriction({ 'owl:onProperty': 'obo:BFO_0000050', 'owl:onClass': 'obo:UBERON_0000956', 'owl:qualifiedCardinality': '3' })
     )
-    expect(qualified.text()).toBe('part ofexactlyexpr\u00a0cerebral cortex')
+    expect(qualified.text()).toBe('part ofexactly3\u00a0cerebral cortex')
   })
 
   it('renders datatype restrictions and datatype definitions', () => {

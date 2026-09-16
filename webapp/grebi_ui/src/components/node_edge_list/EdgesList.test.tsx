@@ -84,13 +84,10 @@ describe('EdgesList', () => {
     expect(screen.queryByText('gwas:empty')).toBeNull()
     expect(screen.queryByText('grebi:datasources')).toBeNull()
 
-    // NOTE: current behaviour, looks like a bug: the rows are GraphEdge instances whose
-    // properties live under .props, but the property column reads row[prop] directly
-    // (EdgesList.tsx:142), so every property cell is empty
+    // the property column reads the edge's own properties
     const cells = screen.getByText('biolink:has_phenotype').closest('tr')!.querySelectorAll('td')
     expect(cells).toHaveLength(4)
-    expect(cells[3].textContent).toBe('')
-    expect(screen.queryByText('1e-8')).toBeNull()
+    expect(cells[3].textContent).toBe('1e-8')
   })
 
   it('reports the loaded edges to the parent', async () => {

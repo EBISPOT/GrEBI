@@ -50,12 +50,9 @@ describe('TabbedSourceView', () => {
     expect(writeText).toHaveBeenLastCalledWith('import requests')
   })
 
-  it('injects the source unchanged when there is no grammar for the language', () => {
-    // NOTE: current behaviour, looks like a bug: without a Prism grammar the raw source goes into
-    // dangerouslySetInnerHTML unescaped, so markup in it is rendered rather than shown.
-    // ('text' would not do: Prism core ships an empty grammar for it that still escapes markup)
+  it('escapes the source when there is no grammar for the language', () => {
     const { container } = render(<TabbedSourceView tabs={[{ title: 'Plain', source: 'a <b>bold</b> word', lang: 'nonsense' }]} />)
-    expect(pre(container).querySelector('b')).toHaveTextContent('bold')
-    expect(pre(container).textContent).toBe('a bold word')
+    expect(pre(container).querySelector('b')).toBeNull()
+    expect(pre(container).textContent).toBe('a <b>bold</b> word')
   })
 })

@@ -15,8 +15,8 @@ class PropVal {
 
     public static from(src:any):PropVal {
 
-        if(!src)
-            return new PropVal([], {}, ''+src)
+        if(src === undefined || src === null)
+            return new PropVal([], {}, '')
 
         if(src instanceof PropVal) {
             return src

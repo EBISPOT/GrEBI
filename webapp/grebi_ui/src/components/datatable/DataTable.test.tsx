@@ -22,8 +22,8 @@ describe('DataTable', () => {
     const rows = bodyRows()
     expect(rows).toHaveLength(2)
     expect(cellTexts(rows[0])).toEqual(['alpha', '1'])
-    // NOTE: current behaviour, looks like a bug: any falsy cell value, including 0, is shown as "(no data)"
-    expect(cellTexts(rows[1])).toEqual(['beta', '(no data)'])
+    // a zero is data; only null, undefined and empty strings are missing
+    expect(cellTexts(rows[1])).toEqual(['beta', '0'])
   })
 
   it('renders only the header for no data and caps row height when asked', () => {

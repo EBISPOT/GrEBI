@@ -51,12 +51,12 @@ export default function EbiLayout() {
         </Helmet>
         <div className="container mx-auto px-4 flex flex-col md:flex-row md:gap-10">
           <div className="py-6 self-center">
-            <a href={urlJoin(process.env.PUBLIC_URL!, "/")}>
+            <a href={urlJoin((process.env.PUBLIC_URL || "/"), "/")}>
               <img
                 style={{ height: "80px" }}
                 alt="GrEBI logo"
                 className="h-8 inline-block"
-                src={urlJoin(process.env.PUBLIC_URL!, "/logo.svg")}
+                src={urlJoin((process.env.PUBLIC_URL || "/"), "/logo.svg")}
               />
             </a>
           </div>

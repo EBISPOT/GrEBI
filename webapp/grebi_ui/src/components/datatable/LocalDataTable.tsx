@@ -19,28 +19,29 @@ export default function LocalDataTable({
     maxRowHeight?:string|undefined
 }) {
 
-    let [page, setPage] = useState(1)
+    let [page, setPage] = useState(0)
     let [rowsPerPage, setRowsPerPage] = useState(10)
     let [sortColumn, setSortColumn] = useState<string|undefined>("")
     let [sortDir, setSortDir] = useState<'asc'|'desc'>("asc")
     let [filter, setFilter] = useState<string>("")
 
-    data = data.filter(row => {
+    const filtered = data.filter(row => {
         return Object.values(row).some(v => {
             return (v+'').toLowerCase().includes(filter.toLowerCase())
         })
     });
 
-    data = data.slice((page-1)*rowsPerPage, page*rowsPerPage)
+    // Pagination is 0-based; the count must be of the filtered rows, not the page
+    const pageRows = filtered.slice(page*rowsPerPage, (page+1)*rowsPerPage)
 
     return <DataTable
-        data={data}
+        data={pageRows}
         columns={columns}
         addColumnsFromData={addColumnsFromData}
         hideColumns={hideColumns}
-        dataCount={data.length}
+        dataCount={filtered.length}
         defaultSelector={defaultSelector}
-        onFilter={setFilter}
+        onFilter={(f) => { setFilter(f); setPage(0) }}
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={setRowsPerPage}
         page={page}

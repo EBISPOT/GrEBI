@@ -4,6 +4,7 @@ import {useNavigate} from "react-router-dom";
 import NodeRefLink from "./NodeRefLink";
 import { getPaginated } from "../../app/api";
 import { difference } from "../../app/util";
+import PropVal from "../../model/PropVal";
 import GraphEdge from "../../model/GraphEdge";
 import GraphNode from "../../model/GraphNode";
 import DatasourceSelector from "../DatasourceSelector";
@@ -138,13 +139,14 @@ export default function EdgesList(params:{
                         // filterFn: 'includesString',
                         // filterVariant: 'multi-select',
                         // filterSelectOptions: edgesState?.facetFieldToCounts[prop] || [],
-                        selector: (row) => {
-                            return <div>{row[prop]}</div>
+                        selector: (row: GraphEdge) => {
+                            // edge properties live on the GraphEdge's props
+                            return <div>{PropVal.arrFrom(row.props?.[prop]).map(v => String(v.value)).join(', ')}</div>
                         },
                     }
                 }) as any
             ]}
-            defaultSelector={(row:any,key:string)=>row[key]}
+            defaultSelector={(row:any,key:string)=>row.props?.[key]}
             data={edgesState.edges}
             dataCount={edgesState.total}
             page={page}

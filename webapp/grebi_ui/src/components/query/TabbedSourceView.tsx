@@ -21,6 +21,11 @@ interface SourceTab {
   lang: string;
 }
 
+// the highlighted HTML is injected, so source without a grammar must be escaped
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 export default function TabbedSourceView({ tabs }: { tabs: SourceTab[] }) {
   const [activeTab, setActiveTab] = useState(0);
 
@@ -30,7 +35,7 @@ export default function TabbedSourceView({ tabs }: { tabs: SourceTab[] }) {
       const grammar = prismjs.languages[prismLang];
       return grammar
         ? prismjs.highlight(tab.source, grammar, prismLang)
-        : tab.source;
+        : escapeHtml(tab.source);
     });
   }, [tabs]);
 

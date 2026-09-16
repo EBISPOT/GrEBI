@@ -39,11 +39,9 @@ describe('query2code', () => {
     expect(code.Python.source).toContain('print(gwas_studies_by_trait(""))')
   })
 
-  it('ignores the params argument in favour of the first example', () => {
-    // NOTE: current behaviour, looks like a bug: QueryInterface passes the user's current
-    // parameter values but the snippets always show the first example's values.
+  it('uses the given parameter values over the first example', () => {
     const code = query2code(template, 'g', { trait_id: 'mondo:0000001' })
-    expect(code.cURL.source).toContain('mondo:0005133')
-    expect(code.cURL.source).not.toContain('mondo:0000001')
+    expect(code.cURL.source).toContain('mondo:0000001')
+    expect(code.cURL.source).not.toContain('mondo:0005133')
   })
 })

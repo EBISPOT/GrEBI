@@ -50,20 +50,16 @@ describe('LocalDataTable', () => {
   })
 
   it('pages with Next and Previous', () => {
-    // NOTE: current behaviour, looks like a bug: the page state is 1-based while Pagination is
-    // 0-based, and dataCount is taken after slicing, so only page "1" is ever listed, Previous is
-    // enabled on the first page, and pressing it slices to an empty table.
     renderTable()
     const numbered = () => screen.getAllByRole('button').map(b => b.textContent).filter(t => t !== 'Previous' && t !== 'Next')
-    expect(numbered()).toEqual(['1'])
-    expect(screen.getByRole('button', { name: 'Previous' })).toBeEnabled()
+    expect(numbered()).toEqual(['1', '2'])
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     expect(rowNames()).toEqual(['row10', 'row11'])
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Previous' }))
     expect(rowNames()).toHaveLength(10)
-    fireEvent.click(screen.getByRole('button', { name: 'Previous' }))
-    expect(screen.getAllByRole('row')).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
   })
 })

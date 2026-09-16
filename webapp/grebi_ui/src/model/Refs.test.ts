@@ -32,12 +32,10 @@ describe('Refs', () => {
     expect(merged.get('hp:0000001')?.getName()).toBe('All')
   })
 
-  it('mergeWith an object nests it under a "refs" key instead of merging', () => {
-    // NOTE: current behaviour, looks like a bug: `{ ...this.refs, refs }` should be
-    // `{ ...this.refs, ...refs }`, so merged-in ids are not resolvable.
+  it('mergeWith an object makes its ids resolvable alongside the existing ones', () => {
     const merged = new Refs(raw).mergeWith({ 'mondo:0005083': { 'grebi:nodeId': 'mondo:0005083' } })
-    expect(merged.get('mondo:0005083')).toBeUndefined()
+    expect(merged.get('mondo:0005083')?.getNodeId()).toBe('mondo:0005083')
     expect(merged.get('ro:0002200')?.getName()).toBe('has phenotype')
-    expect(Object.keys(merged.refs)).toContain('refs')
+    expect(Object.keys(merged.refs)).not.toContain('refs')
   })
 })

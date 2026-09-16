@@ -305,6 +305,9 @@ export default function ResultsTable({ graph, queryId, params, resultColumns, ma
       </button>
       </a>
 
+      {!loading && dataCount === 0 && (
+        <div className="px-4 py-2 text-sm text-neutral-default">No results found</div>
+      )}
       <DataTable
         columns={columns}
         defaultSelector={(row, key) => row[key]}

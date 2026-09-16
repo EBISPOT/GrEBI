@@ -49,8 +49,7 @@ export default function ResultsTable({
                 new URLSearchParams([
                     ['page', page],
                     ['size', rowsPerPage],
-                    ...(sortColumn ? ['sortBy', sortColumn] : []),
-                    ...(sortColumn ? ['sortDir', sortDir] : []),
+                    ...(sortColumn ? [['sortBy', sortColumn], ['sortDir', sortDir]] : []),
                     ...(extraSearchParams||[]),
                     ...(filter ? [['q', filter]] : []),
                 ] as any)

@@ -3,14 +3,15 @@ import { PlayArrow, WarningAmber } from "@mui/icons-material";
 import TabbedSourceView from "../../../components/query/TabbedSourceView";
 import query2code from "../../../../../query2code.mjs";
 
-export default function QueryTemplateExample(props: Record<string, string> & { children?: any }) {
+export default function QueryTemplateExample(props: { [attr: string]: any; children?: any }) {
   const queryId = props.id || "";
   const graph = props.graph || "";
 
   const initialParams: Record<string, string> = useMemo(() => {
     const p: Record<string, string> = {};
     for (const [k, v] of Object.entries(props)) {
-      if (k !== "id" && k !== "graph" && typeof v === "string") p[k] = v;
+      // rehype types known HTML attributes (e.g. size) as numbers
+      if (k !== "id" && k !== "graph" && (typeof v === "string" || typeof v === "number" || typeof v === "boolean")) p[k] = String(v);
     }
     return p;
   }, [props]);

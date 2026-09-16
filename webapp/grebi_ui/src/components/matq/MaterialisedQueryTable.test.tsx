@@ -84,12 +84,10 @@ describe('MaterialisedQueryTable', () => {
     expect(api.get).toHaveBeenCalledTimes(2)
   })
 
-  it('without a graph it skips the metadata but still asks for the queries of graph "undefined"', async () => {
+  it('without a graph it lists the queries of every graph and skips the metadata', async () => {
     renderTable(undefined)
     expect(await screen.findByText('gwas_by_disease')).toBeInTheDocument()
-    // NOTE: current behaviour, looks like a bug: the graph is optional in the props but is
-    // interpolated into the request path regardless (MaterialisedQueryTable.tsx:62)
     expect(api.get).toHaveBeenCalledTimes(1)
-    expect(api.get).toHaveBeenCalledWith('api/v1/graphs/undefined/materialised_queries')
+    expect(api.get).toHaveBeenCalledWith('api/v1/materialised_queries')
   })
 })

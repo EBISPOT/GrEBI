@@ -3,14 +3,15 @@ import { PlayArrow } from "@mui/icons-material";
 import TabbedSourceView from "../../../components/query/TabbedSourceView";
 import api2code from "../../../../../api2code.mjs";
 
-export default function ApiExample(props: Record<string, string> & { children?: any }) {
+export default function ApiExample(props: { [attr: string]: any; children?: any }) {
   const method = props.method || "GET";
   const baseUrl = props.url || "";
 
   const initialParams: Record<string, string> = useMemo(() => {
     const p: Record<string, string> = {};
     for (const [k, v] of Object.entries(props)) {
-      if (k !== "method" && k !== "url" && typeof v === "string") p[k] = v;
+      // rehype types known HTML attributes (e.g. size) as numbers
+      if (k !== "method" && k !== "url" && (typeof v === "string" || typeof v === "number" || typeof v === "boolean")) p[k] = String(v);
     }
     return p;
   }, [props]);

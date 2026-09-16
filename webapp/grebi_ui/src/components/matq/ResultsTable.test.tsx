@@ -40,24 +40,6 @@ function renderTable(extraSearchParams?: string[][]) {
   )
 }
 
-// Run `action` and return the promise rejection it lets escape. Vitest reports
-// escaped rejections as run errors, so its listener is stood down meanwhile.
-async function captureUnhandledRejection(action: () => void): Promise<any> {
-  const listeners = process.rawListeners('unhandledRejection') as any[]
-  process.removeAllListeners('unhandledRejection')
-  const seen: any[] = []
-  const capture = (reason: any) => seen.push(reason)
-  process.on('unhandledRejection', capture)
-  try {
-    action()
-    await waitFor(() => expect(seen).toHaveLength(1))
-    return seen[0]
-  } finally {
-    process.off('unhandledRejection', capture)
-    for (const l of listeners) process.on('unhandledRejection', l)
-  }
-}
-
 let dir: ReturnType<typeof vi.spyOn>
 beforeEach(() => {
   // every cell is console.dir'd
@@ -101,17 +83,13 @@ describe('materialised ResultsTable', () => {
     expect(lastPath()).toBe('api/v1/graphs/g/materialised_queries/gwas_by_disease?page=0&size=10&q=brca')
   })
 
-  it('sorting a column crashes before the request is made', async () => {
+  it('sorting a column re-queries with sortBy and sortDir', async () => {
     renderTable()
     await screen.findByRole('link', { name: 'psoriasis' })
-    // NOTE: current behaviour, looks like a bug: the sort pair is spread into the
-    // URLSearchParams entry list as two bare strings (matq/ResultsTable.tsx:52-53), so
-    // building the request throws, nothing is sent and the table stays loading
-    const error = await captureUnhandledRejection(() => fireEvent.click(screen.getAllByTestId('SwapVertIcon')[1]))
-    expect(error.name).toBe('TypeError')
-    expect(String(error.message)).toContain('URLSearchParams')
-    expect(api.getPaginated).toHaveBeenCalledTimes(1)
-    expect(screen.getByText('Loading results...')).toBeInTheDocument()
+    fireEvent.click(screen.getAllByTestId('SwapVertIcon')[1])
+    await waitFor(() => expect(api.getPaginated).toHaveBeenCalledTimes(2))
+    expect(lastPath()).toContain('sortBy=')
+    expect(lastPath()).toContain('sortDir=asc')
   })
 
   it('changing rows per page re-queries with the new size', async () => {

@@ -23,7 +23,11 @@ export default function QueryInterface({
     graph:string, queryTemplate:QueryTemplate, sidebar?:React.ReactNode
 }) {
 
-    let params = queryTemplate.params || []
+    // memoised: a fresh [] each render would re-run the query-string effect forever
+    const params = useMemo(() => queryTemplate.params || [], [queryTemplate])
+    // the submit effect must wait for the query string to have been read once;
+    // state (not a ref) so that the read and the first submit land in one render
+    const [ready, setReady] = useState(false)
 
     let [queryParams, setQueryParams] = useSearchParams();
 
@@ -57,6 +61,7 @@ export default function QueryInterface({
                 }
             }
             setParamValues(initialValues);
+            setReady(true);
         }
 
         setParamsFromQueryString();
@@ -64,8 +69,8 @@ export default function QueryInterface({
     }, [params, queryParams]);
 
     useEffect(() => {
-        submit()
-    }, [paramValues]);
+        if (ready) submit()
+    }, [paramValues, ready]);
 
     function submit() {
 
