@@ -19,6 +19,7 @@ members = [
 	"01_ingest/grebi_ingest_primekg",
 	"01_ingest/grebi_ingest_mondo_efo_mappings",
 	"01_ingest/grebi_ingest_biomappings",
+	"01_ingest/grebi_ingest_metabolights",
 	"02_assign_ids/grebi_extract_identifiers",
 	"02_assign_ids/grebi_identifiers2groups",
 	"02_assign_ids/grebi_assign_ids",

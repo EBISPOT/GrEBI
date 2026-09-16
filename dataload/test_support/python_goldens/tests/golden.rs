@@ -46,11 +46,6 @@ fn expression_atlas_e_test_1() {
         .stdout("E-TEST-1.jsonl").run();
 }
 
-/// The MetaboLights EBI Search XML: studies and chemicals with their fields.
-#[test]
-fn metabolights() {
-    python("01_ingest/metabolights.py", "metabolights").stdin("input.xml").stdout("output.jsonl").run();
-}
 
 
 

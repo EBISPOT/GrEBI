@@ -1,0 +1,12 @@
+[package]
+name = "grebi_ingest_metabolights"
+version = "0.1.0"
+edition = "2021"
+description = "The MetaboLights EBI Search XML as GrEBI JSONL"
+
+[dependencies]
+serde_json = { version = "1.0.108", features = ["preserve_order"] }
+quick-xml = "0.36"
+
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

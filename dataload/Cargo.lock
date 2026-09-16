@@ -890,6 +890,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_ingest_metabolights"
+version = "0.1.0"
+dependencies = [
+ "grebi_golden",
+ "quick-xml 0.36.2",
+ "serde_json",
+]
+
+[[package]]
 name = "grebi_ingest_mondo_efo_mappings"
 version = "0.1.0"
 dependencies = [
@@ -1807,6 +1816,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.36.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7649a7b4df05aed9ea7ec6f628c67c9953a43869b8bc50929569b2999d443fe"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1881,7 +1899,7 @@ checksum = "6627c31020654c595ca89c4f2472cb28fc493a160f8a110bd5e978f66a9e6bdb"
 dependencies = [
  "oxilangtag",
  "oxiri",
- "quick-xml",
+ "quick-xml 0.22.0",
  "rio_api",
 ]
 
@@ -2062,7 +2080,7 @@ checksum = "044d2d79633c0413a3cdb5b3cdd6f18b2d6a7f0d76cb75d3251ff92a83c4f55d"
 dependencies = [
  "lazy_static",
  "percent-encoding",
- "quick-xml",
+ "quick-xml 0.22.0",
  "regex",
  "resiter",
  "sophia_api",
