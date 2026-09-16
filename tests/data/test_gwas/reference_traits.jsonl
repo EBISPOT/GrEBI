@@ -1,0 +1,9 @@
+{"id": "mondo:0005277", "label": "migraine disorder", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0005133", "label": "endometriosis", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0016581", "label": "conotruncal heart malformations", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0005083", "label": "psoriasis", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0004989", "label": "breast carcinoma", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0006629", "label": "osteoarthritis, hip", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0005416", "label": "osteoarthritis, knee", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "efo:0003917", "label": "premature birth", "category": ["ols:Class"]}
+{"id": "efo:0005939", "label": "parental genotype effect measurement", "category": ["ols:Class"]}
