@@ -394,7 +394,7 @@ fn term_to_json(
                 Variable => todo!(),
             };
 
-            let mut reif_metadata_obj_as_json_o = reif_metadata_obj.as_object_mut().unwrap();
+            let reif_metadata_obj_as_json_o = reif_metadata_obj.as_object_mut().unwrap();
             reif_metadata_obj_as_json_o.remove_entry("id");
 
             let actual_predicate = reif_metadata_obj_as_json_o.get("http://www.w3.org/1999/02/22-rdf-syntax-ns#type").unwrap().as_array().unwrap().get(0).unwrap().as_str().unwrap().to_string();

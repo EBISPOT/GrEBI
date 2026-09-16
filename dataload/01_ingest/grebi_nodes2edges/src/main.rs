@@ -1,11 +1,8 @@
 
-use std::collections::HashMap;
 use std::io::{BufWriter, self, BufReader, Write,BufRead};
 use std::vec;
 use clap::Parser;
-use serde_json::{self, de, Map};
 use serde_json::Value;
-use serde_json::json;
 
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -88,59 +85,9 @@ fn main() {
                 output_nodes.write_all("\n".as_bytes()).unwrap();
             }
 
-
         }
     }
 
     output_nodes.flush().unwrap();
 }
 
-fn map_value(v:&Value, inject_prefix:Option<&String>, denest_subfield:Option<&String>) -> Value {
-    if v.is_array() {
-        return Value::Array(v.as_array().unwrap().iter().map(|v2| map_value(v2, inject_prefix, denest_subfield)).collect())
-    }
-
-    if denest_subfield.is_some() && v.is_object() {
-        let subfield = denest_subfield.unwrap();
-        let subfield_value = v.get(subfield);
-        if subfield_value.is_some() {
-            let mut props_obj:Map<String,Value> = Map::new();
-
-            for (k,v) in v.as_object().unwrap().iter() {
-                if k.eq(subfield) {
-                    continue;
-                }
-                props_obj.insert(k.clone(), {
-                    if v.is_array() {
-                        v.clone()
-                    } else {
-                        Value::Array([v.clone()].to_vec())
-                    }
-                });
-            }
-
-            return json!({
-                "grebi:value": subfield_value.unwrap(),
-                "grebi:properties": props_obj
-            });
-        }
-    }
-
-    if inject_prefix.is_some() {
-        return cloned_with_prefix(v, inject_prefix.unwrap())
-    } else {
-        return v.clone()
-    }
-}
-
-fn cloned_with_prefix(val:&Value, prefix:&str) -> Value {
-    if val.is_string() {
-        json!(prefix.to_owned() + val.as_str().unwrap())
-    } else if val.is_f64() {
-        json!(prefix.to_owned() + &val.as_f64().unwrap().to_string())
-    } else if val.is_i64() {
-        json!(prefix.to_owned() + &val.as_i64().unwrap().to_string())
-    } else {
-        val.clone()
-    }
-}

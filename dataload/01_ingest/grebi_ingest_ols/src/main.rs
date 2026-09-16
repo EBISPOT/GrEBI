@@ -1,13 +1,9 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fs::File;
 use std::io::{BufWriter, self, BufReader, StdinLock, StdoutLock, Write};
-use std::ptr::eq;
 use std::env;
 use clap::Parser;
-use grebi_shared::prefix_map::PrefixMap;
-use grebi_shared::prefix_map::PrefixMapBuilder;
-use struson::reader::{JsonReader, JsonStreamReader, ValueType};
+use struson::reader::{JsonReader, JsonStreamReader};
 use serde_json::Value;
 use serde_json::Map;
 
@@ -69,7 +65,8 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
     json.begin_object().unwrap();
 
     let mut metadata:BTreeMap<String,Value> = BTreeMap::new();
-    let mut key = String::new();
+    // the name that ends the metadata loop is the first entity list
+    let mut key: String;
 
     loop {
         key = json.next_name().unwrap().to_string();
@@ -95,8 +92,6 @@ fn read_ontology(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
     }
 
     eprintln!("Reading ontology: {}", ontology_id);
-
-    let ontology_iri = metadata.get("iri");
 
     let entity_id = match datasource_id {
         Some(ref ds_id) => ds_id.clone(),
@@ -188,9 +183,9 @@ fn read_entities(json: &mut JsonStreamReader<BufReader<StdinLock<'_>>>, output_n
                 if curie.contains(":") {
                     Some(curie.split(":").next().unwrap().to_ascii_lowercase())
                 } else {
-                    let definedBy = obj.get("ols:definedBy");
-                    if definedBy.is_some() {
-                        Some(get_string_values(definedBy.unwrap()).iter().next().unwrap().to_string())
+                    let defined_by = obj.get("ols:definedBy");
+                    if defined_by.is_some() {
+                        Some(get_string_values(defined_by.unwrap()).iter().next().unwrap().to_string())
                     } else {
                         None
                     }

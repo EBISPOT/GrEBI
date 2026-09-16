@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fs::File, io::{BufRead, BufReader}};
 
-use crate::{json_lexer::{JsonToken, JsonTokenType}, json_parser, slice_merged_entity};
+use crate::{json_lexer::JsonTokenType, json_parser};
 
 
 pub struct Metadata {

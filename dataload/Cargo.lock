@@ -1238,7 +1238,6 @@ dependencies = [
  "hex",
  "jemallocator",
  "serde_json",
- "sha1",
  "struson 0.3.0",
 ]
 

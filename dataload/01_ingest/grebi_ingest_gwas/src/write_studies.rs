@@ -1,10 +1,5 @@
 
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufWriter, self, BufReader, StdinLock, StdoutLock, Write};
-use std::ptr::eq;
-use grebi_shared::prefix_map::PrefixMap;
-use grebi_shared::prefix_map::PrefixMapBuilder;
+use std::io::{BufWriter, BufReader, StdinLock, StdoutLock, Write};
 use serde_json::json;
 
 use crate::check_headers::check_headers;
@@ -50,7 +45,7 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
             let first_author = record.get(2).unwrap();
             let date = record.get(3).unwrap();
             let journal = record.get(4).unwrap();
-            let link = record.get(5).unwrap();
+            // column 5 (LINK) is not used
             let study = record.get(6).unwrap();
             let disease_trait = record.get(7).unwrap();
             let initial_sample_size = record.get(8).unwrap();

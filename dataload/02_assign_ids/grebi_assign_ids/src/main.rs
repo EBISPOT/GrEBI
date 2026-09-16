@@ -2,11 +2,10 @@
 
 
 use std::collections::{HashMap, HashSet, BTreeSet};
-use std::fs::File;
-use std::{env, io};
+use std::io;
 use std::io::{BufRead, BufReader };
 use std::io::{Write, BufWriter};
-use grebi_shared::json_lexer::{lex, JsonTokenType};
+use grebi_shared::json_lexer::JsonTokenType;
 use grebi_shared::json_parser::JsonParser;
 use clap::Parser;
 
@@ -91,7 +90,7 @@ fn main() {
 
         // just get the first id, doesn't matter bc all map to the same group 
         let id = ids.iter().next().unwrap();
-        let group = id_to_group.get(id.clone());
+        let group = id_to_group.get(*id);
         if group.is_some() {
             writer.write_all(group.unwrap().as_slice()).unwrap();
         } else {
@@ -175,19 +174,6 @@ fn write_value(writer:&mut BufWriter<io::StdoutLock>, value:&[u8], id_to_group:&
     writer.write_all(&value[n_ch..value.len()]).unwrap();
 }
 
-fn write_escaped_string(str:&[u8], writer:&mut BufWriter<io::StdoutLock>) {
-    for c in str {
-        match c {
-            b'"' => { writer.write_all(b"\\\"").unwrap(); }
-            b'\\' => { writer.write_all(b"\\\\").unwrap(); }
-            b'\n' => { writer.write_all(b"\\n").unwrap(); }
-            b'\r' => { writer.write_all(b"\\r").unwrap(); }
-            b'\t' => { writer.write_all(b"\\t").unwrap(); }
-            _ => { writer.write_all([*c].as_slice()).unwrap(); }
-        }
-    }
-}
-
 fn get_ids<'a, 'b>(json:&mut JsonParser<'a>, ids:&'b mut BTreeSet<&'a [u8]>) {
 
     if json.peek().kind == JsonTokenType::StartArray {
@@ -199,7 +185,7 @@ fn get_ids<'a, 'b>(json:&mut JsonParser<'a>, ids:&'b mut BTreeSet<&'a [u8]>) {
     } else if json.peek().kind == JsonTokenType::StartString {
         let id = json.string();
         if check_id(&id) {
-            ids.insert(id.clone());
+            ids.insert(id);
         }
 
     } else if json.peek().kind == JsonTokenType::StartObject {

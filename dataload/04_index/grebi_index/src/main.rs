@@ -1,7 +1,4 @@
 
-use grebi_shared::get_id;
-use grebi_shared::json_lexer::JsonToken;
-use serde_json::Value;
 use std::collections::BTreeSet;
 use std::collections::BTreeMap; // sorted, so the metadata has a stable key order
 use std::collections::HashSet;
@@ -11,13 +8,10 @@ use std::io::BufRead;
 use std::io::BufWriter;
 use std::io::Write;
 use std::io;
-use std::iter::Map;
-use grebi_shared::get_subjects;
 use clap::Parser;
 
 use grebi_shared::slice_merged_entity::SlicedEntity;
 use grebi_shared::slice_merged_entity::SlicedReified;
-use grebi_shared::slice_merged_entity::SlicedProperty;
 use grebi_shared::json_lexer::{JsonTokenType};
 use serde_json::json;
 
@@ -143,7 +137,7 @@ fn main() {
         metadata_writer.write_all(r#"]"#.as_bytes()).unwrap();
 
 
-        sliced.model_id_to_embedding_vector.iter().for_each(|(model_id, embedding_vector)| {
+        sliced.model_id_to_embedding_vector.iter().for_each(|(model_id, _)| {
 
             let prop_key = {
                 let mut k = b"embedding:".to_vec();

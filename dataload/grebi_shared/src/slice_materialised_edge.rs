@@ -1,5 +1,5 @@
 
-use crate::json_lexer::{lex, JsonToken, JsonTokenType};
+use crate::json_lexer::JsonTokenType;
 use crate::json_parser::JsonParser;
 use crate::slice_merged_entity::{SlicedProperty, SlicedPropertyValue};
 

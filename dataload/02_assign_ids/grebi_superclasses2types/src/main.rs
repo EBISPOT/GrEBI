@@ -3,15 +3,13 @@
 
 
 use std::collections::{BTreeSet, HashMap, HashSet};
-use std::fs::File;
-use std::{env, io};
+use std::io;
 use std::io::{BufRead, BufReader };
 use std::io::{Write, BufWriter};
-use grebi_shared::json_lexer::{lex, JsonTokenType};
+use grebi_shared::json_lexer::JsonTokenType;
 use grebi_shared::json_parser::JsonParser;
 use clap::Parser;
 
-use grebi_shared::find_strings;
 use grebi_shared::load_groups_txt::load_id_to_group_mapping;
 
 
@@ -34,7 +32,7 @@ fn main() {
 
     let args = Args::parse();
 
-    let mut type_superclasses:HashSet<Vec<u8>> = {
+    let type_superclasses:HashSet<Vec<u8>> = {
         let id_to_group:HashMap<Vec<u8>, Vec<u8>> = load_id_to_group_mapping(args.groups_txt.as_str());
         let mut res = HashSet::new();
         for prop in args.type_superclasses.split(",") {
@@ -67,7 +65,6 @@ fn main() {
         
         let mut json = JsonParser::parse(&line);
 
-        let mut id:Option<&[u8]> = None;
         let mut types:BTreeSet<&[u8]> = BTreeSet::new();
 
         json.begin_object();

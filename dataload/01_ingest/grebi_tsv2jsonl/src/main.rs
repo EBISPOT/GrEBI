@@ -1,11 +1,6 @@
 
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufWriter, self, BufReader, StdinLock, StdoutLock, Write, BufRead, Read};
-use std::ptr::eq;
+use std::io::{BufWriter, self, BufReader, StdoutLock, Write, BufRead};
 use clap::Parser;
-use grebi_shared::prefix_map::PrefixMap;
-use grebi_shared::prefix_map::PrefixMapBuilder;
 
 #[derive(clap::Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -94,7 +89,7 @@ fn main() {
                         output_nodes.write_all(column_title.as_bytes()).unwrap();
                         if arr_delim.is_some() { 
                             output_nodes.write_all(r#"":["#.as_bytes()).unwrap();
-                            let mut arr = val.unwrap().as_bytes().split(|b| *b == arr_delim.unwrap());
+                            let arr = val.unwrap().as_bytes().split(|b| *b == arr_delim.unwrap());
                             let mut is_first_elem = true;
                             for item in arr {
                                 if args.tsv_ignore_empty_fields && item.len() == 0 {

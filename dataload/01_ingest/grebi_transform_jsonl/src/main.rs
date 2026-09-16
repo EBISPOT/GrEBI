@@ -2,7 +2,7 @@
 use std::collections::{HashMap, HashSet};
 use std::io::{BufWriter, self, BufReader, Write,BufRead};
 use clap::Parser;
-use serde_json::{self, de, Map};
+use serde_json::{self, Map};
 use serde_json::Value;
 use serde_json::json;
 use sha1::{Sha1, Digest};

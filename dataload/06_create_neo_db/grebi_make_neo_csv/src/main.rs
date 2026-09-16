@@ -13,7 +13,6 @@ use serde_json::Map;
 use serde_json::Value;
 use grebi_shared::slice_merged_entity::SlicedEntity;
 use grebi_shared::slice_merged_entity::SlicedReified;
-use grebi_shared::slice_merged_entity::SlicedPropertyValue;
 use grebi_shared::json_parser::JsonParser;
 
 #[global_allocator]
@@ -72,19 +71,19 @@ fn main() -> std::io::Result<()> {
     let mut nodes_reader = BufReader::new(File::open(args.in_nodes_jsonl).unwrap());
     let mut edges_reader = BufReader::new(File::open(args.in_edges_jsonl).unwrap());
 
-    let mut nodes_file = File::create(args.out_nodes_csv_path).unwrap();
+    let nodes_file = File::create(args.out_nodes_csv_path).unwrap();
     let mut nodes_writer =
         BufWriter::with_capacity(1024*1024*32,
             &nodes_file
         );
 
-    let mut edges_file = File::create(args.out_edges_csv_path).unwrap();
+    let edges_file = File::create(args.out_edges_csv_path).unwrap();
     let mut edges_writer =
         BufWriter::with_capacity(1024*1024*32,
             &edges_file
         );
 
-    let mut id_edges_file = File::create(args.out_id_edges_csv_path).unwrap();
+    let id_edges_file = File::create(args.out_id_edges_csv_path).unwrap();
     let mut id_edges_writer =
         BufWriter::with_capacity(1024*1024*32,
             &id_edges_file
@@ -131,7 +130,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEntity::from_json(&line);
 
-        write_node(&line, &sliced, &all_entity_props, &mut nodes_writer, &mut id_edges_writer, &add_prefix);
+        write_node(&sliced, &all_entity_props, &mut nodes_writer, &add_prefix);
 
         for source_id in sliced.source_ids.iter() {
             write_id_row(&mut id_edges_writer, &sliced.id, &source_id, &add_prefix);
@@ -158,7 +157,7 @@ fn main() -> std::io::Result<()> {
 
         let sliced = SlicedEdge::from_json(&line);
 
-        write_edge(&line, sliced, &all_edge_props, &mut edges_writer, &add_prefix);
+        write_edge(sliced, &all_edge_props, &mut edges_writer, &add_prefix);
 
         n_edges = n_edges + 1;
         if n_edges % 1000000 == 0 {
@@ -177,7 +176,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&BTreeSet<String>, nodes_writer:&mut BufWriter<&File>, id_edges_writer:&mut BufWriter<&File>, add_prefix:&[u8]) {
+fn write_node(entity:&SlicedEntity, all_node_props:&BTreeSet<String>, nodes_writer:&mut BufWriter<&File>, add_prefix:&[u8]) {
 
     let refs:Map<String,Value> = serde_json::from_slice(entity._refs.unwrap()).unwrap();
 
@@ -193,7 +192,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&BTreeSet<Str
         if prop.key == "grebi:type".as_bytes() {
             for val in &prop.values {
                 nodes_writer.write_all(&[(31 as u8)]).unwrap();
-                nodes_writer.write_all(&get_value_to_write(val.value, &refs));
+                nodes_writer.write_all(&get_value_to_write(val.value, &refs)).unwrap();
             }
         }
     });
@@ -288,7 +287,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&BTreeSet<Str
 
 }
 
-fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&BTreeSet<String>, edges_writer: &mut BufWriter<&File>, add_prefix:&[u8]) {
+fn write_edge(edge:SlicedEdge, all_edge_props:&BTreeSet<String>, edges_writer: &mut BufWriter<&File>, add_prefix:&[u8]) {
 
     let refs:Map<String,Value> = serde_json::from_slice(edge._refs.unwrap()).unwrap();
 
@@ -348,7 +347,7 @@ fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&BTreeSet<String>,
                     } else {
                         edges_writer.write_all(&[(31 as u8)]).unwrap();
                     }
-                    edges_writer.write_all(&&get_value_to_write(val.value, &refs));
+                    edges_writer.write_all(&get_value_to_write(val.value, &refs)).unwrap();
                     break;
                 }
             }

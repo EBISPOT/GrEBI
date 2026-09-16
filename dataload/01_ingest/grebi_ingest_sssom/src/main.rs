@@ -1,12 +1,7 @@
 
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufWriter, self, BufReader, StdinLock, StdoutLock, Write, BufRead, Read};
-use std::ptr::eq;
-use clap::Parser;
+use std::io::{BufWriter, self, BufReader, StdoutLock, Write, BufRead};
 use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
-use serde_json::json;
 use serde_yaml;
 
 fn main() {

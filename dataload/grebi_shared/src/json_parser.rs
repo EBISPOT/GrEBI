@@ -1,5 +1,4 @@
 use crate::json_lexer::{JsonToken, JsonTokenType, lex};
-use serde_json::{self, Value};
 
 
 #[derive(PartialEq)]

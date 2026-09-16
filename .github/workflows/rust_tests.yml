@@ -24,6 +24,9 @@ permissions:
 jobs:
   rust-tests:
     runs-on: ubuntu-latest
+    env:
+      # The workspace builds without warnings; keep it that way.
+      RUSTFLAGS: -D warnings
     defaults:
       run:
         working-directory: dataload

@@ -34,7 +34,6 @@ pub fn get_id<'a>(json:&'a [u8])->&'a [u8] {
     return &json[start..end];
 }
 
-
 // get the subject without parsing json
 pub fn get_subject<'a>(json:&'a [u8])->&'a [u8] {
 
@@ -54,7 +53,6 @@ pub fn get_subject<'a>(json:&'a [u8])->&'a [u8] {
 
     return &json[start..end];
 }
-
 
 // get the subjects as an unparsed block without parsing the rest of the json
 pub fn get_subjects_block<'a>(json:&'a [u8])->&'a [u8] {
@@ -134,7 +132,7 @@ pub fn get_subjects<'a>(json:&'a [u8])->Vec<&'a [u8]> {
     }
 }
 
-
+#[cfg(test)]
 fn filter_newlines(ch:&u8)->u8 {
     if *ch == b'\n' || *ch == b'\t' {
         return b' ';
@@ -179,9 +177,7 @@ pub fn find_strings<'a>(json:&'a [u8])->Vec<(usize, usize)> {
 
     return strings;
 
-
 }
-
 
 #[cfg(test)]
 mod tests {

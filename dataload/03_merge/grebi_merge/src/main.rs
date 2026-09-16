@@ -1,5 +1,4 @@
 use flate2::read::GzDecoder;
-use serde_json::value;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fs::File;
@@ -12,7 +11,6 @@ use grebi_shared::get_id;
 
 mod parse_entity;
 use crate::parse_entity::ParsedEntity;
-use crate::parse_entity::ParsedProperty;
 
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
@@ -439,7 +437,7 @@ fn write_merged_entity(lines_to_write: &Vec<BufferedLine>, stdout: &mut BufWrite
                     if *source_id == last_source_id.unwrap() { // deduplication of source ids
                         continue;
                     }
-                    stdout.write_all(b",");
+                    stdout.write_all(b",").unwrap();
                 }
                 stdout.write_all(r#"""#.as_bytes()).unwrap();
                 stdout.write_all(source_id).unwrap();

@@ -1,31 +1,22 @@
 
-use std::ascii::escape_default;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap; // only for the groups lookup; the metadata uses sorted maps so its key order is stable
 use std::fs::File;
-use std::hash::Hash;
 use std::io::BufWriter;
 use std::io::BufReader;
 use std::io::Write;
 use std::io;
 use std::io::BufRead;
-use std::io::StdoutLock;
-use std::mem::transmute;
 use grebi_shared::load_groups_txt::load_id_to_group_mapping;
-use grebi_shared::load_groups_txt::load_id_to_group_bidirectional_mapping;
 use sha1::{Sha1, Digest};
 use serde_json::json;
 
 use clap::Parser;
-use flate2::write::GzEncoder;
-use flate2::Compression;
 use grebi_shared::find_strings;
 use grebi_shared::json_lexer::JsonTokenType;
-use grebi_shared::json_parser;
 use grebi_shared::load_metadata_mapping_table;
 use grebi_shared::load_metadata_mapping_table::Metadata;
-use grebi_shared::prefix_map::PrefixMap;
 use grebi_shared::prefix_map::PrefixMapBuilder;
 
 use grebi_shared::slice_merged_entity::SlicedPropertyValue;
@@ -35,7 +26,6 @@ use grebi_shared::slice_merged_entity::SlicedEntity;
 use grebi_shared::slice_merged_entity::SlicedProperty;
 use grebi_shared::slice_merged_entity::SlicedReified;
 
-use grebi_shared::json_lexer::{lex, JsonToken };
 use grebi_shared::json_parser::JsonParser;
 
 #[global_allocator]

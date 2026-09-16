@@ -1,9 +1,7 @@
 
-use std::{env, io};
+use std::io;
 use hashbrown::HashMap;
 use hashbrown::HashSet;
-use csv;
-use bloomfilter::Bloom;
 use clap::Parser;
 use std::io::{BufRead, BufReader };
 use std::io::{Write, BufWriter};
@@ -48,7 +46,7 @@ fn main() {
 	let handle = stdin.lock();
 	let mut reader = BufReader::new(handle);
 
-	let mut stdout = io::stdout().lock();
+	let stdout = io::stdout().lock();
 	let mut writer = BufWriter::new(stdout);
 
 	loop {

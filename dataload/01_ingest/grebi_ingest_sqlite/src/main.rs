@@ -1,5 +1,5 @@
 use rusqlite::{params, Connection, Result};
-use serde_json::{json, Value};
+use serde_json::json;
 use inflector::Inflector;
 use std::collections::{BTreeMap, HashMap};
 use clap::Parser;

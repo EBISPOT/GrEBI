@@ -40,8 +40,8 @@ impl<'a> ParsedEntity<'a> {
             if k_id != "grebi:nodeId".as_bytes() { panic!(); }
             let id = parser.string();
 
-            let k_sourceIds = parser.name();
-            if k_sourceIds != "grebi:sourceIds".as_bytes() { panic!(); }
+            let k_source_ids = parser.name();
+            if k_source_ids != "grebi:sourceIds".as_bytes() { panic!(); }
             parser.begin_array();
             while parser.peek().kind != JsonTokenType::EndArray {
                 source_ids.push(parser.string());
