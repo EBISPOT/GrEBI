@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
@@ -125,7 +126,7 @@ class MaterialisedClosureServingTest {
     private long countNid(String closure, String curie) {
         var res = pg.searchMaterialisedParameterised(GRAPH, q3,
                 List.of(new ClosureParam("cell", closure, curie)),
-                null, List.of(), null, true, 0, 100);
+                null, null, List.of(), null, true, 0, 100);
         return res.totalCount;
     }
 
@@ -146,7 +147,7 @@ class MaterialisedClosureServingTest {
         assumeTrue(enabled());
         var res = pg.searchMaterialisedParameterised(GRAPH, q3,
                 List.of(new ClosureParam("cell", "descendants", "ex:B")),
-                null,
+                null, null,
                 List.of(new GrebiPostgresClient.FacetField("cell", GrebiPostgresClient.FacetKind.NODE_NAME)),
                 "trait", false, 0, 100);
         assertEquals(3, res.totalCount);
@@ -169,7 +170,7 @@ class MaterialisedClosureServingTest {
     private long count(String closure, String curie) {
         var res = pg.searchMaterialisedParameterised(GRAPH, q1,
                 List.of(new ClosureParam("cell", closure, curie)),
-                null, List.of(), null, true, 0, 100);
+                null, null, List.of(), null, true, 0, 100);
         return res.totalCount;
     }
 
@@ -204,7 +205,7 @@ class MaterialisedClosureServingTest {
         assumeTrue(enabled());
         var res = pg.searchMaterialisedParameterised(GRAPH, q1,
                 List.of(new ClosureParam("cell", "exact", "ex:A")),
-                null, List.of(), null, true, 0, 100);
+                null, null, List.of(), null, true, 0, 100);
         assertEquals(1, res.results.size());
         @SuppressWarnings("unchecked")
         var cell = (Map<String, Object>) res.results.get(0).get("cell");
@@ -230,7 +231,7 @@ class MaterialisedClosureServingTest {
         // Numeric scores 3.0/1.0/2.0 sort B,D,A; C's score is NULL -> NULLS LAST.
         var res = pg.searchMaterialisedParameterised(GRAPH, q1,
                 List.of(new ClosureParam("cell", "descendants", "ex:A")),
-                null, List.of(), "score", true, 0, 100);
+                null, null, List.of(), "score", true, 0, 100);
         assertEquals(4, res.totalCount);
         var order = res.results.stream()
                 .map(r -> ((java.util.List<?>) ((Map<?, ?>) r.get("cell")).get("grebi:name")).get(0))
@@ -244,7 +245,7 @@ class MaterialisedClosureServingTest {
         assumeTrue(enabled());
         var collected = new java.util.ArrayList<Map<String, Object>>();
         pg.streamMaterialisedParameterised(GRAPH, q1,
-                List.of(new ClosureParam("cell", "descendants", "ex:B")), null,
+                List.of(new ClosureParam("cell", "descendants", "ex:B")), null, null,
                 null, true, collected::add);
         assertEquals(3, collected.size(), "stream yields descendants(B) = B,C,D");
     }
@@ -254,7 +255,7 @@ class MaterialisedClosureServingTest {
         assumeTrue(enabled());
         var res = pg.searchMaterialisedParameterised(GRAPH, q1,
                 List.of(new ClosureParam("cell", "descendants", "ex:A")),
-                "charlie", List.of(), null, true, 0, 100);
+                "charlie", null, List.of(), null, true, 0, 100);
         assertEquals(1, res.totalCount, "free-text 'charlie' matches only the C row");
     }
 
@@ -264,7 +265,7 @@ class MaterialisedClosureServingTest {
         // descendants(A) = {A,B,C,D}
         var res = pg.searchMaterialisedParameterised(GRAPH, q1,
                 List.of(new ClosureParam("cell", "descendants", "ex:A")),
-                null,
+                null, null,
                 List.of(
                         new GrebiPostgresClient.FacetField("cell", GrebiPostgresClient.FacetKind.NODE_NAME),
                         new GrebiPostgresClient.FacetField("trait", GrebiPostgresClient.FacetKind.SCALAR),
@@ -284,10 +285,85 @@ class MaterialisedClosureServingTest {
         assumeTrue(enabled());
         var res = pg.searchMaterialisedParameterised(GRAPH, q1,
                 List.of(new ClosureParam("cell", "descendants", "ex:A")),
-                "charlie",
+                "charlie", null,
                 List.of(new GrebiPostgresClient.FacetField("trait", GrebiPostgresClient.FacetKind.SCALAR)),
                 null, true, 0, 100);
         // the free-text narrow applies to the facet too
         assertEquals(Map.of("charlie", 1L), res.facets.get("trait"));
+    }
+
+    @Test
+    void facetSelectionsNarrowRows() {
+        assumeTrue(enabled());
+        // descendants(A) = A,B,C,D; two values ticked in one column are alternatives
+        var res = pg.searchMaterialisedParameterised(GRAPH, q1,
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                null, Map.of("trait", List.of("bravo", "delta")), List.of(), null, true, 0, 100);
+        assertEquals(2, res.totalCount, "trait in (bravo, delta)");
+        // selections on different columns combine
+        res = pg.searchMaterialisedParameterised(GRAPH, q1,
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                null, Map.of("trait", List.of("alpha", "charlie"), "ds", List.of("Y")), List.of(), null, true, 0, 100);
+        assertEquals(2, res.totalCount, "A (X,Y) and C (Y)");
+        res = pg.searchMaterialisedParameterised(GRAPH, q1,
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                null, Map.of("trait", List.of("bravo"), "ds", List.of("Y")), List.of(), null, true, 0, 100);
+        assertEquals(0, res.totalCount, "B carries no Y");
+        // a node column is selected by its display name, on the nid layout too
+        res = pg.searchMaterialisedParameterised(GRAPH, q3,
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                null, Map.of("cell", List.of("B", "C")), List.of(), null, true, 0, 100);
+        assertEquals(2, res.totalCount);
+        // free text and a selection combine: rows with X are A, B, D and all say "a"
+        res = pg.searchMaterialisedParameterised(GRAPH, q1,
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                "a", Map.of("ds", List.of("X")), List.of(), null, true, 0, 100);
+        assertEquals(3, res.totalCount);
+    }
+
+    @Test
+    void facetCountsLeaveOutTheirOwnSelection() {
+        assumeTrue(enabled());
+        var res = pg.searchMaterialisedParameterised(GRAPH, q1,
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                null, Map.of("trait", List.of("alpha", "charlie"), "ds", List.of("Y")),
+                List.of(new GrebiPostgresClient.FacetField("trait", GrebiPostgresClient.FacetKind.SCALAR),
+                        new GrebiPostgresClient.FacetField("ds", GrebiPostgresClient.FacetKind.ARRAY)),
+                null, true, 0, 100);
+        assertEquals(2, res.totalCount);
+        // trait breakdown: ds=Y applied, the trait selection not -> rows A and C
+        assertEquals(Map.of("alpha", 1L, "charlie", 1L), res.facets.get("trait"));
+        // ds breakdown: the trait selection applied, the ds one not -> A (X,Y) and C (Y)
+        assertEquals(Map.of("Y", 2L, "X", 1L), res.facets.get("ds"));
+    }
+
+    @Test
+    void unknownSelectionColumnIsRejected() {
+        assumeTrue(enabled());
+        assertThrows(IllegalArgumentException.class, () -> pg.searchMaterialisedParameterised(GRAPH, q1,
+                List.of(new ClosureParam("cell", "descendants", "ex:A")),
+                null, Map.of("nope", List.of("x")), List.of(), null, true, 0, 100));
+    }
+
+    @Test
+    void streamRespectsSelections() {
+        assumeTrue(enabled());
+        List<Map<String, Object>> collected = new java.util.ArrayList<>();
+        pg.streamMaterialisedParameterised(GRAPH, q1,
+                List.of(new ClosureParam("cell", "descendants", "ex:A")), null,
+                Map.of("ds", List.of("Y")), null, true, collected::add);
+        assertEquals(2, collected.size(), "A and C carry datasource Y");
+    }
+
+    @Test
+    void standaloneBrowseSelectionsAndFacets() {
+        assumeTrue(enabled());
+        // The standalone /tables path shares the predicate builder: whole table, no closure.
+        var res = pg.searchMaterialisedQueryResults(q1, null,
+                Map.of("trait", List.of("bravo", "delta")), List.of("trait", "ds", "score", "nope"), 0, 100);
+        assertEquals(2, res.totalCount);
+        assertEquals(Map.of("alpha", 1L, "bravo", 1L, "charlie", 1L, "delta", 1L, "xray", 1L), res.facets.get("trait"));
+        assertEquals(Map.of("X", 2L), res.facets.get("ds"));
+        assertEquals(2, res.facets.size(), "numeric and unknown facet columns are ignored");
     }
 }

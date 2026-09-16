@@ -341,7 +341,7 @@ public class GrebiApi {
                     var res = postgres.searchMaterialisedQueryResultsPaginated(
                             standaloneBuild, searchText, filters, facetFields, page);
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(res));
+                    ctx.json(res); // documented page shape (totalElements ...), as /query
                 })
                 .get("/api/v1/graphs/{graph}/query_templates", ctx -> {
                     var graph = ctx.pathParam("graph");
@@ -369,17 +369,11 @@ public class GrebiApi {
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), template.result_columns.get(0).column_id);
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
 
-                    var params = new HashMap<String, List<String>>();
-                    for (var param : ctx.queryParamMap().entrySet()) {
-                        if (param.getKey().equals("page") || param.getKey().equals("size") ||
-                                param.getKey().equals("templateId") || param.getKey().equals("graph") ||
-                                param.getKey().equals("sortBy") || param.getKey().equals("sortDir") ||
-                                param.getKey().equals("resolve") ||
-                                param.getKey().equals("q") || param.getKey().equals("filter")) {
-                            continue;
-                        }
-                        params.put(param.getKey(), param.getValue());
-                    }
+                    var build = template.isParameterisedMaterialised()
+                            ? findMaterialisedBuild(metadata, graph, "materialised_templates", templateId)
+                            : null;
+                    var args = splitQueryArgs(template, build, ctx.queryParamMap());
+                    var params = args.params;
 
                     var sort = Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
                     // Free-text narrow, so a filtered table exports a filtered CSV.
@@ -397,12 +391,9 @@ public class GrebiApi {
                             httpRes.setStatus(200);
                             var writer = httpRes.getWriter();
 
-                            var build = template.isParameterisedMaterialised()
-                                    ? findMaterialisedBuild(metadata, graph, "materialised_templates", templateId)
-                                    : null;
                             if (build != null && !build.isCountsOnly()) {
                                 return java.util.concurrent.CompletableFuture.runAsync(() ->
-                                        postgres.streamMaterialisedParameterisedCsv(graph, template, build, params, searchText, sort, writer));
+                                        postgres.streamMaterialisedParameterisedCsv(graph, template, build, params, searchText, args.filters, sort, writer));
                             }
 
                             if (cypher == null) {
@@ -425,17 +416,11 @@ public class GrebiApi {
 
                     ctx.contentType("application/json");
 
-                    var params = new HashMap<String, List<String>>();
-                    for (var param : ctx.queryParamMap().entrySet()) {
-                        if (param.getKey().equals("page") || param.getKey().equals("size") ||
-                                param.getKey().equals("templateId") || param.getKey().equals("graph") ||
-                                param.getKey().equals("sortBy") || param.getKey().equals("sortDir") ||
-                                param.getKey().equals("resolve") ||
-                                param.getKey().equals("q") || param.getKey().equals("filter")) {
-                            continue;
-                        }
-                        params.put(param.getKey(), param.getValue());
-                    }
+                    var build = template.isParameterisedMaterialised()
+                            ? findMaterialisedBuild(metadata, graph, "materialised_templates", templateId)
+                            : null;
+                    var args = splitQueryArgs(template, build, ctx.queryParamMap());
+                    var params = args.params;
 
                     var resolve = "true".equals(ctx.queryParam("resolve"));
                     // Free-text narrow (materialised full templates only; ignored otherwise).
@@ -444,13 +429,13 @@ public class GrebiApi {
                     var searchText = firstNonNull(ctx.queryParam("q"), ctx.queryParam("filter"));
                     limits.validateText(searchText, "q");
 
-                    var res = serveQueryTemplate(cypher, postgres, metadata, graph, template, params, searchText, resolve, page);
+                    var res = serveQueryTemplate(cypher, postgres, metadata, graph, template, params, searchText, args.filters, resolve, page);
 
-                    ctx.result(
-                        gson.toJson(
-                            res
-                        )
-                    );
+                    // Same serialiser as /search and /nodes: Spring's Page exposes
+                    // totalElements etc. through getters, which Gson does not see
+                    // (it wrote the private "total" field instead, so clients
+                    // following the documented shape saw no total at all).
+                    ctx.json(res);
                 })
                 .get("/api/v1/graphs/{graph}/nodes", ctx -> {
                     ctx.contentType("application/json");
@@ -848,6 +833,44 @@ public class GrebiApi {
             ));
     }
 
+    /** Query-string keys of a /query request that are neither template
+     *  parameters nor facet selections. */
+    private static final Set<String> QUERY_CONTROL_KEYS = Set.of(
+            "page", "size", "templateId", "graph", "sortBy", "sortDir", "resolve", "q", "filter");
+
+    /** A /query request's query string, split into template parameters and
+     *  facet selections. */
+    static final class QueryArgs {
+        final Map<String, List<String>> params = new HashMap<>();
+        final Map<String, List<String>> filters = new LinkedHashMap<>();
+    }
+
+    /**
+     * Split a /query request's query string: a key naming one of the template's
+     * parameters is a parameter; otherwise, when a typed-table build exists and
+     * the key names one of its result columns, it is a facet selection (the
+     * column's value must be one of the given values); anything else is passed
+     * on as a parameter, to be rejected as unknown exactly as before.
+     */
+    static QueryArgs splitQueryArgs(QueryTemplate template, uk.ac.ebi.grebi.db.MaterialisedBuild build,
+            Map<String, List<String>> queryParams) {
+        var out = new QueryArgs();
+        for (var e : queryParams.entrySet()) {
+            String key = e.getKey();
+            if (QUERY_CONTROL_KEYS.contains(key)) {
+                continue;
+            }
+            boolean templateParam = template.params != null
+                    && template.params.stream().anyMatch(p -> key.equals(p.param_id));
+            if (!templateParam && build != null && build.column(key) != null) {
+                out.filters.put(key, e.getValue());
+            } else {
+                out.params.put(key, e.getValue());
+            }
+        }
+        return out;
+    }
+
     /** First non-null of the given values, or null if all are null. Unlike
      *  {@link java.util.Objects#requireNonNullElse}, which throws when the fallback
      *  is also null, this tolerates every value being null — the common case for an
@@ -890,11 +913,14 @@ public class GrebiApi {
      * Serve a query template: from the Postgres closure path when a materialisation
      * has been built for this graph, otherwise live via Cypher. counts_only
      * templates serve data live but take their (flat) total from Postgres.
+     * `filters` (result column -> selected values) narrow the full materialised
+     * path only; the other paths have no stored columns to filter on.
      */
     static org.springframework.data.domain.Page<Map<String, Object>> serveQueryTemplate(
             GrebiCypherRepo cypher, GrebiPostgresRepo postgres, GrebiMetadataRepo metadata,
             String graph, QueryTemplate template, Map<String, List<String>> params,
-            String searchText, boolean resolve, org.springframework.data.domain.Pageable page) {
+            String searchText, Map<String, List<String>> filters,
+            boolean resolve, org.springframework.data.domain.Pageable page) {
 
         var build = template.isParameterisedMaterialised()
                 ? findMaterialisedBuild(metadata, graph, "materialised_templates", template.id)
@@ -908,8 +934,8 @@ public class GrebiApi {
                 long total = postgres.materialisedParameterisedCount(graph, template, build, params);
                 return cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page, total);
             }
-            // Full materialised: closure filter + optional free-text + facets from Postgres.
-            return postgres.runMaterialisedParameterisedPaginated(graph, template, build, params, searchText, resolve, page);
+            // Full materialised: closure filter + optional free-text + facet selections, with facets, from Postgres.
+            return postgres.runMaterialisedParameterisedPaginated(graph, template, build, params, searchText, filters, resolve, page);
         }
 
         if (cypher == null) {

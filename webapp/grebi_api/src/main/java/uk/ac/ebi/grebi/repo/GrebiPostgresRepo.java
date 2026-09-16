@@ -270,13 +270,16 @@ public class GrebiPostgresRepo {
 
     /**
      * Serve a full-materialise parameterised template from Postgres with
-     * closure-at-query-time. Returns the same page shape as the live Cypher path
-     * (projected to result_columns; node columns resolved when resolve=true).
+     * closure-at-query-time, narrowed by the optional free text and facet
+     * selections (result column -> values). Returns the same page shape as the
+     * live Cypher path (projected to result_columns; node columns resolved when
+     * resolve=true).
      */
     public GrebiFacetedResultsPage<Map<String, Object>> runMaterialisedParameterisedPaginated(
             String graph, QueryTemplate template, uk.ac.ebi.grebi.db.MaterialisedBuild build,
             Map<String, List<String>> params,
-            String searchText, boolean resolve, Pageable pageable) {
+            String searchText, Map<String, List<String>> filters,
+            boolean resolve, Pageable pageable) {
 
         if (template.graphs != null && !template.graphs.contains(graph)) {
             throw new IllegalArgumentException(
@@ -304,7 +307,7 @@ public class GrebiPostgresRepo {
 
         var result = pgClient.searchMaterialisedParameterised(
                 graph, build, closureParams,
-                searchText, buildFacetFields(build),
+                searchText, filters, buildFacetFields(build),
                 sortColumn, sortAsc,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
@@ -374,7 +377,7 @@ public class GrebiPostgresRepo {
     public void streamMaterialisedParameterisedCsv(
             String graph, QueryTemplate template, uk.ac.ebi.grebi.db.MaterialisedBuild build,
             Map<String, List<String>> params,
-            String searchText, Sort sort, PrintWriter writer) {
+            String searchText, Map<String, List<String>> filters, Sort sort, PrintWriter writer) {
 
         var closureParams = buildClosureParams(template, build, params);
 
@@ -392,7 +395,7 @@ public class GrebiPostgresRepo {
         writer.write("\n");
 
         pgClient.streamMaterialisedParameterised(
-                graph, build, closureParams, searchText, sortColumn, sortAsc,
+                graph, build, closureParams, searchText, filters, sortColumn, sortAsc,
                 row -> GrebiCypherRepo.writeCsvRow(template.result_columns, row, writer));
         writer.flush();
     }
@@ -404,18 +407,8 @@ public class GrebiPostgresRepo {
         if (build.columns == null) return out;
         for (var c : build.columns) {
             if (!Boolean.TRUE.equals(c.facet)) continue;
-            String type = c.column_type == null ? "" : c.column_type;
-            GrebiPostgresClient.FacetKind kind;
-            if ("DatasourceList".equals(type)) {
-                kind = GrebiPostgresClient.FacetKind.ARRAY;
-            } else if ("GraphNodeId".equals(type)) {
-                kind = GrebiPostgresClient.FacetKind.NODE_NAME;
-            } else if ("string".equalsIgnoreCase(type)) {
-                kind = GrebiPostgresClient.FacetKind.SCALAR;
-            } else {
-                continue; // float / EdgeId are not facetable
-            }
-            out.add(new GrebiPostgresClient.FacetField(c.column_id, kind));
+            var f = GrebiPostgresClient.facetField(build, c.column_id);
+            if (f != null) out.add(f); // float / EdgeId are not facetable
         }
         return out;
     }
