@@ -217,7 +217,7 @@ class TestUnconstrainedAnchorDrop(unittest.TestCase):
         self.assertNotIn("$phenotype_id", q)
 
     def test_no_values_drops_closure_root_anchor(self):
-        # gwas_traits_reported_different_from_matched: unconstrained, hop anchor
+        # unconstrained param with a closure-root (hop) anchor
         t = {
             "params": [{"param_id": "trait_id", "param_type": "SourceId"}],
             "materialise": {},
