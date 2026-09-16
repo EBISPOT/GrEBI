@@ -1,13 +1,19 @@
 title: Search GWAS reported different from mapped
-question: Which [GWAS reported traits]{reported_trait} under {trait_id} differ from their mapped ontology term?
+question: Which [GWAS reported traits]{reported_trait} mapped to {trait_id} differ from its name?
 graphs:
   - ebi_monarch_xspecies
 topics:
   - gwas_catalog
   - qc
+# QC query: associations mapped to exactly the given term whose reported trait
+# is not that term's name or a synonym, i.e. candidates for a mapping that is
+# too broad or wrong. Descendants of the term are deliberately not included:
+# an association mapped to a child term is annotated at its own level, and
+# reporting it here just because its free text differs from the child's name
+# was noise (issue #37).
 cypher_match_fragment: |-
+  MATCH (trait)-[:sourceId]->(:Id { id: $trait_id })
   MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
-  MATCH (trait)-[:`biolink:broad_match`*0..1]->(parent_term)-[:sourceId]->(:Id { id: $trait_id })
   UNWIND assoc.`gwas:disease_trait` AS reported_trait
   With trait, reported_trait, [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id, assoc.edge_id AS edge_id
   WHERE NOT reported_trait IN trait.`grebi:name` AND NOT reported_trait IN trait.`grebi:synonym`
@@ -24,7 +30,7 @@ cypher_count_fragment: |-
   RETURN count(*) AS count
 params:
   - param_id: trait_id
-    param_name: Parent Term
+    param_name: Term
     param_type: SourceId
 result_columns:
   - column_id: reported_trait
@@ -39,9 +45,9 @@ result_columns:
   - column_id: edge_id
     column_type: EdgeId
 examples:
-  - title: experimental factor (all)
+  - title: asthma
     params:
-      trait_id: efo:0000001
+      trait_id: efo:0000270
   - title: response to xenobiotic stimulus
     params:
       trait_id: go:0009410

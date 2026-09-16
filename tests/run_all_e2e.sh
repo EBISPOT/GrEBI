@@ -40,6 +40,10 @@ SUBGRAPHS=(
     #   cp out/test_gwas_snapshot_*.jsonl out/test_gwas_api_snapshot.json \
     #     tests/expected_output/test_gwas/
     test_gwas
+    # Reactome: a DOID-annotated Disease object and the entities citing it, plus
+    # stand-in DOID/MONDO terms, so the disease clique-merges into the ontology
+    # node (issue #26). Regenerate expected output as for test_gwas above.
+    test_reactome
     # BioStudies PageTab metadata: verifies study metadata and ENA linking,
     # while ensuring linked submission files do not enter the graph.
     test_biostudies

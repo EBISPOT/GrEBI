@@ -1,0 +1,2 @@
+{"id": "doid:8893", "label": "psoriasis", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0005083", "label": "psoriasis", "skos:exactMatch": ["doid:8893"], "category": ["ols:Class", "biolink:Disease"]}

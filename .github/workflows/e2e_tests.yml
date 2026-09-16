@@ -1,5 +1,10 @@
 name: E2E Tests
 
+# One build of the images, then every test subgraph on its own runner. The
+# subgraphs are independent and each one is dominated by fixed overhead
+# (booting Neo4j/Postgres/the API, ~5 min on kilobytes of data), so running
+# them serially made the job take as long as all of them added together.
+
 on:
   push:
     branches: [ "dev", "stable" ]
@@ -10,7 +15,24 @@ permissions:
   contents: read
 
 jobs:
-  e2e-test:
+  # The list of subgraphs lives in tests/run_all_e2e.sh (the local runner);
+  # read it from there so the matrix cannot drift from it.
+  subgraphs:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: List the test subgraphs
+        id: list
+        run: |
+          matrix=$(grep -oE '^\s+test_[a-z0-9_]+\s*$' tests/run_all_e2e.sh | tr -d '[:space:]\n' | sed 's/test_/\ntest_/g' | grep . | jq -R . | jq -sc .)
+          echo "subgraphs: $matrix"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -41,5 +63,48 @@ jobs:
           --entrypoint python3 ghcr.io/ebispot/grebi_combined:dev
           -m unittest discover -s tests -p 'test_download_workflow.py'
 
-      - name: Run all E2E tests
-        run: bash tests/run_all_e2e.sh
+      # Hand the image to the test jobs as an artifact rather than pushing it to
+      # the registry: no write permission needed, so this also works for pull
+      # requests from forks. The tarball is already compressed, hence level 0.
+      - name: Save the combined image
+        run: docker save ghcr.io/ebispot/grebi_combined:dev | zstd -T0 -3 -q -o grebi_combined.tar.zst
+
+      - name: Upload the image
+        uses: actions/upload-artifact@v4
+        with:
+          name: grebi_combined-image
+          path: grebi_combined.tar.zst
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+  e2e:
+    name: e2e (${{ matrix.subgraph }})
+    needs: [subgraphs, build]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        subgraph: ${{ fromJson(needs.subgraphs.outputs.matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          docker system prune -af
+
+      - name: Download the image
+        uses: actions/download-artifact@v4
+        with:
+          name: grebi_combined-image
+
+      - name: Load the image
+        run: |
+          zstd -d -c grebi_combined.tar.zst | docker load
+          rm -f grebi_combined.tar.zst
+          docker image inspect ghcr.io/ebispot/grebi_combined:dev --format 'loaded {{.Id}}'
+
+      - name: Run E2E test
+        run: bash tests/run_e2e.sh ${{ matrix.subgraph }}
