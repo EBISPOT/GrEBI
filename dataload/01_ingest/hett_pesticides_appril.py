@@ -18,7 +18,9 @@ df['id'] = 'appril:'+df['REG_NUM']
 df['grebi:type'] = 'hett:PesticideProduct'
 df['grebi:datasource'] = args.datasource_name
 
-df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+# DataFrame.map replaced applymap in pandas 2.1 and applymap is gone in pandas 3
+strip = df.map if hasattr(df, 'map') else df.applymap
+df = strip(lambda x: x.strip() if isinstance(x, str) else x)
 
 for obj in df.to_dict(orient='records'):
     obj = {re.sub(r'[^\w\s:]', '',k): v for k, v in obj.items() if pd.notna(v)}

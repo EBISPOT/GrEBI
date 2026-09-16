@@ -1,0 +1,6 @@
+{"id": "cas:1071-83-6", "grebi:type": "grebi:Chemical", "grebi:datasource": "HETT_Pesticides.EU"}
+{"grebi:name": "Glyphosate", "Status": "Approved", "Authorised": ["AT", "BE", "DE"], "CAS Number": ["cas:1071-83-6"], "Category of use": "HB", "id": "Glyphosate", "grebi:type": "hett:AgroSubstance", "grebi:datasource": "HETT_Pesticides.EU"}
+{"id": "cas:7440-50-8", "grebi:type": "grebi:Chemical", "grebi:datasource": "HETT_Pesticides.EU"}
+{"id": "cas:1332-40-7", "grebi:type": "grebi:Chemical", "grebi:datasource": "HETT_Pesticides.EU"}
+{"grebi:name": "Copper compounds", "Status": "Approved", "Authorised": ["FR"], "CAS Number": ["cas:7440-50-8", "cas:1332-40-7"], "Category of use": "FU", "id": "Copper compounds", "grebi:type": "hett:AgroSubstance", "grebi:datasource": "HETT_Pesticides.EU"}
+{"grebi:name": "No CAS substance", "Status": "Pending", "id": "No CAS substance", "grebi:type": "hett:AgroSubstance", "grebi:datasource": "HETT_Pesticides.EU"}

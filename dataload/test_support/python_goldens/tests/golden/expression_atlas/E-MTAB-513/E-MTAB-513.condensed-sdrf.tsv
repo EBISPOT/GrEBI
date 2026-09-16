@@ -1,0 +1,12 @@
+E-MTAB-513		ERR030879	characteristic	age	65 year
+E-MTAB-513		ERR030879	characteristic	ethnic group	Caucasian	http://purl.obolibrary.org/obo/HANCESTRO_0005
+E-MTAB-513		ERR030879	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-MTAB-513		ERR030879	characteristic	organism part	lung	http://purl.obolibrary.org/obo/UBERON_0002048
+E-MTAB-513		ERR030879	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-MTAB-513		ERR030879	factor	organism part	lung	http://purl.obolibrary.org/obo/UBERON_0002048
+E-MTAB-513		ERR030887	characteristic	age	37 year
+E-MTAB-513		ERR030887	characteristic	ethnic group	Caucasian	http://purl.obolibrary.org/obo/HANCESTRO_0005
+E-MTAB-513		ERR030887	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-MTAB-513		ERR030887	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-MTAB-513		ERR030887	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-MTAB-513		ERR030887	factor	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107

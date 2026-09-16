@@ -1,0 +1,5 @@
+{"id": "cas:1071-83-6", "grebi:type": "grebi:Chemical", "grebi:datasource": "HETT_Pesticides.APPRIL"}
+{"id": "cas:7732-18-5", "grebi:type": "grebi:Chemical", "grebi:datasource": "HETT_Pesticides.APPRIL"}
+{"REG_NUM": "100-1", "grebi:name": "Weedkiller Plus", "PESTS": ["dandelion", "clover"], "SITES": ["lawns", "paths"], "AIS": "Glyphosate (1071-83-6) 41%", "INERTS": "water (7732-18-5)", "id": "appril:100-1", "grebi:type": "hett:PesticideProduct", "grebi:datasource": "HETT_Pesticides.APPRIL", "hett:hasActiveIngredient": ["cas:1071-83-6"], "hett:hasInertIngredient": ["cas:7732-18-5"]}
+{"id": "cas:20427-59-2", "grebi:type": "grebi:Chemical", "grebi:datasource": "HETT_Pesticides.APPRIL"}
+{"REG_NUM": "200-7", "grebi:name": "Fungus Stop", "PESTS": ["blight"], "AIS": "Copper hydroxide (20427-59-2)", "id": "appril:200-7", "grebi:type": "hett:PesticideProduct", "grebi:datasource": "HETT_Pesticides.APPRIL", "hett:hasActiveIngredient": ["cas:20427-59-2"]}

@@ -810,6 +810,9 @@ dependencies = [
 [[package]]
 name = "grebi_golden"
 version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
 
 [[package]]
 name = "grebi_identifiers2groups"
@@ -1726,6 +1729,13 @@ dependencies = [
  "quote",
  "syn 2.0.118",
  "version_check",
+]
+
+[[package]]
+name = "python_goldens"
+version = "0.1.0"
+dependencies = [
+ "grebi_golden",
 ]
 
 [[package]]

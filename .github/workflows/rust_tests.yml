@@ -1,7 +1,8 @@
 name: Rust Tests
 
 # Unit tests of the dataload crates and golden tests of every pipeline binary
-# (a binary run on recorded inputs, its outputs compared with recorded ones).
+# and Python ingest script (run on recorded inputs, outputs compared with
+# recorded ones).
 # The E2E workflow builds the same binaries into the image but never runs
 # `cargo test`.
 
@@ -37,6 +38,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: dataload
+
+      - name: Python for the golden tests of the Python ingest scripts
+        run: pip install --quiet pandas openpyxl
 
       - name: Run the tests
         run: cargo test --workspace

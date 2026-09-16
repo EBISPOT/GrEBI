@@ -21,7 +21,9 @@ df.rename(columns={col: 'grebi:name' for col in df.columns if col == 'Substance'
 df['grebi:type'] = 'hett:AgroSubstance'
 df['grebi:datasource'] = args.datasource_name
 
-df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+# DataFrame.map replaced applymap in pandas 2.1 and applymap is gone in pandas 3
+strip = df.map if hasattr(df, 'map') else df.applymap
+df = strip(lambda x: x.strip() if isinstance(x, str) else x)
 
 for obj in df.to_dict(orient='records'):
     obj = {re.sub(r'[^\w\s:]', '',k): v for k, v in obj.items() if pd.notna(v)}
@@ -30,7 +32,7 @@ for obj in df.to_dict(orient='records'):
         obj['Authorised'] = list(map(lambda p: p.strip(), obj['Authorised'].split(',')))
 
     if 'CAS Number' in obj:
-        # match cas numbers by regex
+        # match cas numbers by regex
         cas =  list(map(lambda cas: 'cas:'+cas, re.findall(r'\d{1,7}-\d{2}-\d', obj['CAS Number'])))
         for c in cas:
             print(json.dumps({'id': c, 'grebi:type': 'grebi:Chemical', 'grebi:datasource': args.datasource_name}))

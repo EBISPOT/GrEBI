@@ -1,0 +1,4 @@
+{"id": "cas:1071-83-6", "grebi:type": "grebi:Chemical", "grebi:datasource": "HETT_Pesticides.GB"}
+{"grebi:name": "Glyphosate", "Category": ["HB", "PG"], "CAS Number": ["cas:1071-83-6"], "IUPAC Name": "N-(phosphonomethyl)glycine", "id": "Glyphosate", "grebi:type": "hett:AgroSubstance", "grebi:datasource": "HETT_Pesticides.GB", "grebi:equivalentTo": ["N-(phosphonomethyl)glycine"]}
+{"id": "cas:20427-59-2", "grebi:type": "grebi:Chemical", "grebi:datasource": "HETT_Pesticides.GB"}
+{"grebi:name": "Copper hydroxide", "Category": ["FU"], "CAS Number": ["cas:20427-59-2"], "IUPAC Name": "copper(II) hydroxide or cupric hydroxide; not applicable", "id": "Copper hydroxide", "grebi:type": "hett:AgroSubstance", "grebi:datasource": "HETT_Pesticides.GB", "grebi:equivalentTo": ["copper(II) hydroxide", "cupric hydroxide"]}

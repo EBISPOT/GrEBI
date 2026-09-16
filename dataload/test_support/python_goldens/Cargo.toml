@@ -1,0 +1,10 @@
+[package]
+name = "python_goldens"
+version = "0.1.0"
+edition = "2021"
+description = "Golden tests pinning the behaviour of the Python ingest scripts, run with the same harness as the Rust binaries; a script's cases move to its Rust crate when it is ported"
+
+[dependencies]
+
+[dev-dependencies]
+grebi_golden = { path = "../grebi_golden" }

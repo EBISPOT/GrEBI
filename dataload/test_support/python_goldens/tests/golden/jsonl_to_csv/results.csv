@@ -1,0 +1,4 @@
+study,trait,p_value,genes,n,extra
+"{""id"": ""GCST1"", ""grebi:name"": [""Study one""]}",psoriasis,1.5e-08,A;B,3,
+"{""id"": ""GCST2""}","asthma, severe",0.5,,None,
+"{""id"": ""GCST3""}","line with ""quotes""",,,,True

@@ -33,6 +33,7 @@ members = [
 	"08_create_postgres/grebi_make_postgres_mat_queries",
 	"08_create_postgres/grebi_make_compressed_blob",
 	"grebi_shared",
-	"test_support/grebi_golden"
+	"test_support/grebi_golden",
+	"test_support/python_goldens"
 ]
 

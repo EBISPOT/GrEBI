@@ -26,6 +26,7 @@ pub struct GoldenCase {
     expected_stdout: Option<String>,
     outputs: Vec<String>,
     expect_failure: bool,
+    jsonl: bool,
 }
 
 impl GoldenCase {
@@ -43,6 +44,7 @@ impl GoldenCase {
             expected_stdout: None,
             outputs: Vec::new(),
             expect_failure: false,
+            jsonl: false,
         }
     }
 
@@ -77,6 +79,13 @@ impl GoldenCase {
     /// the same name in the case directory.
     pub fn output(mut self, file: &str) -> Self {
         self.outputs.push(file.to_string());
+        self
+    }
+
+    /// Compare JSON lines by value rather than byte for byte, so a port that only
+    /// spells a number or orders keys differently still passes.
+    pub fn jsonl(mut self) -> Self {
+        self.jsonl = true;
         self
     }
 
@@ -118,12 +127,12 @@ impl GoldenCase {
 
         let mut problems = Vec::new();
         if let Some(file) = &self.expected_stdout {
-            check(&self.case_dir.join(file), &output.stdout, update, &mut problems);
+            check(&self.case_dir.join(file), &output.stdout, update, self.jsonl, &mut problems);
         }
         for file in &self.outputs {
             let produced = fs::read(scratch.join(file))
                 .unwrap_or_else(|e| panic!("{} did not write {}: {}\nstderr:\n{}", self.bin.display(), file, e, stderr));
-            check(&self.case_dir.join(file), &produced, update, &mut problems);
+            check(&self.case_dir.join(file), &produced, update, self.jsonl, &mut problems);
         }
         let _ = fs::remove_dir_all(&scratch);
         if !problems.is_empty() {
@@ -133,7 +142,7 @@ impl GoldenCase {
     }
 }
 
-fn check(expected_path: &Path, actual: &[u8], update: bool, problems: &mut Vec<String>) {
+fn check(expected_path: &Path, actual: &[u8], update: bool, jsonl: bool, problems: &mut Vec<String>) {
     if update {
         fs::write(expected_path, actual).unwrap();
         return;
@@ -145,9 +154,39 @@ fn check(expected_path: &Path, actual: &[u8], update: bool, problems: &mut Vec<S
             return;
         }
     };
-    if expected != actual {
-        problems.push(format!("{}:\n{}", expected_path.display(), describe_difference(&expected, actual)));
+    if expected == actual {
+        return;
     }
+    if jsonl {
+        if let Some(problem) = jsonl_difference(&expected, actual) {
+            problems.push(format!("{}:\n{}", expected_path.display(), problem));
+        }
+        return;
+    }
+    problems.push(format!("{}:\n{}", expected_path.display(), describe_difference(&expected, actual)));
+}
+
+/// The first line whose JSON value differs, or None when every line is the same value.
+fn jsonl_difference(expected: &[u8], actual: &[u8]) -> Option<String> {
+    let parse = |bytes: &[u8]| -> Result<Vec<serde_json::Value>, String> {
+        std::str::from_utf8(bytes).map_err(|e| e.to_string())?
+            .lines().filter(|l| !l.trim().is_empty())
+            .map(|l| serde_json::from_str::<serde_json::Value>(l).map_err(|e| format!("{}: {}", e, truncate(l))))
+            .collect()
+    };
+    let (e, a) = match (parse(expected), parse(actual)) {
+        (Ok(e), Ok(a)) => (e, a),
+        (Err(err), _) => return Some(format!("  recorded file is not JSON lines: {}", err)),
+        (_, Err(err)) => return Some(format!("  actual output is not JSON lines: {}", err)),
+    };
+    for i in 0..e.len().max(a.len()) {
+        if e.get(i) != a.get(i) {
+            return Some(format!("  line {} differs as JSON:\n    recorded: {}\n    actual:   {}\n  ({} recorded lines, {} actual)", i + 1,
+                e.get(i).map(|v| truncate(&v.to_string())).unwrap_or_else(|| "<none>".into()),
+                a.get(i).map(|v| truncate(&v.to_string())).unwrap_or_else(|| "<none>".into()), e.len(), a.len()));
+        }
+    }
+    None
 }
 
 /// The first differing line for text, the first differing byte otherwise.

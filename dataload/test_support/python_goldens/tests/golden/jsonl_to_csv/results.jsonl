@@ -1,0 +1,3 @@
+{"study":{"id":"GCST1","grebi:name":["Study one"]},"trait":"psoriasis","p_value":1.5e-8,"genes":["A","B"],"n":3}
+{"study":{"id":"GCST2"},"trait":"asthma, severe","p_value":0.5,"genes":[],"n":null}
+{"study":{"id":"GCST3"},"trait":"line with \"quotes\"","extra":true}

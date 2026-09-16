@@ -1,0 +1,19 @@
+[
+  {
+    "accession": "PXD001357",
+    "title": "Direct evidence of milk consumption from ancient human dental calculus, St Helena",
+    "doi": "10.6019/PXD001357",
+    "submissionDate": "2014-10-15",
+    "publicationDate": "2015-02-25",
+    "organisms": [
+      {"@type": "CvParam", "cvLabel": "NEWT", "accession": "NEWT:9606", "name": "Homo sapiens (human)", "value": ""}
+    ],
+    "instruments": [
+      {"@type": "CvParam", "cvLabel": "MS", "accession": "MS:1001910", "name": "LTQ Orbitrap Elite", "value": ""}
+    ],
+    "references": [
+      {"pubmedID": 25429530, "doi": "10.1038/srep07104"}
+    ],
+    "otherOmicsLinks": ["px:PXD001359", "pride.project:PXD001359"]
+  }
+]

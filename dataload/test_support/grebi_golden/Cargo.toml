@@ -5,3 +5,4 @@ edition = "2021"
 description = "Golden tests for the pipeline binaries: run a binary on recorded inputs and compare with recorded outputs"
 
 [dependencies]
+serde_json = "1"

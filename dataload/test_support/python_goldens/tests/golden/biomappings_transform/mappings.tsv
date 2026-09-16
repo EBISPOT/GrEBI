@@ -1,0 +1,3 @@
+source prefix	source identifier	source name	relation	target prefix	target identifier	target name	type	source
+mondo	0005083	psoriasis	skos:exactMatch	doid	8893	psoriasis	semapv:LexicalMatching	orcid:0000
+efo	efo:0000676	psoriasis	skos:closeMatch	mesh	mesh:D011565	Psoriasis	semapv:ManualMappingCuration	orcid:0000
