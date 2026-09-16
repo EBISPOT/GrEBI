@@ -1,0 +1,15 @@
+id: PRIDE
+enabled: true
+description: "PRIDE Archive public proteomics project metadata and cross-references"
+download:
+  # PRIDE's bulk API streams all public project metadata as a JSON array.
+  # The normal download stage saves it locally; ingest makes no API calls.
+  - dest: pride/projects.json
+    sources:
+      - https://www.ebi.ac.uk/pride/ws/archive/v3/projects/all
+ingests:
+  - globs: ["pride/projects.json"]
+    memory: "4 GB"
+    command: '
+      python3 $GREBI_DATALOAD_HOME/01_ingest/pride.py
+          -- $GREBI_INGEST_FILENAME'

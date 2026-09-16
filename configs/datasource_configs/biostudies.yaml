@@ -1,0 +1,15 @@
+id: BioStudies
+enabled: true
+description: "EMBL-EBI BioStudies study and collection metadata, excluding Europe PMC and linked submission files"
+download:
+  # This is the NFS mount of the public BioStudies FTP tree. Linking the tree
+  # avoids copying submission payloads into GrEBI's download area.
+  - dest: biostudies/fire
+    sources:
+      - /nfs/ftp/public/biostudies/fire
+ingests:
+  - globs: ["biostudies/fire"]
+    memory: "4 GB"
+    command: '
+      python3 $GREBI_DATALOAD_HOME/01_ingest/biostudies.py
+          -- $GREBI_INGEST_FILENAME'

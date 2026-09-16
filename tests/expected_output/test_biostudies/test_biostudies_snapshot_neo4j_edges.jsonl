@@ -1,0 +1,1 @@
+{"from": "test_biostudies:biostudies:S-BSST1", "properties": {"edge_id": "test_biostudies:1837c72d4d049e63bf2c0fdfe25b2f7c788c4014", "grebi:datasources": ["BioStudies"], "grebi:fromSourceIds": ["biostudies:S-BSST1"], "grebi:subgraph": "test_biostudies"}, "to": "test_biostudies:insdc:PRJEB14304", "type": "dcterms:references"}

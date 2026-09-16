@@ -38,6 +38,103 @@ The `download` section defines which files are needed, and where to download the
 
 The `ingests` section defines preprocessing needed before the file is loaded into GrEBI.
 
+### PRIDE project metadata
+
+[`pride.yaml`](../configs/datasource_configs/pride.yaml) downloads the live
+[PRIDE v3 bulk project export](https://www.ebi.ac.uk/pride/ws/archive/v3/projects/all)
+during the normal download stage, saving it as `pride/projects.json` within the
+subgraph's download directory. No manually uploaded FTP snapshot is required.
+As with other downloads, a successful download is reused on Nextflow resume;
+it is not refreshed on every ingest.
+
+The streaming ingest reads that local export without making API requests.
+It includes public PXD, legacy PRD and affinity-proteomics PAD projects, their
+descriptions, protocols, dates, dataset aliases, contributors, ontology
+annotations and publication/other-omics references. Dataset DOIs are aliases;
+publication DOIs are references, so papers are not merged into their datasets.
+Raw files, file inventories, peptide/protein results, download counts and
+contact email fields are excluded. Empty, malformed, truncated and duplicate-project
+exports fail the ingest.
+
+PRIDE is included in `ebi_monarch` and `ebi_monarch_xspecies`. To download and
+build it on its own locally:
+
+```bash
+GREBI_SUBGRAPHS=pride bash dataload/scripts/download_local.sh
+GREBI_SUBGRAPHS=pride bash dataload/scripts/dataload_local.sh
+```
+
+Run the offline fixture through the full pipeline with
+`bash tests/run_e2e.sh test_pride`, and parser unit tests with
+`python3 -m unittest discover -s tests -p 'test_pride_ingest.py'`.
+
+### Expression Atlas gene expression in anatomy
+
+[`expression_atlas.yaml`](../configs/datasource_configs/expression_atlas.yaml)
+defines the bulk baseline RNA-seq subset across species. The download manifest
+currently covers 256 studies from the Atlas FTP catalogue inspected on
+2026-09-16. Each entry tries `/nfs/ftp/public/databases/microarray/data/atlas/`
+first, then the corresponding HTTPS URL on `ftp.ebi.ac.uk`. Only the gene TPM
+table, assay-group configuration XML and condensed SDRF are downloaded per
+study. No API, raw reads, linked files, differential results, co-expression,
+proteomics, transcript tables or individual-cell matrices are used. Single-cell
+cell-type markers are not part of this ingest.
+
+The parser is offline and streams one gene row at a time. The required
+`--min-median-tpm 0.5` argument is in the datasource YAML's ingest command, not a
+default in Python. An observation is included only when its median is **strictly
+greater than** that cutoff. For a five-number summary, the third value is the
+median; scalar summaries are also supported. Zero and missing values do not
+produce expression assertions. Changing the YAML argument changes the ingest
+task inputs/command; use the usual Nextflow resume mechanism to rebuild affected
+outputs. Rebuild the runtime image when changing the Python parser itself.
+
+Assay groups are joined to sample annotations using the configuration's assay
+IDs. Every contributing assay must have the same single mapped organism-part
+identifier and taxon. Mixed tissues, missing/ambiguous mappings and cell-type
+identifiers in the organism-part field are excluded. Groups annotated with
+disease, cell lines, non-wild-type genotypes, treatment or infection are excluded
+unless the relevant fields explicitly identify recognised normal/control
+values. This is a conservative metadata filter: absent disease/treatment fields
+are allowed for Atlas baseline studies, but do not constitute proof of health.
+It does not infer tissue expression from a cell line's tissue of origin.
+
+The output contains Ensembl gene nodes, lightweight mapped anatomy nodes
+(including plant anatomy), study provenance nodes, and `biolink:expressed_in`
+relationships. Model-organism aliases are included for unambiguous WormBase,
+FlyBase and TAIR locus IDs. `biolink:in_taxon` links to existing taxonomy nodes.
+Repeated gene/anatomy pairs are consolidated within a study and merged by the
+normal GrEBI pipeline across studies. Expression evidence retains the study,
+assay group, median TPM and available age/developmental/sex/genotype/growth
+context. Each observation is one JSON string in the **gene node's**
+`expression_atlas:evidence`, explicitly including gene, anatomy and taxon,
+so values and their contexts stay paired when evidence arrays are merged.
+Only the common cutoff is on the expression edge: study-specific edge properties
+would prevent GrEBI's complete-value deduplication and create parallel edges.
+Measurements are not averaged across studies. Study nodes remain even when
+all their expression results are filtered out. Per-study inclusion/exclusion
+counts are written to stderr.
+
+This means *expression observed in a qualifying anatomical sample group*, not
+tissue specificity, universal expression, or evidence of absence elsewhere.
+
+Included in `ebi_monarch` and `ebi_monarch_xspecies`, or build standalone:
+
+```bash
+GREBI_SUBGRAPHS=expression_atlas bash dataload/scripts/download_local.sh
+GREBI_SUBGRAPHS=expression_atlas bash dataload/scripts/dataload_local.sh
+python3 -m unittest discover -s tests -p 'test_expression_atlas_ingest.py'
+bash tests/run_e2e.sh test_expression_atlas
+```
+
+The explicit download list is generated, not discovered during ingestion. To
+refresh it, obtain `experiments.json` from the same FTP root, then run
+`python3 configs/datasource_configs/generate_expression_atlas.py --min-median-tpm
+0.5 /path/to/experiments.json` and replace the YAML with its stdout. Preserve
+your chosen threshold and review the accession changes. Source file contents
+are live FTP exports, not an immutable release snapshot. Successful downloads
+are reused on resume, as for other datasources.
+
 ## The GrEBI datamodel
 
 Data to load into GrEBI should be structured as JSON objects, one per line. Each JSON line represents a node, and its properties are the properties on the node.

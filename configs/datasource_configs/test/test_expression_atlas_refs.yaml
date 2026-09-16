@@ -1,0 +1,10 @@
+id: ExpressionAtlasTestReferences
+enabled: true
+description: "Existing gene, anatomy and taxon entities for Atlas integration testing"
+download:
+  - dest: expression_atlas/reference_nodes.json
+    sources:
+      - tests/data/test_expression_atlas/reference_nodes.json
+ingests:
+  - globs: ["expression_atlas/reference_nodes.json"]
+    command: 'jq -c ".[]" "$GREBI_INGEST_FILENAME"'

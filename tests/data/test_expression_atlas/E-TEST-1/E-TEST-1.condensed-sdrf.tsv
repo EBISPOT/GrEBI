@@ -1,0 +1,12 @@
+E-TEST-1		a1	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-TEST-1		a1	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-TEST-1		a1	characteristic	developmental stage	adult
+E-TEST-1		a2	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-TEST-1		a2	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-TEST-1		a2	characteristic	developmental stage	embryonic
+E-TEST-1		a3	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-TEST-1		a3	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-TEST-1		a3	characteristic	disease	cancer
+E-TEST-1		a4	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-TEST-1		a4	characteristic	organism part	lung	http://purl.obolibrary.org/obo/UBERON_0002048
+E-TEST-1		a4	characteristic	cell line	A549

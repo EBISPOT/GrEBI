@@ -1,0 +1,12 @@
+<configuration experimentType="rnaseq_mrna_baseline">
+  <analytics>
+    <assay_groups>
+      <assay_group id="g6" label="liver">
+        <assay>ERR030887</assay>
+      </assay_group>
+      <assay_group id="g11" label="lung">
+        <assay>ERR030879</assay>
+      </assay_group>
+    </assay_groups>
+  </analytics>
+</configuration>

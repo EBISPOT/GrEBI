@@ -1,0 +1,2 @@
+{"grebi:curie": "biostudies:S-BSST1", "grebi:datasources": ["BioStudies"], "grebi:name": "Longitudinal assessment of sputum microbiome by sequencing of the 16S rRNA gene in non-CF bronchiectasis patients", "grebi:nodeId": "biostudies:S-BSST1", "grebi:sourceIds": ["biostudies:S-BSST1"], "grebi:type": ["biostudies:Study"], "ols:curie": ""}
+{"grebi:curie": "insdc:PRJEB14304", "grebi:datasources": ["ENAReference"], "grebi:name": "PRJEB14304", "grebi:nodeId": "insdc:PRJEB14304", "grebi:sourceIds": ["insdc:PRJEB14304"], "grebi:type": ["insdc.run:Study"], "ols:curie": ""}

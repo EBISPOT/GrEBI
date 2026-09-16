@@ -1,0 +1,6 @@
+[
+  {"id":"ensembl:ENSG00000000003","grebi:type":"biolink:Gene","grebi:name":"TSPAN6"},
+  {"id":"uberon:0002107","grebi:type":"owl:Class","grebi:name":"liver"},
+  {"id":"ncbitaxon:9606","grebi:type":"biolink:OrganismTaxon","grebi:name":"Homo sapiens"},
+  {"id":"ncbitaxon:3847","grebi:type":"biolink:OrganismTaxon","grebi:name":"Glycine max"}
+]

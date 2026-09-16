@@ -1,0 +1,22 @@
+<configuration experimentType="rnaseq_mrna_baseline">
+  <analytics>
+    <assay_groups>
+      <assay_group id="g1" label="cotyledon stage; embryo proper">
+        <assay technical_replicate_id="t38">SRR1284503</assay>
+        <assay technical_replicate_id="t38">SRR1284502</assay>
+        <assay technical_replicate_id="t39">SRR1284506</assay>
+        <assay technical_replicate_id="t39">SRR1284505</assay>
+        <assay technical_replicate_id="t39">SRR1284504</assay>
+        <assay technical_replicate_id="t40">SRR1284508</assay>
+        <assay technical_replicate_id="t40">SRR1284509</assay>
+        <assay technical_replicate_id="t40">SRR1284507</assay>
+      </assay_group>
+      <assay_group id="g10" label="cotyledon stage; suspensor">
+        <assay>SRR1284551</assay>
+        <assay>SRR1284550</assay>
+        <assay technical_replicate_id="t53">SRR1284549</assay>
+        <assay technical_replicate_id="t53">SRR1284548</assay>
+      </assay_group>
+    </assay_groups>
+  </analytics>
+</configuration>

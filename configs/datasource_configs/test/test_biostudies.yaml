@@ -1,0 +1,12 @@
+id: BioStudies
+enabled: true
+description: "Test datasource: BioStudies PageTab metadata without linked submission files"
+download:
+  - dest: test_biostudies/fire
+    sources:
+      - tests/data/test_biostudies/fire
+ingests:
+  - globs: ["test_biostudies/fire"]
+    command: '
+      python3 $GREBI_DATALOAD_HOME/01_ingest/biostudies.py
+          -- $GREBI_INGEST_FILENAME'
