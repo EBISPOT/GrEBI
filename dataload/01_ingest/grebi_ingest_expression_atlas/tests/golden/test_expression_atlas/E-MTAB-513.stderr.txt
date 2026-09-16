@@ -1,0 +1,1 @@
+{"experiment": "E-MTAB-513", "gene_anatomy_pairs": 8, "genes_emitted": 4, "genes_read": 5, "included_groups": 2, "min_median_tpm": 0.5, "supporting_group_results": 8}

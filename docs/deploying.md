@@ -187,8 +187,9 @@ GREBI_SUBGRAPHS=pride bash dataload/scripts/dataload_local.sh
 ```
 
 Run the offline fixture through the full pipeline with
-`bash tests/run_e2e.sh test_pride`, and parser unit tests with
-`python3 -m unittest discover -s tests -p 'test_pride_ingest.py'`.
+`bash tests/run_e2e.sh test_pride`, and the ingest's own tests (golden cases
+recorded from the export plus unit tests) with
+`cd dataload && cargo test -p grebi_ingest_pride`.
 
 ### Expression Atlas gene expression in anatomy
 
@@ -204,14 +205,14 @@ study. No API, raw reads, linked files, differential results, co-expression,
 proteomics, transcript tables or individual-cell matrices are used. Single-cell
 cell-type markers are not part of this ingest.
 
-The parser is offline and streams one gene row at a time. The required
-`--min-median-tpm 0.5` argument is in the datasource YAML's ingest command, not a
-default in Python. An observation is included only when its median is **strictly
+The parser, `grebi_ingest_expression_atlas`, is offline and streams one gene
+row at a time. The required `--min-median-tpm 0.5` argument is in the datasource
+YAML's ingest command, not a default in the binary. An observation is included only when its median is **strictly
 greater than** that cutoff. For a five-number summary, the third value is the
 median; scalar summaries are also supported. Zero and missing values do not
 produce expression assertions. Changing the YAML argument changes the ingest
 task inputs/command; use the usual Nextflow resume mechanism to rebuild affected
-outputs. Rebuild the runtime image when changing the Python parser itself.
+outputs. Rebuild the runtime image when changing the parser itself.
 
 Assay groups are joined to sample annotations using the configuration's assay
 IDs. Every contributing assay must have the same single mapped organism-part
@@ -247,7 +248,8 @@ Included in `ebi_monarch` and `ebi_monarch_xspecies`, or build standalone:
 ```bash
 GREBI_SUBGRAPHS=expression_atlas bash dataload/scripts/download_local.sh
 GREBI_SUBGRAPHS=expression_atlas bash dataload/scripts/dataload_local.sh
-python3 -m unittest discover -s tests -p 'test_expression_atlas_ingest.py'
+(cd dataload && cargo test -p grebi_ingest_expression_atlas)
+python3 -m unittest discover -s tests -p 'test_expression_atlas_download.py'
 bash tests/run_e2e.sh test_expression_atlas
 ```
 

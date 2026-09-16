@@ -867,6 +867,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_ingest_biostudies"
+version = "0.1.0"
+dependencies = [
+ "grebi_golden",
+ "regex",
+ "serde_json",
+]
+
+[[package]]
+name = "grebi_ingest_expression_atlas"
+version = "0.1.0"
+dependencies = [
+ "grebi_golden",
+ "quick-xml 0.36.2",
+ "regex",
+ "serde_json",
+]
+
+[[package]]
 name = "grebi_ingest_gwas"
 version = "0.1.0"
 dependencies = [

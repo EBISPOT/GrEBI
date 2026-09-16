@@ -16,6 +16,6 @@ ingests:
     download_manifest: expression_atlas/downloads.json
     memory: "4 GB"
     command: >-
-      python3 "$GREBI_DATALOAD_HOME/01_ingest/expression_atlas.py"
+      grebi_ingest_expression_atlas
       --min-median-tpm 0.5
       -- "$GREBI_INGEST_FILENAME"

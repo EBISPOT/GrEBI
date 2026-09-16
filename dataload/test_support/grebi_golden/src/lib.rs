@@ -3,8 +3,8 @@
 //! A case is a directory of recorded inputs and outputs, typically lifted from a
 //! Nextflow work directory of one of the E2E test subgraphs. The test runs the
 //! built binary in a scratch directory with the case's arguments, environment
-//! and stdin, then compares its stdout and the files it wrote with the recorded
-//! ones, byte for byte. `UPDATE_GOLDEN=1` rewrites the recorded outputs instead,
+//! and stdin, then compares its stdout (and its stderr, when asked) and the
+//! files it wrote with the recorded ones, byte for byte. `UPDATE_GOLDEN=1` rewrites the recorded outputs instead,
 //! for when a change to the binary is intended; review the diff before
 //! committing it.
 //!
@@ -24,6 +24,7 @@ pub struct GoldenCase {
     envs: Vec<(String, String)>,
     stdin: Option<String>,
     expected_stdout: Option<String>,
+    expected_stderr: Option<String>,
     outputs: Vec<String>,
     expect_failure: bool,
     jsonl: bool,
@@ -42,6 +43,7 @@ impl GoldenCase {
             envs: Vec::new(),
             stdin: None,
             expected_stdout: None,
+            expected_stderr: None,
             outputs: Vec::new(),
             expect_failure: false,
             jsonl: false,
@@ -72,6 +74,13 @@ impl GoldenCase {
     /// The file in the case directory the binary's stdout must match.
     pub fn stdout(mut self, file: &str) -> Self {
         self.expected_stdout = Some(file.to_string());
+        self
+    }
+
+    /// The file in the case directory the binary's stderr must match, for binaries
+    /// whose summary on stderr is part of their contract.
+    pub fn stderr(mut self, file: &str) -> Self {
+        self.expected_stderr = Some(file.to_string());
         self
     }
 
@@ -128,6 +137,9 @@ impl GoldenCase {
         let mut problems = Vec::new();
         if let Some(file) = &self.expected_stdout {
             check(&self.case_dir.join(file), &output.stdout, update, self.jsonl, &mut problems);
+        }
+        if let Some(file) = &self.expected_stderr {
+            check(&self.case_dir.join(file), &output.stderr, update, self.jsonl, &mut problems);
         }
         for file in &self.outputs {
             let produced = fs::read(scratch.join(file))

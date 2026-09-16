@@ -13,37 +13,6 @@ fn python(script_path: &str, case: &str) -> GoldenCase {
         .env("GREBI_DATALOAD_HOME", format!("{}/../..", env!("CARGO_MANIFEST_DIR")))
 }
 
-
-/// A BioStudies FTP tree walked for accession-level PageTab JSON files.
-#[test]
-fn biostudies() {
-    python("01_ingest/biostudies.py", "biostudies")
-        .env("GREBI_DATASOURCE_ID", "BioStudies").env("GREBI_INGEST_DATASOURCE_NAME", "BioStudies")
-        .args(["--", "$CASE/fire"]).stdout("output.jsonl").run();
-}
-
-
-
-/// An Expression Atlas experiment: the gene-level TPM table with its
-/// configuration and condensed SDRF alongside, medians above the cutoff only.
-#[test]
-fn expression_atlas_e_mtab_513() {
-    python("01_ingest/expression_atlas.py", "expression_atlas")
-        .args(["--min-median-tpm", "0.5", "--", "$CASE/E-MTAB-513/E-MTAB-513-tpms.tsv"])
-        .stdout("E-MTAB-513.jsonl").run();
-}
-
-#[test]
-fn expression_atlas_e_test_1() {
-    python("01_ingest/expression_atlas.py", "expression_atlas")
-        .args(["--min-median-tpm", "0.5", "--", "$CASE/E-TEST-1/E-TEST-1-tpms.tsv"])
-        .stdout("E-TEST-1.jsonl").run();
-}
-
-
-
-
-
 /// The three pesticide registers, read from spreadsheets.
 #[test]
 fn hett_pesticides_eu() {

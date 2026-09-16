@@ -1,0 +1,277 @@
+{
+ "accno": " S-BSST2 ",
+ "attributes": [
+  {
+   "name": "Title",
+   "value": "  Study two  "
+  },
+  {
+   "name": "ReleaseDate",
+   "value": "2021-05-06"
+  },
+  {
+   "name": "AttachTo",
+   "value": "BioImages"
+  },
+  {
+   "name": "attachto",
+   "value": "BioImages"
+  },
+  {
+   "name": "AttachTo",
+   "value": ""
+  }
+ ],
+ "section": {
+  "type": "Study",
+  "attributes": [
+   [
+    {
+     "name": "Description",
+     "value": "First description"
+    },
+    {
+     "name": "Description",
+     "value": "Second description"
+    }
+   ],
+   {
+    "name": "Study type",
+    "value": "transcription profiling"
+   },
+   {
+    "name": "Experimental design",
+    "value": "time series",
+    "valqual": [
+     {
+      "name": "TermId",
+      "value": "EFO:0001779"
+     },
+     {
+      "name": "TermId",
+      "value": "http://www.ebi.ac.uk/efo/EFO_0000408"
+     },
+     {
+      "name": "termid",
+      "value": "not an id!"
+     },
+     {
+      "name": "Ontology",
+      "value": "EFO"
+     }
+    ]
+   },
+   {
+    "name": "Organism",
+    "value": "Homo sapiens",
+    "valqual": {
+     "name": "TermId",
+     "value": "NCBITaxon_9606"
+    }
+   }
+  ],
+  "subsections": [
+   {
+    "type": "Author",
+    "attributes": [
+     {
+      "name": "Name",
+      "value": "Ann Author"
+     },
+     {
+      "name": "Name",
+      "value": "Ann Author"
+     }
+    ]
+   },
+   [
+    {
+     "type": "Organisation",
+     "attributes": [
+      {
+       "name": "Name",
+       "value": "EMBL-EBI"
+      }
+     ]
+    },
+    {
+     "type": "organization",
+     "attributes": [
+      {
+       "name": "Name",
+       "value": "Institute X"
+      }
+     ]
+    }
+   ],
+   {
+    "type": "Publication",
+    "accno": "PMID:12345678",
+    "attributes": [
+     {
+      "name": "DOI",
+      "value": "DOI:https://doi.org/10.1000/abc"
+     },
+     {
+      "name": "DOI",
+      "value": "not a doi"
+     }
+    ]
+   },
+   {
+    "type": "Publication",
+    "accno": "99",
+    "attributes": [
+     {
+      "name": "Title",
+      "value": "A paper"
+     }
+    ]
+   },
+   {
+    "type": "Publication",
+    "accno": "x",
+    "attributes": []
+   },
+   {
+    "type": "Study",
+    "attributes": [
+     {
+      "name": "Organism",
+      "value": "Mus musculus"
+     }
+    ],
+    "subsections": [
+     {
+      "type": "Deep",
+      "attributes": [
+       {
+        "name": "Study Types",
+        "value": "deep type"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "links": [
+   {
+    "url": "10.1000/xyz",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "DOI"
+     }
+    ]
+   },
+   {
+    "url": "doi:10.1000/xyz",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "DOI"
+     }
+    ]
+   },
+   {
+    "url": "pmid:22334455",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "PubMed"
+     }
+    ]
+   },
+   {
+    "url": "not-a-pmid",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "pubmed"
+     }
+    ]
+   },
+   {
+    "url": "PMC123",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "PMC"
+     }
+    ]
+   },
+   {
+    "url": "A-AFFY-2",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "Array Design"
+     }
+    ]
+   },
+   {
+    "url": "PRJEB1234",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "ENA"
+     }
+    ]
+   },
+   {
+    "url": "https://www.ebi.ac.uk/ena/data/view/PRJNA5678/",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "ENA"
+     }
+    ]
+   },
+   {
+    "url": "https://www.ebi.ac.uk/ena/browser/view/prjeb99"
+   },
+   {
+    "url": "EMPIAR-10002",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "EMPIAR"
+     }
+    ]
+   },
+   {
+    "url": "https://example.org/resource",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "Web"
+     }
+    ]
+   },
+   {
+    "url": "ftp://ftp.ebi.ac.uk/pub/file.txt",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "Data"
+     }
+    ]
+   },
+   {
+    "url": "https://example.org/payload.zip",
+    "attributes": [
+     {
+      "name": "Type",
+      "value": "File"
+     }
+    ]
+   },
+   {
+    "url": "   "
+   },
+   {
+    "url": "gopher://old"
+   }
+  ]
+ }
+}

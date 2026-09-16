@@ -1,0 +1,1 @@
+{"excluded_cell_line": 2, "excluded_disease": 4, "excluded_genotype": 1, "excluded_infection": 1, "excluded_treatment": 3, "excluded_unmapped_or_mixed_anatomy": 5, "excluded_unmapped_or_mixed_taxon": 2, "experiment": "E-BRANCH-1", "gene_anatomy_pairs": 17, "genes_emitted": 13, "genes_read": 14, "included_groups": 13, "min_median_tpm": 0.5, "supporting_group_results": 24}

@@ -1,0 +1,12 @@
+{
+ "accno": "EMPIAR-10001",
+ "attributes": [
+  {
+   "name": "AttachTo",
+   "value": "EuropePMC"
+  }
+ ],
+ "section": {
+  "type": "Project"
+ }
+}

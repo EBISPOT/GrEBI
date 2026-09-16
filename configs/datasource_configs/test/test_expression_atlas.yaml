@@ -13,6 +13,6 @@ ingests:
   - globs: ["expression_atlas/experiments/*/*-tpms.tsv"]
     download_manifest: expression_atlas/downloads.json
     command: >-
-      python3 "$GREBI_DATALOAD_HOME/01_ingest/expression_atlas.py"
+      grebi_ingest_expression_atlas
       --min-median-tpm 0.5
       -- "$GREBI_INGEST_FILENAME"

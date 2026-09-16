@@ -1,0 +1,12 @@
+{
+ "accno": "S-EPMC1",
+ "section": {
+  "type": "Study",
+  "attributes": [
+   {
+    "name": "Title",
+    "value": "excluded by name"
+   }
+  ]
+ }
+}

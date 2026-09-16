@@ -1,0 +1,1 @@
+{"excluded_cell_line": 1, "excluded_disease": 1, "experiment": "E-TEST-1", "gene_anatomy_pairs": 1, "genes_emitted": 1, "genes_read": 2, "included_groups": 2, "min_median_tpm": 0.5, "supporting_group_results": 2}

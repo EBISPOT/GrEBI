@@ -1,0 +1,162 @@
+ 
+[
+ {
+  "accession": "PXD001357",
+  "title": "A long string with ],{ and \"quotes\" — Zürich A long string with ],{ and \"quotes\" — Zürich A long string with ],{ and \"quotes\" — Zürich ",
+  "projectDescription": "A study",
+  "sampleProcessingProtocol": "Sample protocol",
+  "dataProcessingProtocol": "Data protocol",
+  "license": "CC0",
+  "submissionType": "COMPLETE",
+  "keywords": [
+   "proteomics",
+   "proteomics",
+   ""
+  ],
+  "projectTags": [
+   "Human"
+  ],
+  "softwares": [
+   {
+    "accession": "MS:1001207",
+    "name": "Mascot"
+   }
+  ],
+  "experimentTypes": [
+   {
+    "accession": "PRIDE:0000429",
+    "name": "Shotgun proteomics"
+   }
+  ],
+  "quantificationMethods": [
+   {
+    "name": "Label-free"
+   }
+  ],
+  "identifiedPTMStrings": [
+   {
+    "accession": "UNIMOD:35",
+    "name": "Oxidation"
+   }
+  ],
+  "submitters": [
+   {
+    "name": "Test Person",
+    "orcid": "https://orcid.org/0000-0002-1825-0097",
+    "affiliation": "Test institute",
+    "email": "test@example.org"
+   }
+  ],
+  "labPIs": [
+   {
+    "firstName": "Test",
+    "lastName": "PI"
+   }
+  ],
+  "files": [
+   {
+    "fileName": "experiment.raw",
+    "downloadLink": "ftp://example.org/file"
+   }
+  ],
+  "totalFileDownloads": 987654321,
+  "botCount": 987654322,
+  "additionalAttributes": [
+   {
+    "name": "email",
+    "value": "contact@example.org"
+   }
+  ]
+ },
+ {
+  "accession": "PXD001358",
+  "organisms": [
+   {
+    "accession": "NEWT:9606",
+    "name": "Human"
+   }
+  ],
+  "sampleAttributes": [
+   {
+    "key": {
+     "name": "organism"
+    },
+    "value": [
+     {
+      "accession": "NEWT:9606",
+      "name": "Human"
+     }
+    ]
+   },
+   {
+    "key": {
+     "name": "organism part"
+    },
+    "value": [
+     {
+      "accession": "BTO:0000338",
+      "name": "Dental plaque"
+     }
+    ]
+   },
+   {
+    "key": {
+     "name": "disease"
+    },
+    "value": [
+     {
+      "name": "Not available"
+     }
+    ]
+   },
+   {
+    "key": {
+     "name": "biosample accession number"
+    },
+    "value": [
+     {
+      "value": "SAMEA12345"
+     }
+    ]
+   },
+   {
+    "key": {
+     "name": "cell type"
+    },
+    "value": [
+     {
+      "accession": "CL:0000236",
+      "name": "B cell"
+     }
+    ]
+   }
+  ],
+  "otherOmicsLinks": [
+   "pride.project:PXD001358",
+   "px:PXD001358",
+   "SAMEA12345",
+   "biostudies:S-BSST1",
+   "px:PXD999999",
+   "px:PXD999999",
+   "url:https://www.ncbi.nlm.nih.gov/assembly/GCF_001922835.1",
+   "url:ftp://example.org/file",
+   "ftp://example.org/file",
+   "No links"
+  ],
+  "references": [
+   {
+    "pubmedID": 0,
+    "doi": "not a doi"
+   }
+  ]
+ },
+ {
+  "accession": "PRD000001",
+  "doi": "10.6019/PRD000001"
+ },
+ {
+  "accession": "PAD000005",
+  "doi": "https://doi.org/10.6019/PAD000005"
+ }
+]
+ 

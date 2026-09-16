@@ -1,0 +1,17 @@
+{
+ "accno": "BIOMD0000000001",
+ "attributes": [
+  {
+   "name": "AttachTo",
+   "value": "BioModels"
+  },
+  {
+   "name": "Title",
+   "value": "A model"
+  }
+ ],
+ "section": {
+  "type": "project",
+  "attributes": []
+ }
+}

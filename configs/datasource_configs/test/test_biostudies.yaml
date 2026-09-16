@@ -8,5 +8,5 @@ download:
 ingests:
   - globs: ["test_biostudies/fire"]
     command: '
-      python3 $GREBI_DATALOAD_HOME/01_ingest/biostudies.py
+      grebi_ingest_biostudies
           -- $GREBI_INGEST_FILENAME'

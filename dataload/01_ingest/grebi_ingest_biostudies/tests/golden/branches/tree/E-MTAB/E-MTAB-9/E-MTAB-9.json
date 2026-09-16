@@ -1,0 +1,26 @@
+{
+ "accno": "E-MTAB-9",
+ "attributes": [
+  {
+   "name": "AttachTo",
+   "value": "ArrayExpress"
+  },
+  {
+   "name": "Release Date",
+   "value": "2019-01-01"
+  }
+ ],
+ "section": {
+  "type": "Collection",
+  "attributes": [
+   {
+    "name": "Title",
+    "value": "Array collection"
+   },
+   {
+    "name": "Description",
+    "value": "only one"
+   }
+  ]
+ }
+}

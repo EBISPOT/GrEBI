@@ -1,0 +1,1 @@
+{"experiment": "E-MTAB-4045", "gene_anatomy_pairs": 4, "genes_emitted": 3, "genes_read": 4, "included_groups": 2, "min_median_tpm": 0.5, "supporting_group_results": 4}

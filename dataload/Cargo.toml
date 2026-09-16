@@ -21,6 +21,8 @@ members = [
 	"01_ingest/grebi_ingest_biomappings",
 	"01_ingest/grebi_ingest_metabolights",
 	"01_ingest/grebi_ingest_pride",
+	"01_ingest/grebi_ingest_biostudies",
+	"01_ingest/grebi_ingest_expression_atlas",
 	"02_assign_ids/grebi_extract_identifiers",
 	"02_assign_ids/grebi_identifiers2groups",
 	"02_assign_ids/grebi_assign_ids",

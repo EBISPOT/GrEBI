@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration experimentType="rnaseq_mrna_baseline" r_data="1">
+  <!-- synthetic branch coverage -->
+  <analytics>
+    <assay_groups>
+      <assay_group id="g1" label="liver adult"><assay>a1</assay></assay_group>
+      <assay_group id="g2" label="embryo (10 µm sections) 😀"><assay>a2</assay></assay_group>
+      <assay_group id="g3" label="lung &amp; bronchus"><assay>a3</assay><assay>a4</assay></assay_group>
+      <assay_group id="g4" label="cancer"><assay>a5</assay></assay_group>
+      <assay_group id="g5" label="disease unknown"><assay>a6</assay></assay_group>
+      <assay_group id="g6" label="normal"><assay>a7</assay></assay_group>
+      <assay_group id="g7" label="cell line"><assay>a8</assay></assay_group>
+      <assay_group id="g8" label="progenitor cell line"><assay>a9</assay></assay_group>
+      <assay_group id="g9" label="knockout"><assay>a10</assay></assay_group>
+      <assay_group id="g10" label="wild type"><assay>a11</assay></assay_group>
+      <assay_group id="g11" label="LPS"><assay>a12</assay></assay_group>
+      <assay_group id="g12" label="PBS"><assay>a13</assay></assay_group>
+      <assay_group id="g13" label="treatment unknown"><assay>a14</assay></assay_group>
+      <assay_group id="g14" label="untreated"><assay>a15</assay></assay_group>
+      <assay_group id="g15" label="infected"><assay>a16</assay></assay_group>
+      <assay_group id="g16" label="quoted free text"><assay>a17</assay></assay_group>
+      <assay_group id="g17" label="one replicate diseased"><assay>a18</assay><assay>a19</assay></assay_group>
+      <assay_group id="g18" label="mixed anatomy"><assay>a20</assay><assay>a21</assay></assay_group>
+      <assay_group id="g19" label="no anatomy"><assay>a22</assay></assay_group>
+      <assay_group id="g20" label="cell type anatomy"><assay>a23</assay></assay_group>
+      <assay_group id="g21" label="curie anatomy"><assay>a24</assay></assay_group>
+      <assay_group id="g22" label="no taxon"><assay>a25</assay></assay_group>
+      <assay_group id="g23" label="two anatomy terms"><assay>a26</assay></assay_group>
+      <assay_group id="g24" label="efo anatomy"><assay>a27</assay></assay_group>
+      <assay_group id="g25" label="kidney with an extra term column"><assay>a28</assay></assay_group>
+      <assay_group id="g26" label="no drug"><assay>a29</assay></assay_group>
+      <assay_group id="g27" label="stimulus"><assay>a30</assay></assay_group>
+      <assay_group id="g28" label="not infected"><assay>a31</assay></assay_group>
+      <assay_group id="g29" label="whitespace"><assay>a32</assay></assay_group>
+      <assay_group id="g30" label="two taxa"><assay>a33</assay></assay_group>
+      <assay_group id="g31"><assay> a1 </assay><assay>a2</assay></assay_group>
+    </assay_groups>
+    <contrasts>
+      <assay_group id="ignored" label="not under assay_groups"><assay>a1</assay></assay_group>
+    </contrasts>
+  </analytics>
+</configuration>

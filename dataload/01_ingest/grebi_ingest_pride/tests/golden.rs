@@ -22,11 +22,44 @@ fn matches_the_python_ingest_on_every_branch() {
     case("branches").run();
 }
 
+fn refused(name: &str) -> GoldenCase {
+    GoldenCase::new(env!("CARGO_BIN_EXE_grebi_ingest_pride"), format!("tests/golden/{}", name))
+        .args(["--", "$CASE/projects.json"])
+        .expect_failure()
+}
+
 /// An export that is not an array of projects is refused.
 #[test]
 fn refuses_anything_but_a_projects_array() {
-    GoldenCase::new(env!("CARGO_BIN_EXE_grebi_ingest_pride"), "tests/golden/not_an_array")
-        .args(["--", "$CASE/projects.json"])
-        .expect_failure()
-        .run();
+    refused("not_an_array").run();
+}
+
+/// The metadata whitelist and cross-reference rules from the ingest's original
+/// unit tests: file inventories, download counters and contact emails never
+/// enter the graph; sample annotations and other-omics links are mapped; legacy
+/// PRD and affinity PAD accessions get no ProteomeXchange alias; and titles with
+/// brackets, quotes and non-ASCII text stream through intact.
+#[test]
+fn matches_the_python_ingest_on_excluded_fields_and_cross_references() {
+    case("excluded_fields").stdout("output.jsonl").jsonl().run();
+}
+
+#[test]
+fn refuses_an_empty_export() {
+    refused("empty_export").run();
+}
+
+#[test]
+fn refuses_a_duplicate_project() {
+    refused("duplicate_export").run();
+}
+
+#[test]
+fn refuses_a_truncated_export() {
+    refused("truncated_export").run();
+}
+
+#[test]
+fn refuses_content_after_the_array() {
+    refused("trailing_content").run();
 }

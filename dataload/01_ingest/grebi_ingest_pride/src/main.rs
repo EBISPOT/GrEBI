@@ -297,3 +297,30 @@ fn main() {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn project(json: &str) -> Map<String, Value> {
+        serde_json::from_str(json).unwrap()
+    }
+
+    #[test]
+    fn accessions_are_validated() {
+        for json in [r#"{"accession": null}"#, r#"{"accession": ""}"#, r#"{"accession": "PXDnope"}"#,
+                     r#"{"accession": "PXF123456"}"#, r#"{"accession": "PXD001357 extra"}"#, "{}"] {
+            assert!(parse_project(&project(json)).is_err(), "{}", json);
+        }
+        assert_eq!(parse_project(&project(r#"{"accession": "PXD001357"}"#)).unwrap()["id"], "pride.project:PXD001357");
+    }
+
+    #[test]
+    fn doi_spellings_are_normalised() {
+        for value in ["10.1234/example", "doi:10.1234/example", "https://doi.org/10.1234/example"] {
+            assert_eq!(doi_identifier(Some(&Value::String(value.into()))).as_deref(), Some("doi:10.1234/example"), "{}", value);
+        }
+        assert_eq!(doi_identifier(Some(&Value::String("not a doi".into()))), None);
+        assert_eq!(doi_identifier(None), None);
+    }
+}

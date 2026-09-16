@@ -1,0 +1,13 @@
+[package]
+name = "grebi_ingest_expression_atlas"
+version = "0.1.0"
+edition = "2021"
+description = "Expression Atlas baseline TPM tables as gene/anatomy expression evidence in GrEBI JSONL"
+
+[dependencies]
+serde_json = { version = "1.0.108", features = ["preserve_order"] }
+regex = "1"
+quick-xml = "0.36"
+
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

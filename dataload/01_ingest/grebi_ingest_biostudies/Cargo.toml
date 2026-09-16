@@ -1,0 +1,12 @@
+[package]
+name = "grebi_ingest_biostudies"
+version = "0.1.0"
+edition = "2021"
+description = "BioStudies PageTab JSON metadata as GrEBI JSONL"
+
+[dependencies]
+serde_json = { version = "1.0.108", features = ["preserve_order"] }
+regex = "1"
+
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

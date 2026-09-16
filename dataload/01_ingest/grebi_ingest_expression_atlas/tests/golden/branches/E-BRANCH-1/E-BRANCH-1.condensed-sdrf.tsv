@@ -1,0 +1,100 @@
+E-BRANCH-1		a1	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a1	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a1	characteristic	developmental stage	adult	
+E-BRANCH-1		a1	characteristic	sex	male	http://purl.obolibrary.org/obo/PATO_0000384
+E-BRANCH-1		a1	characteristic	age	40 year	
+
+E-BRANCH-1		a1	comment	ENA_RUN	ERR0001
+E-BRANCH-1		a1	factor	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a2	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a2	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a2	characteristic	developmental stage	embryonic	
+E-BRANCH-1		a2	characteristic	sex	female	
+E-BRANCH-1		a2	characteristic	growth condition	standard	
+E-BRANCH-1		a2	characteristic	strain	none	
+E-BRANCH-1		a2	characteristic	cultivar	n/a	
+E-BRANCH-1		a2	factor	developmental stage	embryonic	
+E-BRANCH-1		a3	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a3	characteristic	organism part	lung	http://purl.obolibrary.org/obo/UBERON_0002048
+E-BRANCH-1		a4	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a4	characteristic	organism part	lung tissue	http://purl.obolibrary.org/obo/UBERON_0002048
+E-BRANCH-1		a5	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a5	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a5	characteristic	disease	cancer	http://purl.obolibrary.org/obo/MONDO_0004992
+E-BRANCH-1		a6	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a6	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a6	characteristic	disease	not available	
+E-BRANCH-1		a7	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a7	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a7	characteristic	disease	normal	http://purl.obolibrary.org/obo/PATO_0000461
+E-BRANCH-1		a7	characteristic	disease state	healthy	
+E-BRANCH-1		a8	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a8	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a8	characteristic	cell line	HepG2	
+E-BRANCH-1		a9	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a9	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a9	characteristic	progenitor cell line	iPSC-1	
+E-BRANCH-1		a10	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a10	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a10	characteristic	genotype	knockout	
+E-BRANCH-1		a11	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a11	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a11	characteristic	genotype	wild type genotype	
+E-BRANCH-1		a12	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a12	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a12	factor	compound	lipopolysaccharide	http://purl.obolibrary.org/obo/CHEBI_16412
+E-BRANCH-1		a13	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a13	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a13	factor	compound	PBS control	
+E-BRANCH-1		a14	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a14	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a14	characteristic	treatment	unknown	
+E-BRANCH-1		a15	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a15	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a15	characteristic	treatment	untreated	
+E-BRANCH-1		a16	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a16	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a16	characteristic	infection	infected	
+E-BRANCH-1		a17	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a17	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a17	characteristic	clinical information	"BMI 30; ""obese""	
+E-BRANCH-1		a17	characteristic	disease	cancer	
+E-BRANCH-1		a18	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a18	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a19	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a19	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a19	characteristic	disease	cancer	
+E-BRANCH-1		a20	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a20	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a21	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a21	characteristic	organism part	lung	http://purl.obolibrary.org/obo/UBERON_0002048
+E-BRANCH-1		a22	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a22	characteristic	organism part		
+E-BRANCH-1		a23	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a23	characteristic	organism part	B cell	http://purl.obolibrary.org/obo/CL_0000236
+E-BRANCH-1		a24	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a24	characteristic	organism part	B cell	CL:0000236
+E-BRANCH-1		a25	characteristic	organism	Homo sapiens	
+E-BRANCH-1		a25	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a26	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a26	characteristic	organism part	liver and lung	http://purl.obolibrary.org/obo/UBERON_0002107 http://purl.obolibrary.org/obo/UBERON_0002048
+E-BRANCH-1		a27	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a27	characteristic	organism part	efo anatomy	http://www.ebi.ac.uk/efo/EFO_0000887
+E-BRANCH-1		a28	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a28	characteristic	organism part	kidney	http://purl.obolibrary.org/obo/UBERON_0002113	http://purl.obolibrary.org/obo/CL_0000236
+E-BRANCH-1		a29	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a29	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a29	characteristic	drug	none	
+E-BRANCH-1		a30	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a30	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a30	factor	stimulus	heat	
+E-BRANCH-1		a31	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a31	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a31	characteristic	infected with	none	
+E-BRANCH-1		a32	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a32	characteristic	organism part	  liver 	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a32	characteristic	sex	  female 	
+E-BRANCH-1		a33	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606 http://purl.obolibrary.org/obo/NCBITaxon_10090
+E-BRANCH-1		a33	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
+E-BRANCH-1		a99	characteristic	organism	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606
+E-BRANCH-1		a99	characteristic	organism part	liver	http://purl.obolibrary.org/obo/UBERON_0002107
