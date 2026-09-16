@@ -99,7 +99,7 @@ result_columns:
   - column_id: p_value
     column_type: string
   - column_id: pubmed_id
-    column_type: string
+    column_type: PubmedId
   - column_id: reported_trait
     column_type: string
   - column_id: chromosome

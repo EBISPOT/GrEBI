@@ -61,7 +61,7 @@ result_columns:
   - column_id: publication_date
     column_type: string
   - column_id: pubmed_id
-    column_type: string
+    column_type: PubmedId
   - column_id: initial_sample_size
     column_type: string
   - column_id: replication_sample_size

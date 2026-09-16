@@ -172,6 +172,23 @@ export default function ResultsTable({ graph, queryId, params, resultColumns, ma
             </button>
           </div>
         );
+      } else if (col.column_type === 'PubmedId') {
+        // a bare PubMed id (the templates strip the pubmed: prefix)
+        if (val === undefined || val === null || val === '') {
+          return '-';
+        }
+        const pmid = String(val).replace(/^pubmed:/i, '');
+        return (
+          <a
+            className="link-default"
+            href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {pmid}
+          </a>
+        );
       } else {
         if (val === undefined || val === null || val === '') {
           return '-';
