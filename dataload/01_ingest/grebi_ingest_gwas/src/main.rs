@@ -6,6 +6,7 @@ mod write_associations;
 mod write_studies;
 mod check_headers;
 mod remove_empty_fields;
+mod split;
 
 use crate::write_associations::write_associations;
 use crate::write_studies::write_studies;

@@ -9,6 +9,7 @@ use serde_json::{json, Value};
 
 use crate::check_headers::check_headers;
 use crate::remove_empty_fields::remove_empty_fields;
+use crate::split::{split_mapped_genes, trait_labels};
 
 pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>) {
     {
@@ -100,16 +101,21 @@ pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nod
             let study_accession = record.get(36).unwrap();
             let genotyping_technology = record.get(37).unwrap();
 
+            // One association edge per mapped trait; the labels column runs in
+            // parallel with the URIs (see split::trait_labels for the caveat).
+            let trait_uris: Vec<&str> = mapped_trait_uri.split(", ").collect();
+            let labels = trait_labels(mapped_trait, trait_uris.len());
+
             nodes_writer.write_all(remove_empty_fields(& json!(
                 {
                 "id": snps,
                 "grebi:type": ["gwas:SNP"],
                 "rdf:type": ["so:0000694"], // SNP
-                "gwas:mapped_gene": mapped_gene.split(", ").collect::<Vec<&str>>(),
+                "gwas:mapped_gene": split_mapped_genes(mapped_gene),
                 "gwas:upstream_gene_id": add_prefix(upstream_gene_id, "ensembl:"),
                 "gwas:downstream_gene_id": add_prefix(downstream_gene_id, "ensembl:"),
                 "gwas:snp_gene_ids": snp_gene_ids.split(", ").map(|s| add_prefix(s, "ensembl:")).collect::<Vec<String>>(),
-                "gwas:associated_with": Value::Array(mapped_trait_uri.split(", ").map(|tr| {
+                "gwas:associated_with": Value::Array(trait_uris.iter().zip(labels.iter()).map(|(tr, label)| {
                     return json!({
                         "grebi:value": tr,
                         "grebi:properties": {
@@ -142,8 +148,8 @@ pub fn write_associations(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nod
                             "gwas:ci_text": [ci_text],
                             "gwas:platform": [platform],
                             "gwas:cnv": [cnv],
-                            "gwas:mapped_trait":[mapped_trait_uri],
-                            "gwas:mapped_trait_label": [mapped_trait],
+                            "gwas:mapped_trait":[tr],
+                            "gwas:mapped_trait_label": [label],
                             "gwas:genotyping_technology": [genotyping_technology]
                         },
                     })

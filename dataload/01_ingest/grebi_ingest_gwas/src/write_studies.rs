@@ -9,6 +9,7 @@ use serde_json::json;
 
 use crate::check_headers::check_headers;
 use crate::remove_empty_fields::remove_empty_fields;
+use crate::split::split_list;
 
 pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_writer: &mut BufWriter<StdoutLock>) {
 
@@ -86,7 +87,7 @@ pub fn write_studies(csv_reader: &mut csv::Reader<BufReader<StdinLock>>,nodes_wr
                 "gwas:initial_sample_size": [initial_sample_size],
                 "gwas:replication_sample_size": [replication_sample_size],
                 "gwas:platform": [platform],
-                "gwas:mapped_trait":[ mapped_trait_uri ],
+                "gwas:mapped_trait": split_list(mapped_trait_uri),
                 "gwas:association_count": [association_count],
                 // "study_accession": [study_accession],
                 "gwas:genotyping_technology": [genotyping_technology],
