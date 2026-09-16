@@ -24,7 +24,8 @@ regeneration only ever needs a UI rebuild, never a data load.
 
 Usage, from webapp/grebi_ui:
     uv run scripts/make_db_links.py             # JSON and icons
-    uv run scripts/make_db_links.py --no-icons  # JSON only, no network
+    uv run scripts/make_db_links.py --no-icons  # JSON only, keeping the icons already present
+    uv run scripts/make_db_links.py --offline   # as --no-icons, and trust Bioregistry's OLS routes unchecked
     uv run scripts/make_db_links.py --check     # also GET every curated URL with an example id
 """
 import argparse
@@ -195,9 +196,22 @@ DATASOURCES = {
 }
 
 
-def ols4_template(prefix):
+def ols4_ontologies():
+    """The ids of the ontologies OLS4 serves, or None when the list cannot be fetched."""
+    try:
+        r = requests.get("https://www.ebi.ac.uk/ols4/api/ontologies?size=2000", headers=UA, timeout=60)
+        r.raise_for_status()
+        return {o["ontologyId"].lower() for o in r.json()["_embedded"]["ontologies"]}
+    except Exception as e:
+        print(f"  could not list OLS4 ontologies ({e.__class__.__name__}); trusting Bioregistry's OLS routes", file=sys.stderr)
+        return None
+
+
+def ols4_template(prefix, ols4_ids):
     """The OLS4 class page for a prefix OLS hosts, with $1 for the local id, else None."""
-    if not bioregistry.get_ols_prefix(prefix):
+    ols = bioregistry.get_ols_prefix(prefix)
+    if not ols or (ols4_ids is not None and ols.lower() not in ols4_ids):
+        # Bioregistry lists a few ontologies (pr, vario, ...) that OLS4 does not serve
         return None
     marker = "GREBIMARKER"
     legacy = bioregistry.get_ols_iri(prefix, marker)
@@ -220,14 +234,14 @@ def js_pattern(pattern):
     return pattern
 
 
-def build_prefixes():
+def build_prefixes(ols4_ids):
     prefixes = {}
     for prefix in sorted(bioregistry.read_registry()):
         default = bioregistry.get_uri_format(prefix)
         db = None
         if prefix in PREFIX_OVERRIDES:
             db, url = PREFIX_OVERRIDES[prefix]
-        elif (ols := ols4_template(prefix)):
+        elif (ols := ols4_template(prefix, ols4_ids)):
             db, url = "ols", ols
         elif default:
             url = default
@@ -365,6 +379,7 @@ def check_urls(prefixes):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-icons", action="store_true", help="do not fetch icons; keep the files already present")
+    ap.add_argument("--offline", action="store_true", help="no network at all: as --no-icons, and Bioregistry's OLS routes go unchecked")
     ap.add_argument("--check", action="store_true", help="GET every curated URL with an example id")
     args = ap.parse_args()
 
@@ -376,8 +391,8 @@ def main():
     for ds, value in DATASOURCES.items():
         assert (value if isinstance(value, str) else value[0]) in DATABASES, ds
 
-    prefixes = build_prefixes()
-    databases = build_databases(fetch_icons=not args.no_icons)
+    prefixes = build_prefixes(None if args.offline else ols4_ontologies())
+    databases = build_databases(fetch_icons=not (args.no_icons or args.offline))
     data = {
         "_meta": {
             "generator": "scripts/make_db_links.py",

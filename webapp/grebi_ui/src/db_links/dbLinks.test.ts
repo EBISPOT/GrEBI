@@ -60,6 +60,11 @@ describe('externalLinkForId', () => {
     expect(externalLinkForId('https://www.ebi.ac.uk/chembl/')!.ebi).toBe(true)
   })
 
+  it('leaves ontologies OLS4 does not serve on their own page', () => {
+    expect(externalLinkForId('pr:P00533')!.url).toBe('http://purl.obolibrary.org/obo/PR_P00533')
+    expect(externalLinkForId('owl:Thing')!.url).toContain('ols4/ontologies/owl/')
+  })
+
   it("reads OBO PURL spellings as the ontology's own prefix", () => {
     expect(externalLinkForId('obo:UBERON_0002048')!.url).toBe('https://www.ebi.ac.uk/ols4/ontologies/uberon/classes?iri=http://purl.obolibrary.org/obo/UBERON_0002048')
   })
