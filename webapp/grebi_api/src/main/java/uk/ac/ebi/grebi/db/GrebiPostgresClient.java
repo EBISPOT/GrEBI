@@ -1131,6 +1131,57 @@ public class GrebiPostgresClient {
         return columnId;
     }
 
+    /**
+     * The text a free-text narrow searches: every typed column of the build,
+     * joined. Node columns contribute their name, datasource lists their
+     * members, numbers their text form. Built with jOOQ so identifiers are
+     * quoted and values bound by the query builder.
+     *
+     * It used to ILIKE over convert_from(payload, 'UTF8'), i.e. decode and scan
+     * the stored JSON of every closure-matched row: 12s for the 411k rows of
+     * "leukocyte" in gwas_by_cell_type, and the facet queries repeat the WHERE,
+     * so the request took 36s and the UI sat on its loading overlay. The typed
+     * columns hold the same values and scan in well under a second.
+     */
+    private static Field<String> searchableText(MaterialisedBuild build) {
+        List<Field<?>> parts = new ArrayList<>();
+        parts.add(DSL.inline(" "));
+        for (MaterialisedBuild.Column c : build.columns) {
+            String col = requireIdent(c.column_id);
+            String type = c.column_type;
+            if ("GraphNodeId".equals(type)) {
+                // "<col>_name" exists in every build layout (older builds store
+                // the id side as "<col>_id" TEXT[], newer as "<col>_nid").
+                parts.add(DSL.field(DSL.name(col + "_name"), String.class));
+            } else if ("DatasourceList".equals(type)) {
+                parts.add(DSL.function("array_to_string", String.class,
+                        DSL.field(DSL.name(col)), DSL.inline(" ")));
+            } else if ("float".equals(type) || "int".equals(type)) {
+                parts.add(DSL.field(DSL.name(col)).cast(String.class));
+            } else {
+                parts.add(DSL.field(DSL.name(col), String.class));
+            }
+        }
+        return DSL.function("concat_ws", String.class, parts.toArray(new Field<?>[0]));
+    }
+
+    /** The free-text narrow as a jOOQ condition: searchable text ILIKE %text%. */
+    private static Condition freeTextCondition(MaterialisedBuild build, String searchText) {
+        return searchableText(build).likeIgnoreCase("%" + escapeLike(searchText) + "%");
+    }
+
+    /**
+     * Append a jOOQ condition to the (pre-existing, string-assembled) WHERE of
+     * the materialised serving path: jOOQ renders the SQL with ? placeholders
+     * and supplies the bind values, so no SQL text is written by hand here.
+     */
+    private static void appendCondition(StringBuilder where, List<Object> binds, Condition cond) {
+        // Rendering needs no connection; a dialect-only context does it.
+        DSLContext ctx = DSL.using(SQLDialect.POSTGRES);
+        where.append(" AND (").append(ctx.render(cond)).append(")");
+        binds.addAll(ctx.extractBindValues(cond));
+    }
+
     /** Browse a standalone materialised query's table (the /tables UI). */
     public MatQueryResult searchMaterialisedQueryResults(
             MaterialisedBuild build, String searchText,
@@ -1142,8 +1193,7 @@ public class GrebiPostgresClient {
             List<Object> binds = new ArrayList<>();
 
             if (searchText != null && !searchText.isBlank()) {
-                where.append(" AND convert_from(payload, 'UTF8') ILIKE ?");
-                binds.add("%" + escapeLike(searchText) + "%");
+                appendCondition(where, binds, freeTextCondition(build, searchText));
             }
 
             if (filters != null) {
@@ -1409,12 +1459,11 @@ public class GrebiPostgresClient {
             }
         }
 
-        // Optional free-text narrow over the stored row (coarse, like the /tables
-        // browse). Applied on top of the closure filter, so it scans only the
-        // already-narrowed subset.
+        // Optional free-text narrow over the row's typed columns (coarse, like
+        // the /tables browse). Applied on top of the closure filter, so it scans
+        // only the already-narrowed subset.
         if (searchText != null && !searchText.isBlank()) {
-            sql.append(" AND convert_from(payload, 'UTF8') ILIKE ?");
-            binds.add("%" + escapeLike(searchText) + "%");
+            appendCondition(sql, binds, freeTextCondition(build, searchText));
         }
         return new ClosureWhere(sql.toString(), binds, false);
     }
