@@ -16,7 +16,7 @@ The GrEBI pipeline is being applied to a number of projects including the [Inter
 
 GrEBI has a suite of automated E2E tests that run the full pipeline on small synthetic datasets and compare the resulting Neo4j/Postgres database contents against committed expected output in `tests/expected_output/`. If code changes alter the pipeline output such that it no longer matches the expected snapshots, the CI will fail and you will need to update the expected output.
 
-There are four test subgraphs, each exercising a different aspect of the pipeline:
+There are seven test subgraphs, each exercising a different aspect of the pipeline:
 
 | Test subgraph | Purpose |
 | --- | --- |
@@ -24,6 +24,9 @@ There are four test subgraphs, each exercising a different aspect of the pipelin
 | `test_edge_linking` | Verifies property values referencing other entities become graph edges |
 | `test_multi_datasource` | Verifies merging data from two separate datasources |
 | `test_type_hierarchy` | Verifies type superclass propagation through `rdfs:subClassOf` |
+| `test_ubergraph` | Builds a tiny ubergraph with owlmake and ingests the redundant and non-redundant closures as separate datasources |
+| `test_pdbe` | Ingests a small real subset of PDBe SIFTS mappings: row merging, edge linking and ontology mapping |
+| `test_gwas` | Ingests a few real GWAS Catalog rows covering the packed `MAPPED_GENE` / `MAPPED_TRAIT` column formats |
 
 ### Prerequisites
 
