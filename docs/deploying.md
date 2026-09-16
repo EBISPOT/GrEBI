@@ -38,6 +38,24 @@ The `download` section defines which files are needed, and where to download the
 
 The `ingests` section defines preprocessing needed before the file is loaded into GrEBI.
 
+For resources with a changing catalogue, use `download_manifests` instead of
+enumerating their data files in YAML. Each entry supplies catalogue `sources`,
+a `command`, and the destination `dest` for the generated JSON manifest. The
+download stage retrieves the catalogue using the usual path/URL fallbacks, then
+runs the command with `GREBI_DOWNLOAD_FILENAME` pointing to the local catalogue
+and `GREBI_DATALOAD_HOME` pointing to this checkout's `dataload` directory.
+The command emits a JSON array of ordinary `{ "dest": ..., "sources": [...] }`
+download entries. These are merged with static downloads and use the same
+parallel file downloads, fallbacks and retries. Discovery runs on every download
+invocation, including resume; individual successful file downloads remain cached.
+The generated manifest is saved in the download directory for inspection.
+
+An ingest can set `download_manifest` to that manifest's relative path, alongside
+its `globs`. Only matching files listed in the current manifest are ingested;
+stale files from removed catalogue entries are ignored without deleting them.
+Missing or empty required manifest-listed files fail the dataload instead of silently
+producing an incomplete graph. See Expression Atlas below for a working example.
+
 ### PRIDE project metadata
 
 [`pride.yaml`](../configs/datasource_configs/pride.yaml) downloads the live
@@ -71,10 +89,12 @@ Run the offline fixture through the full pipeline with
 ### Expression Atlas gene expression in anatomy
 
 [`expression_atlas.yaml`](../configs/datasource_configs/expression_atlas.yaml)
-defines the bulk baseline RNA-seq subset across species. The download manifest
-currently covers 256 studies from the Atlas FTP catalogue inspected on
-2026-09-16. Each entry tries `/nfs/ftp/public/databases/microarray/data/atlas/`
-first, then the corresponding HTTPS URL on `ftp.ebi.ac.uk`. Only the gene TPM
+defines the bulk baseline RNA-seq subset across species. The download stage
+reads the current `experiments.json` FTP catalogue and automatically discovers
+all studies classified as `RNASEQ_MRNA_BASELINE`; no accession/file list is
+maintained in GrEBI. Catalogue and data downloads try
+`/nfs/ftp/public/databases/microarray/data/atlas/` first, then the corresponding
+HTTPS URL on `ftp.ebi.ac.uk`. Only the gene TPM
 table, assay-group configuration XML and condensed SDRF are downloaded per
 study. No API, raw reads, linked files, differential results, co-expression,
 proteomics, transcript tables or individual-cell matrices are used. Single-cell
@@ -127,13 +147,15 @@ python3 -m unittest discover -s tests -p 'test_expression_atlas_ingest.py'
 bash tests/run_e2e.sh test_expression_atlas
 ```
 
-The explicit download list is generated, not discovered during ingestion. To
-refresh it, obtain `experiments.json` from the same FTP root, then run
-`python3 configs/datasource_configs/generate_expression_atlas.py --min-median-tpm
-0.5 /path/to/experiments.json` and replace the YAML with its stdout. Preserve
-your chosen threshold and review the accession changes. Source file contents
-are live FTP exports, not an immutable release snapshot. Successful downloads
-are reused on resume, as for other datasources.
+Discovery is in the download stage, not ingestion. The catalogue selector is
+`dataload/00_download/expression_atlas.py`; it selects the three required file
+types per baseline study and rejects empty, malformed or duplicate catalogues.
+The generated `expression_atlas/downloads.json` records the selected files and
+also constrains the ingest, so studies removed or reclassified upstream are not
+retained merely because their old files are cached. The expression threshold
+remains solely in the YAML ingest command. Source files are live FTP exports,
+not an immutable release snapshot. Discovery refreshes on resume, while
+successful individual downloads are reused, as for other datasources.
 
 ## The GrEBI datamodel
 

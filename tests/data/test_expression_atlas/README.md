@@ -14,5 +14,11 @@ https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/
   merging with the real human fixture.
 - `reference_nodes.json`: minimal existing entities to exercise gene/anatomy
   merging and taxon links. Plant anatomy nodes come from the ingest itself.
+- `experiments.json`: a small synthetic catalogue listing the three studies
+  above and a differential study with no files. The E2E download uses the same
+  catalogue discovery as production; the differential entry must be ignored.
+- `E-STALE-1`: deliberately invalid cached TPM file staged by the reference
+  datasource but absent from the catalogue. The manifest must exclude it from
+  ingestion even though it matches the input glob.
 
 No individual-cell matrices, raw reads, or linked experimental files are used.

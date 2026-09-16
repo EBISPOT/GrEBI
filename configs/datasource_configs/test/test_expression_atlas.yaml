@@ -1,18 +1,17 @@
 id: ExpressionAtlas
 enabled: true
 description: "Test: real human/soybean expression summaries and synthetic filtering boundaries"
-download:
-  - dest: expression_atlas/experiments/E-MTAB-513/
+download_manifests:
+  - dest: expression_atlas/downloads.json
     sources:
-      - tests/data/test_expression_atlas/E-MTAB-513/*
-  - dest: expression_atlas/experiments/E-MTAB-4045/
-    sources:
-      - tests/data/test_expression_atlas/E-MTAB-4045/*
-  - dest: expression_atlas/experiments/E-TEST-1/
-    sources:
-      - tests/data/test_expression_atlas/E-TEST-1/*
+      - tests/data/test_expression_atlas/experiments.json
+    command: >-
+      python3 "$GREBI_DATALOAD_HOME/00_download/expression_atlas.py"
+      --source-root tests/data/test_expression_atlas
+      -- "$GREBI_DOWNLOAD_FILENAME"
 ingests:
   - globs: ["expression_atlas/experiments/*/*-tpms.tsv"]
+    download_manifest: expression_atlas/downloads.json
     command: >-
       python3 "$GREBI_DATALOAD_HOME/01_ingest/expression_atlas.py"
       --min-median-tpm 0.5

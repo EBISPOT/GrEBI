@@ -35,5 +35,11 @@ jobs:
       - name: Build combined image
         run: docker build -t ghcr.io/ebispot/grebi_combined:dev .
 
+      - name: Test catalogue-driven downloads
+        run: >-
+          docker run --rm -v "$PWD:$PWD" -w "$PWD"
+          --entrypoint python3 ghcr.io/ebispot/grebi_combined:dev
+          -m unittest discover -s tests -p 'test_download_workflow.py'
+
       - name: Run all E2E tests
         run: bash tests/run_all_e2e.sh

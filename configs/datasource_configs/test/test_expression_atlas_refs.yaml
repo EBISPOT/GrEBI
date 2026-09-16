@@ -2,6 +2,11 @@ id: ExpressionAtlasTestReferences
 enabled: true
 description: "Existing gene, anatomy and taxon entities for Atlas integration testing"
 download:
+  # A stale cached study must not be picked up by the ingest glob when it is
+  # absent from the current catalogue. This deliberately invalid TSV would fail.
+  - dest: expression_atlas/experiments/E-STALE-1/
+    sources:
+      - tests/data/test_expression_atlas/E-STALE-1/*
   - dest: expression_atlas/reference_nodes.json
     sources:
       - tests/data/test_expression_atlas/reference_nodes.json

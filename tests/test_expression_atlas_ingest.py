@@ -23,7 +23,7 @@ def load_module(name, path):
 
 
 ATLAS = load_module("atlas", "dataload/01_ingest/expression_atlas.py")
-GENERATOR = load_module("atlas_config", "configs/datasource_configs/generate_expression_atlas.py")
+DISCOVERY = load_module("atlas_download", "dataload/00_download/expression_atlas.py")
 ACC = "E-MTAB-513"
 LIVER = "http://purl.obolibrary.org/obo/UBERON_0002107"
 LUNG = "http://purl.obolibrary.org/obo/UBERON_0002048"
@@ -184,23 +184,67 @@ class ExpressionAtlasIngestTest(unittest.TestCase):
             {"experimentAccession": "E-MTAB-999", "rawExperimentType": "RNASEQ_MRNA_DIFFERENTIAL"},
             {"experimentAccession": "E-PROT-1", "rawExperimentType": "PROTEOMICS_BASELINE"},
         ]}
-        rendered = GENERATOR.render(catalogue, 1.5)
-        self.assertIn("--min-median-tpm 1.5", rendered)
-        self.assertIn("--min-median-tpm 0.123456789", GENERATOR.render(catalogue, 0.123456789))
-        self.assertEqual(rendered.count("  - dest:"), 3)
-        self.assertIn("/nfs/ftp/public/databases/microarray/data/atlas/", rendered)
-        self.assertIn("https://ftp.ebi.ac.uk/", rendered)
+        roots = ["/nfs/atlas/experiments/", "https://ftp.ebi.ac.uk/atlas/experiments"]
+        entries = DISCOVERY.download_entries(catalogue, roots)
+        self.assertEqual(len(entries), 3)
+        self.assertEqual(entries[0], {
+            "dest": "expression_atlas/experiments/E-MTAB-513/E-MTAB-513-tpms.tsv",
+            "sources": ["/nfs/atlas/experiments/E-MTAB-513/E-MTAB-513-tpms.tsv",
+                        "https://ftp.ebi.ac.uk/atlas/experiments/E-MTAB-513/E-MTAB-513-tpms.tsv"],
+        })
+        rendered = json.dumps(entries)
         for absent in ("E-MTAB-999", "E-PROT-1", "fpkms", "transcripts", "coexpressions", "aggregated_counts"):
             self.assertNotIn(absent, rendered)
-        with self.assertRaises(ValueError):
-            GENERATOR.render({"experiments": []}, 0.5)
 
-    def test_committed_download_manifest_matches_generator(self):
+    def test_config_discovers_files_and_keeps_threshold_in_yaml(self):
         text = (ROOT / "configs/datasource_configs/expression_atlas.yaml").read_text()
-        accessions = re.findall(r"  - dest: expression_atlas/experiments/(E-[A-Z]+-\d+)/[^/]+-tpms.tsv", text)
-        threshold = float(re.search(r"--min-median-tpm ([0-9.]+)", text)[1])
-        catalogue = {"experiments": [{"experimentAccession": a, "rawExperimentType": "RNASEQ_MRNA_BASELINE"} for a in accessions]}
-        self.assertEqual(text, GENERATOR.render(catalogue, threshold))
+        self.assertIn("download_manifests:", text)
+        self.assertIn("download_manifest: expression_atlas/downloads.json", text)
+        self.assertIn("--min-median-tpm 0.5", text)
+        self.assertIn("/nfs/ftp/public/databases/microarray/data/atlas/experiments.json", text)
+        self.assertIn("https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments.json", text)
+        self.assertFalse(re.search(r"E-[A-Z]+-\d+", text))
+        self.assertLess(len(text.splitlines()), 30)
+
+    def test_discovery_tracks_added_removed_and_reclassified_studies(self):
+        first = {"experimentAccession": "E-TEST-1", "rawExperimentType": "RNASEQ_MRNA_BASELINE"}
+        second = {"experimentAccession": "E-TEST-2", "rawExperimentType": "RNASEQ_MRNA_BASELINE"}
+        catalogue = {"experiments": [first]}
+        self.assertEqual(len(DISCOVERY.download_entries(catalogue, ["/atlas"])), 3)
+        catalogue["experiments"].append(second)
+        self.assertEqual(len(DISCOVERY.download_entries(catalogue, ["/atlas"])), 6)
+        first["rawExperimentType"] = "RNASEQ_MRNA_DIFFERENTIAL"
+        entries = DISCOVERY.download_entries(catalogue, ["/atlas"])
+        self.assertEqual(len(entries), 3)
+        self.assertTrue(all("E-TEST-2" in entry["dest"] for entry in entries))
+        catalogue["experiments"].remove(first)
+        self.assertEqual(entries, DISCOVERY.download_entries(catalogue, ["/atlas"]))
+
+    def test_discovery_rejects_malformed_empty_and_duplicate_catalogues(self):
+        experiment = {"experimentAccession": "E-TEST-1", "rawExperimentType": "RNASEQ_MRNA_BASELINE"}
+        for catalogue in (None, [], {}, {"experiments": {}}, {"experiments": []},
+                          {"experiments": [None]}, {"experiments": [{}]},
+                          {"experiments": [experiment, experiment]}):
+            with self.subTest(catalogue=catalogue), self.assertRaises(ValueError):
+                DISCOVERY.download_entries(catalogue, ["/atlas"])
+        for accession in (None, 123, "../E-TEST-1", "E-TEST-1/../../escape", 'E-TEST-1";touch bad'):
+            with self.subTest(accession=accession), self.assertRaises(ValueError):
+                DISCOVERY.download_entries({"experiments": [{**experiment, "experimentAccession": accession}]}, ["/atlas"])
+        for roots in ([], [""], [None]):
+            with self.subTest(roots=roots), self.assertRaises(ValueError):
+                DISCOVERY.download_entries({"experiments": [experiment]}, roots)
+
+    def test_discovery_cli_produces_parseable_manifest_and_stderr_summary(self):
+        result = subprocess.run([
+            sys.executable, str(ROOT / "dataload/00_download/expression_atlas.py"),
+            "--source-root", "tests/data/test_expression_atlas",
+            str(ROOT / "tests/data/test_expression_atlas/experiments.json"),
+        ], capture_output=True, text=True, check=True)
+        entries = json.loads(result.stdout)
+        self.assertEqual(len(entries), 9)
+        self.assertIn("3 baseline studies (9 files)", result.stderr)
+        for entry in entries:
+            self.assertTrue((ROOT / entry["sources"][0]).is_file())
 
     def test_real_human_and_plant_fixtures(self):
         base = ROOT / "tests/data/test_expression_atlas"
