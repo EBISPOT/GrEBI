@@ -26,7 +26,7 @@ cypher_return_fragment: |-
       coalesce(study.`biolink:author`, study.`dcterms:creator`)[0] AS first_author,
       study.`gwas:journal`[0] AS journal,
       coalesce(study.`dcterms:Date_Modified`, study.`dcterms:modified`)[0] AS publication_date,
-      study.`gwas:pubmedid`[0] AS pubmed_id,
+      replace(study.`gwas:pubmedid`[0], "pubmed:", "") AS pubmed_id,
       study.`gwas:initial_sample_size`[0] AS initial_sample_size,
       study.`gwas:replication_sample_size`[0] AS replication_sample_size,
       study.`gwas:association_count`[0] AS association_count,

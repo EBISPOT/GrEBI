@@ -23,7 +23,7 @@ cypher_return_fragment: |-
       reported_trait,
       trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
       study_id AS study_accession,
-      study.`gwas:pubmedid`[0] AS pubmed_id,
+      replace(study.`gwas:pubmedid`[0], "pubmed:", "") AS pubmed_id,
       edge_id
 cypher_count_fragment: |-
   WITH DISTINCT reported_trait, trait, edge_id
