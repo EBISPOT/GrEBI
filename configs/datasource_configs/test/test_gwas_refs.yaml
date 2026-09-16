@@ -1,0 +1,28 @@
+id: GenesAndTraits
+enabled: true
+description: "Test datasource: minimal stand-ins for the HGNC genes and EFO/MONDO traits the test_gwas associations reference, so the variant->gene edges (via Ensembl ids) and variant->trait / study->trait edges form in the isolated test_gwas subgraph (in production these come from the HGNC and OLS datasources)"
+download:
+  - dest: test_gwas/reference_nodes.jsonl
+    sources:
+      - tests/data/test_gwas/reference_nodes.jsonl
+  - dest: test_gwas/reference_traits.jsonl
+    sources:
+      - tests/data/test_gwas/reference_traits.jsonl
+ingests:
+  # Genes: ensembl_gene_id becomes hgnc:ensembl_gene_id, an identifier property,
+  # so the ensembl: values in the SNPs' upstream/downstream/snp_gene_ids link here.
+  - globs: ["test_gwas/reference_nodes.jsonl"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename category:grebi:type
+          --json-inject-key-prefix hgnc:'
+  # Traits: label becomes ols:label (a grebi:name equivalent). The association
+  # edges target the full EFO/MONDO IRIs, which prefix normalisation folds onto
+  # these CURIE ids.
+  - globs: ["test_gwas/reference_traits.jsonl"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename category:grebi:type
+          --json-inject-key-prefix ols:'

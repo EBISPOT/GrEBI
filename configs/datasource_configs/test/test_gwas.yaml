@@ -1,0 +1,20 @@
+id: GWAS
+enabled: true
+description: "Test datasource: a small real subset of GWAS Catalog association and study rows, chosen to exercise every way the catalog packs multiple values into the MAPPED_GENE, MAPPED_TRAIT and MAPPED_TRAIT_URI columns (see tests/data/test_gwas/README.md)"
+download:
+  - dest: test_gwas/gwas-catalog-download-associations-alt-full.tsv
+    sources:
+      - tests/data/test_gwas/gwas-catalog-download-associations-alt-full.tsv
+  - dest: test_gwas/gwas-catalog-studies-download-alternative-v1.0.2.1.txt
+    sources:
+      - tests/data/test_gwas/gwas-catalog-studies-download-alternative-v1.0.2.1.txt
+ingests:
+  # Same command as the production datasource (configs/datasource_configs/gwas.yaml);
+  # grebi_ingest_gwas dispatches on the filename (associations vs studies).
+  - globs:
+      - "test_gwas/gwas-catalog-download-associations-alt-full.tsv"
+      - "test_gwas/gwas-catalog-studies-download-alternative-v1.0.2.1.txt"
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_ingest_gwas
+          --filename $GREBI_INGEST_FILENAME'

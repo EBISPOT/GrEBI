@@ -8,8 +8,5 @@ downloads/**
 .venv
 webapp/grebi_ui/node_modules
 dataload/target/
-
-
-
-
-
+# pipeline output (out/release alone is several GB after a local run)
+out

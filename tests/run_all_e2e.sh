@@ -31,6 +31,15 @@ SUBGRAPHS=(
     #   cp out/test_pdbe_snapshot_{neo4j_nodes,neo4j_edges,postgres_nodes,postgres_edges}.jsonl \
     #     tests/expected_output/test_pdbe/
     test_pdbe
+    # GWAS Catalog: a few real association/study rows covering the delimiters the
+    # catalog packs into MAPPED_GENE ("A, B", "A - B", "A x B", "A; B") and the
+    # multi-trait MAPPED_TRAIT(_URI) columns (issue #12), plus stand-in gene and
+    # trait nodes so the variant->gene / ->trait edges form. Regenerate with:
+    #   GREBI_SUBGRAPHS=test_gwas GREBI_NF_EXTRA_ARGS="--export_snapshots true" \
+    #     bash dataload/scripts/dataload_local.sh
+    #   cp out/test_gwas_snapshot_*.jsonl out/test_gwas_api_snapshot.json \
+    #     tests/expected_output/test_gwas/
+    test_gwas
     # BioStudies PageTab metadata: verifies study metadata and ENA linking,
     # while ensuring linked submission files do not enter the graph.
     test_biostudies

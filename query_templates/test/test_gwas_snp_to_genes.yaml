@@ -1,0 +1,39 @@
+title: Genes mapped to a GWAS variant (test)
+question: Which [genes]{gene} is the GWAS variant {snp_id} mapped to?
+graphs:
+  - test_gwas
+topics:
+  - qc
+# Same gene edge types the production GWAS templates traverse. On the test_gwas
+# fixture the edges come from the Ensembl-id columns (upstream/downstream for an
+# intergenic variant, snp_gene_ids otherwise); gwas:mapped_gene holds the symbols
+# split out of the catalog's packed MAPPED_GENE column and is property-only.
+cypher_match_fragment: |-
+  MATCH (snp:`gwas:SNP`)-[:sourceId]->(:Id { id: $snp_id })
+  MATCH (gene)<-[r:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      snp { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(snp) } AS snp,
+      gene { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(gene) } AS gene,
+      type(r) AS via
+cypher_count_fragment: |-
+  WITH DISTINCT snp, gene, type(r) AS via
+  RETURN count(*) AS count
+params:
+  - param_id: snp_id
+    param_name: Variant
+    param_type: SourceId
+result_columns:
+  - column_id: snp
+    column_type: GraphNodeId
+  - column_id: gene
+    column_type: GraphNodeId
+  - column_id: via
+    column_type: string
+examples:
+  - title: rs162212 (intergenic, nearest genes GRM7 and LMCD1-AS1)
+    params:
+      snp_id: rs162212
+  - title: rs1245314 (within two overlapping genes)
+    params:
+      snp_id: rs1245314

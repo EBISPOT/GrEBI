@@ -1171,15 +1171,111 @@ public class GrebiPostgresClient {
     }
 
     /**
-     * Append a jOOQ condition to the (pre-existing, string-assembled) WHERE of
-     * the materialised serving path: jOOQ renders the SQL with ? placeholders
-     * and supplies the bind values, so no SQL text is written by hand here.
+     * One facet selection as a jOOQ condition: the row's value in `col` is any
+     * of `values`. Several values in one column are alternatives (OR); the
+     * selections on different columns AND together in the WHERE. A node column
+     * filters on its stored display name (the value its facet breakdown shows),
+     * a datasource list on array overlap.
      */
-    private static void appendCondition(StringBuilder where, List<Object> binds, Condition cond) {
+    private static Condition columnFilterCondition(MaterialisedBuild build, String col, List<String> values) {
+        String type = build.columnType(col);
+        if ("DatasourceList".equals(type)) {
+            List<Field<String>> vals = new ArrayList<>();
+            for (String v : values) vals.add(DSL.val(v));
+            // The bound strings arrive as varchar, and text[] && varchar[] has no
+            // operator, so the array is cast (as the node filters above do).
+            return DSL.condition("{0} && {1}::text[]", DSL.field(DSL.name(requireIdent(col))), DSL.array(vals));
+        }
+        Field<String> f = ("float".equals(type) || "int".equals(type))
+                ? DSL.field(DSL.name(requireIdent(col))).cast(String.class)
+                : DSL.field(DSL.name(physicalColumn(build, col)), String.class);
+        return values.size() == 1 ? f.eq(values.get(0)) : f.in(values);
+    }
+
+    /** How to facet a stored column, or null if its type has no breakdown. */
+    public static FacetField facetField(MaterialisedBuild build, String col) {
+        String type = build.columnType(col);
+        if ("DatasourceList".equals(type)) return new FacetField(col, FacetKind.ARRAY);
+        if ("GraphNodeId".equals(type)) return new FacetField(col, FacetKind.NODE_NAME);
+        if ("string".equalsIgnoreCase(type)) return new FacetField(col, FacetKind.SCALAR);
+        return null; // float / int / EdgeId
+    }
+
+    /**
+     * The WHERE of a query over a materialised table: the closure match (TRUE
+     * for a standalone table), string-assembled with its array binds, plus jOOQ
+     * conditions for the free-text narrow and one per selected facet column.
+     * jOOQ renders those with ? placeholders and supplies their bind values, so
+     * no predicate text is written by hand. A facet's breakdown is computed with
+     * that column's own selection left out, so it keeps listing the values a
+     * user could add rather than collapsing to the ones already ticked.
+     */
+    private static final class MatqWhere {
         // Rendering needs no connection; a dialect-only context does it.
-        DSLContext ctx = DSL.using(SQLDialect.POSTGRES);
-        where.append(" AND (").append(ctx.render(cond)).append(")");
-        binds.addAll(ctx.extractBindValues(cond));
+        private static final DSLContext RENDER = DSL.using(SQLDialect.POSTGRES);
+
+        static final MatqWhere IMPOSSIBLE = new MatqWhere(null, null, true);
+
+        private final String closureSql;
+        private final List<Object> closureBinds;
+        final boolean impossible;   // a param resolved to an empty closure -> no rows
+        private Condition text;     // free-text narrow, or null
+        private final Map<String, Condition> filters = new LinkedHashMap<>();  // column -> selection
+
+        MatqWhere(String closureSql, List<Object> closureBinds) {
+            this(closureSql, closureBinds, false);
+        }
+
+        private MatqWhere(String closureSql, List<Object> closureBinds, boolean impossible) {
+            this.closureSql = closureSql;
+            this.closureBinds = closureBinds == null ? List.of() : closureBinds;
+            this.impossible = impossible;
+        }
+
+        /** Add the free-text narrow and the facet selections (column -> values). */
+        void narrow(MaterialisedBuild build, String searchText, Map<String, List<String>> columnFilters) {
+            if (searchText != null && !searchText.isBlank()) {
+                text = freeTextCondition(build, searchText);
+            }
+            if (columnFilters == null) return;
+            for (var e : columnFilters.entrySet()) {
+                var values = e.getValue();
+                if (values == null || values.isEmpty()) continue;
+                if (build.column(e.getKey()) == null) {
+                    throw new IllegalArgumentException("Unknown filter column: " + e.getKey());
+                }
+                filters.put(e.getKey(), columnFilterCondition(build, e.getKey(), values));
+            }
+        }
+
+        String sql() { return sql(null); }
+        List<Object> binds() { return binds(null); }
+
+        /** The predicate, leaving out the selection on `excludeColumn` (null: all of it). */
+        String sql(String excludeColumn) {
+            StringBuilder sb = new StringBuilder(closureSql);
+            for (Condition c : conditions(excludeColumn)) {
+                sb.append(" AND (").append(RENDER.render(c)).append(")");
+            }
+            return sb.toString();
+        }
+
+        List<Object> binds(String excludeColumn) {
+            List<Object> out = new ArrayList<>(closureBinds);
+            for (Condition c : conditions(excludeColumn)) {
+                out.addAll(RENDER.extractBindValues(c));
+            }
+            return out;
+        }
+
+        private List<Condition> conditions(String excludeColumn) {
+            List<Condition> out = new ArrayList<>();
+            if (text != null) out.add(text);
+            for (var e : filters.entrySet()) {
+                if (!e.getKey().equals(excludeColumn)) out.add(e.getValue());
+            }
+            return out;
+        }
     }
 
     /** Browse a standalone materialised query's table (the /tables UI). */
@@ -1189,35 +1285,13 @@ public class GrebiPostgresClient {
             int offset, int limit) {
         String tbl = "\"" + requireIdent(build.table) + "\"";
         try (Connection conn = getConnection()) {
-            StringBuilder where = new StringBuilder("TRUE");
-            List<Object> binds = new ArrayList<>();
-
-            if (searchText != null && !searchText.isBlank()) {
-                appendCondition(where, binds, freeTextCondition(build, searchText));
-            }
-
-            if (filters != null) {
-                for (var entry : filters.entrySet()) {
-                    var values = entry.getValue();
-                    if (values == null || values.isEmpty()) continue;
-                    String col = entry.getKey();
-                    String type = build.columnType(col);
-                    for (String v : values) {
-                        if ("DatasourceList".equals(type)) {
-                            where.append(" AND ? = ANY(\"").append(requireIdent(col)).append("\")");
-                        } else {
-                            // typed scalar (or a node's display name): compare as text
-                            where.append(" AND \"").append(physicalColumn(build, col)).append("\"::text = ?");
-                        }
-                        binds.add(v);
-                    }
-                }
-            }
+            MatqWhere w = new MatqWhere("TRUE", List.of());
+            w.narrow(build, searchText, filters);
 
             long totalCount;
             try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT count(*) FROM " + tbl + " WHERE " + where)) {
-                bind(ps, binds);
+                    "SELECT count(*) FROM " + tbl + " WHERE " + w.sql())) {
+                bind(ps, w.binds());
                 try (ResultSet rs = ps.executeQuery()) {
                     rs.next();
                     totalCount = rs.getLong(1);
@@ -1225,11 +1299,11 @@ public class GrebiPostgresClient {
             }
 
             List<Map<String, Object>> results = new ArrayList<>();
-            List<Object> dataBinds = new ArrayList<>(binds);
+            List<Object> dataBinds = new ArrayList<>(w.binds());
             dataBinds.add(limit);
             dataBinds.add(offset);
             try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT convert_from(payload, 'UTF8') FROM " + tbl + " WHERE " + where
+                    "SELECT convert_from(payload, 'UTF8') FROM " + tbl + " WHERE " + w.sql()
                     + " ORDER BY row_number ASC LIMIT ? OFFSET ?")) {
                 bind(ps, dataBinds);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -1240,33 +1314,16 @@ public class GrebiPostgresClient {
                 }
             }
 
-            Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
-            if (facetFields != null && !facetFields.isEmpty() && totalCount < 100_000) {
-                for (String facetField : facetFields) {
-                    String type = build.columnType(facetField);
-                    String valueExpr;
-                    String from = tbl;
-                    if ("DatasourceList".equals(type)) {
-                        valueExpr = "elem";
-                        from = tbl + ", LATERAL unnest(\"" + requireIdent(facetField) + "\") AS elem";
-                    } else {
-                        valueExpr = "\"" + physicalColumn(build, facetField) + "\"::text";
-                    }
-                    Map<String, Long> counts = new LinkedHashMap<>();
-                    try (PreparedStatement ps = conn.prepareStatement(
-                            "SELECT " + valueExpr + " AS fv, count(*) AS c FROM " + from
-                            + " WHERE " + where + " GROUP BY fv ORDER BY c DESC")) {
-                        bind(ps, binds);
-                        try (ResultSet rs = ps.executeQuery()) {
-                            while (rs.next()) {
-                                String fv = rs.getString("fv");
-                                if (fv != null) counts.put(fv, rs.getLong("c"));
-                            }
-                        }
-                    }
-                    facets.put(facetField, counts);
+            // Facets on the columns the caller asked for; unknown or unfacetable
+            // (numeric, edge id) columns are ignored.
+            List<FacetField> ff = new ArrayList<>();
+            if (facetFields != null) {
+                for (String col : facetFields) {
+                    FacetField f = build.column(col) == null ? null : facetField(build, col);
+                    if (f != null) ff.add(f);
                 }
             }
+            Map<String, Map<String, Long>> facets = computeFacets(conn, build, w, ff, totalCount);
 
             return new MatQueryResult(results, totalCount, facets);
         } catch (SQLException e) {
@@ -1421,18 +1478,9 @@ public class GrebiPostgresClient {
         return curies;
     }
 
-    /** WHERE clause + ordered bind values for a closure-filtered materialised query. */
-    private static final class ClosureWhere {
-        final String sql;
-        final List<Object> binds;
-        final boolean impossible; // a param resolved to an empty closure -> no rows
-        ClosureWhere(String sql, List<Object> binds, boolean impossible) {
-            this.sql = sql; this.binds = binds; this.impossible = impossible;
-        }
-    }
-
-    private ClosureWhere buildClosureWhere(Connection conn, String graph, MaterialisedBuild build,
-            List<ClosureParam> params, String searchText) throws SQLException {
+    private MatqWhere buildClosureWhere(Connection conn, String graph, MaterialisedBuild build,
+            List<ClosureParam> params, String searchText, Map<String, List<String>> filters)
+            throws SQLException {
         StringBuilder sql = new StringBuilder("TRUE");
         List<Object> binds = new ArrayList<>();
 
@@ -1443,7 +1491,7 @@ public class GrebiPostgresClient {
                 // resolve as a leaf's.
                 Set<String> nodeIds = closureNodeIdSet(conn, graph, cp.closure, cp.queriedCurie);
                 if (nodeIds.isEmpty()) {
-                    return new ClosureWhere(null, null, true);
+                    return MatqWhere.IMPOSSIBLE;
                 }
                 sql.append(" AND \"").append(requireIdent(cp.filtersColumn)).append("_nid\" = ANY(?)");
                 binds.add(conn.createArrayOf("text", nodeIds.toArray(new String[0])));
@@ -1452,20 +1500,19 @@ public class GrebiPostgresClient {
                 // overlap on the column's GIN index.
                 Set<String> curies = closureCurieSet(conn, graph, cp.closure, cp.queriedCurie);
                 if (curies.isEmpty()) {
-                    return new ClosureWhere(null, null, true);
+                    return MatqWhere.IMPOSSIBLE;
                 }
                 sql.append(" AND \"").append(requireIdent(cp.filtersColumn)).append("_id\" && ?");
                 binds.add(conn.createArrayOf("text", curies.toArray(new String[0])));
             }
         }
 
-        // Optional free-text narrow over the row's typed columns (coarse, like
-        // the /tables browse). Applied on top of the closure filter, so it scans
-        // only the already-narrowed subset.
-        if (searchText != null && !searchText.isBlank()) {
-            appendCondition(sql, binds, freeTextCondition(build, searchText));
-        }
-        return new ClosureWhere(sql.toString(), binds, false);
+        // The free-text narrow (coarse, over the row's typed columns) and the
+        // facet selections apply on top of the closure match, so they scan only
+        // the already-narrowed subset.
+        MatqWhere w = new MatqWhere(sql.toString(), binds);
+        w.narrow(build, searchText, filters);
+        return w;
     }
 
     private static void bind(PreparedStatement ps, List<Object> binds) throws SQLException {
@@ -1481,13 +1528,13 @@ public class GrebiPostgresClient {
     /**
      * Serve a full-materialise parameterised template from Postgres: filter the
      * stored rows by the closure of each parameter (plus an optional free-text
-     * narrow), page, count and — uniquely to the materialised path, since the rows
+     * narrow and facet selections), page, count and — uniquely to the materialised path, since the rows
      * sit in an indexed table — return a top-N value breakdown for each facet
      * column. The live Cypher /query path can't cheaply do the last two.
      */
     public MatQueryResult searchMaterialisedParameterised(
             String graph, MaterialisedBuild build, List<ClosureParam> params,
-            String searchText, List<FacetField> facetFields,
+            String searchText, Map<String, List<String>> filters, List<FacetField> facetFields,
             String sortColumn, boolean sortAsc,
             int offset, int limit) {
         if (!graph.matches("[a-zA-Z0-9_]+")) {
@@ -1495,7 +1542,7 @@ public class GrebiPostgresClient {
         }
         String tbl = "\"" + requireIdent(build.table) + "\"";
         try (Connection conn = getConnection()) {
-            ClosureWhere w = buildClosureWhere(conn, graph, build, params, searchText);
+            MatqWhere w = buildClosureWhere(conn, graph, build, params, searchText, filters);
             if (w.impossible) {
                 return new MatQueryResult(List.of(), 0, Map.of());
             }
@@ -1514,12 +1561,12 @@ public class GrebiPostgresClient {
             String dir = sortAsc ? "ASC" : "DESC";
             String pageOrder = " ORDER BY sk " + dir + " NULLS LAST, row_number ASC";
             String sql = "WITH m AS MATERIALIZED (SELECT row_number, " + sortKey + " AS sk FROM " + tbl
-                    + " WHERE " + w.sql + "),"
+                    + " WHERE " + w.sql() + "),"
                     + " page AS (SELECT row_number, sk FROM m" + pageOrder + " LIMIT ? OFFSET ?)"
                     + " SELECT (SELECT count(*) FROM m) AS total, convert_from(t.payload, 'UTF8') AS payload"
                     + " FROM page JOIN " + tbl + " t ON t.row_number = page.row_number"
                     + " ORDER BY page.sk " + dir + " NULLS LAST, page.row_number ASC";
-            List<Object> dataBinds = new ArrayList<>(w.binds);
+            List<Object> dataBinds = new ArrayList<>(w.binds());
             dataBinds.add(limit);
             dataBinds.add(offset);
 
@@ -1540,8 +1587,8 @@ public class GrebiPostgresClient {
             if (totalCount < 0) {
                 // Empty page (no matches, or offset past the end): count separately.
                 try (PreparedStatement ps = conn.prepareStatement(
-                        "SELECT count(*) FROM " + tbl + " WHERE " + w.sql)) {
-                    bind(ps, w.binds);
+                        "SELECT count(*) FROM " + tbl + " WHERE " + w.sql())) {
+                    bind(ps, w.binds());
                     try (ResultSet rs = ps.executeQuery()) {
                         rs.next();
                         totalCount = rs.getLong(1);
@@ -1559,10 +1606,11 @@ public class GrebiPostgresClient {
         }
     }
 
-    /** Top-N value breakdown per facet column over the closure-filtered rows.
-     *  Skipped above FACET_MAX_ROWS (too big to GROUP BY interactively). */
+    /** Top-N value breakdown per facet column over the filtered rows, each
+     *  computed without that column's own selection (see MatqWhere). Skipped
+     *  above FACET_MAX_ROWS (too big to GROUP BY interactively). */
     private Map<String, Map<String, Long>> computeFacets(Connection conn, MaterialisedBuild build,
-            ClosureWhere w, List<FacetField> facetFields, long totalCount) throws SQLException {
+            MatqWhere w, List<FacetField> facetFields, long totalCount) throws SQLException {
         Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
         if (facetFields == null || facetFields.isEmpty() || totalCount > FACET_MAX_ROWS) {
             return facets;
@@ -1580,8 +1628,8 @@ public class GrebiPostgresClient {
                 valueExpr = "\"" + requireIdent(f.column) + "\"";
             }
             String sql = "SELECT " + valueExpr + " AS fv, count(*) AS c FROM " + from
-                    + " WHERE " + w.sql + " GROUP BY fv ORDER BY c DESC LIMIT ?";
-            List<Object> binds = new ArrayList<>(w.binds);
+                    + " WHERE " + w.sql(f.column) + " GROUP BY fv ORDER BY c DESC LIMIT ?";
+            List<Object> binds = new ArrayList<>(w.binds(f.column));
             binds.add(FACET_MAX_VALUES);
             Map<String, Long> counts = new LinkedHashMap<>();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -1617,7 +1665,7 @@ public class GrebiPostgresClient {
      */
     public void streamMaterialisedParameterised(
             String graph, MaterialisedBuild build, List<ClosureParam> params, String searchText,
-            String sortColumn, boolean sortAsc,
+            Map<String, List<String>> filters, String sortColumn, boolean sortAsc,
             java.util.function.Consumer<Map<String, Object>> rowConsumer) {
         if (!graph.matches("[a-zA-Z0-9_]+")) {
             throw new IllegalArgumentException("Invalid graph name");
@@ -1627,14 +1675,14 @@ public class GrebiPostgresClient {
             boolean prevAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false); // required for a server-side (streaming) cursor
             try {
-                ClosureWhere w = buildClosureWhere(conn, graph, build, params, searchText);
+                MatqWhere w = buildClosureWhere(conn, graph, build, params, searchText, filters);
                 if (w.impossible) {
                     return;
                 }
-                List<Object> binds = new ArrayList<>(w.binds);
+                List<Object> binds = new ArrayList<>(w.binds());
                 String orderBy = buildOrderByClause(build, sortColumn, sortAsc);
                 try (PreparedStatement ps = conn.prepareStatement(
-                        "SELECT convert_from(payload, 'UTF8') FROM " + tbl + " WHERE " + w.sql + orderBy)) {
+                        "SELECT convert_from(payload, 'UTF8') FROM " + tbl + " WHERE " + w.sql() + orderBy)) {
                     ps.setFetchSize(10_000);
                     bind(ps, binds);
                     try (ResultSet rs = ps.executeQuery()) {
@@ -1669,13 +1717,13 @@ public class GrebiPostgresClient {
         }
         String tbl = "\"" + requireIdent(build.table) + "\"";
         try (Connection conn = getConnection()) {
-            ClosureWhere w = buildClosureWhere(conn, graph, build, params, null);
+            MatqWhere w = buildClosureWhere(conn, graph, build, params, null, null);
             if (w.impossible) {
                 return 0;
             }
             try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT COALESCE(SUM(\"_count\"), 0) FROM " + tbl + " WHERE " + w.sql)) {
-                bind(ps, w.binds);
+                    "SELECT COALESCE(SUM(\"_count\"), 0) FROM " + tbl + " WHERE " + w.sql())) {
+                bind(ps, w.binds());
                 try (ResultSet rs = ps.executeQuery()) {
                     rs.next();
                     return rs.getLong(1);
