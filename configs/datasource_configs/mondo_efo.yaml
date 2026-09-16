@@ -9,4 +9,4 @@ ingests:
   - globs: ["mondo_efo/mondo_efo_mappings.tsv"]
     command: '
       cat $GREBI_INGEST_FILENAME |
-      $GREBI_DATALOAD_HOME/01_ingest/mondo_efo_mappings.py --datasource-name $GREBI_INGEST_DATASOURCE_NAME'
+      grebi_ingest_mondo_efo_mappings --datasource-name $GREBI_INGEST_DATASOURCE_NAME'

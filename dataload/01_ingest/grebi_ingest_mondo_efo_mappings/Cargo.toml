@@ -1,0 +1,11 @@
+[package]
+name = "grebi_ingest_mondo_efo_mappings"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde_json = { version = "1.0.108", features = ["preserve_order"] }
+clap = { version = "4.4.11", features = ["derive"] }
+
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

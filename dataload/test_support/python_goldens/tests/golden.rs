@@ -52,19 +52,7 @@ fn metabolights() {
     python("01_ingest/metabolights.py", "metabolights").stdin("input.xml").stdout("output.jsonl").run();
 }
 
-/// A two-column mapping table: id and its comma-separated equivalents.
-#[test]
-fn mondo_efo_mappings() {
-    python("01_ingest/mondo_efo_mappings.py", "mondo_efo_mappings")
-        .args(["--datasource-name", "MONDO_EFO"]).stdin("mappings.tsv").stdout("output.jsonl").run();
-}
 
-/// Biomappings rows to subject, relation and object curies, prefixing ids that lack one.
-#[test]
-fn biomappings_transform() {
-    python("01_ingest/biomappings_transform.py", "biomappings_transform")
-        .env("GREBI_INGEST_FILENAME", "$CASE/mappings.tsv").stdout("output.jsonl").run();
-}
 
 
 /// The three pesticide registers, read from spreadsheets.

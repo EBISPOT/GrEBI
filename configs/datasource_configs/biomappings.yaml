@@ -8,5 +8,5 @@ download:
 ingests:
   - globs: ["biomappings/mappings.tsv"]
     command: '
-      python3 $GREBI_DATALOAD_HOME/01_ingest/biomappings_transform.py |
+      grebi_ingest_biomappings |
       grebi_transform_jsonl --json-inject-key-prefix biomappings:'

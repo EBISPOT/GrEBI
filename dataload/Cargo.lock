@@ -858,6 +858,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_ingest_biomappings"
+version = "0.1.0"
+dependencies = [
+ "csv",
+ "grebi_golden",
+ "serde_json",
+]
+
+[[package]]
 name = "grebi_ingest_gwas"
 version = "0.1.0"
 dependencies = [
@@ -878,6 +887,15 @@ dependencies = [
  "jemallocator",
  "serde_json",
  "struson 0.3.0",
+]
+
+[[package]]
+name = "grebi_ingest_mondo_efo_mappings"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "grebi_golden",
+ "serde_json",
 ]
 
 [[package]]
