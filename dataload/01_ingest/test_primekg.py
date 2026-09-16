@@ -24,7 +24,11 @@ class TestCurie(unittest.TestCase):
         self.assertEqual(primekg.curie("NCBI", "9796"), "NCBIGene:9796")
         self.assertEqual(primekg.curie("DrugBank", "DB09130"), "DrugBank:DB09130")
         self.assertEqual(primekg.curie("REACTOME", "R-HSA-109581"), "REACTOME:R-HSA-109581")
-        self.assertEqual(primekg.curie("CTD", "D000075182"), "CTD:D000075182")
+        self.assertEqual(primekg.curie("MONDO_grouped", "1200_1134_15512"), "MONDO_grouped:1200_1134_15512")
+
+    def test_ctd_exposures_are_mesh_ids(self):
+        self.assertEqual(primekg.curie("CTD", "D000075182"), "MESH:D000075182")
+        self.assertEqual(primekg.curie("CTD", "C092102"), "MESH:C092102")
         self.assertEqual(primekg.curie("MONDO_grouped", "1200_1134_15512"), "MONDO_grouped:1200_1134_15512")
 
 

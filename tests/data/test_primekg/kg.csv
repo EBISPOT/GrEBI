@@ -6,3 +6,4 @@ disease_disease,parent-child,35827,24255,disease,genetic skin disease,MONDO,3802
 disease_phenotype_positive,phenotype present,27844,7755,disease,hyperimmunoglobulin G1(A1) syndrome,MONDO,85550,3565,effect/phenotype,Elevated erythrocyte sedimentation rate,HPO
 bioprocess_protein,interacts with,7097,1,gene/protein,A1BG,NCBI,112487,43312,biological_process,neutrophil degranulation,GO
 anatomy_protein_present,expression present,5531,7105,gene/protein,TSPAN6,NCBI,63112,2,anatomy,uterine cervix,UBERON
+exposure_protein,interacts with,61701,D000075182,exposure,Agent Orange,CTD,201,1543,gene/protein,CYP1A1,NCBI

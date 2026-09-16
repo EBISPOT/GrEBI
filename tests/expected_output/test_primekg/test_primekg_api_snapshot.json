@@ -1067,6 +1067,310 @@
         "total": 0
       }
     },
+    "mesh:D000075182": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "mesh:D000075182": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Agent Orange"
+            ],
+            "grebi:nodeId": "mesh:D000075182",
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "ncbigene:1543": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "CYP1A1"
+            ],
+            "grebi:nodeId": "ncbigene:1543",
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "mesh:D000075182",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "Agent Orange"
+          }
+        ],
+        "grebi:nodeId": "mesh:D000075182",
+        "grebi:sourceIds": [
+          "mesh:D000075182"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "mesh:D000075182"
+          }
+        ],
+        "primekg:exposure_protein": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "interacts with"
+                ],
+                "primekg:relation": [
+                  "exposure_protein"
+                ],
+                "primekg:x_id": [
+                  "D000075182"
+                ],
+                "primekg:x_index": [
+                  "61701"
+                ],
+                "primekg:x_name": [
+                  "Agent Orange"
+                ],
+                "primekg:x_source": [
+                  "CTD"
+                ],
+                "primekg:x_type": [
+                  "exposure"
+                ],
+                "primekg:y_id": [
+                  "1543"
+                ],
+                "primekg:y_index": [
+                  "201"
+                ],
+                "primekg:y_name": [
+                  "CYP1A1"
+                ],
+                "primekg:y_source": [
+                  "NCBI"
+                ],
+                "primekg:y_type": [
+                  "gene/protein"
+                ]
+              },
+              "grebi:value": "ncbigene:1543"
+            }
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "mesh:D000075182": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "Agent Orange"
+                ],
+                "grebi:nodeId": "mesh:D000075182",
+                "grebi:sourceIds": [
+                  "mesh:D000075182"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "ncbigene:1543": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "CYP1A1"
+                ],
+                "grebi:nodeId": "ncbigene:1543",
+                "grebi:sourceIds": [
+                  "ncbigene:1543"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "Agent Orange"
+              ],
+              "grebi:nodeId": "mesh:D000075182",
+              "grebi:sourceIds": [
+                "mesh:D000075182"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "dc6548ea9fcde1603aaed0d36358aa0ee580652f",
+            "grebi:fromNodeId": "mesh:D000075182",
+            "grebi:fromSourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "ncbigene:1543",
+            "grebi:type": "primekg:exposure_protein",
+            "primekg:display_relation": [
+              "interacts with"
+            ],
+            "primekg:relation": [
+              "exposure_protein"
+            ],
+            "primekg:x_id": [
+              "D000075182"
+            ],
+            "primekg:x_index": [
+              "61701"
+            ],
+            "primekg:x_name": [
+              "Agent Orange"
+            ],
+            "primekg:x_source": [
+              "CTD"
+            ],
+            "primekg:x_type": [
+              "exposure"
+            ],
+            "primekg:y_id": [
+              "1543"
+            ],
+            "primekg:y_index": [
+              "201"
+            ],
+            "primekg:y_name": [
+              "CYP1A1"
+            ],
+            "primekg:y_source": [
+              "NCBI"
+            ],
+            "primekg:y_type": [
+              "gene/protein"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "CYP1A1"
+              ],
+              "grebi:nodeId": "ncbigene:1543",
+              "grebi:sourceIds": [
+                "ncbigene:1543"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
     "mondo:0005083": {
       "incoming_edges": {
         "content": [
@@ -2566,6 +2870,230 @@
         "total": 1
       }
     },
+    "ncbigene:1543": {
+      "incoming_edges": {
+        "content": [
+          {
+            "_refs": {
+              "mesh:D000075182": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "Agent Orange"
+                ],
+                "grebi:nodeId": "mesh:D000075182",
+                "grebi:sourceIds": [
+                  "mesh:D000075182"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "ncbigene:1543": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "CYP1A1"
+                ],
+                "grebi:nodeId": "ncbigene:1543",
+                "grebi:sourceIds": [
+                  "ncbigene:1543"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "Agent Orange"
+              ],
+              "grebi:nodeId": "mesh:D000075182",
+              "grebi:sourceIds": [
+                "mesh:D000075182"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "dc6548ea9fcde1603aaed0d36358aa0ee580652f",
+            "grebi:fromNodeId": "mesh:D000075182",
+            "grebi:fromSourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "ncbigene:1543",
+            "grebi:type": "primekg:exposure_protein",
+            "primekg:display_relation": [
+              "interacts with"
+            ],
+            "primekg:relation": [
+              "exposure_protein"
+            ],
+            "primekg:x_id": [
+              "D000075182"
+            ],
+            "primekg:x_index": [
+              "61701"
+            ],
+            "primekg:x_name": [
+              "Agent Orange"
+            ],
+            "primekg:x_source": [
+              "CTD"
+            ],
+            "primekg:x_type": [
+              "exposure"
+            ],
+            "primekg:y_id": [
+              "1543"
+            ],
+            "primekg:y_index": [
+              "201"
+            ],
+            "primekg:y_name": [
+              "CYP1A1"
+            ],
+            "primekg:y_source": [
+              "NCBI"
+            ],
+            "primekg:y_type": [
+              "gene/protein"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "CYP1A1"
+              ],
+              "grebi:nodeId": "ncbigene:1543",
+              "grebi:sourceIds": [
+                "ncbigene:1543"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      },
+      "node": {
+        "_refs": {
+          "ncbigene:1543": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "CYP1A1"
+            ],
+            "grebi:nodeId": "ncbigene:1543",
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:1543",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:value": "CYP1A1"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:1543",
+        "grebi:sourceIds": [
+          "ncbigene:1543"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:value": "ncbigene:1543"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      }
+    },
     "ncbigene:348": {
       "incoming_edges": {
         "content": [],
@@ -3805,6 +4333,148 @@
       },
       {
         "_refs": {
+          "mesh:D000075182": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Agent Orange"
+            ],
+            "grebi:nodeId": "mesh:D000075182",
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "ncbigene:1543": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "CYP1A1"
+            ],
+            "grebi:nodeId": "ncbigene:1543",
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "mesh:D000075182",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "Agent Orange"
+          }
+        ],
+        "grebi:nodeId": "mesh:D000075182",
+        "grebi:sourceIds": [
+          "mesh:D000075182"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "mesh:D000075182"
+          }
+        ],
+        "primekg:exposure_protein": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "interacts with"
+                ],
+                "primekg:relation": [
+                  "exposure_protein"
+                ],
+                "primekg:x_id": [
+                  "D000075182"
+                ],
+                "primekg:x_index": [
+                  "61701"
+                ],
+                "primekg:x_name": [
+                  "Agent Orange"
+                ],
+                "primekg:x_source": [
+                  "CTD"
+                ],
+                "primekg:x_type": [
+                  "exposure"
+                ],
+                "primekg:y_id": [
+                  "1543"
+                ],
+                "primekg:y_index": [
+                  "201"
+                ],
+                "primekg:y_name": [
+                  "CYP1A1"
+                ],
+                "primekg:y_source": [
+                  "NCBI"
+                ],
+                "primekg:y_type": [
+                  "gene/protein"
+                ]
+              },
+              "grebi:value": "ncbigene:1543"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
           "mondo:0005083": {
             "grebi:datasources": [
               "OntologyTerms",
@@ -4299,6 +4969,68 @@
       },
       {
         "_refs": {
+          "ncbigene:1543": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "CYP1A1"
+            ],
+            "grebi:nodeId": "ncbigene:1543",
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:1543",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:value": "CYP1A1"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:1543",
+        "grebi:sourceIds": [
+          "ncbigene:1543"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:value": "ncbigene:1543"
+          }
+        ]
+      },
+      {
+        "_refs": {
           "mondo:0005083": {
             "grebi:datasources": [
               "OntologyTerms",
@@ -4639,7 +5371,7 @@
     "first": true,
     "last": true,
     "number": 0,
-    "numberOfElements": 11,
+    "numberOfElements": 13,
     "pageable": {
       "offset": 0,
       "pageNumber": 0,
@@ -4658,7 +5390,7 @@
       "sorted": false,
       "unsorted": true
     },
-    "totalElements": 11,
+    "totalElements": 13,
     "totalPages": 1
   },
   "search": {
@@ -5077,6 +5809,148 @@
       },
       {
         "_refs": {
+          "mesh:D000075182": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Agent Orange"
+            ],
+            "grebi:nodeId": "mesh:D000075182",
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "ncbigene:1543": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "CYP1A1"
+            ],
+            "grebi:nodeId": "ncbigene:1543",
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "mesh:D000075182",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "Agent Orange"
+          }
+        ],
+        "grebi:nodeId": "mesh:D000075182",
+        "grebi:sourceIds": [
+          "mesh:D000075182"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": "mesh:D000075182"
+          }
+        ],
+        "primekg:exposure_protein": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mesh:D000075182"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "interacts with"
+                ],
+                "primekg:relation": [
+                  "exposure_protein"
+                ],
+                "primekg:x_id": [
+                  "D000075182"
+                ],
+                "primekg:x_index": [
+                  "61701"
+                ],
+                "primekg:x_name": [
+                  "Agent Orange"
+                ],
+                "primekg:x_source": [
+                  "CTD"
+                ],
+                "primekg:x_type": [
+                  "exposure"
+                ],
+                "primekg:y_id": [
+                  "1543"
+                ],
+                "primekg:y_index": [
+                  "201"
+                ],
+                "primekg:y_name": [
+                  "CYP1A1"
+                ],
+                "primekg:y_source": [
+                  "NCBI"
+                ],
+                "primekg:y_type": [
+                  "gene/protein"
+                ]
+              },
+              "grebi:value": "ncbigene:1543"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
           "mondo:0005083": {
             "grebi:datasources": [
               "OntologyTerms",
@@ -5571,6 +6445,68 @@
       },
       {
         "_refs": {
+          "ncbigene:1543": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "CYP1A1"
+            ],
+            "grebi:nodeId": "ncbigene:1543",
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:1543",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:value": "CYP1A1"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:1543",
+        "grebi:sourceIds": [
+          "ncbigene:1543"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1543"
+            ],
+            "grebi:value": "ncbigene:1543"
+          }
+        ]
+      },
+      {
+        "_refs": {
           "mondo:0005083": {
             "grebi:datasources": [
               "OntologyTerms",
@@ -5911,7 +6847,7 @@
     "first": true,
     "last": true,
     "number": 0,
-    "numberOfElements": 11,
+    "numberOfElements": 13,
     "pageable": {
       "offset": 0,
       "pageNumber": 0,
@@ -5930,58 +6866,58 @@
       "sorted": false,
       "unsorted": true
     },
-    "totalElements": 11,
+    "totalElements": 13,
     "totalPages": 1
   },
   "subgraph_metadata": {
     "displaytypes": {
       "biolink:Entity": {
-        "count": 5
+        "count": 6
       },
       "ols:Class": {
-        "count": 6
+        "count": 7
       }
     },
     "edge_counts_by_datasource": {
-      "PrimeKG": 7
+      "PrimeKG": 8
     },
     "edge_prop_defs": {},
     "edge_props": {
       "primekg:display_relation": {
-        "count": 7
+        "count": 8
       },
       "primekg:relation": {
-        "count": 7
+        "count": 8
       },
       "primekg:x_id": {
-        "count": 7
+        "count": 8
       },
       "primekg:x_index": {
-        "count": 7
+        "count": 8
       },
       "primekg:x_name": {
-        "count": 7
+        "count": 8
       },
       "primekg:x_source": {
-        "count": 7
+        "count": 8
       },
       "primekg:x_type": {
-        "count": 7
+        "count": 8
       },
       "primekg:y_id": {
-        "count": 7
+        "count": 8
       },
       "primekg:y_index": {
-        "count": 7
+        "count": 8
       },
       "primekg:y_name": {
-        "count": 7
+        "count": 8
       },
       "primekg:y_source": {
-        "count": 7
+        "count": 8
       },
       "primekg:y_type": {
-        "count": 7
+        "count": 8
       }
     },
     "edges": {
@@ -6022,6 +6958,11 @@
           "biolink:Entity,ols:Class": {
             "PrimeKG": 1
           }
+        },
+        "primekg:exposure_protein": {
+          "biolink:Entity": {
+            "PrimeKG": 1
+          }
         }
       }
     },
@@ -6029,13 +6970,13 @@
     "entity_prop_defs": {},
     "entity_props": {
       "grebi:name": {
-        "count": 11
+        "count": 13
       },
       "grebi:type": {
-        "count": 17
+        "count": 20
       },
       "id": {
-        "count": 11
+        "count": 13
       },
       "primekg:anatomy_protein_present": {
         "count": 1
@@ -6055,6 +6996,9 @@
       "primekg:disease_protein": {
         "count": 1
       },
+      "primekg:exposure_protein": {
+        "count": 1
+      },
       "primekg:indication": {
         "count": 1
       }
@@ -6069,13 +7013,13 @@
         ],
         "cypher_query": "RETURN \"Hello, World!\" AS message",
         "description": "Tester query to see if the pipeline is working",
-        "end_time": "2026-09-16 14:38:04",
+        "end_time": "2026-09-16 15:40:55",
         "id": "hello_world_tester",
         "num_results": 1,
-        "start_time": "2026-09-16 14:38:03",
+        "start_time": "2026-09-16 15:40:54",
         "subgraph": "test_primekg",
         "table": "matq_test_primekg_hello_world_tester",
-        "time": 1.047774,
+        "time": 1.049269,
         "title": "Hello world",
         "uses_datasources": [
           "IMPC",
@@ -6085,8 +7029,8 @@
     ],
     "materialised_templates": [],
     "node_counts_by_datasource": {
-      "OntologyTerms": 6,
-      "PrimeKG": 11
+      "OntologyTerms": 7,
+      "PrimeKG": 13
     },
     "subgraph_config": {
       "additional_equivalence_groups": [
@@ -6301,10 +7245,10 @@
     "subgraph_name": "test_primekg",
     "types": {
       "biolink:Entity": {
-        "count": 11
+        "count": 13
       },
       "ols:Class": {
-        "count": 6
+        "count": 7
       }
     }
   },
