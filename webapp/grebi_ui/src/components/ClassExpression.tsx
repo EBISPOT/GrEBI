@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { asArray, randomString } from "../app/util";
 import GraphNode from "../model/GraphNode";
 import React from "react";
+import { externalLinkForId } from "../db_links/dbLinks";
 import encodeNodeId from "../encodeNodeId";
 import { Link } from "react-router-dom";
 import Refs from "../model/Refs";
@@ -26,6 +27,10 @@ export default function ClassExpression({
     if(mapped_value) {
       return <Link className="link-default" style={{color:'black'}} to={"/graphs/" + graph + "/nodes/" + encodeNodeId(expr)}>{mapped_value.getName()}</Link>
     } else {
+      const external = externalLinkForId(expr);
+      if(external) {
+        return <a className="link-default" style={{color:'black'}} href={external.url} target="_blank" rel="noopener noreferrer" title={`Open in ${external.database}`}>{expr}</a>
+      }
       return <Link className="link-default" style={{color:'black'}} to={"https://www.ebi.ac.uk/ols4/search?q=" + encodeURIComponent(expr)}>{expr}</Link>
     }
   }

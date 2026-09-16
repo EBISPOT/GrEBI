@@ -11,7 +11,8 @@ import React from "react";
 import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
 import { FormatListBulleted, CallReceived, CallMade, Share, AutoAwesome } from "@mui/icons-material";
 import { Typography, Grid, Tabs, Tab, Box } from "@mui/material";
-import { copyToClipboard } from "../../../app/util";
+import SourceIdChip from "../../../components/SourceIdChip";
+import { orderSourceIds } from "../../../db_links/dbLinks";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import EdgesInList from "../../../components/node_edge_list/EdgesList";
 import GraphView from "../../../components/node_graph_view/GraphView";
@@ -73,14 +74,9 @@ export default function EbiNodePage() {
 
         <div style={{width:'90%'}} className="mx-auto">
                     <Grid container spacing={0.5} direction="row" alignItems={"center"} justifyContent={"center"} className="pb-5">
-              {node.getSourceIds().map(id => <Grid item>
-                <div className="bg-grey-default rounded-sm font-mono pl-1" style={{fontSize:'small'}}>
-                {id.value} <button onClick={() => { copyToClipboard(id.value); }} >
-                  <i className="icon icon-common icon-copy icon-spacer" />
-                </button>
-                </div>
-</Grid>
-)}
+              {orderSourceIds(node.getSourceIds().map(id => id.value)).map(id => <Grid item key={id}>
+                <SourceIdChip id={id} />
+              </Grid>)}
             </Grid>
             </div>
 

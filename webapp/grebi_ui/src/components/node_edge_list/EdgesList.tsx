@@ -93,7 +93,7 @@ export default function EdgesList(params:{
                     id: 'grebi:datasources',
                     name: 'Datasources',
                     selector: (row:GraphEdge) => {
-                        return <DatasourceTags dss={row.getDatasources()} />
+                        return <DatasourceTags dss={row.getDatasources()} linked />
                     },
                     sortable: true,
                 },

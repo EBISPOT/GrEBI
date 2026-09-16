@@ -58,6 +58,15 @@ describe('PropVals', () => {
     expect(screen.getAllByRole('link')).toHaveLength(1)
   })
 
+  it('links ids of a known kind that are not in the refs to their database', () => {
+    renderVals(['pubmed:40323307', 'plain text'])
+    const link = screen.getByRole('link', { name: 'pubmed:40323307' })
+    expect(link).toHaveAttribute('href', 'https://europepmc.org/abstract/MED/40323307')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link.querySelector('img')).toHaveAttribute('src', expect.stringContaining('db_icons/ebi.png'))
+    expect(screen.getAllByRole('link')).toHaveLength(1)
+  })
+
   it('renders class expressions and dumps other objects as JSON', () => {
     const { container } = renderVals([
       { 'rdf:type': 'owl:Restriction', 'owl:onProperty': 'ro:0002200', 'owl:someValuesFrom': 'hp:0000001' },

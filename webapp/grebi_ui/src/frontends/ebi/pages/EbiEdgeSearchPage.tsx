@@ -257,7 +257,7 @@ export default function EbiEdgeSearchPage() {
                             )}
                           </td>
                           <td className="py-2 px-3">
-                            <DatasourceTags dss={edge.getDatasources()} />
+                            <DatasourceTags dss={edge.getDatasources()} linked />
                           </td>
                         </tr>
                       );

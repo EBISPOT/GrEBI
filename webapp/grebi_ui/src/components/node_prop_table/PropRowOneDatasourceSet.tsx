@@ -16,7 +16,7 @@ export default function PropRowOneDatasourceSet(params:{graph:string,node:GraphN
               <Grid item xs={12} style={{overflow:'hidden',padding:'8px'}} className="bg-gradient-to-r from-neutral-light to-white rounded-lg">
                   <PropLabel prop={prop} refs={node.getRefs()} />
               { datasources.length > 1 && <span>
-                <DatasourceTags dss={values[0].datasources} />
+                <DatasourceTags dss={values[0].datasources} linked />
                 </span>}
               </Grid>
               <Grid item xs={12} style={{padding:'8px'}}>

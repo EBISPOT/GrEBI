@@ -72,8 +72,11 @@ describe('EbiNodePage', () => {
     expect(await screen.findByRole('heading', { name: /psoriasis/ })).toHaveTextContent('psoriasis Disease')
     expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=en`)
     expect(screen.getByText('A skin disease')).toBeInTheDocument()
-    expect(screen.getByText('mondo:0005083')).toBeInTheDocument()
-    expect(screen.getByText('doid:8893')).toBeInTheDocument()
+    // the source ids link out to their databases, with the database icon
+    const mondo = screen.getByRole('link', { name: 'mondo:0005083' })
+    expect(mondo).toHaveAttribute('href', 'https://www.ebi.ac.uk/ols4/ontologies/mondo/classes?iri=http://purl.obolibrary.org/obo/MONDO_0005083')
+    expect(mondo.querySelector('img')).toHaveAttribute('src', expect.stringContaining('db_icons/ols.png'))
+    expect(screen.getByRole('link', { name: 'doid:8893' })).toHaveAttribute('href', expect.stringContaining('ols4/ontologies/doid'))
 
     const crumbs = within(screen.getByLabelText('breadcrumb'))
     expect(crumbs.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([

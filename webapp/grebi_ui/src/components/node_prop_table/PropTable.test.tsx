@@ -30,8 +30,8 @@ describe('PropTable', () => {
     fireEvent.click(checkboxFor('UberGraph'))
     expect(screen.getByText('Synonym')).toBeInTheDocument()
     expect(container.textContent).toContain('psoriasis vulgaris')
-    // the selector tag plus a tag on the synonym row
-    expect(screen.getAllByTitle('UberGraph')).toHaveLength(2)
+    // the selector tag plus a (linked) tag on the synonym row
+    expect(screen.getAllByTitle(/^UberGraph/)).toHaveLength(2)
   })
 
   it('hides the values of a datasource once it is disabled', () => {

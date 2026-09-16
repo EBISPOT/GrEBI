@@ -51,10 +51,17 @@ describe('ClassExpression', () => {
     )
     unmount()
 
-    renderExpr('obo:UBERON_9999999')
+    renderExpr('zzz:9999999')
     const link = screen.getByRole('link')
-    expect(link).toHaveAttribute('href', 'https://www.ebi.ac.uk/ols4/search?q=obo%3AUBERON_9999999')
-    expect(link).toHaveTextContent('obo:UBERON_9999999')
+    expect(link).toHaveAttribute('href', 'https://www.ebi.ac.uk/ols4/search?q=zzz%3A9999999')
+    expect(link).toHaveTextContent('zzz:9999999')
+  })
+
+  it('links an id of a known kind that is not in the refs to its database', () => {
+    renderExpr('obo:UBERON_0002048')
+    const link = screen.getByRole('link', { name: 'obo:UBERON_0002048' })
+    expect(link).toHaveAttribute('href', 'https://www.ebi.ac.uk/ols4/ontologies/uberon/classes?iri=http://purl.obolibrary.org/obo/UBERON_0002048')
+    expect(link).toHaveAttribute('target', '_blank')
   })
 
   it('renders an intersection with a nested restriction in parentheses', () => {

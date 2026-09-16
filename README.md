@@ -71,3 +71,14 @@ Now inspect the changes with `git diff` and make sure they are intentional. When
 
     git add -A tests/expected_output/
     git commit -m "Update expected test output"
+
+## Database links on node pages
+
+Source ids on node pages, in search results and in property values link out to the database they come from, with the database's icon, and datasource tags link to the datasource's homepage. The data behind that lives in the UI, so changing it never needs a data load:
+
+- `webapp/grebi_ui/src/db_links/db_links.json` holds a URL pattern per Bioregistry prefix, with EBI-hosted identifiers routed to their EBI home (OLS for ontology terms), regex rules for ids that carry no prefix such as GWAS Catalog accessions, and the datasource homepages.
+- `webapp/grebi_ui/dist/db_icons/` holds one icon per database.
+
+Both are generated. Edit the curated tables in the generator rather than the outputs, then regenerate (the `--check` flag fetches every curated URL with an example id) and rebuild the UI:
+
+    cd webapp/grebi_ui && uv run scripts/make_db_links.py --check

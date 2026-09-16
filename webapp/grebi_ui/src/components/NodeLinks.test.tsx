@@ -71,7 +71,7 @@ describe('NodeLinks', () => {
   it('lists the source ids and has no extra tabs for a node that is not a gene', async () => {
     renderLinks(disease)
     expect(screen.getByRole('tab', { name: 'Source IDs' })).toBeInTheDocument()
-    expect(screen.getByText('mondo:0005083')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'mondo:0005083' })).toHaveAttribute('href', expect.stringContaining('ols4/ontologies/mondo'))
     await act(async () => {})
     expect(screen.getAllByRole('tab')).toHaveLength(1)
     expect(api.getPaginated).not.toHaveBeenCalled()
@@ -82,7 +82,7 @@ describe('NodeLinks', () => {
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     try {
       renderLinks(disease)
-      fireEvent.click(screen.getByText('mondo:0005083').querySelector('button')!)
+      fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
       expect(writeText).toHaveBeenCalledWith('mondo:0005083')
     } finally {
       delete (navigator as any).clipboard

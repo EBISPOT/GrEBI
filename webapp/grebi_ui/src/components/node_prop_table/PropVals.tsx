@@ -7,6 +7,8 @@ import PropVal from "../../model/PropVal";
 import ClassExpression from "../ClassExpression";
 import isSingleLineProp from "./isSingleLineProp";
 import Refs from "../../model/Refs";
+import { externalLinkForId } from "../../db_links/dbLinks";
+import { DbIcon } from "../SourceIdChip";
 
 let MAX_VALS_ONELINE = 10
 let MAX_VALS_MULTILINE = 5 
@@ -114,6 +116,17 @@ function PropValue(params:{graph:string,refs:Refs,value:PropVal,monospace:boolea
         </span>
       )
     } else {
+      // an id of a known kind that is not a node in the graph links out to its database
+      const external = typeof value.value === 'string' ? externalLinkForId(value.value) : null;
+      if(external) {
+        return (
+          <span className="mr-0">
+            {separator} <a className="link-default" href={external.url} target="_blank" rel="noopener noreferrer" title={`Open in ${external.database}`}>
+              <DbIcon link={external} size={13} />{value.value}
+            </a>
+          </span>
+        )
+      }
       let val_to_display = typeof value.value === 'string' ? value.value : JSON.stringify(value.value)
       if(!monospace) {
           return <span className="mr-0">{separator} {val_to_display}</span>

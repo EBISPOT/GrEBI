@@ -36,7 +36,7 @@ export default function PropRowManyDatasourceSets(params:{graph:string,node:Grap
                     let values = dsSetToVals.get(dsSet) || []
                       return <Fragment>
                       <Grid item xs={12} style={{padding:'8px'}}>
-                        <DatasourceTags dss={values[0].datasources} />
+                        <DatasourceTags dss={values[0].datasources} linked />
                         <PropVals graph={graph} refs={node.getRefs()} values={values} />
                       </Grid>
                     </Fragment>
@@ -56,7 +56,7 @@ export default function PropRowManyDatasourceSets(params:{graph:string,node:Grap
                       return <Fragment>
                         <Grid item xs={12}>
                           <div className="pl-0">
-                          <DatasourceTags dss={values[0].datasources} />
+                          <DatasourceTags dss={values[0].datasources} linked />
                           </div>
                         </Grid>
                         <Grid item xs={12}>

@@ -30,4 +30,13 @@ describe('CollapsingIdList', () => {
     const { container } = render(<CollapsingIdList ids={[]} />)
     expect(container.textContent).toBe('')
   })
+
+  it('links ids of a known kind to their database, EBI first, and leaves the rest plain', () => {
+    render(<CollapsingIdList ids={[{ value: 'D011565' }, { value: 'ncbigene:1956' }, { value: 'mondo:0005083' }]} />)
+    const links = screen.getAllByRole('link')
+    expect(links.map((l) => l.textContent)).toEqual(['mondo:0005083', 'ncbigene:1956'])
+    expect(links[0]).toHaveAttribute('href', expect.stringContaining('ols4/ontologies/mondo'))
+    expect(links[0].querySelector('img')).toHaveAttribute('src', expect.stringContaining('db_icons/ols.png'))
+    expect(screen.getByText('D011565').tagName).toBe('SPAN')
+  })
 })

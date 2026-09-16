@@ -358,7 +358,7 @@ export default function SeachInterface(opts:{ graph:string }
                       { nodeType &&
                       <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px',marginRight:'12px'}}>{nodeType.longName}</span>
                     }
-            <DatasourceTags dss={graphNode.getDatasources()} />
+            <DatasourceTags dss={graphNode.getDatasources()} linked />
                     </div>
                     <CollapsingIdList ids={graphNode.getSourceIds()} />
                       {graphNode.getDescription() && (

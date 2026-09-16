@@ -3,7 +3,9 @@ import GraphNode from "../model/GraphNode";
 import { getPaginated, Page } from "../app/api";
 import encodeNodeId from "../encodeNodeId";
 import { CircularProgress, Grid, Tab, Tabs, Typography } from "@mui/material";
-import { asArray, copyToClipboard } from "../app/util";
+import { asArray } from "../app/util";
+import SourceIdChip from "./SourceIdChip";
+import { orderSourceIds } from "../db_links/dbLinks";
 import LocalDataTable from "./datatable/LocalDataTable";
 import NodeRefLink from "./node_edge_list/NodeRefLink";
 import GraphEdge from "../model/GraphEdge";
@@ -52,14 +54,9 @@ export default function NodeLinks({node, graph}:{node:GraphNode, graph:string}) 
     <TabPanel value={linksTab} index={"sourceids"}>
                     <Grid
                     container spacing={0.5} direction="row" alignItems={"left"} justifyContent={"left"} className="pb-5">
-               {node.getSourceIds().map(id => <Grid item>
-                 <div className="bg-grey-default rounded-sm font-mono pl-1" style={{fontSize:'small'}}>
-                 {id.value} <button onClick={() => { copyToClipboard(id.value); }} >
-                   <i className="icon icon-common icon-copy icon-spacer" />
-                 </button>
-                 </div>
- </Grid>
- )}
+               {orderSourceIds(node.getSourceIds().map(id => id.value)).map(id => <Grid item key={id}>
+                 <SourceIdChip id={id} />
+               </Grid>)}
              </Grid>
     </TabPanel>
     {!linksTabs && <CircularProgress />}
@@ -119,7 +116,7 @@ let fixedCols = [
     {
         id: "grebi:datasources",
         name: "Datasources",
-        selector: (edge:GraphEdge, key:string) => <DatasourceTags dss={edge['grebi:datasources']} />,
+        selector: (edge:GraphEdge, key:string) => <DatasourceTags dss={edge['grebi:datasources']} linked />,
         sortable:true
     },
     {

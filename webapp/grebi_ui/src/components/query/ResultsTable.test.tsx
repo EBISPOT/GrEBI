@@ -45,7 +45,7 @@ describe('ResultsTable', () => {
     const study = await screen.findByRole('link', { name: 'Shared mechanisms' })
     expect(study).toHaveAttribute('href', expect.stringContaining('/graphs/test_gwas/nodes/'))
     const pubmed = screen.getByRole('link', { name: '32121467' })
-    expect(pubmed).toHaveAttribute('href', 'https://pubmed.ncbi.nlm.nih.gov/32121467/')
+    expect(pubmed).toHaveAttribute('href', 'https://europepmc.org/abstract/MED/32121467')
     expect(screen.getByText('Endometriosis or migraine')).toBeInTheDocument()
     // a null string column shows a dash
     expect(screen.getAllByText('-').length).toBeGreaterThan(0)

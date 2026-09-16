@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { externalLinkForId } from "../../db_links/dbLinks";
 import { Link } from "react-router-dom";
 import { getPaginated } from "../../app/api";
 import GraphNodeRef from "../../model/GraphNodeRef";
@@ -178,10 +179,12 @@ export default function ResultsTable({ graph, queryId, params, resultColumns, ma
           return '-';
         }
         const pmid = String(val).replace(/^pubmed:/i, '');
+        // Europe PMC, like every other PubMed id on the site
+        const europepmc = externalLinkForId(`pubmed:${pmid}`);
         return (
           <a
             className="link-default"
-            href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}/`}
+            href={europepmc ? europepmc.url : `https://europepmc.org/abstract/MED/${pmid}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
