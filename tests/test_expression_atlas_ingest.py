@@ -126,6 +126,20 @@ class ExpressionAtlasIngestTest(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertEqual(len(genes(run(metadata=sdrf(extra=[(key, value, "")]))[0])), 1)
 
+    def test_literal_quotes_do_not_swallow_annotations(self):
+        # A free-text value starting with '"' must be read literally: it must
+        # not absorb the rows after it, or the disease annotation below would
+        # never be seen and a perturbed group would pass as baseline.
+        metadata = sdrf(extra=[("clinical information", '"BMI 30; ""obese""', ""),
+                               ("disease", "cancer", "")])
+        nodes, counts = run(metadata=metadata)
+        self.assertFalse(genes(nodes))
+        self.assertEqual(counts["excluded_disease"], 1)
+        annotations = ATLAS.read_annotations(io.StringIO(metadata), ACC)["a1"]
+        self.assertIn("disease", annotations)
+        self.assertEqual({value for value, _ in annotations["clinical information"]},
+                         {'"BMI 30; ""obese""'})
+
     def test_one_excluded_replicate_excludes_whole_group(self):
         xml = config((("g1", ["a1", "a2"]),))
         metadata = sdrf() + sdrf("a2", extra=[("disease", "cancer", "")])

@@ -256,10 +256,12 @@ def mergeDownloads(entries) {
         }
     }
 
-    // Build channel: paths first, then URLs for each dest
+    // Build channel: paths first, then URLs for each dest.  Sources keep
+    // their configured (preference) order; sorting by dest keeps the overall
+    // entry order deterministic run to run.
     all_downloads.collect { dest, v ->
         [dest: dest, sources: (v.paths.toList() + v.urls.toList()), optional: v.optional]
-    }
+    }.sort { it.dest }
 }
 
 workflow {
@@ -267,14 +269,20 @@ workflow {
     datasources = config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.grebi_home, ds)) }
 
     manifest_specs = datasources.collectMany { it.download_manifests ?: [] }
-    if (manifest_specs.collect { it.dest }.unique().size() != manifest_specs.size()) {
-        error 'Download manifest destinations must be unique'
-    }
     manifest_specs.each { spec ->
-        if (!(spec.dest ==~ /[A-Za-z0-9_.\/-]+/) || spec.dest.startsWith('/') ||
-            spec.dest.tokenize('/').contains('..') || !spec.command || !spec.sources) {
+        // Check shapes before matching so a malformed spec gets this message
+        // rather than an opaque NullPointerException from ==~ on a null dest.
+        if (!(spec instanceof Map) || !(spec.dest instanceof String) ||
+            !(spec.dest ==~ /[A-Za-z0-9_.\/-]+/) || spec.dest.startsWith('/') ||
+            spec.dest.tokenize('/').contains('..') ||
+            !(spec.command instanceof String) || !spec.command ||
+            !(spec.sources instanceof List) || spec.sources.isEmpty() ||
+            spec.sources.any { !(it instanceof String) || !it }) {
             error "Invalid download manifest specification: ${spec}"
         }
+    }
+    if (manifest_specs.collect { it.dest }.unique().size() != manifest_specs.size()) {
+        error 'Download manifest destinations must be unique'
     }
 
     discovered = discover_downloads(Channel.fromList(manifest_specs)).flatMap { manifest ->
@@ -283,7 +291,8 @@ workflow {
             error "Expected a nonempty download manifest: ${manifest}"
         }
         entries.each { entry ->
-            if (!(entry instanceof Map) || !(entry.dest ==~ /[A-Za-z0-9_.\/-]+/) ||
+            if (!(entry instanceof Map) || !(entry.dest instanceof String) ||
+                !(entry.dest ==~ /[A-Za-z0-9_.\/-]+/) ||
                 entry.dest.startsWith('/') || entry.dest.tokenize('/').contains('..') ||
                 !(entry.sources instanceof List) || entry.sources.isEmpty() ||
                 entry.sources.any { !(it instanceof String) || !it }) {
@@ -293,7 +302,10 @@ workflow {
         entries
     }
     static_entries = Channel.fromList(datasources.collectMany { it.download ?: [] })
-    download_channel = static_entries.mix(discovered).collect(flat: false).flatMap { mergeDownloads(it) }
+    // concat, not mix: if a dest ever gains sources from both static config
+    // and a discovered manifest, the merged source order — and with it the
+    // download_file cache key — must not depend on channel interleaving.
+    download_channel = static_entries.concat(discovered).collect(flat: false).flatMap { mergeDownloads(it) }
 
     download_file(download_channel)
 }

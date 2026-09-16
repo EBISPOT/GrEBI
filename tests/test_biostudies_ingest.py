@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import contextlib
 import importlib.util
+import io
 import json
 import tempfile
 import unittest
@@ -82,6 +84,31 @@ class BioStudiesIngestTest(unittest.TestCase):
             ["pubmed:20435134", "doi:10.1016/j.ygeno.2010.04.004"],
         )
 
+    def test_doi_links_normalise_url_and_prefixed_forms(self):
+        def link(url, link_type=None):
+            attributes = [{"name": "Type", "value": link_type}] if link_type else []
+            return BIOSTUDIES._link_reference({"url": url, "attributes": attributes})
+
+        for value in ("10.1234/abc", "doi:10.1234/abc", "DOI:10.1234/abc",
+                      "https://doi.org/10.1234/abc", "http://dx.doi.org/10.1234/abc",
+                      "doi:https://doi.org/10.1234/abc"):
+            with self.subTest(value=value):
+                self.assertEqual(link(value, "DOI"), "doi:10.1234/abc")
+        self.assertEqual(link("https://doi.org/10.1234/abc"), "doi:10.1234/abc")
+        # A DOI-typed link whose value is not a DOI falls back to the URL
+        # handling instead of minting a malformed doi: identifier.
+        self.assertEqual(link("https://example.org/paper", "DOI"), "https://example.org/paper")
+        self.assertIsNone(link("not a doi", "DOI"))
+
+        node = BIOSTUDIES.parse_submission({
+            "accno": "S-TEST1",
+            "section": {"type": "Study", "subsections": [{
+                "type": "Publication",
+                "attributes": [{"name": "DOI", "value": "https://doi.org/10.1016/j.cell.2020.01.001"}],
+            }]},
+        })
+        self.assertEqual(node["dcterms:references"], ["doi:10.1016/j.cell.2020.01.001"])
+
     def test_directory_walk_prunes_files_and_europe_pmc(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -97,6 +124,31 @@ class BioStudiesIngestTest(unittest.TestCase):
             found = list(BIOSTUDIES._page_tab_files(root))
 
         self.assertEqual(found, [included / "S-BSST1.json"])
+
+    def test_directory_walk_tolerates_vanished_and_half_written_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            good = root / "S-BSST" / "001" / "S-BSST1"
+            corrupt = root / "S-BSST" / "002" / "S-BSST2"
+            vanished = root / "S-BSST" / "003" / "S-BSST3"
+            for directory in (good, corrupt, vanished):
+                directory.mkdir(parents=True)
+            (good / "S-BSST1.json").write_text('{"accno": "S-BSST1"}')
+            (corrupt / "S-BSST2.json").write_text('{"accno": "S-BSST2", "att')
+            # A submission withdrawn between listing and reading behaves like
+            # a broken symlink: present in the walk, gone on open.
+            (vanished / "S-BSST3.json").symlink_to(vanished / "gone.json")
+
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                documents = list(BIOSTUDIES._input_documents([root]))
+            self.assertEqual([source for source, _ in documents],
+                             [str(good / "S-BSST1.json")])
+            self.assertEqual(stderr.getvalue().count("WARNING: skipping"), 2)
+
+            # Explicitly named files stay strict.
+            with self.assertRaises(ValueError):
+                list(BIOSTUDIES._input_documents([corrupt / "S-BSST2.json"]))
 
     def test_europe_pmc_submission_is_excluded(self):
         self.assertIsNone(

@@ -105,11 +105,18 @@ workflow {
                     def allowed_paths = null
                     if (ingest_spec.download_manifest) {
                         def manifest_file = new File("${params.downloads_path}/${sg}/${ingest_spec.download_manifest}")
+                        if (!manifest_file.exists()) {
+                            error "Missing ingest download manifest ${manifest_file} — has the download stage run for ${sg}?"
+                        }
                         def entries = new JsonSlurper().parse(manifest_file)
-                        if (!(entries instanceof List) || entries.isEmpty()) {
+                        if (!(entries instanceof List) || entries.isEmpty() ||
+                            entries.any { !(it instanceof Map) || !(it.dest instanceof String) || !it.dest }) {
                             error "Empty/invalid ingest download manifest: ${manifest_file}"
                         }
-                        allowed_paths = entries.collect { "${params.downloads_path}/${sg}/${it.dest}".toString() } as Set
+                        // Normalise through file() so the comparison with files()
+                        // results below is not defeated by e.g. a trailing slash
+                        // in the configured downloads path.
+                        allowed_paths = entries.collect { file("${params.downloads_path}/${sg}/${it.dest}").toString() } as Set
                         entries.findAll { !it.optional }.each { entry ->
                             def path = "${params.downloads_path}/${sg}/${entry.dest}"
                             if (!file(path).exists() || file(path).size() == 0) {

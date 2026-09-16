@@ -119,6 +119,11 @@ def unique(values: list[Any]) -> list[Any]:
 
 def identifier(value: Any) -> str | None:
     value = text(value)
+    # Some otherOmicsLinks arrive wrapped as "url:https://...".  Unwrap them
+    # so the URL itself is recorded (and later prefix-normalised) instead of
+    # minting a junk "url:" CURIE node.
+    if value[:4].casefold() == "url:":
+        value = value[4:].strip()
     # Only record references, never file-transfer locations.
     if value.startswith(("https://", "http://")):
         return value

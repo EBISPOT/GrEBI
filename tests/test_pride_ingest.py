@@ -87,6 +87,8 @@ class PRIDEIngestTest(unittest.TestCase):
             "otherOmicsLinks": [
                 "pride.project:PXD001357", "px:PXD001357", "SAMEA12345",
                 "biostudies:S-BSST1", "px:PXD999999", "px:PXD999999",
+                "url:https://www.ncbi.nlm.nih.gov/assembly/GCF_001922835.1",
+                "url:ftp://example.org/file",
                 "ftp://example.org/file", "No links",
             ],
             "references": [{"pubmedID": 0, "doi": "not a doi"}],
@@ -98,6 +100,7 @@ class PRIDEIngestTest(unittest.TestCase):
         self.assertEqual(node["pride:cellType"][0]["grebi:value"], "CL:0000236")
         self.assertEqual(node["dcterms:references"], [
             "biosample:SAMEA12345", "biostudies:S-BSST1", "px:PXD999999",
+            "https://www.ncbi.nlm.nih.gov/assembly/GCF_001922835.1",
         ])
 
     def test_legacy_and_affinity_accessions_have_no_proteomexchange_alias(self):

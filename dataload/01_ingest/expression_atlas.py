@@ -40,7 +40,9 @@ def ontology_id(uri: str) -> str | None:
 
 def read_annotations(stream: TextIO, accession: str) -> dict:
     samples: dict = defaultdict(lambda: defaultdict(set))
-    for number, row in enumerate(csv.reader(stream, delimiter="\t"), 1):
+    # Atlas TSVs are unquoted: without QUOTE_NONE, a free-text value starting
+    # with a double quote would silently swallow the following fields and rows.
+    for number, row in enumerate(csv.reader(stream, delimiter="\t", quoting=csv.QUOTE_NONE), 1):
         if not row:
             continue
         if len(row) < 6 or row[0] != accession or not row[2]:
@@ -168,7 +170,7 @@ def ingest(table: TextIO, configuration: ET.Element, annotations: TextIO,
     taxa = {g["taxon"] for g in groups.values() if g}
     if len(taxa) > 1:
         raise ValueError("Multiple species in a baseline experiment")
-    reader = csv.reader(table, delimiter="\t")
+    reader = csv.reader(table, delimiter="\t", quoting=csv.QUOTE_NONE)
     header = next(reader, [])
     if len(header) < 3 or header[:2] not in (["GeneID", "Gene Name"], ["Gene ID", "Gene Name"]):
         raise ValueError("Expected a gene-level TPM table header")

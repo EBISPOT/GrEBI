@@ -75,6 +75,19 @@ def _first(values: Iterable[str]) -> str | None:
     return next((value for value in values if value), None)
 
 
+def _doi_identifier(value: str) -> str | None:
+    """Normalise bare, ``doi:``-prefixed and doi.org URL forms of a DOI."""
+    stripped = True
+    while stripped:
+        stripped = False
+        for prefix in ("doi:", "https://doi.org/", "http://doi.org/",
+                       "https://dx.doi.org/", "http://dx.doi.org/"):
+            if value[:len(prefix)].casefold() == prefix:
+                value = value[len(prefix):]
+                stripped = True
+    return f"doi:{value}" if DOI_RE.fullmatch(value) else None
+
+
 def _link_reference(link: dict[str, Any]) -> str | None:
     value = str(link.get("url") or "").strip()
     if not value:
@@ -90,8 +103,11 @@ def _link_reference(link: dict[str, Any]) -> str | None:
     if "file" in link_type or parsed_url.scheme.casefold() in {"ftp", "sftp"}:
         return None
 
-    if "doi" in link_type or DOI_RE.fullmatch(value):
-        return f"doi:{value.removeprefix('doi:')}"
+    # DOIs appear bare, ``doi:``/``DOI:``-prefixed, or as doi.org URLs.  A
+    # DOI-typed link whose value is not recognisable as a DOI falls through to
+    # the URL handling below rather than minting a malformed identifier.
+    if doi := _doi_identifier(value):
+        return doi
 
     pmid_match = PMID_RE.fullmatch(value)
     if "pubmed" in link_type or "pmid" in link_type:
@@ -231,8 +247,8 @@ def parse_submission(submission: dict[str, Any]) -> dict[str, Any] | None:
             if pmid_match:
                 references.append(f"pubmed:{pmid_match.group(1)}")
             for doi in _attribute_values(section, "DOI"):
-                if DOI_RE.fullmatch(doi):
-                    references.append(f"doi:{doi}")
+                if reference := _doi_identifier(doi):
+                    references.append(reference)
 
         for attribute in _attributes(section):
             for qualifier in _as_objects(attribute.get("valqual", [])):
@@ -276,14 +292,30 @@ def _page_tab_files(root: Path) -> Iterator[Path]:
             yield directory / expected_name
 
 
+def _load_document(path: Path) -> dict[str, Any]:
+    with path.open(encoding="utf-8") as stream:
+        document = json.load(stream)
+    if not isinstance(document, dict):
+        raise ValueError(f"{path}: expected a JSON object")
+    return document
+
+
 def _input_documents(paths: list[Path]) -> Iterator[tuple[str, dict[str, Any]]]:
     for path in paths:
-        candidates = _page_tab_files(path) if path.is_dir() else iter((path,))
-        for candidate in candidates:
-            with candidate.open(encoding="utf-8") as stream:
-                document = json.load(stream)
-            if not isinstance(document, dict):
-                raise ValueError(f"{candidate}: expected a JSON object")
+        if not path.is_dir():
+            yield str(path), _load_document(path)
+            continue
+        for candidate in _page_tab_files(path):
+            # The public tree updates continuously: a submission listed by the
+            # walk may be republished or withdrawn before it is read.  Skip
+            # vanished or half-written files instead of failing a multi-hour
+            # whole-tree ingest; other errors (permissions, I/O) still raise.
+            try:
+                document = _load_document(candidate)
+            except (FileNotFoundError, NotADirectoryError,
+                    json.JSONDecodeError, UnicodeDecodeError) as error:
+                print(f"WARNING: skipping {candidate}: {error}", file=sys.stderr)
+                continue
             yield str(candidate), document
 
 
