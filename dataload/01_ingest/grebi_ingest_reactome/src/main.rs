@@ -10,6 +10,9 @@ use grebi_shared::prefix_map::PrefixMapBuilder;
 use serde_json::json;
 use serde_json::Value;
 
+mod equivalences;
+use crate::equivalences::equivalences;
+
 fn main() {
 
     let stdin = io::stdin().lock();
@@ -57,45 +60,8 @@ fn main() {
             }
             out_props.insert("grebi:type".to_string(), Value::Array(labels.iter().map(|v| Value::String("reactome:".to_owned() + v.as_str().unwrap())).collect::<Vec<Value>>()));
 
-            let mut equivalences:Vec<Value> = Vec::new();
-
-            if properties.contains_key("stId") {
-                equivalences.push(Value::String("reactome:".to_owned() + properties.get("stId").unwrap().as_str().unwrap()));
-            }
-
-            let p_url = properties.get("url");
-            if p_url.is_some() {
-                let url = p_url.unwrap().as_str().unwrap();
-
-                // if we can compact the url with bioregistry then we have a curie which we can use as the ID
-                let reprefixed = normalise.maybe_reprefix(&url.to_string());
-                if reprefixed.is_some() {
-                    equivalences.push(Value::String(reprefixed.unwrap()));
-                }
-            }
-
-            // see if the identifier works with bioregistry
-            let p_id = properties.get("identifier");
-            if p_id.is_some() {
-                let reprefixed = normalise.maybe_reprefix(&p_id.unwrap().as_str().unwrap().to_owned());
-                if reprefixed.is_some() {
-                    equivalences.push(Value::String(reprefixed.unwrap()));
-                }
-            } else {
-                // try mashing the databaseName and identifier together as a curie and see if it works with bioregistry
-                let p_dbname = properties.get("databaseName");
-                if p_dbname.is_some() && p_id.is_some() {
-                    let curie = p_dbname.unwrap().as_str().unwrap().to_owned() + ":" + p_id.unwrap().as_str().unwrap();
-                    let reprefixed = normalise.maybe_reprefix(&curie);
-                    if reprefixed.is_some() {
-                        equivalences.push(Value::String(reprefixed.unwrap()));
-                    }
-                }
-            }
-
-            if properties.contains_key("taxId") {
-                equivalences.push(Value::String("ncbitaxon:".to_owned() + properties.get("taxId").unwrap().as_str().unwrap()));
-            }
+            let equivalences: Vec<Value> = equivalences(properties, &normalise)
+                .into_iter().map(Value::String).collect();
 
             if equivalences.len() > 0 {
                 out_props.insert("grebi:equivalentTo".to_string(), Value::Array( equivalences));
