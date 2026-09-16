@@ -19,11 +19,11 @@ id: OpenTargets
 enabled: true
 description: "Disease-to-phenotype associations derived from the Open Targets evidence pipeline"
 download:
-- dest: otar/disease_phenotype/
+  - dest: otar/disease_phenotype/
     sources:
     - https://ftp.ebi.ac.uk/pub/databases/opentargets/platform/latest/output/disease_phenotype/disease_phenotype.parquet
 ingests:
-- globs: ["otar/disease_phenotype/*.parquet"]
+  - globs: ["otar/disease_phenotype/*.parquet"]
     command: '
     cat $GREBI_INGEST_FILENAME |
     grebi_parquet2jsonl |
@@ -38,23 +38,127 @@ The `download` section defines which files are needed, and where to download the
 
 The `ingests` section defines preprocessing needed before the file is loaded into GrEBI.
 
-For resources with a changing catalogue, use `download_manifests` instead of
-enumerating their data files in YAML. Each entry supplies catalogue `sources`,
-a `command`, and the destination `dest` for the generated JSON manifest. The
-download stage retrieves the catalogue using the usual path/URL fallbacks, then
-runs the command with `GREBI_DOWNLOAD_FILENAME` pointing to the local catalogue
-and `GREBI_DATALOAD_HOME` pointing to this checkout's `dataload` directory.
-The command emits a JSON array of ordinary `{ "dest": ..., "sources": [...] }`
-download entries. These are merged with static downloads and use the same
-parallel file downloads, fallbacks and retries. Discovery runs on every download
-invocation, including resume; individual successful file downloads remain cached.
-The generated manifest is saved in the download directory for inspection.
+### Catalogue-driven downloads
 
-An ingest can set `download_manifest` to that manifest's relative path, alongside
-its `globs`. Only matching files listed in the current manifest are ingested;
-stale files from removed catalogue entries are ignored without deleting them.
-Missing or empty required manifest-listed files fail the dataload instead of silently
-producing an incomplete graph. See Expression Atlas below for a working example.
+Use `download_manifests` when an upstream resource publishes a catalogue of
+studies or files that changes over time. Instead of maintaining the file list
+in YAML, provide a small resource-specific program that turns that catalogue
+into ordinary download entries. This is an opt-in GrEBI mechanism; existing
+`download` entries still work and can be combined with discovered entries.
+
+The flow is: retrieve catalogue, generate file list, download the listed files,
+then ingest the selected local files. The generator discovers what to download;
+it does not download the study files or produce graph nodes itself.
+
+#### Configure your datasource
+
+This illustrative configuration assumes you implement an `example.py` catalogue
+generator and a separate ingest parser. Replace the example paths and URLs with
+your resource's locations:
+
+```yaml
+id: ExampleResource
+enabled: true
+description: "Example catalogue-driven datasource"
+download_manifests:
+  - dest: example/downloads.json
+    sources:
+      - /nfs/ftp/public/example/catalogue.json
+      - https://example.org/data/catalogue.json
+    command: >-
+      python3 "$GREBI_DATALOAD_HOME/00_download/example.py"
+      --source-root /nfs/ftp/public/example/studies
+      --source-root https://example.org/data/studies
+      -- "$GREBI_DOWNLOAD_FILENAME"
+ingests:
+  - globs: ["example/studies/*.tsv"]
+    download_manifest: example/downloads.json
+    command: >-
+      python3 "$GREBI_DATALOAD_HOME/01_ingest/example.py"
+      -- "$GREBI_INGEST_FILENAME"
+```
+
+The two similarly named settings have different roles:
+
+| Setting | Meaning |
+| --- | --- |
+| `download_manifests` | A list of catalogue-discovery jobs in the datasource config. |
+| `download_manifests[].sources` | Alternative locations of the **upstream catalogue**, tried in order. These are not the study-file locations. |
+| `download_manifests[].command` | A command that reads the local catalogue and writes a generated download list to stdout. |
+| `download_manifests[].dest` | Where to save that **generated list**, relative to this subgraph's download directory. Destinations must be unique across the subgraph's discovery jobs. |
+| `ingests[].download_manifest` | The generated list that restricts the files this ingest may use. It must match the discovery job's `dest`. |
+
+The discovery command runs in a Nextflow task directory with
+`GREBI_DOWNLOAD_FILENAME` pointing to the retrieved local catalogue and
+`GREBI_DATALOAD_HOME` pointing to the checkout's `dataload` directory. Do not
+assume its working directory is the repository root. `--source-root` is an
+argument implemented by the example generator, not a special Nextflow setting;
+your generator can define its own arguments.
+
+#### Write the catalogue generator
+
+Put your generator in `dataload/00_download/`. The
+[Expression Atlas generator](../dataload/00_download/expression_atlas.py) is a
+small working example: it validates accession IDs, selects baseline RNA-seq
+studies and derives three required filenames per study.
+
+Your program must write one **nonempty JSON array**, not JSON Lines, to stdout.
+For example, one entry could be:
+
+```json
+[
+  {
+    "dest": "example/studies/STUDY-1.tsv",
+    "sources": [
+      "/nfs/ftp/public/example/studies/STUDY-1.tsv",
+      "https://example.org/data/studies/STUDY-1.tsv"
+    ]
+  }
+]
+```
+
+Each entry needs a `dest` and a nonempty list of string `sources`. Destinations
+are relative to the subgraph's download directory, must contain only letters,
+digits, underscores, dots, hyphens and slashes, and must not be absolute or
+contain a `..` path component. Local source paths may be absolute or relative
+to `GREBI_HOME`; remote sources are URLs. Validate upstream IDs before using
+them in paths, and emit entries in a stable order.
+
+Write progress messages to stderr so they do not corrupt the JSON. Exit nonzero
+on malformed or unexpectedly empty catalogues instead of silently omitting
+data. An empty generated array is rejected by the workflow. Include companion
+metadata files as well as the files matched by the ingest glob.
+
+Generated entries are merged with static `download` entries by destination;
+local sources are tried before URLs. They use the existing parallel download
+tasks, fallback handling and retries. Files are required by default. An entry
+may set `"optional": true`; a shared destination is optional only if every
+contributing entry marks it optional. Do not mark essential companion files
+optional just to get past a failed download.
+
+#### Select ingest inputs and handle updates
+
+With `ingests[].download_manifest`, a file must both match the ingest's `globs`
+and have its exact relative path listed as a `dest` in the generated manifest.
+Use individual file destinations for this pattern: listing a directory or
+archive-extraction destination does not automatically allow its contents.
+All required manifest-listed files are checked for existence and nonzero size,
+including companions that do not match the ingest glob. Missing or empty
+required files fail the dataload.
+
+This restriction prevents a removed or reclassified study from being ingested
+just because its old files still exist in the download cache. Those files are
+not deleted. Without `download_manifest`, ingestion retains its usual
+glob-only behaviour. Keep expression thresholds and other graph-content
+filters in the YAML ingest command rather than in the download list.
+
+Discovery runs on every download invocation, including `-resume`, so new
+catalogue entries can be found without editing the config. Individual successful
+downloads remain cached: a fresh catalogue does **not** guarantee a fresh copy
+of a file whose URL/path is unchanged. Prefer versioned source locations where
+available; a deliberate full refresh can disable the download task cache using
+`GREBI_NF_EXTRA_ARGS='-cache false'` with `download_local.sh`. Running the dataload
+alone does not refresh the catalogue; run the download stage first.
 
 ### PRIDE project metadata
 
