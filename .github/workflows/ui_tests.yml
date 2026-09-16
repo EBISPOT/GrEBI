@@ -1,0 +1,48 @@
+name: UI Tests
+
+# Unit tests for grebi_ui (Vitest + Testing Library), a couple of minutes on a
+# plain Node runner. The image build in e2e_tests.yml still catches bundle
+# breakage, but only ~10 minutes later.
+
+on:
+  push:
+    branches: [ "dev", "stable" ]
+    paths:
+      - 'webapp/grebi_ui/**'
+      - 'docs/**'
+      - '.github/workflows/ui_tests.yml'
+  pull_request:
+    branches: [ "dev", "stable" ]
+    paths:
+      - 'webapp/grebi_ui/**'
+      - 'docs/**'
+      - '.github/workflows/ui_tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ui-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webapp/grebi_ui
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: webapp/grebi_ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build the bundle
+        run: npm run build:ebi

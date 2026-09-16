@@ -13,12 +13,8 @@
     "@mui/x-date-pickers": "^7.7.0",
     "@reduxjs/toolkit": "^1.8.5",
     "@sigma/edge-curve": "^3.1.0",
-    "@testing-library/jest-dom": "^5.11.4",
-    "@testing-library/react": "^11.1.0",
-    "@testing-library/user-event": "^12.1.10",
-    "@types/jest": "^26.0.15",
     "@types/multimap": "^1.1.2",
-    "@types/node": "^12.0.0",
+    "@types/node": "^22.20.3",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@types/three": "^0.152.1",
@@ -61,7 +57,9 @@
     "start": "dotenv -e .env.$REACT_APP_ENV -e .env -- concurrently -n 'Build,Serve' 'npm run watch' 'node dev_server.mjs'",
     "build:ebi": "REACT_APP_ENV=ebi npm run build",
     "watch:ebi": "REACT_APP_ENV=ebi npm run watch",
-    "start:ebi": "REACT_APP_ENV=ebi npm run start"
+    "start:ebi": "REACT_APP_ENV=ebi npm run start",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "eslintConfig": {
     "extends": [
@@ -82,6 +80,10 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/js-yaml": "^4.0.9",
     "connect-livereload": "^0.6.1",
     "dotenv-cli": "^7.2.1",
@@ -89,12 +91,14 @@
     "express": "^4.18.2",
     "express-http-proxy": "^1.6.3",
     "express-rate-limit": "^7.5.1",
+    "jsdom": "^25.0.1",
     "livereload": "^0.10.3",
     "marked": "^17.0.5",
     "nocache": "^4.0.0",
     "node-fetch": "^3.3.1",
     "nodemon": "^3.1.14",
-    "tailwindcss": "^3.1.8"
+    "tailwindcss": "^3.1.8",
+    "vitest": "^2.1.9"
   },
   "overrides": {
     "qs": "^6.16.0"

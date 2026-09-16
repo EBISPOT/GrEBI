@@ -30,6 +30,10 @@ There are nine test subgraphs, each exercising a different aspect of the pipelin
 | `test_reactome` | Ingests a few real Reactome dump objects and checks a DOID-annotated disease clique-merges into the ontology term |
 | `test_primekg` | Ingests a few real PrimeKG rows and checks their unpadded MONDO/HPO/GO/UBERON ids land on the ontology terms |
 
+The UI also has unit tests (Vitest and Testing Library) that run in a few seconds without any data:
+
+    cd webapp/grebi_ui && npm ci && npm test
+
 ### Prerequisites
 
 You need Docker with the `docker compose` plugin and enough disk space to build the image. Build it locally before running the tests:
