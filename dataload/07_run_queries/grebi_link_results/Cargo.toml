@@ -15,3 +15,5 @@ clap = { version = "4.4.11", features = ["derive"] }
 sha1 = "0.10.6"
 hex = "0.4.3"
 
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

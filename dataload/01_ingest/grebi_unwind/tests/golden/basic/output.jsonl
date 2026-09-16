@@ -1,0 +1,4 @@
+{"id":"study1","genes":"ENSG1","n":1}
+{"id":"study1","genes":"ENSG2","n":1}
+{"id":"study1","genes":{"id":"ENSG3","score":0.5},"n":1}
+{"id":"study3","genes":"ENSG9","tags":["a","b"]}

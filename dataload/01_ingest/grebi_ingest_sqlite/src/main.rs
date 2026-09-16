@@ -1,7 +1,7 @@
 use rusqlite::{params, Connection, Result};
 use serde_json::{json, Value};
 use inflector::Inflector;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use clap::Parser;
 
 #[global_allocator]
@@ -89,8 +89,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn get_schema_info(conn: &Connection) -> Result<HashMap<String, Vec<String>>> {
-    let mut schema_info = HashMap::new();
+fn get_schema_info(conn: &Connection) -> Result<BTreeMap<String, Vec<String>>> {
+    let mut schema_info = BTreeMap::new(); // tables in name order, so the output is deterministic
     let mut stmt = conn.prepare("SELECT name FROM sqlite_master WHERE type='table'")?;
     let tables = stmt.query_map(params![], |row| row.get(0))?;
 

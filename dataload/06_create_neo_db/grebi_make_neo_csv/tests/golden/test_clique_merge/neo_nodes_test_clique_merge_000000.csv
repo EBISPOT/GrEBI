@@ -1,0 +1,6 @@
+grebi:nodeId:ID,:LABEL,grebi:datasources:string[],grebi:subgraph:string,grebi:displayType:string,grebi:curie:string,"biolink:gene_associated_with_condition:string[]","biolink:related_to:string[]","grebi:type:string[]","id:string[]","owl:equivalentClass:string[]","test_cm:name:string[]"
+"test_clique_merge:ex:entity_a_alt","GraphNodebiolink:NamedThing","TestCliqueMerge","test_clique_merge","""biolink:NamedThing""","ex:entity_a_alt",,"ex:entity_bex:entity_c",,"ex:entity_aex:entity_a_alt","ex:entity_aex:entity_a_alt","Entity A AlternateEntity A Primary"
+"test_clique_merge:ex:entity_b","GraphNodebiolink:Gene","TestCliqueMerge","test_clique_merge","""biolink:Gene""","ex:entity_b","ex:entity_c",,,"ex:entity_b",,"Entity B"
+"test_clique_merge:ex:entity_c","GraphNodebiolink:Disease","TestCliqueMerge","test_clique_merge","""biolink:Disease""","ex:entity_c",,,,"ex:entity_c",,"Entity C"
+"test_clique_merge:hgnc:11603","GraphNodebiolink:Gene","TestCliqueMerge","test_clique_merge","""biolink:Gene""","hgnc:11603",,"mondo:0005002",,"hgnc:11603",,"TBX4"
+"test_clique_merge:mondo:0005002","GraphNodebiolink:Disease","TestCliqueMerge","test_clique_merge","""biolink:Disease""","mondo:0005002",,,,"mondo:0005002",,"chronic obstructive pulmonary disease"

@@ -1,0 +1,2 @@
+{"PDB":"1a1q","CHAIN":"A","SP_PRIMARY":"P00533","RES_BEG":1,"xref":{"id":"x1","source":"uniprot","tags":["t"]}}
+{"PDB":"2abc","CHAIN":"B","SP_PRIMARY":["P1","P2"],"xref":[{"id":"x2"},{"noid":true}]}

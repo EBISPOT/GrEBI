@@ -1,0 +1,42 @@
+name: Rust Tests
+
+# Unit tests of the dataload crates and golden tests of every pipeline binary
+# (a binary run on recorded inputs, its outputs compared with recorded ones).
+# The E2E workflow builds the same binaries into the image but never runs
+# `cargo test`.
+
+on:
+  push:
+    branches: [ "dev", "stable" ]
+    paths:
+      - 'dataload/**'
+      - '.github/workflows/rust_tests.yml'
+  pull_request:
+    branches: [ "dev", "stable" ]
+    paths:
+      - 'dataload/**'
+      - '.github/workflows/rust_tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  rust-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dataload
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@1.90.0
+
+      - name: Cache the cargo build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: dataload
+
+      - name: Run the tests
+        run: cargo test --workspace

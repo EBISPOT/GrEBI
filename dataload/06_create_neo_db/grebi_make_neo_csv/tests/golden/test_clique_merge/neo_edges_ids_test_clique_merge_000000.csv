@@ -1,0 +1,7 @@
+:START_ID,:TYPE,:END_ID
+"test_clique_merge:ex:entity_a_alt","sourceId","ex:entity_a"
+"test_clique_merge:ex:entity_a_alt","sourceId","ex:entity_a_alt"
+"test_clique_merge:ex:entity_b","sourceId","ex:entity_b"
+"test_clique_merge:ex:entity_c","sourceId","ex:entity_c"
+"test_clique_merge:hgnc:11603","sourceId","hgnc:11603"
+"test_clique_merge:mondo:0005002","sourceId","mondo:0005002"

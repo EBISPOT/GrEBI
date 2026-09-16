@@ -12,3 +12,6 @@ flate2 = {version="1.0.28", features=["zlib-ng"]}
 serde_json = { version = "1.0.108", features=["preserve_order"] }
 sha1 = "0.10.6"
 hex = "0.4.3"
+
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

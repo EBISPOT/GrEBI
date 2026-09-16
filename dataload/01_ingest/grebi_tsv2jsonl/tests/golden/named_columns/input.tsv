@@ -1,0 +1,4 @@
+# a comment line before the data
+# and another
+id1	a "quoted" label	back\\slash
+id2	short

@@ -1,0 +1,16 @@
+A pilot genome-wide association study of early-onset breast cancer.
+Discovering Genetic Factors for psoriasis through exhaustively searching for significant second order SNP-SNP interactions.
+Genetic Associations with Gestational Duration and Spontaneous Preterm Birth.
+Genome-Wide Association Studies and Meta-Analyses for Congenital Heart Defects.
+Identification of new therapeutic targets for osteoarthritis through genome-wide analyses of UK Biobank data.
+Meta-analysis of Icelandic and UK data sets identifies missense variants in SMO, IL11, COL11A1 and 13 more new loci associated with osteoarthritis.
+Shared Molecular Genetic Mechanisms Underlie Endometriosis and Migraine Comorbidity.
+breast carcinoma
+conotruncal heart malformations
+endometriosis
+migraine disorder
+osteoarthritis, hip
+osteoarthritis, knee
+parental genotype effect measurement
+premature birth
+psoriasis

@@ -85,7 +85,7 @@ pub fn get_subjects_block<'a>(json:&'a [u8])->&'a [u8] {
             continue;
         }
         if json[end] == b']' {
-            return &json[start-1..end];
+            return &json[start-2..end+1]; // the whole array, brackets included
         }
         panic!("unexpected char {} in {}", json[end], String::from_utf8(json.to_vec()).unwrap());
     }
@@ -98,7 +98,7 @@ pub fn get_subjects<'a>(json:&'a [u8])->Vec<&'a [u8]> {
         panic!("could not do quick subject extraction from: {} length {}", String::from_utf8(json.to_vec()).unwrap(), json.len());
     }
 
-    let start = "{\"subjects\":[\"".as_bytes().len();
+    let mut start = "{\"subjects\":[\"".as_bytes().len();
     let mut end = start;
 
     let mut subjs:Vec<&'a [u8]> = Vec::new();
@@ -122,6 +122,9 @@ pub fn get_subjects<'a>(json:&'a [u8])->Vec<&'a [u8]> {
                 panic!();
             }
             end = end + 1;
+            // the next subject starts after its opening quote (it used to start at the
+            // first subject, so every subject after the first came back with the ones before it)
+            start = end;
             continue;
         }
         if json[end] == b']' {
@@ -180,6 +183,51 @@ pub fn find_strings<'a>(json:&'a [u8])->Vec<(usize, usize)> {
 }
 
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn get_id_reads_node_and_edge_ids_without_parsing() {
+        assert_eq!(get_id(br#"{"grebi:nodeId":"mondo:0005083","grebi:datasources":["x"]}"#), b"mondo:0005083");
+        assert_eq!(get_id(br#"{"grebi:edgeId":"e1","grebi:type":"t"}"#), b"e1");
+        // an escaped quote inside the id is skipped over, escape sequence and all
+        assert_eq!(get_id(br#"{"grebi:nodeId":"a\"b","x":1}"#), br#"a\"b"#);
+    }
 
+    #[test]
+    #[should_panic(expected = "could not do quick id extraction")]
+    fn get_id_needs_the_id_first() {
+        get_id(br#"{"grebi:datasources":[],"grebi:nodeId":"x"}"#);
+    }
 
+    #[test]
+    fn get_subject_and_get_subjects() {
+        assert_eq!(get_subject(br#"{"subject":"efo:1","predicate":"p"}"#), b"efo:1");
+        assert_eq!(get_subjects(br#"{"subjects":["a","b:2","c"],"x":1}"#), vec![b"a" as &[u8], b"b:2", b"c"]);
+        assert_eq!(get_subjects(br#"{"subjects":["only"]}"#), vec![b"only" as &[u8]]);
+        assert_eq!(get_subjects_block(br#"{"subjects":["a","b"],"x":1}"#), br#"["a","b"]"#);
+    }
+
+    #[test]
+    #[should_panic(expected = "could not do quick subject extraction")]
+    fn get_subjects_needs_the_subjects_first() {
+        get_subjects(br#"{"x":1,"subjects":["a"]}"#);
+    }
+
+    #[test]
+    fn find_strings_returns_the_bounds_of_every_string() {
+        let json = br#"{"a":"b","c":["d\"e",1,"\u00e9f"]}"#;
+        let found: Vec<&[u8]> = find_strings(json).into_iter().map(|(s, e)| &json[s..e]).collect();
+        assert_eq!(found, vec![b"a" as &[u8], b"b", b"c", br#"d\"e"#, br#"\u00e9f"#]);
+        assert!(find_strings(b"[1,2,null]").is_empty());
+        assert!(find_strings(b"").is_empty());
+    }
+
+    #[test]
+    fn newlines_and_tabs_become_spaces() {
+        assert_eq!(filter_newlines(&b'\n'), b' ');
+        assert_eq!(filter_newlines(&b'\t'), b' ');
+        assert_eq!(filter_newlines(&b'x'), b'x');
+    }
+}

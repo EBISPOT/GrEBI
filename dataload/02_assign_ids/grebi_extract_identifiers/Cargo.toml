@@ -11,3 +11,5 @@ csv = "1.3.0"
 lmdb-zero = "0.4.4"
 jemallocator = "0.5.4"
 
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

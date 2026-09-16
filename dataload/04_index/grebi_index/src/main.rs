@@ -3,7 +3,7 @@ use grebi_shared::get_id;
 use grebi_shared::json_lexer::JsonToken;
 use serde_json::Value;
 use std::collections::BTreeSet;
-use std::collections::HashMap;
+use std::collections::BTreeMap; // sorted, so the metadata has a stable key order
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufReader;
@@ -54,10 +54,10 @@ fn main() {
     let stdin = io::stdin().lock();
     let mut reader = BufReader::new(stdin);
 
-    let mut entity_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
-    let mut edge_props_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
-    let mut types_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
-    let mut node_counts_by_datasource:HashMap<Vec<u8>,i64> = HashMap::new();
+    let mut entity_props_to_count:BTreeMap<Vec<u8>,i64> = BTreeMap::new();
+    let mut edge_props_to_count:BTreeMap<Vec<u8>,i64> = BTreeMap::new();
+    let mut types_to_count:BTreeMap<Vec<u8>,i64> = BTreeMap::new();
+    let mut node_counts_by_datasource:BTreeMap<Vec<u8>,i64> = BTreeMap::new();
     let mut all_names:BTreeSet<Vec<u8>> = BTreeSet::new();
     let mut all_ids:BTreeSet<Vec<u8>> = BTreeSet::new();
 
@@ -81,7 +81,7 @@ fn main() {
     eprintln!("Tracking {} datasource IDs for metadata enrichment", datasource_ids.len());
 
     // Collect properties for entities that match datasource IDs
-    let mut datasource_entity_props:HashMap<Vec<u8>, Vec<u8>> = HashMap::new();
+    let mut datasource_entity_props:BTreeMap<Vec<u8>, Vec<u8>> = BTreeMap::new();
 
     let mut graph_metadata_writer = BufWriter::new(File::create(&args.out_graph_metadata_json_path).unwrap());
     let mut metadata_writer = BufWriter::new(File::create(&args.out_entity_metadata_jsonl_path).unwrap());
@@ -279,20 +279,20 @@ fn main() {
                     return (String::from_utf8(k.to_vec()).unwrap(), json!({
                         "count": v
                     }))
-            }).collect::<HashMap<String,serde_json::Value>>(),
+            }).collect::<BTreeMap<String,serde_json::Value>>(),
             "edge_props": edge_props_to_count.iter().map(|(k,v)| {
                     return (String::from_utf8(k.to_vec()).unwrap(), json!({
                         "count": v
                     }))
-            }).collect::<HashMap<String,serde_json::Value>>(),
+            }).collect::<BTreeMap<String,serde_json::Value>>(),
             "types": types_to_count.iter().map(|(k,v)| {
                     return (String::from_utf8(k.to_vec()).unwrap(), json!({
                         "count": v
                     }))
-            }).collect::<HashMap<String,serde_json::Value>>(),
+            }).collect::<BTreeMap<String,serde_json::Value>>(),
             "node_counts_by_datasource": node_counts_by_datasource.iter().map(|(k,v)| {
                     return (String::from_utf8(k.to_vec()).unwrap(), json!(v))
-            }).collect::<HashMap<String,serde_json::Value>>(),
+            }).collect::<BTreeMap<String,serde_json::Value>>(),
         });
         if let Some(ref mut config_json) = subgraph_config {
             // Enrich datasource configs with properties from their graph entities

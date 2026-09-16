@@ -1,0 +1,9 @@
+#curie_map:
+#  MONDO: http://purl.obolibrary.org/obo/MONDO_
+#  DOID: http://purl.obolibrary.org/obo/DOID_
+#  skos: http://www.w3.org/2004/02/skos/core#
+#  ex: http://example.org
+#mapping_set_id: https://example.org/mappings
+subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	confidence
+MONDO:0005083	psoriasis	skos:exactMatch	DOID:8893	psoriasis	semapv:LexicalMatching	0.95
+MONDO:0004979	asthma	skos:closeMatch	ex:asthma	asthma "quoted"	semapv:ManualMappingCuration

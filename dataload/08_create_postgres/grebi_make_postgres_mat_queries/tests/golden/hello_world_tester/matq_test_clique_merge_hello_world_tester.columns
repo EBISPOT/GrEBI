@@ -1,0 +1,3 @@
+row_number INT NOT NULL
+"message" TEXT
+payload BYTEA NOT NULL

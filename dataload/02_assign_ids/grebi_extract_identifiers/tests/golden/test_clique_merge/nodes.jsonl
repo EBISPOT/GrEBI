@@ -1,0 +1,6 @@
+{"id":"ex:entity_a","test_cm:name":"Entity A Primary","grebi:type":["biolink:NamedThing"]}
+{"id":"ex:entity_a_alt","test_cm:name":"Entity A Alternate","owl:equivalentClass":["ex:entity_a"],"grebi:type":["biolink:NamedThing"]}
+{"id":"ex:entity_b","test_cm:name":"Entity B","grebi:type":["biolink:Gene"]}
+{"id":"ex:entity_c","test_cm:name":"Entity C","grebi:type":["biolink:Disease"]}
+{"id":"mondo:0005002","test_cm:name":"chronic obstructive pulmonary disease","grebi:type":["biolink:Disease"]}
+{"id":"hgnc:11603","test_cm:name":"TBX4","grebi:type":["biolink:Gene"]}

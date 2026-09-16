@@ -1,0 +1,7 @@
+"grebi:nodeId" TEXT
+"grebi:name" TEXT
+"grebi:type" TEXT[] NOT NULL DEFAULT '{}'
+"grebi:datasources" TEXT[] NOT NULL DEFAULT '{}'
+"grebi:sourceIds" TEXT[] DEFAULT '{}'
+"ols:curie" TEXT
+"grebi:curie" TEXT

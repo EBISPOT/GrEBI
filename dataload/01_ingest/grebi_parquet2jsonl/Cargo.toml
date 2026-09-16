@@ -9,3 +9,5 @@ arrow-json = "59"
 parquet = { version = "59", features = ["arrow"] }
 bytes = "1"
 
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

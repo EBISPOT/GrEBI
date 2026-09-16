@@ -1,0 +1,2 @@
+{"grebi:hashId":"2f328abe1555e07b9a34562071e41b26e8bee422","pdbe:CHAIN":"A","pdbe:SP_PRIMARY":"uniprot:P00533","pdbe:xref":{"grebi:value":"x1","grebi:properties":{"source":["uniprot"],"tags":["t"]}},"id":"1a1q"}
+{"grebi:hashId":"86dbd9e1e51035c7c09013801a48f56d26947ed0","pdbe:CHAIN":"B","pdbe:SP_PRIMARY":["uniprot:P1","uniprot:P2"],"pdbe:xref":[{"grebi:value":"x2","grebi:properties":{}},{"noid":true}],"id":"2abc"}

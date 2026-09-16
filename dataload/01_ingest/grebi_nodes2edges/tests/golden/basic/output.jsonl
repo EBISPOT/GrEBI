@@ -1,0 +1,6 @@
+{"id":"a","ex:relatedTo":{"grebi:value":"b","grebi:properties":{"score":1,"source":"s"}}}
+{"id":"a","ex:relatedTo":{"grebi:value":"d","grebi:properties":{"note":"four edges"}}}
+{"id":"a","ex:relatedTo":{"grebi:value":"e","grebi:properties":{"note":"four edges"}}}
+{"id":"c","ex:relatedTo":{"grebi:value":"d","grebi:properties":{"note":"four edges"}}}
+{"id":"c","ex:relatedTo":{"grebi:value":"e","grebi:properties":{"note":"four edges"}}}
+{"id":"x","ex:relatedTo":{"grebi:value":7,"grebi:properties":{}}}

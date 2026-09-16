@@ -1,0 +1,1 @@
+CREATE INDEX "idx_matq_test_clique_merge_hello_world_tester_row" ON "matq_test_clique_merge_hello_world_tester" USING btree (row_number);

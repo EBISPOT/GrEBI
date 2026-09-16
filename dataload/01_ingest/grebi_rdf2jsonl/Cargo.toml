@@ -15,4 +15,5 @@ sophia_api = "0.7.2"
 sophia_xml = "0.7.2"
 grebi_shared = { path = "../../grebi_shared" }
 
-
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

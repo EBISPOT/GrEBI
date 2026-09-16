@@ -1,0 +1,4 @@
+{"id":"g1","kind":"gene","junk":"drop me","symbol":"BRCA2"}
+{"id":"p1","kind":"protein","symbol":"BRCA2"}
+{"id":"g2","kind":["gene"],"symbol":"TP53"}
+{"id":"g3","kind":"gene"}

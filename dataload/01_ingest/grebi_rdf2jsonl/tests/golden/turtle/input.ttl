@@ -1,0 +1,17 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:a rdf:type ex:Gene ;
+    rdfs:label "Gene A" ;
+    ex:partOf ex:b ;
+    ex:hasName ex:n1 ;
+    ex:hasSecret ex:s1 ;
+    ex:count 3 .
+ex:n1 rdf:type ex:Name ;
+    ex:value "alpha"@en ;
+    ex:source ex:src .
+ex:s1 rdf:type ex:Secret ;
+    rdfs:label "hidden" .
+ex:b rdf:type ex:Gene ;
+    rdfs:label "Gene B" .

@@ -1,0 +1,4 @@
+{"testdb:id":"1","testdb:symbol":"BRCA2","testdb:species_id":"testdb:species:9606","testdb:score":"0.5","testdb:blob":"cafe","grebi:type":"testdb:gene","id":["testdb:gene:1"]}
+{"testdb:id":"2","testdb:symbol":"Trp53","testdb:species_id":"testdb:species:10090","testdb:note":"a note","grebi:type":"testdb:gene","id":["testdb:gene:2"]}
+{"testdb:id":"9606","testdb:name":"human","grebi:type":"testdb:species","id":["testdb:species:9606"]}
+{"testdb:id":"10090","testdb:name":"mouse","grebi:type":"testdb:species","id":["testdb:species:10090"]}

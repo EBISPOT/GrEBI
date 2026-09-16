@@ -1,0 +1,9 @@
+"grebi:edgeId" TEXT
+"grebi:type" TEXT NOT NULL
+"grebi:fromNodeId" TEXT NOT NULL
+"grebi:toNodeId" TEXT NOT NULL
+"grebi:datasources" TEXT[] NOT NULL DEFAULT '{}'
+"grebi:subgraph" TEXT
+"_refs" TEXT
+"grebi:fromSourceIds" TEXT[] DEFAULT '{}'
+"test_cm:id" TEXT[]

@@ -235,3 +235,117 @@ impl<'a> JsonParser<'a> {
     }
 
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn walks_an_object_field_by_field() {
+        let json = br#"{"id":"x","n":-2.5,"flags":[true,false,null],"nested":{"k":"v"}}"#;
+        let mut p = JsonParser::parse(json);
+        p.begin_object();
+        assert_eq!(p.name(), b"id");
+        assert_eq!(p.string(), b"x");
+        assert_eq!(p.name(), b"n");
+        assert_eq!(p.number(), b"-2.5");
+        assert_eq!(p.name(), b"flags");
+        p.begin_array();
+        assert_eq!(p.value(), b"true");
+        assert_eq!(p.value(), b"false");
+        assert_eq!(p.value(), b"null");
+        assert_eq!(p.peek().kind, JsonTokenType::EndArray);
+        p.end_array();
+        assert_eq!(p.name(), b"nested");
+        assert_eq!(p.value(), br#"{"k":"v"}"#, "a nested value is returned as its exact slice");
+        assert_eq!(p.peek().kind, JsonTokenType::EndObject);
+        p.end_object();
+    }
+
+    #[test]
+    fn value_returns_the_exact_slice_of_any_kind() {
+        let json = br#"["s",1,{"a":[1,{"b":2}]},[[]],true]"#;
+        let mut p = JsonParser::parse(json);
+        p.begin_array();
+        assert_eq!(p.value(), br#""s""#, "strings keep their quotes");
+        assert_eq!(p.value(), b"1");
+        assert_eq!(p.value(), br#"{"a":[1,{"b":2}]}"#);
+        assert_eq!(p.value(), b"[[]]");
+        assert_eq!(p.value(), b"true");
+        p.end_array();
+    }
+
+    #[test]
+    fn quoted_variants_keep_the_quotes_and_plain_ones_drop_them() {
+        let mut p = JsonParser::parse(br#"{"k":"v"}"#);
+        p.begin_object();
+        assert_eq!(p.quoted_name(), br#""k""#);
+        assert_eq!(p.quoted_string(), br#""v""#);
+        p.end_object();
+
+        let mut p = JsonParser::parse(br#"{"k":"v"}"#);
+        p.begin_object();
+        assert_eq!(p.name(), b"k");
+        assert_eq!(p.string(), b"v");
+        p.end_object();
+    }
+
+    #[test]
+    fn escapes_are_left_as_they_are_in_the_source() {
+        let mut p = JsonParser::parse(br#"{"a\"b":"c\\d\u00e9"}"#);
+        p.begin_object();
+        assert_eq!(p.name(), br#"a\"b"#);
+        assert_eq!(p.string(), br#"c\\d\u00e9"#);
+        p.end_object();
+    }
+
+    #[test]
+    fn mark_and_rewind_replay_from_the_saved_position() {
+        let mut p = JsonParser::parse(br#"{"a":[1,2],"b":3}"#);
+        p.begin_object();
+        assert_eq!(p.name(), b"a");
+        p.mark();
+        assert_eq!(p.value(), b"[1,2]");
+        assert_eq!(p.name(), b"b");
+        p.rewind();
+        assert_eq!(p.value(), b"[1,2]", "the array is read again after rewinding");
+        assert_eq!(p.name(), b"b");
+        assert_eq!(p.number(), b"3");
+        p.end_object();
+    }
+
+    #[test]
+    fn empty_containers() {
+        let mut p = JsonParser::parse(br#"{"a":{},"b":[]}"#);
+        p.begin_object();
+        assert_eq!(p.name(), b"a");
+        assert_eq!(p.value(), b"{}");
+        assert_eq!(p.name(), b"b");
+        p.begin_array();
+        p.end_array();
+        p.end_object();
+    }
+
+    #[test]
+    #[should_panic(expected = "expected object")]
+    fn begin_object_on_an_array_panics() {
+        JsonParser::parse(b"[]").begin_object();
+    }
+
+    #[test]
+    #[should_panic(expected = "Expected EndObject")]
+    fn end_object_before_the_end_panics() {
+        let mut p = JsonParser::parse(br#"{"a":1}"#);
+        p.begin_object();
+        p.end_object();
+    }
+
+    #[test]
+    #[should_panic(expected = "Expected StartString for object entry name")]
+    fn a_name_must_be_a_string() {
+        let mut p = JsonParser::parse(b"{1:2}");
+        p.begin_object();
+        p.name();
+    }
+}

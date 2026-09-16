@@ -103,3 +103,101 @@ impl<W: Write> PgCopyWriter<W> {
         self.row_count
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HEADER: &[u8] = b"PGCOPY\n\xff\r\n\0\0\0\0\0\0\0\0\0";
+
+    fn body(w: PgCopyWriter<Vec<u8>>) -> Vec<u8> {
+        // the trailer is a -1 field count
+        let mut out = w.writer.clone();
+        out.extend_from_slice(&(-1i16).to_be_bytes());
+        out
+    }
+
+    #[test]
+    fn writes_the_header_and_the_trailer_and_counts_rows() {
+        let mut w = PgCopyWriter::new(Vec::new());
+        assert_eq!(w.writer, HEADER);
+        w.begin_row(1);
+        w.write_null();
+        w.begin_row(1);
+        w.write_null();
+        let expected = [HEADER, &[0, 1, 0xff, 0xff, 0xff, 0xff, 0, 1, 0xff, 0xff, 0xff, 0xff], &[0xff, 0xff]].concat();
+        let snapshot = w.writer.clone();
+        assert_eq!(w.finish(), 2);
+        assert_eq!([snapshot, (-1i16).to_be_bytes().to_vec()].concat(), expected);
+    }
+
+    #[test]
+    fn scalar_fields_are_length_prefixed_big_endian() {
+        let mut w = PgCopyWriter::new(Vec::new());
+        w.begin_row(4);
+        w.write_text("hi");
+        w.write_int32(-2);
+        w.write_int64(3);
+        w.write_float64(1.5);
+        let mut expected = HEADER.to_vec();
+        expected.extend_from_slice(&[0, 4]);
+        expected.extend_from_slice(&[0, 0, 0, 2, b'h', b'i']);
+        expected.extend_from_slice(&[0, 0, 0, 4, 0xff, 0xff, 0xff, 0xfe]);
+        expected.extend_from_slice(&[0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 3]);
+        expected.extend_from_slice(&[0, 0, 0, 8]);
+        expected.extend_from_slice(&1.5f64.to_be_bytes());
+        expected.extend_from_slice(&[0xff, 0xff]);
+        assert_eq!(body(w), expected);
+    }
+
+    #[test]
+    fn jsonb_is_version_one_plus_the_text() {
+        let mut w = PgCopyWriter::new(Vec::new());
+        w.begin_row(1);
+        w.write_jsonb("{\"a\":1}");
+        let mut expected = HEADER.to_vec();
+        expected.extend_from_slice(&[0, 1, 0, 0, 0, 8, 1]);
+        expected.extend_from_slice(b"{\"a\":1}");
+        expected.extend_from_slice(&[0xff, 0xff]);
+        assert_eq!(body(w), expected);
+    }
+
+    #[test]
+    fn text_arrays_use_the_one_dimensional_array_encoding() {
+        let mut w = PgCopyWriter::new(Vec::new());
+        w.begin_row(1);
+        w.write_text_array(&["a", "bc"]);
+        let mut elems = Vec::new();
+        elems.extend_from_slice(&1i32.to_be_bytes()); // ndim
+        elems.extend_from_slice(&0i32.to_be_bytes()); // no null bitmap
+        elems.extend_from_slice(&PG_TEXT_OID.to_be_bytes());
+        elems.extend_from_slice(&2i32.to_be_bytes()); // length
+        elems.extend_from_slice(&1i32.to_be_bytes()); // lower bound
+        elems.extend_from_slice(&[0, 0, 0, 1, b'a', 0, 0, 0, 2, b'b', b'c']);
+        let mut expected = HEADER.to_vec();
+        expected.extend_from_slice(&[0, 1]);
+        expected.extend_from_slice(&(elems.len() as i32).to_be_bytes());
+        expected.extend_from_slice(&elems);
+        expected.extend_from_slice(&[0xff, 0xff]);
+        assert_eq!(body(w), expected);
+
+        let mut w = PgCopyWriter::new(Vec::new());
+        w.begin_row(1);
+        w.write_text_array(&[]);
+        assert_eq!(&body(w)[HEADER.len() + 2..HEADER.len() + 6], &20i32.to_be_bytes(), "an empty array is just its 20 header bytes");
+    }
+
+    #[test]
+    fn vectors_use_the_pgvector_send_format() {
+        let mut w = PgCopyWriter::new(Vec::new());
+        w.begin_row(1);
+        w.write_vector_f32(&[1.0, -0.5]);
+        let mut expected = HEADER.to_vec();
+        expected.extend_from_slice(&[0, 1, 0, 0, 0, 12, 0, 2, 0, 0]);
+        expected.extend_from_slice(&1.0f32.to_be_bytes());
+        expected.extend_from_slice(&(-0.5f32).to_be_bytes());
+        expected.extend_from_slice(&[0xff, 0xff]);
+        assert_eq!(body(w), expected);
+    }
+}

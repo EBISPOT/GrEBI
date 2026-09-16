@@ -274,7 +274,11 @@ fn write_subjects(
 
     let start_time2 = std::time::Instant::now();
 
-    'write_subjs: for s in &ds.gw_subjects().unwrap() {
+    // subjects in a deterministic order (the graph's own set is hash ordered), so
+    // the output is reproducible run to run
+    let mut subjects:Vec<Term<Rc<str>>> = ds.gw_subjects().unwrap().into_iter().collect();
+    subjects.sort_by(|a, b| a.value().to_string().cmp(&b.value().to_string()));
+    'write_subjs: for s in &subjects {
 
         if s.kind() != Iri {
             continue; 
@@ -349,7 +353,11 @@ fn term_to_json(
     reif_value_preds:&BTreeSet<String>
 ) -> Value {
 
-    let triples = ds.triples_matching(term, &ANY, &ANY);
+    // triples in a deterministic order (the graph's index is hash ordered), so the
+    // properties and their values come out in the same order run to run
+    let mut triples:Vec<_> = ds.triples_matching(term, &ANY, &ANY).map(|t| t.unwrap()).collect();
+    triples.sort_by(|a, b| a.p().value().to_string().cmp(&b.p().value().to_string())
+        .then_with(|| a.o().value().to_string().cmp(&b.o().value().to_string())));
 
     let mut json:Map<String,Value> = Map::new();
 
@@ -359,7 +367,7 @@ fn term_to_json(
 
     for t in triples {
 
-        let tu = t.unwrap();
+        let tu = t;
 
         let tu_p = tu.p();
 

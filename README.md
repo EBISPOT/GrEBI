@@ -38,6 +38,11 @@ So does the API (JUnit and Mockito): the routes and the MCP server run over mock
 
     cd webapp/grebi_api && mvn verify
 
+And so do the Rust dataload crates. The shared library has unit tests, and every pipeline binary has golden tests: the built binary runs on recorded inputs (mostly lifted from the E2E test subgraphs) and its output must match the recorded output byte for byte. The cases live in each crate's `tests/golden/`. When a change to a binary is intended, rerun with `UPDATE_GOLDEN=1` to rewrite the recorded outputs, then review the diff before committing:
+
+    cd dataload && cargo test --workspace
+    cd dataload && UPDATE_GOLDEN=1 cargo test -p grebi_merge
+
 ### Prerequisites
 
 You need Docker with the `docker compose` plugin and enough disk space to build the image. Build it locally before running the tests:

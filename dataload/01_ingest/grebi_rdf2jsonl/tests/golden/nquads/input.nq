@@ -1,0 +1,4 @@
+<http://example.org/a> <http://www.w3.org/2000/01/rdf-schema#label> "A kept" <http://example.org/graphs/keep> .
+<http://example.org/a> <http://example.org/partOf> <http://example.org/b> <http://example.org/graphs/keep> .
+<http://example.org/b> <http://www.w3.org/2000/01/rdf-schema#label> "B dropped" <http://example.org/graphs/drop> .
+<http://example.org/c> <http://www.w3.org/2000/01/rdf-schema#label> "C kept" <http://example.org/graphs/keep> .

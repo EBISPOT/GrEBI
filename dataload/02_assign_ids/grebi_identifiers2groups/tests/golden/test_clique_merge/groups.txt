@@ -1,0 +1,10 @@
+biolink:broad_match	ols:directAncestor	skos:broadMatch	skos:broader
+biolink:disease_has_location	efo:has_disease_location
+biolink:gene_to_disease_association	ncit:Gene_Associated_With_Disease
+biolink:subclass_of	rdfs:subPropertyOf	ols:directParent	rdfs:subClassOf
+ex:entity_a_alt	ex:entity_a
+grebi:description	monarch:description	robokop:description	otar:description	iao:definition	ols:definition	iao:0000115
+grebi:name	reactome:displayName	ncit:Preferred_Name	dcterms:title	monarch:name	robokop:name	rdfs:label	impc:name	ols:label	otar:name
+grebi:synonym	oboinowl:hasExactSynonym	iao:alternative_label	dcterms:alternative	monarch:synonym	otar:synonyms	ols:synonym
+mondo:0000001	ogms:0000031
+rdfs:isDefinedBy	ols:ontologyIri	ols:ontologyId

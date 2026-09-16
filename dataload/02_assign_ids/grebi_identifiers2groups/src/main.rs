@@ -120,29 +120,25 @@ fn main() {
 	let mut n2 = 0;
 
 
-	for group in group_to_entities {
-
+	// groups come out in a deterministic order (by their first id) rather than the
+	// hash map's, and ids of equal score in a deterministic order too, so the output
+	// is reproducible run to run
+	let mut groups:Vec<Vec<&Vec<u8>>> = Vec::with_capacity(group_to_entities.len());
+	for group in &group_to_entities {
 		if group.1.len() == 1 {
-			// this is a unique id with no equivalences, no need to
-			// write it as a group.
 			continue;
 		}
-
 		if group.1.len() > 50 {
 			eprintln!("warning: group {} has {} members", group.0, group.1.len());
 		}
-
-		n2 = n2 + 1;
-
-		// writer.write_all("group_".as_bytes()).unwrap();
-		// writer.write_all(group.0.to_string().as_bytes()).unwrap();
-		// writer.write_all("\t".as_bytes()).unwrap();
-
 		let mut sorted_ids:Vec<&Vec<u8>> = group.1.iter().collect();
-		sorted_ids.sort_unstable_by(|a, b| id_score(a).cmp(&id_score(b)));
-
+		sorted_ids.sort_unstable_by(|a, b| id_score(a).cmp(&id_score(b)).then_with(|| a.cmp(b)));
+		groups.push(sorted_ids);
+	}
+	groups.sort_unstable_by(|a, b| a[0].cmp(b[0]));
+	for sorted_ids in groups {
+		n2 = n2 + 1;
 		let mut is_first_value = true;
-
 		for entity in sorted_ids {
 			if is_first_value {
 				is_first_value = false;
@@ -151,10 +147,8 @@ fn main() {
 			}
 			writer.write_all(entity.as_slice()).unwrap();
 		}
-
 		writer.write_all("\n".as_bytes()).unwrap();
 	}
-
 	eprintln!("Wrote {} groups in {} seconds", n2, start_time2.elapsed().as_secs());
 
 }

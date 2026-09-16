@@ -11,3 +11,5 @@ grebi_shared = { path = "../../grebi_shared" }
 flate2 = {version="1.0.28", features=["zlib-ng"]}
 serde_json = { version = "1.0.108", features=["preserve_order"] }
 
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

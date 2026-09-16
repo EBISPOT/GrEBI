@@ -12,4 +12,5 @@ jemallocator = "0.5.4"
 sha1 = "0.10.6"
 hex = "0.4.3"
 
-
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

@@ -1,0 +1,5 @@
+{"grebi:nodeId":"ex:entity_a_alt","grebi:datasources":["TestCliqueMerge"],"grebi:sourceIds":["ex:entity_a","ex:entity_a_alt"],"grebi:type":["biolink:NamedThing"]}
+{"grebi:nodeId":"ex:entity_b","grebi:datasources":["TestCliqueMerge"],"grebi:sourceIds":["ex:entity_b"],"grebi:type":["biolink:Gene"]}
+{"grebi:nodeId":"ex:entity_c","grebi:datasources":["TestCliqueMerge"],"grebi:sourceIds":["ex:entity_c"],"grebi:type":["biolink:Disease"]}
+{"grebi:nodeId":"hgnc:11603","grebi:datasources":["TestCliqueMerge"],"grebi:sourceIds":["hgnc:11603"],"grebi:type":["biolink:Gene"]}
+{"grebi:nodeId":"mondo:0005002","grebi:datasources":["TestCliqueMerge"],"grebi:sourceIds":["mondo:0005002"],"grebi:type":["biolink:Disease"]}

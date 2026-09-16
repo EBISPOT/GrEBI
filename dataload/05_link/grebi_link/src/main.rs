@@ -2,7 +2,7 @@
 use std::ascii::escape_default;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::collections::HashMap;
+use std::collections::HashMap; // only for the groups lookup; the metadata uses sorted maps so its key order is stable
 use std::fs::File;
 use std::hash::Hash;
 use std::io::BufWriter;
@@ -71,13 +71,13 @@ struct Args {
 }
 
 
-type EdgeSummaryTable = HashMap<
+type EdgeSummaryTable = BTreeMap<
     String, /* src node type signature */
-    HashMap<
+    BTreeMap<
         String /* edge type */,
-        HashMap<
+        BTreeMap<
             String, /* dest node type signature */
-            HashMap<
+            BTreeMap<
                 String, /* set of datasources */
                 u64 /* count */
             >
@@ -119,8 +119,8 @@ fn main() -> std::io::Result<()> {
 
     let mut embedding_model2dim:BTreeMap<Vec<u8>, usize> = BTreeMap::new();
 
-    let mut displaytype_to_count:HashMap<Vec<u8>, i64> = HashMap::new();
-    let mut edge_counts_by_datasource:HashMap<Vec<u8>, u64> = HashMap::new();
+    let mut displaytype_to_count:BTreeMap<Vec<u8>, i64> = BTreeMap::new();
+    let mut edge_counts_by_datasource:BTreeMap<Vec<u8>, u64> = BTreeMap::new();
 
     let node_metadata = load_metadata_mapping_table::load_metadata_mapping_table(&args.in_metadata_jsonl);
 
@@ -128,13 +128,13 @@ fn main() -> std::io::Result<()> {
     let prefix_map = {
         let rdr = BufReader::new(File::open(&args.in_prefix_map_json).unwrap());
         let mut builder = PrefixMapBuilder::new();
-        serde_json::from_reader::<_, HashMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
+        serde_json::from_reader::<_, BTreeMap<String, String>>(rdr).unwrap().into_iter().for_each(|(k, v)| {
             builder.add_mapping(k, v);
         });
         builder.build()
     };
 
-    let mut types_to_count:HashMap<Vec<u8>,i64> = HashMap::new();
+    let mut types_to_count:BTreeMap<Vec<u8>,i64> = BTreeMap::new();
     {
         let summary_json:Map<String, Value> = serde_json::from_reader(File::open(&args.in_graph_metadata_json).unwrap()).unwrap();
         for (k, v) in summary_json["types"].as_object().unwrap() {
@@ -154,7 +154,7 @@ fn main() -> std::io::Result<()> {
     let summary_file = File::create(args.out_graph_metadata_json).unwrap();
     let mut graph_metadata_writer = BufWriter::new(summary_file);
 
-    let mut edge_summary:EdgeSummaryTable = HashMap::new();
+    let mut edge_summary:EdgeSummaryTable = BTreeMap::new();
 
     let mut all_entity_props:BTreeSet<Vec<u8>> = BTreeSet::new();
     let mut all_edge_props:BTreeSet<Vec<u8>> = BTreeSet::new();
@@ -318,14 +318,14 @@ fn main() -> std::io::Result<()> {
             return (String::from_utf8(k.to_vec()).unwrap(), json!({
                 "count": v
             }))
-        }).collect::<HashMap<String,serde_json::Value>>(),
+        }).collect::<BTreeMap<String,serde_json::Value>>(),
         "edges": edge_summary,
         "edge_counts_by_datasource": edge_counts_by_datasource.iter().map(|(k,v)| {
             return (String::from_utf8(k.to_vec()).unwrap(), json!(*v))
-        }).collect::<HashMap<String,serde_json::Value>>(),
+        }).collect::<BTreeMap<String,serde_json::Value>>(),
         "embedding_models2dims": embedding_model2dim.iter().map(|(k,v)| {
             return (String::from_utf8(k.to_vec()).unwrap(), json!(*v));
-        }).collect::<HashMap<String,serde_json::Value>>()
+        }).collect::<BTreeMap<String,serde_json::Value>>()
     })).unwrap().as_bytes()).unwrap();
 
     graph_metadata_writer.flush().unwrap();
@@ -333,7 +333,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable, all_edge_props: &mut BTreeSet<Vec<u8>>, edge_counts_by_datasource: &mut HashMap<Vec<u8>, u64>) {
+fn maybe_write_edge(from_id:&[u8], prop: &SlicedProperty, val:&SlicedPropertyValue,  edges_writer: &mut BufWriter<File>, exclude:&BTreeSet<Vec<u8>>, exclude_self_ref:&BTreeSet<Vec<u8>>, node_metadata:&BTreeMap<Vec<u8>, Metadata>, datasources:&Vec<&[u8]>, subgraph:&[u8], edge_summary: &mut EdgeSummaryTable, all_edge_props: &mut BTreeSet<Vec<u8>>, edge_counts_by_datasource: &mut BTreeMap<Vec<u8>, u64>) {
 
     if prop.key.starts_with(b"grebi:") || prop.key.starts_with(b"embedding:") || exclude.contains(prop.key) {
         return;
@@ -413,7 +413,7 @@ fn write_edge(
     datasources:&Vec<&[u8]>,
     subgraph:&[u8],
     edge_summary:&mut EdgeSummaryTable,
-    edge_counts_by_datasource:&mut HashMap<Vec<u8>, u64>) {
+    edge_counts_by_datasource:&mut BTreeMap<Vec<u8>, u64>) {
  
     let mut buf = Vec::new();
 
@@ -487,12 +487,12 @@ fn write_edge(
     let to_type_signature:String = get_type_signature_from_metadata_json(_refs.get(&String::from_utf8_lossy(to_node_id).to_string()).unwrap());
     let datasources_signature:String =  datasources.iter().map(|ds| String::from_utf8_lossy(ds).to_string()).collect::<Vec<String>>().join(",");
 
-    let edge_summary_edges = edge_summary.entry(from_type_signature).or_insert(HashMap::new());
+    let edge_summary_edges = edge_summary.entry(from_type_signature).or_insert(BTreeMap::new());
     let count:&mut u64 = edge_summary_edges
         .entry(String::from_utf8_lossy(edge).to_string())
-        .or_insert(HashMap::new())
+        .or_insert(BTreeMap::new())
             .entry(to_type_signature)
-            .or_insert(HashMap::new())
+            .or_insert(BTreeMap::new())
                 .entry(datasources_signature)
                 .or_insert(0);
 

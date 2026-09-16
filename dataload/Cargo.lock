@@ -787,6 +787,7 @@ dependencies = [
  "bloomfilter",
  "clap",
  "csv",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "lmdb-zero",
@@ -799,11 +800,16 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "csv",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "lmdb-zero",
  "serde_json",
 ]
+
+[[package]]
+name = "grebi_golden"
+version = "0.1.0"
 
 [[package]]
 name = "grebi_identifiers2groups"
@@ -813,6 +819,7 @@ dependencies = [
  "clap",
  "csv",
  "fxhash",
+ "grebi_golden",
  "grebi_shared",
  "hashbrown 0.14.5",
  "jemallocator",
@@ -826,6 +833,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "flate2",
+ "grebi_golden",
  "grebi_shared",
  "serde_json",
 ]
@@ -836,6 +844,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "csv",
+ "grebi_golden",
  "grebi_shared",
  "serde_json",
 ]
@@ -845,6 +854,7 @@ name = "grebi_ingest_kgx_edges"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "serde_json",
@@ -856,6 +866,7 @@ name = "grebi_ingest_ols"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "serde_json",
@@ -868,6 +879,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "csv",
+ "grebi_golden",
  "grebi_shared",
  "serde_json",
 ]
@@ -878,6 +890,7 @@ version = "0.1.0"
 dependencies = [
  "Inflector",
  "clap",
+ "grebi_golden",
  "hex",
  "jemallocator",
  "rusqlite",
@@ -890,6 +903,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "csv",
+ "grebi_golden",
  "grebi_shared",
  "serde_json",
  "serde_yaml",
@@ -901,6 +915,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "flate2",
+ "grebi_golden",
  "grebi_shared",
  "hex",
  "jemallocator",
@@ -915,6 +930,7 @@ dependencies = [
  "bloomfilter",
  "clap",
  "csv",
+ "grebi_golden",
  "grebi_shared",
  "hex",
  "jemallocator",
@@ -929,6 +945,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "flate2",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "serde_json",
@@ -940,6 +957,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "flate2",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "serde_json",
@@ -949,6 +967,7 @@ dependencies = [
 name = "grebi_make_neo_ids_csv"
 version = "0.1.0"
 dependencies = [
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
 ]
@@ -957,6 +976,7 @@ dependencies = [
 name = "grebi_make_postgres_autocomplete"
 version = "0.1.0"
 dependencies = [
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
 ]
@@ -965,6 +985,7 @@ dependencies = [
 name = "grebi_make_postgres_blobs"
 version = "0.1.0"
 dependencies = [
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
 ]
@@ -974,6 +995,7 @@ name = "grebi_make_postgres_edges"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "serde_json",
@@ -984,6 +1006,7 @@ name = "grebi_make_postgres_mat_queries"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "grebi_golden",
  "grebi_shared",
  "hex",
  "jemallocator",
@@ -996,6 +1019,7 @@ name = "grebi_make_postgres_nodes"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "serde_json",
@@ -1007,6 +1031,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "flate2",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "serde_json",
@@ -1017,6 +1042,7 @@ name = "grebi_nodes2edges"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "serde_json",
@@ -1028,6 +1054,7 @@ name = "grebi_normalise_prefixes"
 version = "0.1.0"
 dependencies = [
  "csv",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "serde_json",
@@ -1040,6 +1067,7 @@ dependencies = [
  "arrow",
  "arrow-json",
  "bytes",
+ "grebi_golden",
  "parquet",
 ]
 
@@ -1050,6 +1078,7 @@ dependencies = [
  "clap",
  "csv",
  "curie",
+ "grebi_golden",
  "grebi_shared",
  "libc",
  "mownstr",
@@ -1073,6 +1102,7 @@ dependencies = [
  "bloomfilter",
  "clap",
  "csv",
+ "grebi_golden",
  "grebi_shared",
  "jemallocator",
  "lmdb-zero",
@@ -1084,6 +1114,7 @@ name = "grebi_transform_jsonl"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "grebi_golden",
  "grebi_shared",
  "hex",
  "jemallocator",
@@ -1098,6 +1129,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "csv",
+ "grebi_golden",
  "grebi_shared",
  "serde_json",
 ]
@@ -1107,6 +1139,7 @@ name = "grebi_unwind"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "grebi_golden",
  "grebi_shared",
  "hex",
  "jemallocator",

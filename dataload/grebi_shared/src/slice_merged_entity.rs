@@ -221,3 +221,91 @@ impl<'a> SlicedReified<'a> {
         return Some(SlicedReified { props, value, value_kind });
      }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ENTITY: &str = concat!(
+        r#"{"grebi:nodeId":"mondo:0005083","grebi:datasources":["OLS.mondo","GWAS"],"grebi:sourceIds":["mondo:0005083","efo:0000676"],"grebi:subgraph":"g1","#,
+        r#""grebi:name":[{"grebi:datasources":["OLS.mondo"],"grebi:sourceIds":["mondo:0005083"],"grebi:value":"psoriasis"},{"grebi:datasources":["GWAS"],"grebi:sourceIds":["efo:0000676"],"grebi:value":"Psoriasis"}],"#,
+        r#""grebi:displayType":"biolink:Disease","grebi:curie":"MONDO:0005083","embedding:m1":[0.1,0.2],"#,
+        r#""count":[{"grebi:datasources":["GWAS"],"grebi:sourceIds":["efo:0000676"],"grebi:value":3}],"#,
+        r#""nested":[{"grebi:datasources":["GWAS"],"grebi:sourceIds":[],"grebi:value":{"grebi:value":"x","grebi:properties":{"p":["q"]}}}],"#,
+        r#""_refs":{"efo:0000676":{"grebi:name":["Psoriasis"]}}}"#
+    );
+
+    #[test]
+    fn slices_a_merged_entity() {
+        let buf = ENTITY.as_bytes().to_vec();
+        let e = SlicedEntity::from_json(&buf);
+        assert_eq!(e.id, b"mondo:0005083");
+        assert_eq!(e.datasources, vec![b"OLS.mondo" as &[u8], b"GWAS"]);
+        assert_eq!(e.source_ids, vec![b"mondo:0005083" as &[u8], b"efo:0000676"]);
+        assert_eq!(e.subgraph, b"g1");
+        assert_eq!(e.display_type, Some(br#""biolink:Disease""# as &[u8]), "the display type keeps its quotes");
+        assert_eq!(e.curie, Some(b"MONDO:0005083" as &[u8]), "the curie does not");
+        assert_eq!(e.model_id_to_embedding_vector.get(b"m1" as &[u8]), Some(&(b"[0.1,0.2]" as &[u8])));
+        assert_eq!(e._refs, Some(br#"{"efo:0000676":{"grebi:name":["Psoriasis"]}}"# as &[u8]));
+
+        let keys: Vec<&[u8]> = e.props.iter().map(|p| p.key).collect();
+        assert_eq!(keys, vec![b"grebi:name" as &[u8], b"count", b"nested"], "the derived fields are not properties");
+
+        let name = &e.props[0];
+        assert_eq!(name.values.len(), 2);
+        assert_eq!(name.values[0].kind, JsonTokenType::StartString);
+        assert_eq!(name.values[0].value, br#""psoriasis""#);
+        assert_eq!(name.values[0].datasources, vec![b"OLS.mondo" as &[u8]]);
+        assert_eq!(name.values[0].source_ids, vec![b"mondo:0005083" as &[u8]]);
+        assert_eq!(name.values[1].value, br#""Psoriasis""#);
+        assert!(name.values_slice.starts_with(b"[{") && name.values_slice.ends_with(b"}]"), "the values slice is the whole array");
+
+        assert_eq!(e.props[1].values[0].kind, JsonTokenType::StartNumber);
+        assert_eq!(e.props[1].values[0].value, b"3");
+        assert_eq!(e.props[2].values[0].kind, JsonTokenType::StartObject);
+        assert_eq!(e.props[2].values[0].value, br#"{"grebi:value":"x","grebi:properties":{"p":["q"]}}"#);
+    }
+
+    #[test]
+    fn an_entity_with_no_properties() {
+        let buf = br#"{"grebi:nodeId":"a","grebi:datasources":[],"grebi:sourceIds":[],"grebi:subgraph":"g"}"#.to_vec();
+        let e = SlicedEntity::from_json(&buf);
+        assert_eq!(e.id, b"a");
+        assert!(e.datasources.is_empty() && e.source_ids.is_empty() && e.props.is_empty());
+        assert!(e.display_type.is_none() && e.curie.is_none() && e._refs.is_none());
+        assert!(e.model_id_to_embedding_vector.is_empty());
+    }
+
+    #[test]
+    #[should_panic(expected = "expected grebi:nodeId as key")]
+    fn the_id_must_come_first() {
+        let buf = br#"{"grebi:datasources":[],"grebi:nodeId":"a","grebi:sourceIds":[],"grebi:subgraph":"g"}"#.to_vec();
+        SlicedEntity::from_json(&buf);
+    }
+
+    #[test]
+    fn slices_a_reified_value() {
+        let json: &[u8] = br#"{"grebi:value":"x","grebi:properties":{"p":["q",2],"r":[]}}"#;
+        let r = SlicedReified::from_json(&json).expect("reified");
+        assert_eq!(r.value, br#""x""#);
+        assert_eq!(r.value_kind, JsonTokenType::StartString);
+        assert_eq!(r.props.len(), 2);
+        assert_eq!(r.props[0].key, b"p");
+        assert_eq!(r.props[0].values.iter().map(|v| v.value).collect::<Vec<_>>(), vec![br#""q""# as &[u8], b"2"]);
+        assert_eq!(r.props[0].values_slice, br#"["q",2]"#);
+        assert!(r.props[1].values.is_empty());
+
+        let json: &[u8] = br#"{"grebi:value":{"a":1},"grebi:properties":{}}"#;
+        let r = SlicedReified::from_json(&json).unwrap();
+        assert_eq!(r.value, br#"{"a":1}"#);
+        assert_eq!(r.value_kind, JsonTokenType::StartObject);
+    }
+
+    #[test]
+    fn objects_that_are_not_reified_values_give_none() {
+        assert!(SlicedReified::from_json(&(b"{}" as &[u8])).is_none());
+        assert!(SlicedReified::from_json(&(br#"{"a":1}"# as &[u8])).is_none());
+        assert!(SlicedReified::from_json(&(br#"{"grebi:value":1,"other":2}"# as &[u8])).is_none());
+    }
+}

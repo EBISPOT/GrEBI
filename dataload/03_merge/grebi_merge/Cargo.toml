@@ -10,3 +10,5 @@ jemallocator = "0.5.4"
 serde_json = { version = "1.0.108", features=["preserve_order"] }
 grebi_shared = { path = "../../grebi_shared" }
 
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

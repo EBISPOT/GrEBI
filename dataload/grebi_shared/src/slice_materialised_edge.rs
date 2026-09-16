@@ -117,3 +117,49 @@ impl<'a> SlicedEdge<'a> {
 
 
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EDGE: &str = concat!(
+        r#"{"grebi:edgeId":"e1","grebi:type":"biolink:subclass_of","grebi:subgraph":"g1","grebi:fromNodeId":"a","grebi:fromSourceIds":["efo:1","mondo:1"],"grebi:toNodeId":"b","grebi:datasources":["OLS.efo"],"#,
+        r#""gwas:p_value":[1e-8,"x"],"_refs":{"a":{"grebi:name":["A"]}}}"#
+    );
+
+    #[test]
+    fn slices_a_materialised_edge() {
+        let buf = EDGE.as_bytes().to_vec();
+        let e = SlicedEdge::from_json(&buf);
+        assert_eq!(e.edge_id, b"e1");
+        assert_eq!(e.edge_type, b"biolink:subclass_of");
+        assert_eq!(e.subgraph, b"g1");
+        assert_eq!(e.from_node_id, b"a");
+        assert_eq!(e.from_source_ids, vec![b"efo:1" as &[u8], b"mondo:1"]);
+        assert_eq!(e.to_node_id, b"b");
+        assert_eq!(e.datasources, vec![b"OLS.efo" as &[u8]]);
+        assert_eq!(e._refs, Some(br#"{"a":{"grebi:name":["A"]}}"# as &[u8]));
+        assert_eq!(e.props.len(), 1);
+        assert_eq!(e.props[0].key, b"gwas:p_value");
+        assert_eq!(e.props[0].values[0].kind, JsonTokenType::StartNumber);
+        assert_eq!(e.props[0].values[0].value, b"1e-8");
+        assert_eq!(e.props[0].values[1].value, br#""x""#);
+        // NB: unlike an entity's, an edge's values slice stops before the closing bracket
+        assert_eq!(e.props[0].values_slice, br#"[1e-8,"x""#);
+    }
+
+    #[test]
+    fn an_edge_with_no_extra_properties() {
+        let buf = br#"{"grebi:edgeId":"e","grebi:type":"t","grebi:subgraph":"g","grebi:fromNodeId":"a","grebi:fromSourceIds":[],"grebi:toNodeId":"b","grebi:datasources":[]}"#.to_vec();
+        let e = SlicedEdge::from_json(&buf);
+        assert!(e.props.is_empty() && e._refs.is_none() && e.from_source_ids.is_empty());
+    }
+
+    #[test]
+    #[should_panic(expected = "expected edge_id as key")]
+    fn the_edge_id_must_come_first() {
+        let buf = br#"{"grebi:type":"t","grebi:edgeId":"e"}"#.to_vec();
+        SlicedEdge::from_json(&buf);
+    }
+}

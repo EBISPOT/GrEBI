@@ -1,0 +1,10 @@
+ex:entity_a
+ex:entity_b
+ex:entity_a_alt
+hgnc:11603
+ex:entity_a
+ex:entity_a_alt	ex:entity_a
+ex:entity_b
+ex:entity_c
+mondo:0005002
+hgnc:11603

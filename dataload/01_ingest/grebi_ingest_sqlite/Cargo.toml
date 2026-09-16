@@ -11,3 +11,5 @@ rusqlite = "0.32.1"
 serde_json = { version = "1.0.108", features=["preserve_order"] }
 jemallocator = "0.5.4"
 
+[dev-dependencies]
+grebi_golden = { path = "../../test_support/grebi_golden" }

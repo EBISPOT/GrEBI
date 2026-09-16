@@ -39,3 +39,5 @@ run_backend_with_k8s_pg.sh
 !tests/data/**
 
 target-bullseye
+# golden test fixtures of the dataload binaries (recorded inputs and outputs)
+!dataload/**/tests/golden/**

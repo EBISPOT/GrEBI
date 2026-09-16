@@ -1,0 +1,5 @@
+:START_ID,:TYPE,:END_ID,edge_id:string,grebi:datasources:string[],grebi:subgraph:string,grebi:fromSourceIds:string[],"test_cm:id:string[]"
+"test_clique_merge:ex:entity_a_alt","biolink:related_to","test_clique_merge:ex:entity_b","test_clique_merge:712aeefe0311e25d77bb4cbfffb1a7c991847114","TestCliqueMerge","test_clique_merge","ex:entity_a","edge-cm-1"
+"test_clique_merge:ex:entity_a_alt","biolink:related_to","test_clique_merge:ex:entity_c","test_clique_merge:962c9410cd126e0db226f9864dabb233c0dca956","TestCliqueMerge","test_clique_merge","ex:entity_a_alt","edge-cm-3"
+"test_clique_merge:ex:entity_b","biolink:gene_associated_with_condition","test_clique_merge:ex:entity_c","test_clique_merge:5e7715ec0017d90efbc0927a2f3602147d19a350","TestCliqueMerge","test_clique_merge","ex:entity_b","edge-cm-2"
+"test_clique_merge:hgnc:11603","biolink:related_to","test_clique_merge:mondo:0005002","test_clique_merge:d0989f6c175f9f0994820c985f73136165f19d33","TestCliqueMerge","test_clique_merge","hgnc:11603","edge-cm-hw"

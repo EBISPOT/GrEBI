@@ -1,0 +1,44 @@
+{
+  "entity_prop_defs": {},
+  "edge_prop_defs": {},
+  "types": {},
+  "displaytypes": {
+    "biolink:Disease": {
+      "count": 2
+    },
+    "biolink:Gene": {
+      "count": 2
+    },
+    "biolink:NamedThing": {
+      "count": 1
+    }
+  },
+  "edges": {
+    "biolink:Gene": {
+      "biolink:gene_associated_with_condition": {
+        "biolink:Disease": {
+          "TestCliqueMerge": 1
+        }
+      },
+      "biolink:related_to": {
+        "biolink:Disease": {
+          "TestCliqueMerge": 1
+        }
+      }
+    },
+    "biolink:NamedThing": {
+      "biolink:related_to": {
+        "biolink:Disease": {
+          "TestCliqueMerge": 1
+        },
+        "biolink:Gene": {
+          "TestCliqueMerge": 1
+        }
+      }
+    }
+  },
+  "edge_counts_by_datasource": {
+    "TestCliqueMerge": 4
+  },
+  "embedding_models2dims": {}
+}

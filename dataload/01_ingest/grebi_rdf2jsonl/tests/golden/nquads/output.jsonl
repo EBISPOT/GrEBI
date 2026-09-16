@@ -1,0 +1,2 @@
+{"id":"http://example.org/a","http://example.org/partOf":["http://example.org/b"],"http://www.w3.org/2000/01/rdf-schema#label":["A kept"]}
+{"id":"http://example.org/c","http://www.w3.org/2000/01/rdf-schema#label":["C kept"]}

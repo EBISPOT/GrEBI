@@ -1,0 +1,4 @@
+{"id":"ex:entity_a","biolink:related_to":{"grebi:value":"ex:entity_b","grebi:properties":{"test_cm:id":["edge-cm-1"]}}}
+{"id":"ex:entity_b","biolink:gene_associated_with_condition":{"grebi:value":"ex:entity_c","grebi:properties":{"test_cm:id":["edge-cm-2"]}}}
+{"id":"ex:entity_a_alt","biolink:related_to":{"grebi:value":"ex:entity_c","grebi:properties":{"test_cm:id":["edge-cm-3"]}}}
+{"id":"hgnc:11603","biolink:related_to":{"grebi:value":"mondo:0005002","grebi:properties":{"test_cm:id":["edge-cm-hw"]}}}

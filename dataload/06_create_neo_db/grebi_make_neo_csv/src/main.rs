@@ -5,7 +5,6 @@ use std::io::BufWriter;
 use std::io::BufReader;
 use std::io::Write;
 use std::io::BufRead;
-use std::collections::HashSet;
 use std::collections::BTreeSet;
 use clap::Parser;
 use grebi_shared::json_lexer::JsonTokenType;
@@ -55,8 +54,8 @@ fn main() -> std::io::Result<()> {
     let start_time = std::time::Instant::now();
 
 
-    let mut all_entity_props: HashSet<String> = HashSet::new();
-    let mut all_edge_props: HashSet<String> = HashSet::new();
+    let mut all_entity_props: BTreeSet<String> = BTreeSet::new();
+    let mut all_edge_props: BTreeSet<String> = BTreeSet::new();
 
 
     for f in args.in_graph_metadata_jsons.split(",") {
@@ -178,7 +177,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<String>, nodes_writer:&mut BufWriter<&File>, id_edges_writer:&mut BufWriter<&File>, add_prefix:&[u8]) {
+fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&BTreeSet<String>, nodes_writer:&mut BufWriter<&File>, id_edges_writer:&mut BufWriter<&File>, add_prefix:&[u8]) {
 
     let refs:Map<String,Value> = serde_json::from_slice(entity._refs.unwrap()).unwrap();
 
@@ -289,7 +288,7 @@ fn write_node(src_line:&[u8], entity:&SlicedEntity, all_node_props:&HashSet<Stri
 
 }
 
-fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&HashSet<String>, edges_writer: &mut BufWriter<&File>, add_prefix:&[u8]) {
+fn write_edge(src_line:&[u8], edge:SlicedEdge, all_edge_props:&BTreeSet<String>, edges_writer: &mut BufWriter<&File>, add_prefix:&[u8]) {
 
     let refs:Map<String,Value> = serde_json::from_slice(edge._refs.unwrap()).unwrap();
 

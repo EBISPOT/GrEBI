@@ -1,0 +1,7 @@
+[package]
+name = "grebi_golden"
+version = "0.1.0"
+edition = "2021"
+description = "Golden tests for the pipeline binaries: run a binary on recorded inputs and compare with recorded outputs"
+
+[dependencies]

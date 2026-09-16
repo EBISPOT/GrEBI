@@ -197,3 +197,90 @@ fn reprefix_impl<'a>(subject:&[u8], buf:&[u8]) -> Option<Vec<u8>> {
 }
 
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn map(mappings: &[(&str, &str)]) -> PrefixMap {
+        let mut b = PrefixMapBuilder::new();
+        for (from, to) in mappings {
+            b.add_mapping(from.to_string(), to.to_string());
+        }
+        b.build()
+    }
+
+    #[test]
+    fn replaces_a_matching_prefix_and_keeps_the_rest() {
+        let m = map(&[("MONDO_", "mondo:"), ("http://purl.obolibrary.org/obo/", "obo:")]);
+        assert_eq!(m.reprefix(&"MONDO_0005083".to_string()), "mondo:0005083");
+        assert_eq!(m.reprefix(&"http://purl.obolibrary.org/obo/HP_0000001".to_string()), "obo:HP_0000001");
+        assert_eq!(m.maybe_reprefix(&"MONDO_1".to_string()), Some("mondo:1".to_string()));
+        assert_eq!(m.reprefix_bytes(b"MONDO_1"), Some(b"mondo:1".to_vec()));
+    }
+
+    #[test]
+    fn the_longest_matching_prefix_wins() {
+        let m = map(&[("http://purl.obolibrary.org/obo/", "obo:"), ("http://purl.obolibrary.org/obo/MONDO_", "mondo:")]);
+        assert_eq!(m.reprefix(&"http://purl.obolibrary.org/obo/MONDO_0005083".to_string()), "mondo:0005083");
+        assert_eq!(m.reprefix(&"http://purl.obolibrary.org/obo/HP_1".to_string()), "obo:HP_1");
+    }
+
+    #[test]
+    fn matching_ignores_case_but_the_replacement_is_as_given() {
+        let m = map(&[("mondo:", "MONDO:")]);
+        assert_eq!(m.reprefix(&"Mondo:1".to_string()), "MONDO:1");
+        assert_eq!(m.reprefix(&"MONDO:1".to_string()), "MONDO:1");
+        let m = map(&[("HP:", "hp:")]);
+        assert_eq!(m.reprefix(&"hp:1".to_string()), "hp:1");
+    }
+
+    #[test]
+    fn subjects_without_a_mapping_are_left_alone() {
+        let m = map(&[("mondo:", "mondo:"), ("efo:", "efo:")]);
+        assert_eq!(m.maybe_reprefix(&"doid:1".to_string()), None);
+        assert_eq!(m.reprefix(&"doid:1".to_string()), "doid:1");
+        // a subject that stops on an intermediate node of the trie has no mapping either
+        assert_eq!(m.maybe_reprefix(&"mon".to_string()), None);
+        assert_eq!(m.maybe_reprefix(&"mondx:1".to_string()), None);
+        assert_eq!(m.maybe_reprefix(&"".to_string()), None);
+        assert_eq!(map(&[]).maybe_reprefix(&"mondo:1".to_string()), None);
+    }
+
+    #[test]
+    fn a_mapping_to_the_empty_prefix_is_no_mapping() {
+        let m = map(&[("obo:", "")]);
+        assert_eq!(m.maybe_reprefix(&"obo:1".to_string()), None);
+    }
+
+    #[test]
+    fn a_shorter_prefix_still_applies_when_the_longer_one_does_not_match() {
+        let m = map(&[("a", "A:"), ("ab", "AB:"), ("abc", "ABC:")]);
+        assert_eq!(m.reprefix(&"abcd".to_string()), "ABC:d");
+        assert_eq!(m.reprefix(&"abd".to_string()), "AB:d");
+        assert_eq!(m.reprefix(&"ad".to_string()), "A:d");
+        // exact matches with nothing left over
+        assert_eq!(m.reprefix(&"abc".to_string()), "ABC:");
+    }
+
+    #[test]
+    fn many_siblings_resolve_whatever_order_the_trie_stores_them_in() {
+        let mappings: Vec<(String, String)> = (0..40).map(|i| (format!("p{:02}:", i), format!("q{:02}:", i))).collect();
+        let mut b = PrefixMapBuilder::new();
+        for (from, to) in &mappings {
+            b.add_mapping(from.clone(), to.clone());
+        }
+        let m = b.build();
+        for (from, to) in &mappings {
+            assert_eq!(m.reprefix(&format!("{}x", from)), format!("{}x", to));
+        }
+        assert_eq!(m.maybe_reprefix(&"p99:x".to_string()), None);
+    }
+
+    #[test]
+    fn several_spellings_can_map_to_one_prefix() {
+        let m = map(&[("efo:", "efo:"), ("efo_", "efo:"), ("http://www.ebi.ac.uk/efo/EFO_", "efo:")]);
+        for s in ["efo:1", "EFO_1", "http://www.ebi.ac.uk/efo/EFO_1"] {
+            assert_eq!(m.reprefix(&s.to_string()), "efo:1", "{}", s);
+        }
+    }
+}

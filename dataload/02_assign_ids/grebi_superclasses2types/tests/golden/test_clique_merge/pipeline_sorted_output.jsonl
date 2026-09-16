@@ -1,0 +1,4 @@
+{"grebi:nodeId":"ex:entity_a_alt","grebi:sourceIds":["ex:entity_a"],"id":"ex:entity_a_alt","biolink:related_to":{"grebi:value":"ex:entity_b","grebi:properties":{"test_cm:id":["edge-cm-1"]}}}
+{"grebi:nodeId":"ex:entity_a_alt","grebi:sourceIds":["ex:entity_a_alt"],"id":"ex:entity_a_alt","biolink:related_to":{"grebi:value":"ex:entity_c","grebi:properties":{"test_cm:id":["edge-cm-3"]}}}
+{"grebi:nodeId":"ex:entity_b","grebi:sourceIds":["ex:entity_b"],"id":"ex:entity_b","biolink:gene_associated_with_condition":{"grebi:value":"ex:entity_c","grebi:properties":{"test_cm:id":["edge-cm-2"]}}}
+{"grebi:nodeId":"hgnc:11603","grebi:sourceIds":["hgnc:11603"],"id":"hgnc:11603","biolink:related_to":{"grebi:value":"mondo:0005002","grebi:properties":{"test_cm:id":["edge-cm-hw"]}}}
