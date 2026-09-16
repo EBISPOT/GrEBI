@@ -24,6 +24,11 @@ cypher_match_fragment: |-
       gene,
       [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
       assoc.`gwas:strongest_snp_risk_allele`[0] AS effect_allele,
+      assoc.`gwas:disease_trait`[0] AS reported_trait,
+      assoc.`gwas:chr_id`[0] AS chromosome,
+      assoc.`gwas:chr_pos`[0] AS position,
+      assoc.`gwas:risk_allele_frequency`[0] AS risk_allele_frequency,
+      assoc.`gwas:ci_text`[0] AS confidence_interval,
       assoc.`gwas:p_value`[0] AS p_value,
       assoc.`gwas:or_or_beta`[0] AS or_or_beta,
       assoc.edge_id AS edge_id
@@ -37,7 +42,12 @@ cypher_return_fragment: |-
       effect_allele,
       gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
       study_id AS study_accession,
-      study.`gwas:pubmedid`[0] AS pubmed_id,
+      replace(study.`gwas:pubmedid`[0], "pubmed:", "") AS pubmed_id,
+      reported_trait,
+      chromosome,
+      position,
+      risk_allele_frequency,
+      confidence_interval,
       p_value,
       or_or_beta,
       edge_id
@@ -69,6 +79,19 @@ result_columns:
     column_type: string
   - column_id: pubmed_id
     column_type: string
+  - column_id: reported_trait
+    column_type: string
+  - column_id: chromosome
+    column_type: string
+    optional: true
+  - column_id: position
+    column_type: string
+    optional: true
+  - column_id: risk_allele_frequency
+    column_type: string
+  - column_id: confidence_interval
+    column_type: string
+    optional: true
   - column_id: or_or_beta
     column_type: float
     optional: true

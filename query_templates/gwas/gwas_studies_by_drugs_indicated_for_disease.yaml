@@ -1,10 +1,13 @@
-title: Search GWAS Catalog by drugs or drug classes indicated for a disease
-question: What [GWAS study traits]{trait} are associated with [drugs or drug classes]{drug} used to treat {disease_id}?
+title: Search GWAS Catalog studies by drugs or drug classes indicated for a disease
+question: What GWAS [studies]{study} report traits involving [drugs or drug classes]{drug} used to treat {disease_id}?
 graphs:
   - ebi_monarch_xspecies
 topics:
   - gwas_catalog
   - chebi
+# Study-level counterpart of gwas_by_drugs_indicated_for_disease (issue #31):
+# the same drug and trait matching, but each row is a study annotated with the
+# trait rather than one of its associations.
 cypher_match_fragment: |-
   MATCH (disease)-[:sourceId]->(:Id {id: $disease_id })
   MATCH (treatment_drug)-[:(
@@ -33,46 +36,28 @@ cypher_match_fragment: |-
   }
   MATCH (matched_trait)-[:`ro:has_primary_input`]->(trait_input)
   MATCH (trait)-[:(`biolink:subclass_of`|`biolink:broad_match`)*0..1]->(matched_trait)
-  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
-  OPTIONAL MATCH (gene)<-[:(`gwas:mapped_gene`|`gwas:snp_gene_ids`|`gwas:upstream_gene_id`|`gwas:downstream_gene_id`)]-(snp)
-  WITH
-      disease,
-      trait,
-      drug,
-      snp,
-      gene,
-      [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
-      assoc.`gwas:strongest_snp_risk_allele`[0] AS effect_allele,
-      assoc.`gwas:disease_trait`[0] AS reported_trait,
-      assoc.`gwas:chr_id`[0] AS chromosome,
-      assoc.`gwas:chr_pos`[0] AS position,
-      assoc.`gwas:risk_allele_frequency`[0] AS risk_allele_frequency,
-      assoc.`gwas:ci_text`[0] AS confidence_interval,
-      assoc.`gwas:p_value`[0] AS p_value,
-      assoc.`gwas:or_or_beta`[0] AS or_or_beta,
-      assoc.edge_id AS edge_id
-  MATCH
-      (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
+  MATCH (study:`gwas:Study`)-[:`gwas:mapped_trait`]->(trait)
 cypher_return_fragment: |-
   RETURN DISTINCT
       disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
       trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
       drug { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(drug) } AS drug,
-      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
-      effect_allele,
-      gene { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(gene) } AS gene,
-      study_id AS study_accession,
+      study { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(study) } AS study,
+      [id IN study.id WHERE id =~ "GCST.*" | id][0] AS study_accession,
+      study.`gwas:disease_trait`[0] AS reported_trait,
+      // property names differ between builds: ontology property equivalences
+      // rename dcterms:creator/modified on graphs that load the biolink model
+      coalesce(study.`biolink:author`, study.`dcterms:creator`)[0] AS first_author,
+      study.`gwas:journal`[0] AS journal,
+      coalesce(study.`dcterms:Date_Modified`, study.`dcterms:modified`)[0] AS publication_date,
       replace(study.`gwas:pubmedid`[0], "pubmed:", "") AS pubmed_id,
-      reported_trait,
-      chromosome,
-      position,
-      risk_allele_frequency,
-      confidence_interval,
-      p_value,
-      or_or_beta,
-      edge_id
+      study.`gwas:initial_sample_size`[0] AS initial_sample_size,
+      study.`gwas:replication_sample_size`[0] AS replication_sample_size,
+      study.`gwas:association_count`[0] AS association_count,
+      study.`gwas:full_summary_statistics`[0] AS full_summary_statistics,
+      study.`gwas:genotyping_technology`[0] AS genotyping_technology
 cypher_count_fragment: |-
-  WITH DISTINCT disease, trait, drug, snp, gene, study, or_or_beta, edge_id
+  WITH DISTINCT disease, trait, drug, study
   RETURN count(*) AS count
 params:
   - param_id: disease_id
@@ -87,37 +72,31 @@ result_columns:
     column_type: GraphNodeId
   - column_id: drug
     column_type: GraphNodeId
-  - column_id: snp
+  - column_id: study
     column_type: GraphNodeId
-  - column_id: effect_allele
-    column_type: string
-  - column_id: gene
-    column_type: GraphNodeId
-    optional: true
   - column_id: study_accession
-    column_type: string
-  - column_id: p_value
-    column_type: string
-  - column_id: pubmed_id
     column_type: string
   - column_id: reported_trait
     column_type: string
-  - column_id: chromosome
+  - column_id: first_author
+    column_type: string
+  - column_id: journal
+    column_type: string
+  - column_id: publication_date
+    column_type: string
+  - column_id: pubmed_id
+    column_type: string
+  - column_id: initial_sample_size
+    column_type: string
+  - column_id: replication_sample_size
     column_type: string
     optional: true
-  - column_id: position
+  - column_id: association_count
     column_type: string
-    optional: true
-  - column_id: risk_allele_frequency
+  - column_id: full_summary_statistics
     column_type: string
-  - column_id: confidence_interval
+  - column_id: genotyping_technology
     column_type: string
-    optional: true
-  - column_id: or_or_beta
-    column_type: float
-    optional: true
-  - column_id: edge_id
-    column_type: EdgeId
 examples:
   - title: stroke
     params:
@@ -131,10 +110,7 @@ examples:
   - title: lung cancer
     params:
       disease_id: mondo:0008903
-# Materialised over every disease under mondo:0000001 (the bare anchor is
-# wrapped in a broad_match hop at materialise time; serving stays exact, as
-# live: the queried disease's own indications). Size unknown until the first
-# run, hence the generous budget.
+# Materialised over every disease under mondo:0000001, like the association
+# version; far fewer rows than that one, so the default budget suffices.
 materialise:
   mode: full
-  budget_rows: 40000000

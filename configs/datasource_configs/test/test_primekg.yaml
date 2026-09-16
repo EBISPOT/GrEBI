@@ -1,0 +1,13 @@
+id: PrimeKG
+enabled: true
+description: "Test datasource: a few real rows of PrimeKG's kg.csv around psoriasis, covering every ontology whose ids PrimeKG stores without their leading zeros (see tests/data/test_primekg/README.md)"
+download:
+  - dest: test_primekg/kg.csv
+    sources:
+      - tests/data/test_primekg/kg.csv
+ingests:
+  # Same command as the production datasource (configs/datasource_configs/primekg.yaml).
+  - globs: ["test_primekg/kg.csv"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      $GREBI_DATALOAD_HOME/01_ingest/primekg.py'
