@@ -9,23 +9,30 @@ ARG BASE_IMAGE=ghcr.io/ebispot/grebi_base:dev
 # Stage 1 — Compile the Rust binaries (natively; CI builds each arch on a
 # native runner, so no cross-compilation is needed).
 #
+# The builder is the same OS as the runtime image (UBI9), so the binaries can
+# never need a newer glibc than the runtime has: UBI9 keeps glibc 2.34 for its
+# whole life, and it is supported until 2032. The Rust toolchain comes from
+# rustup, pinned to RUST_VERSION; the C toolchain, cmake (zlib-ng's build
+# script) and the dev packages of the shared libraries the binaries link
+# (zlib, sqlite) come from the UBI repositories.
+#
 # cargo-chef splits dependency compilation from the app build: the large, slow
 # dependency layer (arrow/parquet et al.) is cooked separately and keyed on
 # Cargo.lock + manifests, so the GHA layer cache reuses it across builds and it
 # only recompiles when dependencies actually change — not on every source edit.
 ###############################################################################
-FROM rust:1.90.0-bullseye AS chef
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest AS chef
+ARG RUST_VERSION=1.90.0
 
-# Debian 11 (bullseye) left LTS in Aug 2026. Its packages now live on
-# archive.debian.org (main only: the security and updates suites are frozen and
-# their pools pruned, which made deb.debian.org 404 on the packages its stale
-# index still listed), and its Release files are no longer re-signed, hence
-# Check-Valid-Until off. This stage only compiles; nothing from it is shipped.
-RUN printf 'deb http://archive.debian.org/debian bullseye main\n' > /etc/apt/sources.list && \
-    printf 'Acquire::Retries "5";\nAcquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99-grebi-retries
+RUN microdnf install -y --setopt=install_weak_deps=0 \
+      gcc gcc-c++ make cmake pkgconf-pkg-config zlib-devel sqlite-devel curl-minimal && \
+    microdnf clean all
 
-# cmake is needed by some crates.
-RUN apt-get update -y && apt-get install -y --no-install-recommends cmake && rm -rf /var/lib/apt/lists/*
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+RUN curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain "${RUST_VERSION}" --no-modify-path && \
+    rustc --version
 
 RUN cargo install cargo-chef --locked
 
@@ -97,12 +104,13 @@ RUN mvn -B clean package -DskipTests
 # build_ubergraph.nf passes (-i, --graph-prefix, --offline, -o). Override with
 # --build-arg OWLMAKE_RELEASE=vX.Y.Z (or =latest).
 #
-# Arch: `dpkg --print-architecture` is the build/target arch (amd64|arm64) and
-# the release ships per-arch assets, so each per-arch GrEBI build fetches the
-# matching `om`.
-FROM rust:1.90.0-bullseye AS om-dl
+# Arch: the release ships per-arch assets (amd64|arm64), so each per-arch GrEBI
+# build fetches the `om` matching its own machine.
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest AS om-dl
 ARG OWLMAKE_RELEASE=v0.1.0
-RUN arch="$(dpkg --print-architecture)"; base="https://github.com/EBISPOT/owlmake/releases"; \
+RUN microdnf install -y --setopt=install_weak_deps=0 curl-minimal && microdnf clean all
+RUN case "$(uname -m)" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; *) echo "unsupported architecture $(uname -m)" >&2; exit 1 ;; esac; \
+    base="https://github.com/EBISPOT/owlmake/releases"; \
     if [ "$OWLMAKE_RELEASE" = "latest" ]; then url="$base/latest/download/om-linux-$arch"; \
     else url="$base/download/$OWLMAKE_RELEASE/om-linux-$arch"; fi; \
     echo "fetching $url"; curl -fsSL -o /om "$url" && chmod 0755 /om

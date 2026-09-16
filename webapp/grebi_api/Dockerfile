@@ -15,7 +15,15 @@ RUN mvn clean package assembly:single -DskipTests
 ###############################################################################
 # Stage 2 — Build the native grebi_reprefix helper
 ###############################################################################
-FROM rust:1.90.0-bullseye AS rust-builder
+# Same OS family as the runtime stage below (UBI9, glibc 2.34), so the helper
+# can never need a newer glibc than the runtime has. Toolchain via rustup, pinned.
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest AS rust-builder
+ARG RUST_VERSION=1.90.0
+RUN microdnf install -y --setopt=install_weak_deps=0 gcc make curl-minimal && microdnf clean all
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+RUN curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain "${RUST_VERSION}" --no-modify-path
 WORKDIR /app
 COPY dataload/grebi_shared ./dataload/grebi_shared
 COPY webapp/grebi_reprefix ./webapp/grebi_reprefix
