@@ -1,0 +1,49 @@
+name: API Tests
+
+# Unit tests for grebi_api (JUnit + Mockito, the MCP server included) with the
+# JaCoCo coverage gate, a couple of minutes on a plain Java runner. The image
+# build in e2e_tests.yml compiles the API but skips its tests.
+
+on:
+  push:
+    branches: [ "dev", "stable" ]
+    paths:
+      - 'webapp/grebi_api/**'
+      - '.github/workflows/api_tests.yml'
+  pull_request:
+    branches: [ "dev", "stable" ]
+    paths:
+      - 'webapp/grebi_api/**'
+      - '.github/workflows/api_tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: webapp/grebi_api
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+          cache-dependency-path: webapp/grebi_api/pom.xml
+
+      - name: Run unit tests with the coverage gate
+        run: mvn -B verify
+
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage
+          path: webapp/grebi_api/target/site/jacoco
+          if-no-files-found: ignore

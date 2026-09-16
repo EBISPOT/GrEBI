@@ -35,7 +35,15 @@ public class GrebiQueryTemplatesRepo {
     private volatile List<QueryTopic> queryTopics;
     private final List<Consumer<List<QueryTemplate>>> reloadListeners = new CopyOnWriteArrayList<>();
 
+    private final String path;
+
     public GrebiQueryTemplatesRepo() {
+        this(getQueryTemplatesPath());
+    }
+
+    /** Templates from the given directory (tests point this at fixtures). */
+    public GrebiQueryTemplatesRepo(String path) {
+        this.path = path;
         reload();
         startWatching();
     }
@@ -56,8 +64,8 @@ public class GrebiQueryTemplatesRepo {
 
     private void reload() {
         try {
-            List<QueryTemplate> newTemplates = loadQueryTemplates(getQueryTemplatesPath());
-            List<QueryTopic> newTopics = loadQueryTopics(getQueryTemplatesPath() + "/_topics.yaml");
+            List<QueryTemplate> newTemplates = loadQueryTemplates(path);
+            List<QueryTopic> newTopics = loadQueryTopics(path + "/_topics.yaml");
             this.queryTemplates = newTemplates;
             this.queryTopics = newTopics;
             System.out.println("Loaded " + newTemplates.size() + " query templates and " + newTopics.size() + " topics");
@@ -82,7 +90,7 @@ public class GrebiQueryTemplatesRepo {
     }
 
     private void startWatching() {
-        Path rootDir = Path.of(getQueryTemplatesPath()).toAbsolutePath();
+        Path rootDir = Path.of(path).toAbsolutePath();
         Thread watchThread = new Thread(() -> {
             try {
                 WatchService watchService = FileSystems.getDefault().newWatchService();

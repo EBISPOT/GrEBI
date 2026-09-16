@@ -1,0 +1,9 @@
+topics:
+  - id: gwas
+    name: GWAS Catalog
+    type: Resource
+    description: Test topic for the API tests
+    url: https://www.ebi.ac.uk/gwas/
+  - id: genetics
+    name: Genetics
+    type: Domain

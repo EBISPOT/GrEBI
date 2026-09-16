@@ -1,0 +1,15 @@
+# Standalone materialised query: a browsable table, not a parameterised tool.
+title: All GWAS studies
+question: What GWAS [studies]{study} are in the graph?
+description: Every study, precomputed at dataload.
+topics:
+  - gwas
+result_columns:
+  - column_id: study
+    column_type: GraphNodeId
+    facet: true
+materialise:
+  cypher: |-
+    MATCH (study:`gwas:Study`) RETURN study { .id } AS study
+  run_for_subgraphs:
+    - g1

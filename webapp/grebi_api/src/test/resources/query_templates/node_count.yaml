@@ -1,0 +1,15 @@
+# Live template with neither parameters nor a graphs list: runs on every graph.
+title: Node count
+question: How many [nodes]{node} are there?
+description: A parameterless live query.
+topics:
+  - genetics
+cypher_match_fragment: |-
+  MATCH (n)
+cypher_return_fragment: |-
+  RETURN count(n) AS nodes
+cypher_count_fragment: |-
+  RETURN 1 AS count
+result_columns:
+  - column_id: nodes
+    column_type: int

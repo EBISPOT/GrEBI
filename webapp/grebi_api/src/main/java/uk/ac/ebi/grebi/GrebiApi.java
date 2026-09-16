@@ -122,10 +122,16 @@ public class GrebiApi {
             }
         }
 
-        run(cypher, postgres, metadata, postgresGraphs, queryTemplates, embeddingClients);
+        var port = Integer.parseInt(Objects.requireNonNullElse(System.getenv("GREBI_PORT"), "8090"));
+        createApp(cypher, postgres, metadata, postgresGraphs, queryTemplates, embeddingClients)
+            .start("0.0.0.0", port);
     }
 
-    static void run(
+    /**
+     * The configured, not yet started, application: main starts it on GREBI_PORT,
+     * tests on a random localhost port with mocked repositories.
+     */
+    static Javalin createApp(
         final GrebiCypherRepo cypher,
         final GrebiPostgresRepo postgres,
         final GrebiMetadataRepo metadata,
@@ -134,7 +140,6 @@ public class GrebiApi {
         final Map<String, EmbeddingServiceClient> embeddingClients
     ) {
         var stats = cypher != null ? cypher.getStats() : null;
-        var port = Integer.parseInt(Objects.requireNonNullElse(System.getenv("GREBI_PORT"), "8090"));
 
         Gson gson = new Gson();
         ResourceLimits limits = ResourceLimits.get();
@@ -147,7 +152,7 @@ public class GrebiApi {
             cypher, postgres, metadata, graphs, queryTemplates
         );
 
-        Javalin.create(config -> {
+        return Javalin.create(config -> {
                     config.http.compressionStrategy = CompressionStrategy.GZIP;
                     config.http.maxRequestSize = limits.maxRequestBodyBytes();
                     config.jetty.modifyServletContextHandler(ctx -> {
@@ -382,6 +387,11 @@ public class GrebiApi {
                     var searchText = firstNonNull(ctx.queryParam("q"), ctx.queryParam("filter"));
                     limits.validateText(searchText, "q");
 
+                    // decided before the response writer is opened, so the error can still be written
+                    if ((build == null || build.isCountsOnly()) && cypher == null) {
+                        throw new IllegalStateException("Cypher service unavailable; cannot serve CSV for " + templateId);
+                    }
+
                     ctx.future(() -> {
                         try {
                             var httpRes = ctx.res();
@@ -396,9 +406,6 @@ public class GrebiApi {
                                         postgres.streamMaterialisedParameterisedCsv(graph, template, build, params, searchText, args.filters, sort, writer));
                             }
 
-                            if (cypher == null) {
-                                throw new IllegalStateException("Cypher service unavailable; cannot serve CSV for " + templateId);
-                            }
                             return cypher.runQueryFromTemplateStreamed(graph, template, params, sort, writer);
                         } catch (IOException e) {
                             throw new RuntimeException("Failed to write CSV response", e);
@@ -813,11 +820,12 @@ public class GrebiApi {
                 .exception(Exception.class, (e, ctx) -> {
                     ctx.status(500);
                     ctx.contentType("application/json");
-                    ctx.result(gson.toJson(Map.of("error", e.getMessage())));
+                    // an exception without a message (a bare NPE) must still produce the JSON body
+                    var message = Objects.requireNonNullElse(e.getMessage(), e.getClass().getSimpleName());
+                    ctx.result(gson.toJson(Map.of("error", message)));
                     e.printStackTrace();
                 });
-                })
-                .start("0.0.0.0", port);
+                });
     }
 
     private static QueryTemplate getQueryTemplateOrThrow(

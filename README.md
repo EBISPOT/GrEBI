@@ -34,6 +34,10 @@ The UI also has unit tests (Vitest and Testing Library) that run in a few second
 
     cd webapp/grebi_ui && npm ci && npm test
 
+So does the API (JUnit and Mockito): the routes and the MCP server run over mocked repositories with the query templates in `webapp/grebi_api/src/test/resources/query_templates`, and `mvn verify` also applies the coverage gate:
+
+    cd webapp/grebi_api && mvn verify
+
 ### Prerequisites
 
 You need Docker with the `docker compose` plugin and enough disk space to build the image. Build it locally before running the tests:

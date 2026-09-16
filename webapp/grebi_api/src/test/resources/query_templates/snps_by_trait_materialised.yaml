@@ -1,0 +1,35 @@
+# Parameterised template materialised in full: served from Postgres.
+title: SNPs associated with a trait
+question: Which [SNPs]{snp} are associated with {trait_id}?
+description: Materialised at dataload and served with closure-at-query-time.
+graphs:
+  - g1
+  - g2
+topics:
+  - gwas
+cypher_match_fragment: |-
+  MATCH (trait)-[:sourceId]->(:Id { id: $trait_id })
+  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
+cypher_return_fragment: |-
+  RETURN trait { .id } AS trait, snp { .id } AS snp, assoc.p_value AS p_value
+cypher_count_fragment: |-
+  RETURN count(*) AS count
+params:
+  - param_id: trait_id
+    param_name: Trait
+    param_type: SourceId
+    values_under: 'efo:0000408'
+result_columns:
+  - column_id: trait
+    column_type: GraphNodeId
+    facet: true
+  - column_id: snp
+    column_type: GraphNodeId
+  - column_id: p_value
+    column_type: float
+materialise:
+  mode: full
+examples:
+  - title: psoriasis
+    params:
+      trait_id: mondo:0005083

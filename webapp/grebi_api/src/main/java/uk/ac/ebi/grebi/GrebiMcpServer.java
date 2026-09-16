@@ -337,12 +337,16 @@ public class GrebiMcpServer {
             }
 
             var paramProps = new LinkedHashMap<String, Object>();
+            // no graphs list means the template runs on every graph; no params list
+            // means a parameterless query (both keys are optional in the YAML)
+            var templateGraphs = qt.graphs == null ? graphs.stream().toList() : qt.graphs.stream().toList();
+            var templateParams = qt.params == null ? List.<uk.ac.ebi.grebi.repo.QueryTemplate.Parameter>of() : qt.params;
 
             paramProps.put("graph", Map.of(
-                "enum", qt.graphs.stream().toList()
+                "enum", templateGraphs
             ));
 
-            for (var param : qt.params) {
+            for (var param : templateParams) {
                 var paramDef = new LinkedHashMap<String, Object>();
                 paramDef.put("type", "string");
                 paramDef.put("description", param.param_name); // TODO: add a param_desc
@@ -417,7 +421,9 @@ public class GrebiMcpServer {
                     var pageNum = getIntArg(request.arguments(), "pageNum", 0);
                     var pageSize = getIntArg(request.arguments(), "pageSize", ResourceLimits.DEFAULT_PAGE_SIZE);
 
-                    if(!graphs.contains(graph)) {
+                    // the graphs this template supports (its schema's enum), not every graph the server has
+
+                    if(!templateGraphs.contains(graph)) {
                         return Mono.error(new RuntimeException("Unknown graph " + graph));
                     }
 
