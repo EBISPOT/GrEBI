@@ -1,0 +1,6314 @@
+{
+  "health": {
+    "status": "ok"
+  },
+  "node_details": {
+    "drugbank:DB11100": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "drugbank:DB11100": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Allantoin"
+            ],
+            "grebi:nodeId": "drugbank:DB11100",
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          },
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "drugbank:DB11100",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": "Allantoin"
+          }
+        ],
+        "grebi:nodeId": "drugbank:DB11100",
+        "grebi:sourceIds": [
+          "drugbank:DB11100"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": "drugbank:DB11100"
+          }
+        ],
+        "primekg:indication": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "indication"
+                ],
+                "primekg:relation": [
+                  "indication"
+                ],
+                "primekg:x_id": [
+                  "DB11100"
+                ],
+                "primekg:x_index": [
+                  "14520"
+                ],
+                "primekg:x_name": [
+                  "Allantoin"
+                ],
+                "primekg:x_source": [
+                  "DrugBank"
+                ],
+                "primekg:x_type": [
+                  "drug"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "drugbank:DB11100": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "Allantoin"
+                ],
+                "grebi:nodeId": "drugbank:DB11100",
+                "grebi:sourceIds": [
+                  "drugbank:DB11100"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              },
+              "mondo:0005083": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "psoriasis"
+                ],
+                "grebi:nodeId": "mondo:0005083",
+                "grebi:sourceIds": [
+                  "mondo:0005083"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "Allantoin"
+              ],
+              "grebi:nodeId": "drugbank:DB11100",
+              "grebi:sourceIds": [
+                "drugbank:DB11100"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "6f26666034df00a3e21ad17e05c362b9070f1071",
+            "grebi:fromNodeId": "drugbank:DB11100",
+            "grebi:fromSourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "mondo:0005083",
+            "grebi:type": "primekg:indication",
+            "primekg:display_relation": [
+              "indication"
+            ],
+            "primekg:relation": [
+              "indication"
+            ],
+            "primekg:x_id": [
+              "DB11100"
+            ],
+            "primekg:x_index": [
+              "14520"
+            ],
+            "primekg:x_name": [
+              "Allantoin"
+            ],
+            "primekg:x_source": [
+              "DrugBank"
+            ],
+            "primekg:x_type": [
+              "drug"
+            ],
+            "primekg:y_id": [
+              "5083"
+            ],
+            "primekg:y_index": [
+              "38024"
+            ],
+            "primekg:y_name": [
+              "psoriasis"
+            ],
+            "primekg:y_source": [
+              "MONDO"
+            ],
+            "primekg:y_type": [
+              "disease"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "psoriasis"
+              ],
+              "grebi:nodeId": "mondo:0005083",
+              "grebi:sourceIds": [
+                "mondo:0005083"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "drugbank:DB14507": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "drugbank:DB14507": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Lithium citrate"
+            ],
+            "grebi:nodeId": "drugbank:DB14507",
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          },
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "drugbank:DB14507",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": "Lithium citrate"
+          }
+        ],
+        "grebi:nodeId": "drugbank:DB14507",
+        "grebi:sourceIds": [
+          "drugbank:DB14507"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": "drugbank:DB14507"
+          }
+        ],
+        "primekg:contraindication": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "contraindication"
+                ],
+                "primekg:relation": [
+                  "contraindication"
+                ],
+                "primekg:x_id": [
+                  "DB14507"
+                ],
+                "primekg:x_index": [
+                  "17829"
+                ],
+                "primekg:x_name": [
+                  "Lithium citrate"
+                ],
+                "primekg:x_source": [
+                  "DrugBank"
+                ],
+                "primekg:x_type": [
+                  "drug"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "drugbank:DB14507": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "Lithium citrate"
+                ],
+                "grebi:nodeId": "drugbank:DB14507",
+                "grebi:sourceIds": [
+                  "drugbank:DB14507"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              },
+              "mondo:0005083": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "psoriasis"
+                ],
+                "grebi:nodeId": "mondo:0005083",
+                "grebi:sourceIds": [
+                  "mondo:0005083"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "Lithium citrate"
+              ],
+              "grebi:nodeId": "drugbank:DB14507",
+              "grebi:sourceIds": [
+                "drugbank:DB14507"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "ae90e3d01a0ab10899e0894cff3a5da07e665e48",
+            "grebi:fromNodeId": "drugbank:DB14507",
+            "grebi:fromSourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "mondo:0005083",
+            "grebi:type": "primekg:contraindication",
+            "primekg:display_relation": [
+              "contraindication"
+            ],
+            "primekg:relation": [
+              "contraindication"
+            ],
+            "primekg:x_id": [
+              "DB14507"
+            ],
+            "primekg:x_index": [
+              "17829"
+            ],
+            "primekg:x_name": [
+              "Lithium citrate"
+            ],
+            "primekg:x_source": [
+              "DrugBank"
+            ],
+            "primekg:x_type": [
+              "drug"
+            ],
+            "primekg:y_id": [
+              "5083"
+            ],
+            "primekg:y_index": [
+              "38024"
+            ],
+            "primekg:y_name": [
+              "psoriasis"
+            ],
+            "primekg:y_source": [
+              "MONDO"
+            ],
+            "primekg:y_type": [
+              "disease"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "psoriasis"
+              ],
+              "grebi:nodeId": "mondo:0005083",
+              "grebi:sourceIds": [
+                "mondo:0005083"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "go:0043312": {
+      "incoming_edges": {
+        "content": [
+          {
+            "_refs": {
+              "go:0043312": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "neutrophil degranulation"
+                ],
+                "grebi:nodeId": "go:0043312",
+                "grebi:sourceIds": [
+                  "go:0043312"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "ncbigene:1": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "A1BG"
+                ],
+                "grebi:nodeId": "ncbigene:1",
+                "grebi:sourceIds": [
+                  "ncbigene:1"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "A1BG"
+              ],
+              "grebi:nodeId": "ncbigene:1",
+              "grebi:sourceIds": [
+                "ncbigene:1"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "dd0e241b8d480668a69b3647ec50bf59c04a1e06",
+            "grebi:fromNodeId": "ncbigene:1",
+            "grebi:fromSourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "go:0043312",
+            "grebi:type": "primekg:bioprocess_protein",
+            "primekg:display_relation": [
+              "interacts with"
+            ],
+            "primekg:relation": [
+              "bioprocess_protein"
+            ],
+            "primekg:x_id": [
+              "1"
+            ],
+            "primekg:x_index": [
+              "7097"
+            ],
+            "primekg:x_name": [
+              "A1BG"
+            ],
+            "primekg:x_source": [
+              "NCBI"
+            ],
+            "primekg:x_type": [
+              "gene/protein"
+            ],
+            "primekg:y_id": [
+              "43312"
+            ],
+            "primekg:y_index": [
+              "112487"
+            ],
+            "primekg:y_name": [
+              "neutrophil degranulation"
+            ],
+            "primekg:y_source": [
+              "GO"
+            ],
+            "primekg:y_type": [
+              "biological_process"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "neutrophil degranulation"
+              ],
+              "grebi:nodeId": "go:0043312",
+              "grebi:sourceIds": [
+                "go:0043312"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      },
+      "node": {
+        "_refs": {
+          "go:0043312": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "neutrophil degranulation"
+            ],
+            "grebi:nodeId": "go:0043312",
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "go:0043312",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "neutrophil degranulation"
+          }
+        ],
+        "grebi:nodeId": "go:0043312",
+        "grebi:sourceIds": [
+          "go:0043312"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "go:0043312"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      }
+    },
+    "hp:0003565": {
+      "incoming_edges": {
+        "content": [
+          {
+            "_refs": {
+              "hp:0003565": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "Elevated erythrocyte sedimentation rate"
+                ],
+                "grebi:nodeId": "hp:0003565",
+                "grebi:sourceIds": [
+                  "hp:0003565"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "mondo:0007755": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "hyperimmunoglobulin G1(A1) syndrome"
+                ],
+                "grebi:nodeId": "mondo:0007755",
+                "grebi:sourceIds": [
+                  "mondo:0007755"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "hyperimmunoglobulin G1(A1) syndrome"
+              ],
+              "grebi:nodeId": "mondo:0007755",
+              "grebi:sourceIds": [
+                "mondo:0007755"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "455b2b0c54a13ac6ded41be8a373256146c65b9f",
+            "grebi:fromNodeId": "mondo:0007755",
+            "grebi:fromSourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "hp:0003565",
+            "grebi:type": "primekg:disease_phenotype_positive",
+            "primekg:display_relation": [
+              "phenotype present"
+            ],
+            "primekg:relation": [
+              "disease_phenotype_positive"
+            ],
+            "primekg:x_id": [
+              "7755"
+            ],
+            "primekg:x_index": [
+              "27844"
+            ],
+            "primekg:x_name": [
+              "hyperimmunoglobulin G1(A1) syndrome"
+            ],
+            "primekg:x_source": [
+              "MONDO"
+            ],
+            "primekg:x_type": [
+              "disease"
+            ],
+            "primekg:y_id": [
+              "3565"
+            ],
+            "primekg:y_index": [
+              "85550"
+            ],
+            "primekg:y_name": [
+              "Elevated erythrocyte sedimentation rate"
+            ],
+            "primekg:y_source": [
+              "HPO"
+            ],
+            "primekg:y_type": [
+              "effect/phenotype"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "Elevated erythrocyte sedimentation rate"
+              ],
+              "grebi:nodeId": "hp:0003565",
+              "grebi:sourceIds": [
+                "hp:0003565"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      },
+      "node": {
+        "_refs": {
+          "hp:0003565": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Elevated erythrocyte sedimentation rate"
+            ],
+            "grebi:nodeId": "hp:0003565",
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "hp:0003565",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "Elevated erythrocyte sedimentation rate"
+          }
+        ],
+        "grebi:nodeId": "hp:0003565",
+        "grebi:sourceIds": [
+          "hp:0003565"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "hp:0003565"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      }
+    },
+    "mondo:0005083": {
+      "incoming_edges": {
+        "content": [
+          {
+            "_refs": {
+              "drugbank:DB11100": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "Allantoin"
+                ],
+                "grebi:nodeId": "drugbank:DB11100",
+                "grebi:sourceIds": [
+                  "drugbank:DB11100"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              },
+              "mondo:0005083": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "psoriasis"
+                ],
+                "grebi:nodeId": "mondo:0005083",
+                "grebi:sourceIds": [
+                  "mondo:0005083"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "Allantoin"
+              ],
+              "grebi:nodeId": "drugbank:DB11100",
+              "grebi:sourceIds": [
+                "drugbank:DB11100"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "6f26666034df00a3e21ad17e05c362b9070f1071",
+            "grebi:fromNodeId": "drugbank:DB11100",
+            "grebi:fromSourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "mondo:0005083",
+            "grebi:type": "primekg:indication",
+            "primekg:display_relation": [
+              "indication"
+            ],
+            "primekg:relation": [
+              "indication"
+            ],
+            "primekg:x_id": [
+              "DB11100"
+            ],
+            "primekg:x_index": [
+              "14520"
+            ],
+            "primekg:x_name": [
+              "Allantoin"
+            ],
+            "primekg:x_source": [
+              "DrugBank"
+            ],
+            "primekg:x_type": [
+              "drug"
+            ],
+            "primekg:y_id": [
+              "5083"
+            ],
+            "primekg:y_index": [
+              "38024"
+            ],
+            "primekg:y_name": [
+              "psoriasis"
+            ],
+            "primekg:y_source": [
+              "MONDO"
+            ],
+            "primekg:y_type": [
+              "disease"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "psoriasis"
+              ],
+              "grebi:nodeId": "mondo:0005083",
+              "grebi:sourceIds": [
+                "mondo:0005083"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "drugbank:DB14507": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "Lithium citrate"
+                ],
+                "grebi:nodeId": "drugbank:DB14507",
+                "grebi:sourceIds": [
+                  "drugbank:DB14507"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              },
+              "mondo:0005083": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "psoriasis"
+                ],
+                "grebi:nodeId": "mondo:0005083",
+                "grebi:sourceIds": [
+                  "mondo:0005083"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "Lithium citrate"
+              ],
+              "grebi:nodeId": "drugbank:DB14507",
+              "grebi:sourceIds": [
+                "drugbank:DB14507"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "ae90e3d01a0ab10899e0894cff3a5da07e665e48",
+            "grebi:fromNodeId": "drugbank:DB14507",
+            "grebi:fromSourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "mondo:0005083",
+            "grebi:type": "primekg:contraindication",
+            "primekg:display_relation": [
+              "contraindication"
+            ],
+            "primekg:relation": [
+              "contraindication"
+            ],
+            "primekg:x_id": [
+              "DB14507"
+            ],
+            "primekg:x_index": [
+              "17829"
+            ],
+            "primekg:x_name": [
+              "Lithium citrate"
+            ],
+            "primekg:x_source": [
+              "DrugBank"
+            ],
+            "primekg:x_type": [
+              "drug"
+            ],
+            "primekg:y_id": [
+              "5083"
+            ],
+            "primekg:y_index": [
+              "38024"
+            ],
+            "primekg:y_name": [
+              "psoriasis"
+            ],
+            "primekg:y_source": [
+              "MONDO"
+            ],
+            "primekg:y_type": [
+              "disease"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "psoriasis"
+              ],
+              "grebi:nodeId": "mondo:0005083",
+              "grebi:sourceIds": [
+                "mondo:0005083"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "mondo:0005083": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "psoriasis"
+                ],
+                "grebi:nodeId": "mondo:0005083",
+                "grebi:sourceIds": [
+                  "mondo:0005083"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "mondo:0024255": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "genetic skin disease"
+                ],
+                "grebi:nodeId": "mondo:0024255",
+                "grebi:sourceIds": [
+                  "mondo:0024255"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "genetic skin disease"
+              ],
+              "grebi:nodeId": "mondo:0024255",
+              "grebi:sourceIds": [
+                "mondo:0024255"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "384f21b77889b374fab355142590ef0c7c71cf70",
+            "grebi:fromNodeId": "mondo:0024255",
+            "grebi:fromSourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "mondo:0005083",
+            "grebi:type": "primekg:disease_disease",
+            "primekg:display_relation": [
+              "parent-child"
+            ],
+            "primekg:relation": [
+              "disease_disease"
+            ],
+            "primekg:x_id": [
+              "24255"
+            ],
+            "primekg:x_index": [
+              "35827"
+            ],
+            "primekg:x_name": [
+              "genetic skin disease"
+            ],
+            "primekg:x_source": [
+              "MONDO"
+            ],
+            "primekg:x_type": [
+              "disease"
+            ],
+            "primekg:y_id": [
+              "5083"
+            ],
+            "primekg:y_index": [
+              "38024"
+            ],
+            "primekg:y_name": [
+              "psoriasis"
+            ],
+            "primekg:y_source": [
+              "MONDO"
+            ],
+            "primekg:y_type": [
+              "disease"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "psoriasis"
+              ],
+              "grebi:nodeId": "mondo:0005083",
+              "grebi:sourceIds": [
+                "mondo:0005083"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          },
+          {
+            "_refs": {
+              "mondo:0005083": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "psoriasis"
+                ],
+                "grebi:nodeId": "mondo:0005083",
+                "grebi:sourceIds": [
+                  "mondo:0005083"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "ncbigene:348": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "APOE"
+                ],
+                "grebi:nodeId": "ncbigene:348",
+                "grebi:sourceIds": [
+                  "ncbigene:348"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "APOE"
+              ],
+              "grebi:nodeId": "ncbigene:348",
+              "grebi:sourceIds": [
+                "ncbigene:348"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "598e6645d2ad8bdfa81ae1a866955e06f696a8f2",
+            "grebi:fromNodeId": "ncbigene:348",
+            "grebi:fromSourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "mondo:0005083",
+            "grebi:type": "primekg:disease_protein",
+            "primekg:display_relation": [
+              "associated with"
+            ],
+            "primekg:relation": [
+              "disease_protein"
+            ],
+            "primekg:x_id": [
+              "348"
+            ],
+            "primekg:x_index": [
+              "3879"
+            ],
+            "primekg:x_name": [
+              "APOE"
+            ],
+            "primekg:x_source": [
+              "NCBI"
+            ],
+            "primekg:x_type": [
+              "gene/protein"
+            ],
+            "primekg:y_id": [
+              "5083"
+            ],
+            "primekg:y_index": [
+              "38024"
+            ],
+            "primekg:y_name": [
+              "psoriasis"
+            ],
+            "primekg:y_source": [
+              "MONDO"
+            ],
+            "primekg:y_type": [
+              "disease"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "psoriasis"
+              ],
+              "grebi:nodeId": "mondo:0005083",
+              "grebi:sourceIds": [
+                "mondo:0005083"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 4
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 4
+      },
+      "node": {
+        "_refs": {
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "mondo:0005083",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "psoriasis"
+          }
+        ],
+        "grebi:nodeId": "mondo:0005083",
+        "grebi:sourceIds": [
+          "mondo:0005083"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "mondo:0005083"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      }
+    },
+    "mondo:0007755": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "hp:0003565": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Elevated erythrocyte sedimentation rate"
+            ],
+            "grebi:nodeId": "hp:0003565",
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "mondo:0007755": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "hyperimmunoglobulin G1(A1) syndrome"
+            ],
+            "grebi:nodeId": "mondo:0007755",
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "mondo:0007755",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "hyperimmunoglobulin G1(A1) syndrome"
+          }
+        ],
+        "grebi:nodeId": "mondo:0007755",
+        "grebi:sourceIds": [
+          "mondo:0007755"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "mondo:0007755"
+          }
+        ],
+        "primekg:disease_phenotype_positive": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "phenotype present"
+                ],
+                "primekg:relation": [
+                  "disease_phenotype_positive"
+                ],
+                "primekg:x_id": [
+                  "7755"
+                ],
+                "primekg:x_index": [
+                  "27844"
+                ],
+                "primekg:x_name": [
+                  "hyperimmunoglobulin G1(A1) syndrome"
+                ],
+                "primekg:x_source": [
+                  "MONDO"
+                ],
+                "primekg:x_type": [
+                  "disease"
+                ],
+                "primekg:y_id": [
+                  "3565"
+                ],
+                "primekg:y_index": [
+                  "85550"
+                ],
+                "primekg:y_name": [
+                  "Elevated erythrocyte sedimentation rate"
+                ],
+                "primekg:y_source": [
+                  "HPO"
+                ],
+                "primekg:y_type": [
+                  "effect/phenotype"
+                ]
+              },
+              "grebi:value": "hp:0003565"
+            }
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "hp:0003565": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "Elevated erythrocyte sedimentation rate"
+                ],
+                "grebi:nodeId": "hp:0003565",
+                "grebi:sourceIds": [
+                  "hp:0003565"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "mondo:0007755": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "hyperimmunoglobulin G1(A1) syndrome"
+                ],
+                "grebi:nodeId": "mondo:0007755",
+                "grebi:sourceIds": [
+                  "mondo:0007755"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "hyperimmunoglobulin G1(A1) syndrome"
+              ],
+              "grebi:nodeId": "mondo:0007755",
+              "grebi:sourceIds": [
+                "mondo:0007755"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "455b2b0c54a13ac6ded41be8a373256146c65b9f",
+            "grebi:fromNodeId": "mondo:0007755",
+            "grebi:fromSourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "hp:0003565",
+            "grebi:type": "primekg:disease_phenotype_positive",
+            "primekg:display_relation": [
+              "phenotype present"
+            ],
+            "primekg:relation": [
+              "disease_phenotype_positive"
+            ],
+            "primekg:x_id": [
+              "7755"
+            ],
+            "primekg:x_index": [
+              "27844"
+            ],
+            "primekg:x_name": [
+              "hyperimmunoglobulin G1(A1) syndrome"
+            ],
+            "primekg:x_source": [
+              "MONDO"
+            ],
+            "primekg:x_type": [
+              "disease"
+            ],
+            "primekg:y_id": [
+              "3565"
+            ],
+            "primekg:y_index": [
+              "85550"
+            ],
+            "primekg:y_name": [
+              "Elevated erythrocyte sedimentation rate"
+            ],
+            "primekg:y_source": [
+              "HPO"
+            ],
+            "primekg:y_type": [
+              "effect/phenotype"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "Elevated erythrocyte sedimentation rate"
+              ],
+              "grebi:nodeId": "hp:0003565",
+              "grebi:sourceIds": [
+                "hp:0003565"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "mondo:0024255": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "mondo:0024255": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "genetic skin disease"
+            ],
+            "grebi:nodeId": "mondo:0024255",
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "mondo:0024255",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "genetic skin disease"
+          }
+        ],
+        "grebi:nodeId": "mondo:0024255",
+        "grebi:sourceIds": [
+          "mondo:0024255"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "mondo:0024255"
+          }
+        ],
+        "primekg:disease_disease": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "parent-child"
+                ],
+                "primekg:relation": [
+                  "disease_disease"
+                ],
+                "primekg:x_id": [
+                  "24255"
+                ],
+                "primekg:x_index": [
+                  "35827"
+                ],
+                "primekg:x_name": [
+                  "genetic skin disease"
+                ],
+                "primekg:x_source": [
+                  "MONDO"
+                ],
+                "primekg:x_type": [
+                  "disease"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "mondo:0005083": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "psoriasis"
+                ],
+                "grebi:nodeId": "mondo:0005083",
+                "grebi:sourceIds": [
+                  "mondo:0005083"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "mondo:0024255": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "genetic skin disease"
+                ],
+                "grebi:nodeId": "mondo:0024255",
+                "grebi:sourceIds": [
+                  "mondo:0024255"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "genetic skin disease"
+              ],
+              "grebi:nodeId": "mondo:0024255",
+              "grebi:sourceIds": [
+                "mondo:0024255"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "384f21b77889b374fab355142590ef0c7c71cf70",
+            "grebi:fromNodeId": "mondo:0024255",
+            "grebi:fromSourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "mondo:0005083",
+            "grebi:type": "primekg:disease_disease",
+            "primekg:display_relation": [
+              "parent-child"
+            ],
+            "primekg:relation": [
+              "disease_disease"
+            ],
+            "primekg:x_id": [
+              "24255"
+            ],
+            "primekg:x_index": [
+              "35827"
+            ],
+            "primekg:x_name": [
+              "genetic skin disease"
+            ],
+            "primekg:x_source": [
+              "MONDO"
+            ],
+            "primekg:x_type": [
+              "disease"
+            ],
+            "primekg:y_id": [
+              "5083"
+            ],
+            "primekg:y_index": [
+              "38024"
+            ],
+            "primekg:y_name": [
+              "psoriasis"
+            ],
+            "primekg:y_source": [
+              "MONDO"
+            ],
+            "primekg:y_type": [
+              "disease"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "psoriasis"
+              ],
+              "grebi:nodeId": "mondo:0005083",
+              "grebi:sourceIds": [
+                "mondo:0005083"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "ncbigene:1": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "go:0043312": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "neutrophil degranulation"
+            ],
+            "grebi:nodeId": "go:0043312",
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "ncbigene:1": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "A1BG"
+            ],
+            "grebi:nodeId": "ncbigene:1",
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:1",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": "A1BG"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:1",
+        "grebi:sourceIds": [
+          "ncbigene:1"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": "ncbigene:1"
+          }
+        ],
+        "primekg:bioprocess_protein": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "interacts with"
+                ],
+                "primekg:relation": [
+                  "bioprocess_protein"
+                ],
+                "primekg:x_id": [
+                  "1"
+                ],
+                "primekg:x_index": [
+                  "7097"
+                ],
+                "primekg:x_name": [
+                  "A1BG"
+                ],
+                "primekg:x_source": [
+                  "NCBI"
+                ],
+                "primekg:x_type": [
+                  "gene/protein"
+                ],
+                "primekg:y_id": [
+                  "43312"
+                ],
+                "primekg:y_index": [
+                  "112487"
+                ],
+                "primekg:y_name": [
+                  "neutrophil degranulation"
+                ],
+                "primekg:y_source": [
+                  "GO"
+                ],
+                "primekg:y_type": [
+                  "biological_process"
+                ]
+              },
+              "grebi:value": "go:0043312"
+            }
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "go:0043312": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "neutrophil degranulation"
+                ],
+                "grebi:nodeId": "go:0043312",
+                "grebi:sourceIds": [
+                  "go:0043312"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "ncbigene:1": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "A1BG"
+                ],
+                "grebi:nodeId": "ncbigene:1",
+                "grebi:sourceIds": [
+                  "ncbigene:1"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "A1BG"
+              ],
+              "grebi:nodeId": "ncbigene:1",
+              "grebi:sourceIds": [
+                "ncbigene:1"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "dd0e241b8d480668a69b3647ec50bf59c04a1e06",
+            "grebi:fromNodeId": "ncbigene:1",
+            "grebi:fromSourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "go:0043312",
+            "grebi:type": "primekg:bioprocess_protein",
+            "primekg:display_relation": [
+              "interacts with"
+            ],
+            "primekg:relation": [
+              "bioprocess_protein"
+            ],
+            "primekg:x_id": [
+              "1"
+            ],
+            "primekg:x_index": [
+              "7097"
+            ],
+            "primekg:x_name": [
+              "A1BG"
+            ],
+            "primekg:x_source": [
+              "NCBI"
+            ],
+            "primekg:x_type": [
+              "gene/protein"
+            ],
+            "primekg:y_id": [
+              "43312"
+            ],
+            "primekg:y_index": [
+              "112487"
+            ],
+            "primekg:y_name": [
+              "neutrophil degranulation"
+            ],
+            "primekg:y_source": [
+              "GO"
+            ],
+            "primekg:y_type": [
+              "biological_process"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "neutrophil degranulation"
+              ],
+              "grebi:nodeId": "go:0043312",
+              "grebi:sourceIds": [
+                "go:0043312"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "ncbigene:348": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "ncbigene:348": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "APOE"
+            ],
+            "grebi:nodeId": "ncbigene:348",
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:348",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": "APOE"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:348",
+        "grebi:sourceIds": [
+          "ncbigene:348"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": "ncbigene:348"
+          }
+        ],
+        "primekg:disease_protein": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "associated with"
+                ],
+                "primekg:relation": [
+                  "disease_protein"
+                ],
+                "primekg:x_id": [
+                  "348"
+                ],
+                "primekg:x_index": [
+                  "3879"
+                ],
+                "primekg:x_name": [
+                  "APOE"
+                ],
+                "primekg:x_source": [
+                  "NCBI"
+                ],
+                "primekg:x_type": [
+                  "gene/protein"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "mondo:0005083": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "psoriasis"
+                ],
+                "grebi:nodeId": "mondo:0005083",
+                "grebi:sourceIds": [
+                  "mondo:0005083"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              },
+              "ncbigene:348": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "APOE"
+                ],
+                "grebi:nodeId": "ncbigene:348",
+                "grebi:sourceIds": [
+                  "ncbigene:348"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "APOE"
+              ],
+              "grebi:nodeId": "ncbigene:348",
+              "grebi:sourceIds": [
+                "ncbigene:348"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "598e6645d2ad8bdfa81ae1a866955e06f696a8f2",
+            "grebi:fromNodeId": "ncbigene:348",
+            "grebi:fromSourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "mondo:0005083",
+            "grebi:type": "primekg:disease_protein",
+            "primekg:display_relation": [
+              "associated with"
+            ],
+            "primekg:relation": [
+              "disease_protein"
+            ],
+            "primekg:x_id": [
+              "348"
+            ],
+            "primekg:x_index": [
+              "3879"
+            ],
+            "primekg:x_name": [
+              "APOE"
+            ],
+            "primekg:x_source": [
+              "NCBI"
+            ],
+            "primekg:x_type": [
+              "gene/protein"
+            ],
+            "primekg:y_id": [
+              "5083"
+            ],
+            "primekg:y_index": [
+              "38024"
+            ],
+            "primekg:y_name": [
+              "psoriasis"
+            ],
+            "primekg:y_source": [
+              "MONDO"
+            ],
+            "primekg:y_type": [
+              "disease"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "psoriasis"
+              ],
+              "grebi:nodeId": "mondo:0005083",
+              "grebi:sourceIds": [
+                "mondo:0005083"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "ncbigene:7105": {
+      "incoming_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      },
+      "node": {
+        "_refs": {
+          "ncbigene:7105": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "TSPAN6"
+            ],
+            "grebi:nodeId": "ncbigene:7105",
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          },
+          "uberon:0000002": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "uterine cervix"
+            ],
+            "grebi:nodeId": "uberon:0000002",
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:7105",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": "TSPAN6"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:7105",
+        "grebi:sourceIds": [
+          "ncbigene:7105"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": "ncbigene:7105"
+          }
+        ],
+        "primekg:anatomy_protein_present": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "expression present"
+                ],
+                "primekg:relation": [
+                  "anatomy_protein_present"
+                ],
+                "primekg:x_id": [
+                  "7105"
+                ],
+                "primekg:x_index": [
+                  "5531"
+                ],
+                "primekg:x_name": [
+                  "TSPAN6"
+                ],
+                "primekg:x_source": [
+                  "NCBI"
+                ],
+                "primekg:x_type": [
+                  "gene/protein"
+                ],
+                "primekg:y_id": [
+                  "2"
+                ],
+                "primekg:y_index": [
+                  "63112"
+                ],
+                "primekg:y_name": [
+                  "uterine cervix"
+                ],
+                "primekg:y_source": [
+                  "UBERON"
+                ],
+                "primekg:y_type": [
+                  "anatomy"
+                ]
+              },
+              "grebi:value": "uberon:0000002"
+            }
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [
+          {
+            "_refs": {
+              "ncbigene:7105": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "TSPAN6"
+                ],
+                "grebi:nodeId": "ncbigene:7105",
+                "grebi:sourceIds": [
+                  "ncbigene:7105"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              },
+              "uberon:0000002": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "uterine cervix"
+                ],
+                "grebi:nodeId": "uberon:0000002",
+                "grebi:sourceIds": [
+                  "uberon:0000002"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "TSPAN6"
+              ],
+              "grebi:nodeId": "ncbigene:7105",
+              "grebi:sourceIds": [
+                "ncbigene:7105"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "a81cfe22490ac3b11a7c3375bdd38e3d169dda46",
+            "grebi:fromNodeId": "ncbigene:7105",
+            "grebi:fromSourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "uberon:0000002",
+            "grebi:type": "primekg:anatomy_protein_present",
+            "primekg:display_relation": [
+              "expression present"
+            ],
+            "primekg:relation": [
+              "anatomy_protein_present"
+            ],
+            "primekg:x_id": [
+              "7105"
+            ],
+            "primekg:x_index": [
+              "5531"
+            ],
+            "primekg:x_name": [
+              "TSPAN6"
+            ],
+            "primekg:x_source": [
+              "NCBI"
+            ],
+            "primekg:x_type": [
+              "gene/protein"
+            ],
+            "primekg:y_id": [
+              "2"
+            ],
+            "primekg:y_index": [
+              "63112"
+            ],
+            "primekg:y_name": [
+              "uterine cervix"
+            ],
+            "primekg:y_source": [
+              "UBERON"
+            ],
+            "primekg:y_type": [
+              "anatomy"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "uterine cervix"
+              ],
+              "grebi:nodeId": "uberon:0000002",
+              "grebi:sourceIds": [
+                "uberon:0000002"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      }
+    },
+    "uberon:0000002": {
+      "incoming_edges": {
+        "content": [
+          {
+            "_refs": {
+              "ncbigene:7105": {
+                "grebi:datasources": [
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "TSPAN6"
+                ],
+                "grebi:nodeId": "ncbigene:7105",
+                "grebi:sourceIds": [
+                  "ncbigene:7105"
+                ],
+                "grebi:type": [
+                  "biolink:Entity"
+                ]
+              },
+              "uberon:0000002": {
+                "grebi:datasources": [
+                  "OntologyTerms",
+                  "PrimeKG"
+                ],
+                "grebi:name": [
+                  "uterine cervix"
+                ],
+                "grebi:nodeId": "uberon:0000002",
+                "grebi:sourceIds": [
+                  "uberon:0000002"
+                ],
+                "grebi:type": [
+                  "biolink:Entity",
+                  "ols:Class"
+                ]
+              }
+            },
+            "from": {
+              "grebi:datasources": [
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "TSPAN6"
+              ],
+              "grebi:nodeId": "ncbigene:7105",
+              "grebi:sourceIds": [
+                "ncbigene:7105"
+              ],
+              "grebi:type": [
+                "biolink:Entity"
+              ]
+            },
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:edgeId": "a81cfe22490ac3b11a7c3375bdd38e3d169dda46",
+            "grebi:fromNodeId": "ncbigene:7105",
+            "grebi:fromSourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:subgraph": "test_primekg",
+            "grebi:toNodeId": "uberon:0000002",
+            "grebi:type": "primekg:anatomy_protein_present",
+            "primekg:display_relation": [
+              "expression present"
+            ],
+            "primekg:relation": [
+              "anatomy_protein_present"
+            ],
+            "primekg:x_id": [
+              "7105"
+            ],
+            "primekg:x_index": [
+              "5531"
+            ],
+            "primekg:x_name": [
+              "TSPAN6"
+            ],
+            "primekg:x_source": [
+              "NCBI"
+            ],
+            "primekg:x_type": [
+              "gene/protein"
+            ],
+            "primekg:y_id": [
+              "2"
+            ],
+            "primekg:y_index": [
+              "63112"
+            ],
+            "primekg:y_name": [
+              "uterine cervix"
+            ],
+            "primekg:y_source": [
+              "UBERON"
+            ],
+            "primekg:y_type": [
+              "anatomy"
+            ],
+            "to": {
+              "grebi:datasources": [
+                "OntologyTerms",
+                "PrimeKG"
+              ],
+              "grebi:name": [
+                "uterine cervix"
+              ],
+              "grebi:nodeId": "uberon:0000002",
+              "grebi:sourceIds": [
+                "uberon:0000002"
+              ],
+              "grebi:type": [
+                "biolink:Entity",
+                "ols:Class"
+              ]
+            }
+          }
+        ],
+        "facetFieldToCounts": {
+          "grebi:datasources": {
+            "PrimeKG": 1
+          }
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 1
+      },
+      "node": {
+        "_refs": {
+          "uberon:0000002": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "uterine cervix"
+            ],
+            "grebi:nodeId": "uberon:0000002",
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "uberon:0000002",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "uterine cervix"
+          }
+        ],
+        "grebi:nodeId": "uberon:0000002",
+        "grebi:sourceIds": [
+          "uberon:0000002"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "uberon:0000002"
+          }
+        ]
+      },
+      "outgoing_edges": {
+        "content": [],
+        "facetFieldToCounts": {
+          "grebi:datasources": {}
+        },
+        "pageable": {
+          "pageNumber": 0,
+          "pageSize": 100,
+          "sort": {
+            "orders": [
+              {
+                "direction": "ASC",
+                "ignoreCase": false,
+                "nullHandling": "NATIVE",
+                "property": "grebi:type"
+              }
+            ]
+          }
+        },
+        "total": 0
+      }
+    }
+  },
+  "nodes": {
+    "content": [
+      {
+        "_refs": {
+          "drugbank:DB11100": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Allantoin"
+            ],
+            "grebi:nodeId": "drugbank:DB11100",
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          },
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "drugbank:DB11100",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": "Allantoin"
+          }
+        ],
+        "grebi:nodeId": "drugbank:DB11100",
+        "grebi:sourceIds": [
+          "drugbank:DB11100"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": "drugbank:DB11100"
+          }
+        ],
+        "primekg:indication": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "indication"
+                ],
+                "primekg:relation": [
+                  "indication"
+                ],
+                "primekg:x_id": [
+                  "DB11100"
+                ],
+                "primekg:x_index": [
+                  "14520"
+                ],
+                "primekg:x_name": [
+                  "Allantoin"
+                ],
+                "primekg:x_source": [
+                  "DrugBank"
+                ],
+                "primekg:x_type": [
+                  "drug"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "drugbank:DB14507": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Lithium citrate"
+            ],
+            "grebi:nodeId": "drugbank:DB14507",
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          },
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "drugbank:DB14507",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": "Lithium citrate"
+          }
+        ],
+        "grebi:nodeId": "drugbank:DB14507",
+        "grebi:sourceIds": [
+          "drugbank:DB14507"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": "drugbank:DB14507"
+          }
+        ],
+        "primekg:contraindication": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "contraindication"
+                ],
+                "primekg:relation": [
+                  "contraindication"
+                ],
+                "primekg:x_id": [
+                  "DB14507"
+                ],
+                "primekg:x_index": [
+                  "17829"
+                ],
+                "primekg:x_name": [
+                  "Lithium citrate"
+                ],
+                "primekg:x_source": [
+                  "DrugBank"
+                ],
+                "primekg:x_type": [
+                  "drug"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "go:0043312": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "neutrophil degranulation"
+            ],
+            "grebi:nodeId": "go:0043312",
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "go:0043312",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "neutrophil degranulation"
+          }
+        ],
+        "grebi:nodeId": "go:0043312",
+        "grebi:sourceIds": [
+          "go:0043312"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "go:0043312"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "hp:0003565": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Elevated erythrocyte sedimentation rate"
+            ],
+            "grebi:nodeId": "hp:0003565",
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "hp:0003565",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "Elevated erythrocyte sedimentation rate"
+          }
+        ],
+        "grebi:nodeId": "hp:0003565",
+        "grebi:sourceIds": [
+          "hp:0003565"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "hp:0003565"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "mondo:0005083",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "psoriasis"
+          }
+        ],
+        "grebi:nodeId": "mondo:0005083",
+        "grebi:sourceIds": [
+          "mondo:0005083"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "mondo:0005083"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "hp:0003565": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Elevated erythrocyte sedimentation rate"
+            ],
+            "grebi:nodeId": "hp:0003565",
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "mondo:0007755": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "hyperimmunoglobulin G1(A1) syndrome"
+            ],
+            "grebi:nodeId": "mondo:0007755",
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "mondo:0007755",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "hyperimmunoglobulin G1(A1) syndrome"
+          }
+        ],
+        "grebi:nodeId": "mondo:0007755",
+        "grebi:sourceIds": [
+          "mondo:0007755"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "mondo:0007755"
+          }
+        ],
+        "primekg:disease_phenotype_positive": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "phenotype present"
+                ],
+                "primekg:relation": [
+                  "disease_phenotype_positive"
+                ],
+                "primekg:x_id": [
+                  "7755"
+                ],
+                "primekg:x_index": [
+                  "27844"
+                ],
+                "primekg:x_name": [
+                  "hyperimmunoglobulin G1(A1) syndrome"
+                ],
+                "primekg:x_source": [
+                  "MONDO"
+                ],
+                "primekg:x_type": [
+                  "disease"
+                ],
+                "primekg:y_id": [
+                  "3565"
+                ],
+                "primekg:y_index": [
+                  "85550"
+                ],
+                "primekg:y_name": [
+                  "Elevated erythrocyte sedimentation rate"
+                ],
+                "primekg:y_source": [
+                  "HPO"
+                ],
+                "primekg:y_type": [
+                  "effect/phenotype"
+                ]
+              },
+              "grebi:value": "hp:0003565"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "mondo:0024255": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "genetic skin disease"
+            ],
+            "grebi:nodeId": "mondo:0024255",
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "mondo:0024255",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "genetic skin disease"
+          }
+        ],
+        "grebi:nodeId": "mondo:0024255",
+        "grebi:sourceIds": [
+          "mondo:0024255"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "mondo:0024255"
+          }
+        ],
+        "primekg:disease_disease": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "parent-child"
+                ],
+                "primekg:relation": [
+                  "disease_disease"
+                ],
+                "primekg:x_id": [
+                  "24255"
+                ],
+                "primekg:x_index": [
+                  "35827"
+                ],
+                "primekg:x_name": [
+                  "genetic skin disease"
+                ],
+                "primekg:x_source": [
+                  "MONDO"
+                ],
+                "primekg:x_type": [
+                  "disease"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "go:0043312": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "neutrophil degranulation"
+            ],
+            "grebi:nodeId": "go:0043312",
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "ncbigene:1": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "A1BG"
+            ],
+            "grebi:nodeId": "ncbigene:1",
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:1",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": "A1BG"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:1",
+        "grebi:sourceIds": [
+          "ncbigene:1"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": "ncbigene:1"
+          }
+        ],
+        "primekg:bioprocess_protein": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "interacts with"
+                ],
+                "primekg:relation": [
+                  "bioprocess_protein"
+                ],
+                "primekg:x_id": [
+                  "1"
+                ],
+                "primekg:x_index": [
+                  "7097"
+                ],
+                "primekg:x_name": [
+                  "A1BG"
+                ],
+                "primekg:x_source": [
+                  "NCBI"
+                ],
+                "primekg:x_type": [
+                  "gene/protein"
+                ],
+                "primekg:y_id": [
+                  "43312"
+                ],
+                "primekg:y_index": [
+                  "112487"
+                ],
+                "primekg:y_name": [
+                  "neutrophil degranulation"
+                ],
+                "primekg:y_source": [
+                  "GO"
+                ],
+                "primekg:y_type": [
+                  "biological_process"
+                ]
+              },
+              "grebi:value": "go:0043312"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "ncbigene:348": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "APOE"
+            ],
+            "grebi:nodeId": "ncbigene:348",
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:348",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": "APOE"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:348",
+        "grebi:sourceIds": [
+          "ncbigene:348"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": "ncbigene:348"
+          }
+        ],
+        "primekg:disease_protein": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "associated with"
+                ],
+                "primekg:relation": [
+                  "disease_protein"
+                ],
+                "primekg:x_id": [
+                  "348"
+                ],
+                "primekg:x_index": [
+                  "3879"
+                ],
+                "primekg:x_name": [
+                  "APOE"
+                ],
+                "primekg:x_source": [
+                  "NCBI"
+                ],
+                "primekg:x_type": [
+                  "gene/protein"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "ncbigene:7105": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "TSPAN6"
+            ],
+            "grebi:nodeId": "ncbigene:7105",
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          },
+          "uberon:0000002": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "uterine cervix"
+            ],
+            "grebi:nodeId": "uberon:0000002",
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:7105",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": "TSPAN6"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:7105",
+        "grebi:sourceIds": [
+          "ncbigene:7105"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": "ncbigene:7105"
+          }
+        ],
+        "primekg:anatomy_protein_present": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "expression present"
+                ],
+                "primekg:relation": [
+                  "anatomy_protein_present"
+                ],
+                "primekg:x_id": [
+                  "7105"
+                ],
+                "primekg:x_index": [
+                  "5531"
+                ],
+                "primekg:x_name": [
+                  "TSPAN6"
+                ],
+                "primekg:x_source": [
+                  "NCBI"
+                ],
+                "primekg:x_type": [
+                  "gene/protein"
+                ],
+                "primekg:y_id": [
+                  "2"
+                ],
+                "primekg:y_index": [
+                  "63112"
+                ],
+                "primekg:y_name": [
+                  "uterine cervix"
+                ],
+                "primekg:y_source": [
+                  "UBERON"
+                ],
+                "primekg:y_type": [
+                  "anatomy"
+                ]
+              },
+              "grebi:value": "uberon:0000002"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "uberon:0000002": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "uterine cervix"
+            ],
+            "grebi:nodeId": "uberon:0000002",
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "uberon:0000002",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "uterine cervix"
+          }
+        ],
+        "grebi:nodeId": "uberon:0000002",
+        "grebi:sourceIds": [
+          "uberon:0000002"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "uberon:0000002"
+          }
+        ]
+      }
+    ],
+    "empty": false,
+    "facetFieldToCounts": {},
+    "first": true,
+    "last": true,
+    "number": 0,
+    "numberOfElements": 11,
+    "pageable": {
+      "offset": 0,
+      "pageNumber": 0,
+      "pageSize": 100,
+      "paged": true,
+      "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+      },
+      "unpaged": false
+    },
+    "size": 100,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "totalElements": 11,
+    "totalPages": 1
+  },
+  "search": {
+    "content": [
+      {
+        "_refs": {
+          "drugbank:DB11100": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Allantoin"
+            ],
+            "grebi:nodeId": "drugbank:DB11100",
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          },
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "drugbank:DB11100",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": "Allantoin"
+          }
+        ],
+        "grebi:nodeId": "drugbank:DB11100",
+        "grebi:sourceIds": [
+          "drugbank:DB11100"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": "drugbank:DB11100"
+          }
+        ],
+        "primekg:indication": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB11100"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "indication"
+                ],
+                "primekg:relation": [
+                  "indication"
+                ],
+                "primekg:x_id": [
+                  "DB11100"
+                ],
+                "primekg:x_index": [
+                  "14520"
+                ],
+                "primekg:x_name": [
+                  "Allantoin"
+                ],
+                "primekg:x_source": [
+                  "DrugBank"
+                ],
+                "primekg:x_type": [
+                  "drug"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "drugbank:DB14507": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Lithium citrate"
+            ],
+            "grebi:nodeId": "drugbank:DB14507",
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          },
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "drugbank:DB14507",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": "Lithium citrate"
+          }
+        ],
+        "grebi:nodeId": "drugbank:DB14507",
+        "grebi:sourceIds": [
+          "drugbank:DB14507"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": "drugbank:DB14507"
+          }
+        ],
+        "primekg:contraindication": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "drugbank:DB14507"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "contraindication"
+                ],
+                "primekg:relation": [
+                  "contraindication"
+                ],
+                "primekg:x_id": [
+                  "DB14507"
+                ],
+                "primekg:x_index": [
+                  "17829"
+                ],
+                "primekg:x_name": [
+                  "Lithium citrate"
+                ],
+                "primekg:x_source": [
+                  "DrugBank"
+                ],
+                "primekg:x_type": [
+                  "drug"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "go:0043312": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "neutrophil degranulation"
+            ],
+            "grebi:nodeId": "go:0043312",
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "go:0043312",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "neutrophil degranulation"
+          }
+        ],
+        "grebi:nodeId": "go:0043312",
+        "grebi:sourceIds": [
+          "go:0043312"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:value": "go:0043312"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "hp:0003565": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Elevated erythrocyte sedimentation rate"
+            ],
+            "grebi:nodeId": "hp:0003565",
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "hp:0003565",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "Elevated erythrocyte sedimentation rate"
+          }
+        ],
+        "grebi:nodeId": "hp:0003565",
+        "grebi:sourceIds": [
+          "hp:0003565"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:value": "hp:0003565"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "mondo:0005083",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "psoriasis"
+          }
+        ],
+        "grebi:nodeId": "mondo:0005083",
+        "grebi:sourceIds": [
+          "mondo:0005083"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:value": "mondo:0005083"
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "hp:0003565": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "Elevated erythrocyte sedimentation rate"
+            ],
+            "grebi:nodeId": "hp:0003565",
+            "grebi:sourceIds": [
+              "hp:0003565"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "mondo:0007755": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "hyperimmunoglobulin G1(A1) syndrome"
+            ],
+            "grebi:nodeId": "mondo:0007755",
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "mondo:0007755",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "hyperimmunoglobulin G1(A1) syndrome"
+          }
+        ],
+        "grebi:nodeId": "mondo:0007755",
+        "grebi:sourceIds": [
+          "mondo:0007755"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": "mondo:0007755"
+          }
+        ],
+        "primekg:disease_phenotype_positive": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0007755"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "phenotype present"
+                ],
+                "primekg:relation": [
+                  "disease_phenotype_positive"
+                ],
+                "primekg:x_id": [
+                  "7755"
+                ],
+                "primekg:x_index": [
+                  "27844"
+                ],
+                "primekg:x_name": [
+                  "hyperimmunoglobulin G1(A1) syndrome"
+                ],
+                "primekg:x_source": [
+                  "MONDO"
+                ],
+                "primekg:x_type": [
+                  "disease"
+                ],
+                "primekg:y_id": [
+                  "3565"
+                ],
+                "primekg:y_index": [
+                  "85550"
+                ],
+                "primekg:y_name": [
+                  "Elevated erythrocyte sedimentation rate"
+                ],
+                "primekg:y_source": [
+                  "HPO"
+                ],
+                "primekg:y_type": [
+                  "effect/phenotype"
+                ]
+              },
+              "grebi:value": "hp:0003565"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "mondo:0024255": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "genetic skin disease"
+            ],
+            "grebi:nodeId": "mondo:0024255",
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "mondo:0024255",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "genetic skin disease"
+          }
+        ],
+        "grebi:nodeId": "mondo:0024255",
+        "grebi:sourceIds": [
+          "mondo:0024255"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": "mondo:0024255"
+          }
+        ],
+        "primekg:disease_disease": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "mondo:0024255"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "parent-child"
+                ],
+                "primekg:relation": [
+                  "disease_disease"
+                ],
+                "primekg:x_id": [
+                  "24255"
+                ],
+                "primekg:x_index": [
+                  "35827"
+                ],
+                "primekg:x_name": [
+                  "genetic skin disease"
+                ],
+                "primekg:x_source": [
+                  "MONDO"
+                ],
+                "primekg:x_type": [
+                  "disease"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "go:0043312": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "neutrophil degranulation"
+            ],
+            "grebi:nodeId": "go:0043312",
+            "grebi:sourceIds": [
+              "go:0043312"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "ncbigene:1": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "A1BG"
+            ],
+            "grebi:nodeId": "ncbigene:1",
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:1",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": "A1BG"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:1",
+        "grebi:sourceIds": [
+          "ncbigene:1"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": "ncbigene:1"
+          }
+        ],
+        "primekg:bioprocess_protein": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:1"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "interacts with"
+                ],
+                "primekg:relation": [
+                  "bioprocess_protein"
+                ],
+                "primekg:x_id": [
+                  "1"
+                ],
+                "primekg:x_index": [
+                  "7097"
+                ],
+                "primekg:x_name": [
+                  "A1BG"
+                ],
+                "primekg:x_source": [
+                  "NCBI"
+                ],
+                "primekg:x_type": [
+                  "gene/protein"
+                ],
+                "primekg:y_id": [
+                  "43312"
+                ],
+                "primekg:y_index": [
+                  "112487"
+                ],
+                "primekg:y_name": [
+                  "neutrophil degranulation"
+                ],
+                "primekg:y_source": [
+                  "GO"
+                ],
+                "primekg:y_type": [
+                  "biological_process"
+                ]
+              },
+              "grebi:value": "go:0043312"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "mondo:0005083": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "psoriasis"
+            ],
+            "grebi:nodeId": "mondo:0005083",
+            "grebi:sourceIds": [
+              "mondo:0005083"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          },
+          "ncbigene:348": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "APOE"
+            ],
+            "grebi:nodeId": "ncbigene:348",
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:348",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": "APOE"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:348",
+        "grebi:sourceIds": [
+          "ncbigene:348"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": "ncbigene:348"
+          }
+        ],
+        "primekg:disease_protein": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:348"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "associated with"
+                ],
+                "primekg:relation": [
+                  "disease_protein"
+                ],
+                "primekg:x_id": [
+                  "348"
+                ],
+                "primekg:x_index": [
+                  "3879"
+                ],
+                "primekg:x_name": [
+                  "APOE"
+                ],
+                "primekg:x_source": [
+                  "NCBI"
+                ],
+                "primekg:x_type": [
+                  "gene/protein"
+                ],
+                "primekg:y_id": [
+                  "5083"
+                ],
+                "primekg:y_index": [
+                  "38024"
+                ],
+                "primekg:y_name": [
+                  "psoriasis"
+                ],
+                "primekg:y_source": [
+                  "MONDO"
+                ],
+                "primekg:y_type": [
+                  "disease"
+                ]
+              },
+              "grebi:value": "mondo:0005083"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "ncbigene:7105": {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "TSPAN6"
+            ],
+            "grebi:nodeId": "ncbigene:7105",
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:type": [
+              "biolink:Entity"
+            ]
+          },
+          "uberon:0000002": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "uterine cervix"
+            ],
+            "grebi:nodeId": "uberon:0000002",
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "ncbigene:7105",
+        "grebi:datasources": [
+          "PrimeKG"
+        ],
+        "grebi:displayType": "biolink:Entity",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": "TSPAN6"
+          }
+        ],
+        "grebi:nodeId": "ncbigene:7105",
+        "grebi:sourceIds": [
+          "ncbigene:7105"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": "biolink:Entity"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": "ncbigene:7105"
+          }
+        ],
+        "primekg:anatomy_protein_present": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "ncbigene:7105"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "primekg:display_relation": [
+                  "expression present"
+                ],
+                "primekg:relation": [
+                  "anatomy_protein_present"
+                ],
+                "primekg:x_id": [
+                  "7105"
+                ],
+                "primekg:x_index": [
+                  "5531"
+                ],
+                "primekg:x_name": [
+                  "TSPAN6"
+                ],
+                "primekg:x_source": [
+                  "NCBI"
+                ],
+                "primekg:x_type": [
+                  "gene/protein"
+                ],
+                "primekg:y_id": [
+                  "2"
+                ],
+                "primekg:y_index": [
+                  "63112"
+                ],
+                "primekg:y_name": [
+                  "uterine cervix"
+                ],
+                "primekg:y_source": [
+                  "UBERON"
+                ],
+                "primekg:y_type": [
+                  "anatomy"
+                ]
+              },
+              "grebi:value": "uberon:0000002"
+            }
+          }
+        ]
+      },
+      {
+        "_refs": {
+          "uberon:0000002": {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:name": [
+              "uterine cervix"
+            ],
+            "grebi:nodeId": "uberon:0000002",
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:type": [
+              "biolink:Entity",
+              "ols:Class"
+            ]
+          }
+        },
+        "grebi:curie": "uberon:0000002",
+        "grebi:datasources": [
+          "OntologyTerms",
+          "PrimeKG"
+        ],
+        "grebi:displayType": "ols:Class",
+        "grebi:name": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "uterine cervix"
+          }
+        ],
+        "grebi:nodeId": "uberon:0000002",
+        "grebi:sourceIds": [
+          "uberon:0000002"
+        ],
+        "grebi:subgraph": "test_primekg",
+        "grebi:type": [
+          {
+            "grebi:datasources": [
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "biolink:Entity"
+          },
+          {
+            "grebi:datasources": [
+              "OntologyTerms"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "ols:Class"
+          }
+        ],
+        "id": [
+          {
+            "grebi:datasources": [
+              "OntologyTerms",
+              "PrimeKG"
+            ],
+            "grebi:sourceIds": [
+              "uberon:0000002"
+            ],
+            "grebi:value": "uberon:0000002"
+          }
+        ]
+      }
+    ],
+    "empty": false,
+    "facetFieldToCounts": {},
+    "first": true,
+    "last": true,
+    "number": 0,
+    "numberOfElements": 11,
+    "pageable": {
+      "offset": 0,
+      "pageNumber": 0,
+      "pageSize": 100,
+      "paged": true,
+      "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+      },
+      "unpaged": false
+    },
+    "size": 100,
+    "sort": {
+      "empty": true,
+      "sorted": false,
+      "unsorted": true
+    },
+    "totalElements": 11,
+    "totalPages": 1
+  },
+  "subgraph_metadata": {
+    "displaytypes": {
+      "biolink:Entity": {
+        "count": 5
+      },
+      "ols:Class": {
+        "count": 6
+      }
+    },
+    "edge_counts_by_datasource": {
+      "PrimeKG": 7
+    },
+    "edge_prop_defs": {},
+    "edge_props": {
+      "primekg:display_relation": {
+        "count": 7
+      },
+      "primekg:relation": {
+        "count": 7
+      },
+      "primekg:x_id": {
+        "count": 7
+      },
+      "primekg:x_index": {
+        "count": 7
+      },
+      "primekg:x_name": {
+        "count": 7
+      },
+      "primekg:x_source": {
+        "count": 7
+      },
+      "primekg:x_type": {
+        "count": 7
+      },
+      "primekg:y_id": {
+        "count": 7
+      },
+      "primekg:y_index": {
+        "count": 7
+      },
+      "primekg:y_name": {
+        "count": 7
+      },
+      "primekg:y_source": {
+        "count": 7
+      },
+      "primekg:y_type": {
+        "count": 7
+      }
+    },
+    "edges": {
+      "biolink:Entity": {
+        "primekg:anatomy_protein_present": {
+          "biolink:Entity,ols:Class": {
+            "PrimeKG": 1
+          }
+        },
+        "primekg:bioprocess_protein": {
+          "biolink:Entity,ols:Class": {
+            "PrimeKG": 1
+          }
+        },
+        "primekg:contraindication": {
+          "biolink:Entity,ols:Class": {
+            "PrimeKG": 1
+          }
+        },
+        "primekg:disease_protein": {
+          "biolink:Entity,ols:Class": {
+            "PrimeKG": 1
+          }
+        },
+        "primekg:indication": {
+          "biolink:Entity,ols:Class": {
+            "PrimeKG": 1
+          }
+        }
+      },
+      "biolink:Entity,ols:Class": {
+        "primekg:disease_disease": {
+          "biolink:Entity,ols:Class": {
+            "PrimeKG": 1
+          }
+        },
+        "primekg:disease_phenotype_positive": {
+          "biolink:Entity,ols:Class": {
+            "PrimeKG": 1
+          }
+        }
+      }
+    },
+    "embedding_models2dims": {},
+    "entity_prop_defs": {},
+    "entity_props": {
+      "grebi:name": {
+        "count": 11
+      },
+      "grebi:type": {
+        "count": 17
+      },
+      "id": {
+        "count": 11
+      },
+      "primekg:anatomy_protein_present": {
+        "count": 1
+      },
+      "primekg:bioprocess_protein": {
+        "count": 1
+      },
+      "primekg:contraindication": {
+        "count": 1
+      },
+      "primekg:disease_disease": {
+        "count": 1
+      },
+      "primekg:disease_phenotype_positive": {
+        "count": 1
+      },
+      "primekg:disease_protein": {
+        "count": 1
+      },
+      "primekg:indication": {
+        "count": 1
+      }
+    },
+    "materialised_queries": [
+      {
+        "columns": [
+          {
+            "column_id": "message",
+            "column_type": "string"
+          }
+        ],
+        "cypher_query": "RETURN \"Hello, World!\" AS message",
+        "description": "Tester query to see if the pipeline is working",
+        "end_time": "2026-09-16 14:38:04",
+        "id": "hello_world_tester",
+        "num_results": 1,
+        "start_time": "2026-09-16 14:38:03",
+        "subgraph": "test_primekg",
+        "table": "matq_test_primekg_hello_world_tester",
+        "time": 1.047774,
+        "title": "Hello world",
+        "uses_datasources": [
+          "IMPC",
+          "GWAS"
+        ]
+      }
+    ],
+    "materialised_templates": [],
+    "node_counts_by_datasource": {
+      "OntologyTerms": 6,
+      "PrimeKG": 11
+    },
+    "subgraph_config": {
+      "additional_equivalence_groups": [
+        [
+          "grebi:name",
+          "ols:label",
+          "rdfs:label",
+          "monarch:name",
+          "impc:name",
+          "reactome:displayName",
+          "dcterms:title",
+          "ncit:Preferred_Name",
+          "robokop:name",
+          "otar:name"
+        ],
+        [
+          "grebi:description",
+          "iao:definition",
+          "iao:0000115",
+          "monarch:description",
+          "ols:definition",
+          "robokop:description",
+          "otar:description"
+        ],
+        [
+          "grebi:synonym",
+          "monarch:synonym",
+          "iao:alternative_label",
+          "ols:synonym",
+          "oboinowl:hasExactSynonym",
+          "dcterms:alternative",
+          "otar:synonyms"
+        ],
+        [
+          "mondo:0000001",
+          "ogms:0000031"
+        ],
+        [
+          "biolink:broad_match",
+          "skos:broader",
+          "skos:broadMatch",
+          "ols:directAncestor"
+        ],
+        [
+          "biolink:subclass_of",
+          "ols:directParent",
+          "rdfs:subClassOf",
+          "rdfs:subPropertyOf"
+        ],
+        [
+          "rdfs:isDefinedBy",
+          "ols:ontologyIri",
+          "ols:ontologyId"
+        ],
+        [
+          "biolink:gene_to_disease_association",
+          "ncit:Gene_Associated_With_Disease"
+        ],
+        [
+          "biolink:disease_has_location",
+          "efo:has_disease_location"
+        ]
+      ],
+      "bytes_per_merged_file": 1073741824,
+      "datasource_configs": [
+        {
+          "description": "Test datasource: a few real rows of PrimeKG's kg.csv around psoriasis, covering every ontology whose ids PrimeKG stores without their leading zeros (see tests/data/test_primekg/README.md)",
+          "download": [
+            {
+              "dest": "test_primekg/kg.csv",
+              "sources": [
+                "tests/data/test_primekg/kg.csv"
+              ]
+            }
+          ],
+          "enabled": true,
+          "id": "PrimeKG",
+          "ingests": [
+            {
+              "command": " cat $GREBI_INGEST_FILENAME | $GREBI_DATALOAD_HOME/01_ingest/primekg.py",
+              "globs": [
+                "test_primekg/kg.csv"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Test datasource: minimal stand-ins for the MONDO, HPO, GO and UBERON terms the test_primekg rows reference, so each PrimeKG node must land on the same graph node as the ontology term (in production these come from the OLS datasources)",
+          "download": [
+            {
+              "dest": "test_primekg/reference_terms.jsonl",
+              "sources": [
+                "tests/data/test_primekg/reference_terms.jsonl"
+              ]
+            }
+          ],
+          "enabled": true,
+          "id": "OntologyTerms",
+          "ingests": [
+            {
+              "command": " cat $GREBI_INGEST_FILENAME | grebi_transform_jsonl --json-rename category:grebi:type --json-inject-key-prefix ols:",
+              "globs": [
+                "test_primekg/reference_terms.jsonl"
+              ]
+            }
+          ]
+        }
+      ],
+      "exclude_edges": [],
+      "exclude_props": [
+        "ols:hierarchicalProperty",
+        "ols:synonymProperty",
+        "ols:curie",
+        "ols:shortForm",
+        "ols:ontologyPreferredPrefix",
+        "ols:iri",
+        "ols:uri",
+        "ols:imported",
+        "ols:hasHierarchicalParents",
+        "ols:hasHierarchicalChildren",
+        "ols:hasDirectParents",
+        "ols:hasDirectChildren",
+        "ols:numDescendants",
+        "ols:numHierarchicalDescendants",
+        "oboinowl:id",
+        "oboinowl:url",
+        "monarch:iri",
+        "cco:hasDocument",
+        "cco:hasMolecule"
+      ],
+      "exclude_self_referential_edges": [
+        "foaf:page",
+        "rdfs:seeAlso",
+        "oboinowl:hasDbXref",
+        "biolink:subclass_of",
+        "biolink:broad_match",
+        "ols:ontology_purl",
+        "ols:ontologyId",
+        "cheminf:000407",
+        "cheminf:InChIKey",
+        "biolink:interacts_with",
+        "reactome:url",
+        "dc:Identifier",
+        "hgnc:agr",
+        "hgnc:gencc",
+        "monarch:xref",
+        "hgnc:uniprot_ids",
+        "hgnc:omim_id",
+        "hgnc:entrez_id",
+        "reactome:referenceGene",
+        "reactome:identifier",
+        "reactome:crossReference",
+        "edam:Ensembl_gene_id",
+        "obo:pr#has_gene_template",
+        "ols:relatedTo",
+        "ols:relatedFrom",
+        "robokop:smiles",
+        "ctd:ChemicalURL",
+        "ctd:UniProtIDs",
+        "ols:linksTo"
+      ],
+      "id": "TestPrimeKG",
+      "identifier_props": [
+        "id",
+        "owl:equivalentClass",
+        "owl:equivalentProperty",
+        "owl:sameAs",
+        "grebi:hashId",
+        "grebi:equivalentTo",
+        "ols:iri",
+        "ols:shortForm",
+        "hgnc:ensembl_gene_id",
+        "obo:chebi/inchi",
+        "obo:chebi/inchikey",
+        "obo:chebi/smiles",
+        "otar:canonicalSmiles",
+        "otar:inchiKey",
+        "impc:pmId",
+        "impc:humanGeneAccId",
+        "monarch:iri",
+        "skos:exactMatch",
+        "ncit:P368",
+        "ncit:C98965",
+        "dcterms:identifier",
+        "oboinowl:hasAlternativeId",
+        "robokop:equivalent_identifiers",
+        "mesh.vocab:identifier"
+      ],
+      "name": "Test: PrimeKG identifier padding",
+      "ontology_sets": [],
+      "prioritise_datasources": [
+        "Ontologies.biolink",
+        "Ontologies.ro",
+        "Ontologies.chebi",
+        "Ontologies.hp",
+        "Ontologies.mp",
+        "Ontologies.mondo",
+        "Ontologies.oba",
+        "Ontologies.efo",
+        "Ontologies.doid",
+        "HGNC",
+        "IMPC"
+      ],
+      "type_superclasses": [
+        "mondo:0000001",
+        "efo:0000408",
+        "chebi:36080",
+        "chebi:24431",
+        "biolink:ChemicalEntity"
+      ]
+    },
+    "subgraph_name": "test_primekg",
+    "types": {
+      "biolink:Entity": {
+        "count": 11
+      },
+      "ols:Class": {
+        "count": 6
+      }
+    }
+  },
+  "subgraphs": [
+    "test_primekg"
+  ]
+}

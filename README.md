@@ -16,7 +16,7 @@ The GrEBI pipeline is being applied to a number of projects including the [Inter
 
 GrEBI has a suite of automated E2E tests that run the full pipeline on small synthetic datasets and compare the resulting Neo4j/Postgres database contents against committed expected output in `tests/expected_output/`. If code changes alter the pipeline output such that it no longer matches the expected snapshots, the CI will fail and you will need to update the expected output.
 
-There are eight test subgraphs, each exercising a different aspect of the pipeline:
+There are nine test subgraphs, each exercising a different aspect of the pipeline:
 
 | Test subgraph | Purpose |
 | --- | --- |
@@ -28,6 +28,7 @@ There are eight test subgraphs, each exercising a different aspect of the pipeli
 | `test_pdbe` | Ingests a small real subset of PDBe SIFTS mappings: row merging, edge linking and ontology mapping |
 | `test_gwas` | Ingests a few real GWAS Catalog rows covering the packed `MAPPED_GENE` / `MAPPED_TRAIT` column formats |
 | `test_reactome` | Ingests a few real Reactome dump objects and checks a DOID-annotated disease clique-merges into the ontology term |
+| `test_primekg` | Ingests a few real PrimeKG rows and checks their unpadded MONDO/HPO/GO/UBERON ids land on the ontology terms |
 
 ### Prerequisites
 

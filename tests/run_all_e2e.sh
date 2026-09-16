@@ -44,6 +44,10 @@ SUBGRAPHS=(
     # stand-in DOID/MONDO terms, so the disease clique-merges into the ontology
     # node (issue #26). Regenerate expected output as for test_gwas above.
     test_reactome
+    # PrimeKG: a few kg.csv rows around psoriasis whose MONDO/HPO/GO/UBERON
+    # ids arrive without leading zeros, plus stand-in terms: each PrimeKG node
+    # must be the same graph node as the ontology term (issue #58).
+    test_primekg
 )
 
 FAILED=()
