@@ -36,6 +36,14 @@ Both the DB snapshots and the API snapshot are always exported and published to
 the pipeline output directory (`out/<subgraph>/`) for initial population; the
 comparisons in steps 3–4 are skipped when no expected output exists yet.
 
+## When a comparison fails
+
+The integration test task fails, so Nextflow does not publish its outputs:
+`out/` keeps pointing at the last successful run. The new snapshots, and the
+`<subgraph>_api_snapshot.actual.json` the API comparison writes for diffing,
+are in the failed task's work directory (`tmp/NXF_WORK/<hash>`, the hash is
+in the run log next to `test_query_templates`).
+
 ## Updating Expected Output
 
 When the pipeline output intentionally changes (e.g. adding new data or 

@@ -17,6 +17,10 @@ process test_query_templates {
 
     input:
     path(release_tgz)
+    // content hash of tests/expected_output (read by the script through
+    // grebi_home), so that resume re-runs the comparison after the committed
+    // snapshots are updated
+    val(expected_output_fingerprint)
     // ordering only: `none` unless the external populate ran, in which case
     // this is its status dir and the test cannot start before it finished
     val(external_done)
@@ -39,6 +43,8 @@ process test_query_templates {
     path("grebi-docs.html"), optional: true, emit: docs_html
     path("*_snapshot_*.jsonl"), optional: true, emit: snapshots
     path("*_api_snapshot.json"), optional: true, emit: api_snapshot
+    // what the API returned when the snapshot comparison failed, for diffing
+    path("*_api_snapshot.actual.json"), optional: true, emit: api_actual
     stdout emit: log
 
     script:

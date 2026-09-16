@@ -94,7 +94,12 @@ workflow {
     }
 
     // Create channel of all datasource files, tagged with subgraph
-    // Each item: [sg, file_listing, identifier_props, bytes_per_merged_file]
+    // Each item: [sg, file_listing, identifier_props, bytes_per_merged_file, input_file]
+    // The file appears twice: as the absolute path in file_listing.filename,
+    // which the ingest command uses, and as a path input, which is what makes
+    // Nextflow's resume notice when the file's content changes (a val is
+    // hashed as a string, so a changed file behind an unchanged path was
+    // served from cache).
     datasource_files = Channel.from(
         subgraph_names.collectMany { sg ->
             def cfg = configs[sg]
@@ -134,7 +139,8 @@ workflow {
                             [sg,
                              [datasource: ds, ingest: ingest_spec, filename: f.toString()],
                              cfg.sg_config.identifier_props,
-                             cfg.sg_config.bytes_per_merged_file]
+                             cfg.sg_config.bytes_per_merged_file,
+                             f]
                         }
                     }
                 }
@@ -163,7 +169,8 @@ workflow {
                 [sg,
                  [datasource: ds, ingest: ingest_spec, filename: nq.toString()],
                  cfg.sg_config.identifier_props,
-                 cfg.sg_config.bytes_per_merged_file]
+                 cfg.sg_config.bytes_per_merged_file,
+                 nq]
             }
         }
     }
@@ -323,9 +330,13 @@ workflow {
     // neo_db: [sg, sg_neo4j/]
 
     // === STEP 7: RUN QUERIES (per-subgraph) ===
+    // The templates directory is passed twice: as a path (staged for the
+    // script) and as a content fingerprint (see dirFingerprint), so that a
+    // changed template re-materialises and re-packages on resume.
+    query_templates_fp = dirFingerprint(params.query_yamls_path)
     queries_input = neo_db
-        .map { sg, neo -> [sg, neo, file(params.query_yamls_path)] }
-    // → [sg, neo_dir, query_yamls_path]
+        .map { sg, neo -> [sg, neo, file(params.query_yamls_path), query_templates_fp] }
+    // → [sg, neo_dir, query_yamls_path, fingerprint]
 
     run_materialised_queries(
         queries_input,
@@ -482,7 +493,8 @@ workflow {
         Channel.value(params.subgraphs),
         Channel.value(params.out),
         Channel.value(params.docker_image),
-        Channel.value(params.dataload_home)
+        Channel.value(params.dataload_home),
+        Channel.value(query_templates_fp)
     )
 
     release_tgz = package_release(
@@ -498,6 +510,7 @@ workflow {
         : Channel.value('none')
     test_query_templates(
         release_tgz,
+        Channel.value(dirFingerprint("${params.grebi_home}/tests/expected_output")),
         external_done,
         Channel.value(params.external_postgres),
         Channel.value(params.subgraphs),
@@ -566,4 +579,23 @@ def mergedShardId(pathLike) {
 
 def basename(filename) {
     return new File(filename).name
+}
+
+// A content fingerprint of every file under a directory, used as a val input
+// where a process reads a directory: Nextflow hashes a directory input by its
+// path alone, so an added or edited file inside it (a query template, an
+// expected snapshot) never invalidated the task on resume.
+def dirFingerprint(dir) {
+    def root = new File(dir.toString())
+    if (!root.isDirectory()) {
+        return "absent"
+    }
+    def md = java.security.MessageDigest.getInstance("MD5")
+    def files = []
+    root.eachFileRecurse(groovy.io.FileType.FILES) { f -> files << f }
+    files.sort { it.path }.each { f ->
+        md.update(root.toPath().relativize(f.toPath()).toString().bytes)
+        md.update(f.bytes)
+    }
+    return md.digest().encodeHex().toString()
 }

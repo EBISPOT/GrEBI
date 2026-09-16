@@ -4,8 +4,11 @@
 Each row yields the source node with the edge as a reified property, and a
 bare record for the target node so it exists even if it is never a source.
 Ids are the row's source name and local id as a CURIE; the prefix normaliser
-maps the source names (MONDO, HPO, GO, UBERON, REACTOME, DrugBank, UMLS, NCBI
-as NCBIGene) onto the graph's prefixes.
+maps the source names (MONDO, HPO, GO, UBERON, REACTOME, DrugBank, UMLS) onto
+the graph's prefixes. Two source names are not prefixes and are rewritten:
+NCBI (gene ids) to NCBIGene, and CTD, whose exposure ids are MeSH descriptor
+and supplementary-record UIs (D000075182, C092102), to MESH, so the exposures
+land on the MeSH nodes the CTD and MeSH datasources already share.
 """
 
 import csv
@@ -18,7 +21,7 @@ import sys
 # padding the node never merges with the ontology term (issue #58).
 PADDED_SOURCES = {"MONDO": 7, "HPO": 7, "GO": 7, "UBERON": 7}
 
-SOURCE_PREFIX = {"NCBI": "NCBIGene"}
+SOURCE_PREFIX = {"NCBI": "NCBIGene", "CTD": "MESH"}
 
 
 def curie(source, local_id):

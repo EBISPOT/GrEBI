@@ -254,8 +254,10 @@ def main():
     if not snapshot_file.exists():
         print_colored(f"Expected snapshot not found: {snapshot_file}", Colors.RED)
         print_colored("Run with --update to create it for the first time", Colors.YELLOW)
-        # Write the actual for easy diffing
-        actual_file = expected_dir / f"{subgraph}_api_snapshot.actual.json"
+        # Write the actual for easy diffing, next to the exported snapshots in the
+        # working directory (never into the expected directory: that is the
+        # source tree, and a stray file there changes its fingerprint)
+        actual_file = Path.cwd() / f"{subgraph}_api_snapshot.actual.json"
         with open(actual_file, 'w') as f:
             json.dump(normalise_for_comparison(actual), f, indent=2, sort_keys=True, ensure_ascii=False)
         print(f"Actual output saved to: {actual_file}")
@@ -276,7 +278,7 @@ def main():
         if len(diffs) > 50:
             print(f"  ... and {len(diffs) - 50} more")
 
-        actual_file = expected_dir / f"{subgraph}_api_snapshot.actual.json"
+        actual_file = Path.cwd() / f"{subgraph}_api_snapshot.actual.json"
         with open(actual_file, 'w') as f:
             json.dump(normalise_for_comparison(actual), f, indent=2, sort_keys=True, ensure_ascii=False)
         print(f"\nActual output saved to: {actual_file}")

@@ -4,3 +4,4 @@
 {"id": "hp:0003565", "label": "Elevated erythrocyte sedimentation rate", "category": ["ols:Class"]}
 {"id": "go:0043312", "label": "neutrophil degranulation", "category": ["ols:Class"]}
 {"id": "uberon:0000002", "label": "uterine cervix", "category": ["ols:Class"]}
+{"id": "mesh:D000075182", "label": "Agent Orange", "category": ["ols:Class"]}
