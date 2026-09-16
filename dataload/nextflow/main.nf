@@ -105,11 +105,37 @@ workflow {
             def cfg = configs[sg]
             cfg.datasources.findAll { !it.from_ubergraph }.collectMany { ds ->
                 ds.ingests.collectMany { ingest_spec ->
+                    // A discovered manifest is authoritative: old cached files
+                    // from withdrawn/reclassified studies must not be ingested.
+                    def allowed_paths = null
+                    if (ingest_spec.download_manifest) {
+                        def manifest_file = new File("${params.downloads_path}/${sg}/${ingest_spec.download_manifest}")
+                        if (!manifest_file.exists()) {
+                            error "Missing ingest download manifest ${manifest_file} — has the download stage run for ${sg}?"
+                        }
+                        def entries = new JsonSlurper().parse(manifest_file)
+                        if (!(entries instanceof List) || entries.isEmpty() ||
+                            entries.any { !(it instanceof Map) || !(it.dest instanceof String) || !it.dest }) {
+                            error "Empty/invalid ingest download manifest: ${manifest_file}"
+                        }
+                        // Normalise through file() so the comparison with files()
+                        // results below is not defeated by e.g. a trailing slash
+                        // in the configured downloads path.
+                        allowed_paths = entries.collect { file("${params.downloads_path}/${sg}/${it.dest}").toString() } as Set
+                        entries.findAll { !it.optional }.each { entry ->
+                            def path = "${params.downloads_path}/${sg}/${entry.dest}"
+                            if (!file(path).exists() || file(path).size() == 0) {
+                                error "Missing/empty required download from ${manifest_file}: ${path}"
+                            }
+                        }
+                    }
                     ingest_spec.globs.collectMany { glob ->
                         // files() returns a no-wildcard path even if it doesn't
                         // exist, so skip missing/empty inputs (e.g. optional
                         // sources that weren't downloaded).
-                        files("${params.downloads_path}/${sg}/${glob}").findAll { it.exists() && it.size() > 0 }.collect { f ->
+                        files("${params.downloads_path}/${sg}/${glob}").findAll {
+                            it.exists() && it.size() > 0 && (allowed_paths == null || allowed_paths.contains(it.toString()))
+                        }.collect { f ->
                             [sg,
                              [datasource: ds, ingest: ingest_spec, filename: f.toString()],
                              cfg.sg_config.identifier_props,

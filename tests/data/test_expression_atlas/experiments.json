@@ -1,0 +1,8 @@
+{
+  "experiments": [
+    {"experimentAccession": "E-MTAB-513", "rawExperimentType": "RNASEQ_MRNA_BASELINE"},
+    {"experimentAccession": "E-MTAB-4045", "rawExperimentType": "RNASEQ_MRNA_BASELINE"},
+    {"experimentAccession": "E-TEST-1", "rawExperimentType": "RNASEQ_MRNA_BASELINE"},
+    {"experimentAccession": "E-TEST-2", "rawExperimentType": "RNASEQ_MRNA_DIFFERENTIAL"}
+  ]
+}

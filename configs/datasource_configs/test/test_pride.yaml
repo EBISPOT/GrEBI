@@ -1,0 +1,12 @@
+id: PRIDE
+enabled: true
+description: "Test datasource: PRIDE project metadata from a small bulk-export fixture"
+download:
+  - dest: pride/projects.json
+    sources:
+      - tests/data/test_pride/projects.json
+ingests:
+  - globs: ["pride/projects.json"]
+    command: '
+      python3 $GREBI_DATALOAD_HOME/01_ingest/pride.py
+          -- $GREBI_INGEST_FILENAME'

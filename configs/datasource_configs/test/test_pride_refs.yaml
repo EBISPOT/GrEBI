@@ -1,0 +1,10 @@
+id: PRIDEReferences
+enabled: true
+description: "Test entities for PRIDE alias merging and cross-reference linking"
+download:
+  - dest: pride/reference_nodes.json
+    sources:
+      - tests/data/test_pride/reference_nodes.json
+ingests:
+  - globs: ["pride/reference_nodes.json"]
+    command: 'jq -c ".[]" $GREBI_INGEST_FILENAME'

@@ -1,0 +1,7 @@
+[
+  {"id": "px:PXD001357", "grebi:name": "Test ProteomeXchange alias"},
+  {"id": "ncbitaxon:9606", "grebi:type": "biolink:OrganismTaxon", "grebi:name": "Homo sapiens"},
+  {"id": "MS:1001910", "grebi:type": "pride:Instrument", "grebi:name": "LTQ Orbitrap Elite"},
+  {"id": "pubmed:25429530", "dcterms:identifier": "doi:10.1038/srep07104", "grebi:type": "biolink:Publication", "grebi:name": "Direct evidence of milk consumption from ancient human dental calculus"},
+  {"id": "pride.project:PXD001359", "dcterms:identifier": "px:PXD001359", "grebi:type": "pride:Project", "grebi:name": "Test related project"}
+]

@@ -1,0 +1,21 @@
+id: ExpressionAtlas
+enabled: true
+description: "Baseline gene expression in mapped anatomical locations across species"
+download_manifests:
+  - dest: expression_atlas/downloads.json
+    sources:
+      - /nfs/ftp/public/databases/microarray/data/atlas/experiments.json
+      - https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments.json
+    command: >-
+      python3 "$GREBI_DATALOAD_HOME/00_download/expression_atlas.py"
+      --source-root /nfs/ftp/public/databases/microarray/data/atlas/experiments
+      --source-root https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments
+      -- "$GREBI_DOWNLOAD_FILENAME"
+ingests:
+  - globs: ["expression_atlas/experiments/*/*-tpms.tsv"]
+    download_manifest: expression_atlas/downloads.json
+    memory: "4 GB"
+    command: >-
+      python3 "$GREBI_DATALOAD_HOME/01_ingest/expression_atlas.py"
+      --min-median-tpm 0.5
+      -- "$GREBI_INGEST_FILENAME"

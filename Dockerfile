@@ -110,6 +110,11 @@ FROM ${BASE_IMAGE}
 # Reset to root for the build/COPY steps below (base ships as non-root).
 USER root
 
+# Materialised-query export uses the official Neo4j Python driver.  Keep this
+# runtime image functional even when the mutable development base tag predates
+# the corresponding dependency addition in Dockerfile.base.
+RUN python3 -c 'import neo4j' || pip3 install --no-cache-dir neo4j
+
 # ---- Copy pre-built Rust binaries from cross-compile stage ----
 # (grebi_reprefix is included in the grebi_* glob and is spawned by grebi_api)
 COPY --from=rust-builder /usr/local/bin/grebi_* /usr/local/bin/

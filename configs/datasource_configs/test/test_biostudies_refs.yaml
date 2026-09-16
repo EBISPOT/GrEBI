@@ -1,0 +1,10 @@
+id: ENAReference
+enabled: true
+description: "Test datasource: ENA entity referenced by the BioStudies fixture"
+download:
+  - dest: test_biostudies/reference_nodes.jsonl
+    sources:
+      - tests/data/test_biostudies/reference_nodes.jsonl
+ingests:
+  - globs: ["test_biostudies/reference_nodes.jsonl"]
+    command: 'cat $GREBI_INGEST_FILENAME'

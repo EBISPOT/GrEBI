@@ -48,6 +48,13 @@ SUBGRAPHS=(
     # ids arrive without leading zeros, plus stand-in terms: each PrimeKG node
     # must be the same graph node as the ontology term (issue #58).
     test_primekg
+    # BioStudies PageTab metadata: verifies study metadata and ENA linking,
+    # while ensuring linked submission files do not enter the graph.
+    test_biostudies
+    # PRIDE bulk project metadata: project aliases and ontology/publication links.
+    test_pride
+    # Atlas TPM summaries: configurable cutoff, anatomy links and provenance.
+    test_expression_atlas
 )
 
 FAILED=()

@@ -1,0 +1,10 @@
+<configuration experimentType="rnaseq_mrna_baseline">
+  <analytics>
+    <assay_groups>
+      <assay_group id="g1" label="liver; adult"><assay>a1</assay></assay_group>
+      <assay_group id="g2" label="liver; embryonic"><assay>a2</assay></assay_group>
+      <assay_group id="g3" label="liver; disease"><assay>a3</assay></assay_group>
+      <assay_group id="g4" label="lung; cell line"><assay>a4</assay></assay_group>
+    </assay_groups>
+  </analytics>
+</configuration>

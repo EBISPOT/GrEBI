@@ -48,6 +48,9 @@ config['datasource_configs'] = [
     "./configs/datasource_configs/otar/otar_disease_phenotype.yaml",
     "./configs/datasource_configs/monarch.yaml",
     "./configs/datasource_configs/metabolights.yaml",
+    "./configs/datasource_configs/biostudies.yaml",
+    "./configs/datasource_configs/pride.yaml",
+    "./configs/datasource_configs/expression_atlas.yaml",
     "./configs/datasource_configs/mondo_efo.yaml",
     "./configs/datasource_configs/ctd.yaml",
     "./configs/datasource_configs/mgnify.yaml",
@@ -81,4 +84,3 @@ config['datasource_configs'] = [
 if __name__ == '__main__':
     import json
     print(json.dumps(config, indent=2))
-

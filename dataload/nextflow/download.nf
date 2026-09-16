@@ -8,30 +8,11 @@ params.subgraph = "$GREBI_SUBGRAPH"
 params.grebi_home = "$GREBI_HOME"
 params.downloads_path = "$GREBI_DOWNLOADS_PATH"
 
-process download_file {
-    cache "lenient"
-    memory 2.GB
-    time { 2.hour + 4.hour * (task.attempt-1) }
-    // Retry any failure, not just OOM/timeout: a download task that lands on
-    // a node with a stale NFS mount fails with exit 1 in seconds ("all sources
-    // exhausted" for a local path that is fine everywhere else), and a retry
-    // is rescheduled elsewhere. A genuinely dead source still fails, three
-    // attempts later.
-    errorStrategy { task.attempt <= 3 ? 'retry' : 'terminate' }
-    maxRetries 3
-
-    input:
-    val(download_entry)
-
-    output:
-    val(download_entry.dest)
-
-    script:
+// Shared by ordinary file downloads and catalogue discovery.
+def downloadScript(download_entry, downloads_path, grebi_home) {
     def dest = download_entry.dest
     def sources = download_entry.sources
     def optional = download_entry.optional ?: false
-    def downloads_path = params.downloads_path
-    def grebi_home = params.grebi_home
 
     def script_lines = []
     script_lines << "#!/usr/bin/env bash"
@@ -200,48 +181,131 @@ process download_file {
     script_lines.join("\n")
 }
 
-workflow {
+process download_file {
+    cache "lenient"
+    memory 2.GB
+    time { 2.hour + 4.hour * (task.attempt-1) }
+    // Retry any failure, including stale NFS mounts, on another node.
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'terminate' }
+    maxRetries 3
 
-    // Load subgraph configuration
-    config = (new JsonSlurper().parse(new File(params.grebi_home, 'configs/subgraph_configs/' + params.subgraph + '.json')))
+    input:
+    val(download_entry)
 
-    // Load datasource configurations
-    datasources = config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.grebi_home, ds)) }
+    output:
+    val(download_entry.dest)
 
+    script:
+    downloadScript(download_entry, params.downloads_path, params.grebi_home)
+}
+
+process discover_downloads {
+    // Re-read the upstream catalogue even on resume. Individual files still cache.
+    cache false
+    memory 2.GB
+    time 2.hour
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'terminate' }
+    maxRetries 3
+    tag { manifest_spec.dest }
+    publishDir params.downloads_path, mode: 'copy', overwrite: true,
+        saveAs: { filename -> manifest_spec.dest }
+
+    input:
+    val(manifest_spec)
+
+    output:
+    path('downloads.json')
+
+    script:
+    def fetch = downloadScript([dest: 'catalogue', sources: manifest_spec.sources],
+                               '\$GREBI_MANIFEST_SCRATCH', params.grebi_home)
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    GREBI_MANIFEST_SCRATCH=\$(mktemp -d "\$PWD/catalogue.XXXXXX")
+    (
+    ${fetch}
+    )
+    export GREBI_DOWNLOAD_FILENAME="\$GREBI_MANIFEST_SCRATCH/catalogue"
+    export GREBI_DATALOAD_HOME="${params.grebi_home}/dataload"
+    ${manifest_spec.command} > downloads.json
+    """
+}
+
+def mergeDownloads(entries) {
     // Collect all download entries from all datasources, grouped by dest
     // Each download entry has: dest (string), sources (list of strings)
     // Multiple datasources may reference the same dest — merge sources, paths first then URLs
     def all_downloads = [:]  // dest -> [path_sources..., url_sources...]
 
-    datasources.each { ds ->
-        if (ds.download) {
-            ds.download.each { dl ->
-                def dest = dl.dest
-                if (!all_downloads.containsKey(dest)) {
-                    all_downloads[dest] = [paths: [] as Set, urls: [] as Set, optional: true]
-                }
-                // A dest is optional only if every download entry contributing to
-                // it is marked optional (so a required source can't be skipped).
-                if (!dl.optional) {
-                    all_downloads[dest].optional = false
-                }
-                dl.sources.each { source ->
-                    if (source.contains("://")) {
-                        all_downloads[dest].urls << source
-                    } else {
-                        all_downloads[dest].paths << source
-                    }
-                }
+    entries.each { dl ->
+        def dest = dl.dest
+        if (!all_downloads.containsKey(dest)) {
+            all_downloads[dest] = [paths: [] as Set, urls: [] as Set, optional: true]
+        }
+        // A dest is optional only if every contributing entry is optional.
+        if (!dl.optional) {
+            all_downloads[dest].optional = false
+        }
+        dl.sources.each { source ->
+            if (source.contains("://")) {
+                all_downloads[dest].urls << source
+            } else {
+                all_downloads[dest].paths << source
             }
         }
     }
 
-    // Build channel: paths first, then URLs for each dest
-    def download_entries = all_downloads.collect { dest, v ->
+    // Build channel: paths first, then URLs for each dest.  Sources keep
+    // their configured (preference) order; sorting by dest keeps the overall
+    // entry order deterministic run to run.
+    all_downloads.collect { dest, v ->
         [dest: dest, sources: (v.paths.toList() + v.urls.toList()), optional: v.optional]
+    }.sort { it.dest }
+}
+
+workflow {
+    config = new JsonSlurper().parse(new File(params.grebi_home, 'configs/subgraph_configs/' + params.subgraph + '.json'))
+    datasources = config.datasource_configs.collect { ds -> new YamlSlurper().parse(new File(params.grebi_home, ds)) }
+
+    manifest_specs = datasources.collectMany { it.download_manifests ?: [] }
+    manifest_specs.each { spec ->
+        // Check shapes before matching so a malformed spec gets this message
+        // rather than an opaque NullPointerException from ==~ on a null dest.
+        if (!(spec instanceof Map) || !(spec.dest instanceof String) ||
+            !(spec.dest ==~ /[A-Za-z0-9_.\/-]+/) || spec.dest.startsWith('/') ||
+            spec.dest.tokenize('/').contains('..') ||
+            !(spec.command instanceof String) || !spec.command ||
+            !(spec.sources instanceof List) || spec.sources.isEmpty() ||
+            spec.sources.any { !(it instanceof String) || !it }) {
+            error "Invalid download manifest specification: ${spec}"
+        }
+    }
+    if (manifest_specs.collect { it.dest }.unique().size() != manifest_specs.size()) {
+        error 'Download manifest destinations must be unique'
     }
 
-    download_channel = Channel.from(download_entries)
+    discovered = discover_downloads(Channel.fromList(manifest_specs)).flatMap { manifest ->
+        def entries = new JsonSlurper().parse(manifest.toFile())
+        if (!(entries instanceof List) || entries.isEmpty()) {
+            error "Expected a nonempty download manifest: ${manifest}"
+        }
+        entries.each { entry ->
+            if (!(entry instanceof Map) || !(entry.dest instanceof String) ||
+                !(entry.dest ==~ /[A-Za-z0-9_.\/-]+/) ||
+                entry.dest.startsWith('/') || entry.dest.tokenize('/').contains('..') ||
+                !(entry.sources instanceof List) || entry.sources.isEmpty() ||
+                entry.sources.any { !(it instanceof String) || !it }) {
+                error "Invalid discovered download entry: ${entry}"
+            }
+        }
+        entries
+    }
+    static_entries = Channel.fromList(datasources.collectMany { it.download ?: [] })
+    // concat, not mix: if a dest ever gains sources from both static config
+    // and a discovered manifest, the merged source order — and with it the
+    // download_file cache key — must not depend on channel interleaving.
+    download_channel = static_entries.concat(discovered).collect(flat: false).flatMap { mergeDownloads(it) }
 
     download_file(download_channel)
 }
