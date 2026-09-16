@@ -1,0 +1,14 @@
+id: DiseaseTerms
+enabled: true
+description: "Test datasource: minimal stand-ins for the DOID and MONDO psoriasis terms, so the Reactome Disease object can clique-merge into the ontology disease node as it does with the OLS datasources in production"
+download:
+  - dest: test_reactome/reference_terms.jsonl
+    sources:
+      - tests/data/test_reactome/reference_terms.jsonl
+ingests:
+  - globs: ["test_reactome/reference_terms.jsonl"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename category:grebi:type
+          --json-inject-key-prefix ols:'

@@ -1,0 +1,14 @@
+id: Reactome
+enabled: true
+description: "Test datasource: a few real objects from the Reactome graph dump (a DOID-annotated Disease and the entities that cite it), exercising grebi_ingest_reactome's identifier handling (see tests/data/test_reactome/README.md)"
+download:
+  - dest: test_reactome/reactome.jsonl
+    sources:
+      - tests/data/test_reactome/reactome.jsonl
+ingests:
+  # Same ingester as the production datasource (configs/datasource_configs/reactome.yaml),
+  # which streams the gzipped dump; the fixture is kept uncompressed so it is reviewable.
+  - globs: ["test_reactome/reactome.jsonl"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_ingest_reactome'
