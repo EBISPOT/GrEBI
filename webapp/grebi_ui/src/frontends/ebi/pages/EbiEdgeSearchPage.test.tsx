@@ -1,0 +1,133 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
+import encodeNodeId from '../../../encodeNodeId'
+import EbiEdgeSearchPage from './EbiEdgeSearchPage'
+
+vi.mock('../../../app/api', async (importOriginal) => {
+  const mod: any = await importOriginal()
+  return { ...mod, get: vi.fn(), getPaginated: vi.fn(), post: vi.fn() }
+})
+import { get, getPaginated, Page } from '../../../app/api'
+const mockedGet = vi.mocked(get)
+const mockedGetPaginated = vi.mocked(getPaginated)
+
+const alpha = { 'grebi:nodeId': 'a', 'grebi:name': ['Alpha'], 'grebi:type': ['biolink:Gene'] }
+const beta = { 'grebi:nodeId': 'b', 'grebi:name': ['Beta'] }
+const edges = [
+  { 'grebi:edgeId': 'e1', 'grebi:type': 'is_a', 'grebi:datasources': ['gwas'], from: alpha, to: beta },
+  { 'grebi:edgeId': 'e2', 'grebi:type': 'part_of', 'grebi:datasources': ['gwas'], 'grebi:fromNodeId': 'raw:from', to: beta },
+]
+let total = 45
+let results = edges
+
+function LocationDisplay() {
+  const loc = useLocation()
+  return <div data-testid="location">{loc.pathname + loc.search}</div>
+}
+
+function renderPage(search = '') {
+  return render(
+    <MemoryRouter initialEntries={[`/graphs/g1/edges${search}`]}>
+      <Routes>
+        <Route path="/graphs/:graph/edges" element={<><EbiEdgeSearchPage /><LocationDisplay /></>} />
+      </Routes>
+    </MemoryRouter>
+  )
+}
+
+function lastRequest() {
+  const url = new URL(mockedGetPaginated.mock.calls.at(-1)![0], 'http://x/')
+  return { pathname: url.pathname, params: url.searchParams }
+}
+
+beforeEach(() => {
+  total = 45
+  results = edges
+  mockedGet.mockReset()
+  mockedGetPaginated.mockReset()
+  mockedGet.mockImplementation(async (path: string) => {
+    if (path === 'api/v1/graphs/g1/stats') {
+      return { edge_counts_by_type: { part_of: 5, is_a: 10 }, edge_counts_by_datasource: { gwas: 15 } }
+    }
+    if (path === 'api/v1/graphs') return ['g1']
+    if (path === 'api/v1/stats') return {}
+    throw new Error('unexpected GET ' + path)
+  })
+  mockedGetPaginated.mockImplementation(async () => new Page<any>(0, results.length, Math.ceil(total / 20), total, results, {} as any))
+})
+
+describe('EbiEdgeSearchPage', () => {
+  it('searches edges for the graph and lists them with node links, type and datasources', async () => {
+    renderPage()
+    expect(screen.getByText('Searching edges...')).toBeInTheDocument()
+
+    expect(await screen.findByRole('link', { name: /Alpha/ })).toHaveAttribute('href', `/graphs/g1/nodes/${encodeNodeId('a')}`)
+    expect(screen.getByRole('link', { name: /Alpha/ })).toHaveTextContent('Gene')
+    expect(screen.getByText('45 results')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Beta' })).toHaveLength(2)
+    // an edge without a resolved source node shows the raw id
+    expect(screen.getByText('raw:from')).toBeInTheDocument()
+    expect(screen.getAllByTitle('gwas').length).toBeGreaterThanOrEqual(2)
+
+    const { pathname, params } = lastRequest()
+    expect(pathname).toBe('/api/v1/graphs/g1/edges')
+    expect(Object.fromEntries(params)).toEqual({ page: '0', size: '20', sortBy: 'grebi:type', sortDir: 'asc' })
+  })
+
+  it('offers facets from the graph stats when the search returns none, most frequent first', async () => {
+    renderPage()
+    await screen.findByText('45 results')
+    // the results table has an "Edge Type" column header too; the facet titles are divs
+    const typeFacet = within(screen.getByText('Edge Type', { selector: 'div' }).parentElement!)
+    await waitFor(() => expect(typeFacet.getAllByRole('button').map((b) => b.textContent)).toEqual(['is_a(10)', 'part_of(5)']))
+    const dsFacet = within(screen.getByText('Datasource', { selector: 'div' }).parentElement!)
+    expect(dsFacet.getByRole('button')).toHaveTextContent('gwas(15)')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+    expect(screen.queryByText('Edge Type', { selector: 'div' })).toBeNull()
+  })
+
+  it('clicking a facet filters through the URL, shows a chip, and the chip clears it again', async () => {
+    renderPage()
+    await screen.findByText('45 results')
+    fireEvent.click(await screen.findByRole('button', { name: /is_a/ }))
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/graphs/g1/edges?grebi%3Atype=is_a')
+    await waitFor(() => expect(lastRequest().params.get('grebi:type')).toBe('is_a'))
+    const chip = screen.getByText(/Type: is_a/)
+    fireEvent.click(within(chip).getByRole('button'))
+    expect(screen.getByTestId('location')).toHaveTextContent('/graphs/g1/edges')
+    await waitFor(() => expect(lastRequest().params.get('grebi:type')).toBeNull())
+  })
+
+  it('applies filters already in the URL and lets a datasource filter be chosen too', async () => {
+    renderPage('?grebi%3Atype=part_of')
+    await screen.findByText('45 results')
+    expect(lastRequest().params.get('grebi:type')).toBe('part_of')
+    expect(screen.getByText(/Type: part_of/)).toBeInTheDocument()
+
+    const dsFacetTitle = await screen.findByText('Datasource', { selector: 'div' })
+    fireEvent.click(within(dsFacetTitle.parentElement!).getByRole('button'))
+    await waitFor(() => expect(lastRequest().params.get('grebi:datasources')).toBe('gwas'))
+    expect(lastRequest().params.get('grebi:type')).toBe('part_of')
+    expect(screen.getByText(/Datasource: gwas/)).toBeInTheDocument()
+  })
+
+  it('pages through the results', async () => {
+    renderPage()
+    await screen.findByText('45 results')
+    const pagination = screen.getByRole('navigation', { name: 'pagination navigation' })
+    expect(within(pagination).getByRole('button', { name: 'Go to page 3' })).toBeInTheDocument()
+    fireEvent.click(within(pagination).getByRole('button', { name: 'Go to page 2' }))
+    await waitFor(() => expect(lastRequest().params.get('page')).toBe('1'))
+  })
+
+  it('says when nothing matches', async () => {
+    results = []
+    total = 0
+    renderPage()
+    expect(await screen.findByText('No edges found.')).toBeInTheDocument()
+    expect(screen.queryByText(/results/)).toBeNull()
+  })
+})
