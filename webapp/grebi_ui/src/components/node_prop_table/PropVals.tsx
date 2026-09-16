@@ -7,7 +7,6 @@ import PropVal from "../../model/PropVal";
 import ClassExpression from "../ClassExpression";
 import isSingleLineProp from "./isSingleLineProp";
 import Refs from "../../model/Refs";
-import { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } from "constants";
 
 let MAX_VALS_ONELINE = 10
 let MAX_VALS_MULTILINE = 5 

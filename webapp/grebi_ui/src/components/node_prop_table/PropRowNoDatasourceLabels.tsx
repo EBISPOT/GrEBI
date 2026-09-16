@@ -16,7 +16,7 @@ export default function PropRowNoDatasourceLabels(params:{graph:string, node:Gra
                   <PropLabel prop={prop} refs={node.getRefs()} />
               </Grid>
               <Grid item xs={12}>
-                <PropVals graph={graph} node={node} refs={node.getRefs()} prop={prop} values={values} />
+                <PropVals graph={graph} refs={node.getRefs()} values={values} />
               </Grid>
            </Fragment>
       )

@@ -56,7 +56,7 @@ export default function DocsPage() {
     }
     // Check sidebar: find which top-level section contains this anchor
     for (const entry of m.sidebar) {
-      if (containsAnchor(entry, anchor)) return entry.anchor;
+      if (containsAnchor(entry, anchor)) return entry.anchor ?? null;
     }
     return null;
   }

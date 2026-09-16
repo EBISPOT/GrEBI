@@ -67,7 +67,7 @@ export default function DistributionPieChart({ data, title, maxSlices = 10, onSl
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number) => value.toLocaleString()}
+            formatter={(value: any) => Number(value).toLocaleString()}
           />
         </PieChart>
       </ResponsiveContainer>

@@ -75,13 +75,13 @@ describe('EdgeExpandDialog', () => {
     const props = renderDialog()
     fireEvent.click(await screen.findByText('C'))
     expect(props.onSelectNode).toHaveBeenCalledTimes(1)
-    expect(props.onSelectNode.mock.calls[0][0].getNodeId()).toBe('c')
+    expect(vi.mocked(props.onSelectNode).mock.calls[0][0].getNodeId()).toBe('c')
     expect(props.onClose).toHaveBeenCalled()
 
     cleanup()
     const incoming = renderDialog({ direction: 'incoming' })
     fireEvent.click((await screen.findAllByText('A'))[0])
-    expect(incoming.onSelectNode.mock.calls[0][0].getNodeId()).toBe('a')
+    expect(vi.mocked(incoming.onSelectNode).mock.calls[0][0].getNodeId()).toBe('a')
   })
 
   it('re-requests with a q parameter when the table is filtered', async () => {

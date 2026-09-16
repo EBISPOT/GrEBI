@@ -16,10 +16,10 @@ export default function EbiQueriesPage() {
 
   let params = useParams();
   let [searchParams, setSearchParams] = useSearchParams();
-  let graph:string|undefined = params.graph
-  let queryid:string|undefined = params.queryid
+  const graph:string|undefined = params.graph
+  const queryid:string|undefined = params.queryid
 
-  let [queryTemplate, setQueryTemplate] = useState<QueryTemplate|undefined>(undefined)
+  const [queryTemplate, setQueryTemplate] = useState<QueryTemplate|undefined>(undefined)
 
     useEffect(() => {
         get<QueryTemplate>(`api/v1/graphs/${graph}/query_templates/${queryid}`)

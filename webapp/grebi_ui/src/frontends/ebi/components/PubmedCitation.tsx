@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { registerPmid, getGeneration } from "./pubmedRegistry";
+import { registerPmid } from "./pubmedRegistry";
 
-export default function PubmedCitation(props: Record<string, string> & { children?: any }) {
+export default function PubmedCitation(props: { [attr: string]: any; children?: any }) {
   const pmid = props.id || "";
   const [num, setNum] = useState<number | null>(null);
 

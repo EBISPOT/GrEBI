@@ -58,6 +58,7 @@
     "build:ebi": "REACT_APP_ENV=ebi npm run build",
     "watch:ebi": "REACT_APP_ENV=ebi npm run watch",
     "start:ebi": "REACT_APP_ENV=ebi npm run start",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

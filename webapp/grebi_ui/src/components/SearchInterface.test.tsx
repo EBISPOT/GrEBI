@@ -132,7 +132,7 @@ describe('SearchInterface', () => {
       if (path !== 'api/v1/graphs/g/search') return new Page(0, 0, 0, 0, [], new Map())
       const page = Number(params!.get('page'))
       const rows = page === 0 ? hits : [{ 'grebi:nodeId': 'n3', 'grebi:name': ['plaque psoriasis'], 'grebi:sourceIds': [] }]
-      return new Page(page, rows.length, 2, 3, rows, facets as any)
+      return new Page<any>(page, rows.length, 2, 3, rows, facets as any)
     })
     renderSearch('?q=psoriasis')
     await screen.findByRole('link', { name: 'psoriasis' })
