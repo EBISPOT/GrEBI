@@ -22,13 +22,7 @@ fn biostudies() {
         .args(["--", "$CASE/fire"]).stdout("output.jsonl").run();
 }
 
-/// The PRIDE projects export, one node per project.
-#[test]
-fn pride() {
-    python("01_ingest/pride.py", "pride")
-        .env("GREBI_DATASOURCE_ID", "PRIDE").env("GREBI_INGEST_DATASOURCE_NAME", "PRIDE")
-        .args(["--", "$CASE/projects.json"]).stdout("output.jsonl").run();
-}
+
 
 /// An Expression Atlas experiment: the gene-level TPM table with its
 /// configuration and condensed SDRF alongside, medians above the cutoff only.

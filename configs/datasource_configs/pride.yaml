@@ -11,5 +11,5 @@ ingests:
   - globs: ["pride/projects.json"]
     memory: "4 GB"
     command: '
-      python3 $GREBI_DATALOAD_HOME/01_ingest/pride.py
+      grebi_ingest_pride
           -- $GREBI_INGEST_FILENAME'

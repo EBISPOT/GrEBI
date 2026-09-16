@@ -920,6 +920,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "grebi_ingest_pride"
+version = "0.1.0"
+dependencies = [
+ "grebi_golden",
+ "regex",
+ "serde_json",
+ "struson 0.6.0",
+]
+
+[[package]]
 name = "grebi_ingest_primekg"
 version = "0.1.0"
 dependencies = [
@@ -2274,6 +2284,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18c68ef850864c0fa120c07a17d6369ec4df02a33cad4aa593e0e0566e031bda"
 dependencies = [
  "duplicate 2.0.1",
+ "serde",
  "strum 0.26.3",
  "thiserror",
 ]

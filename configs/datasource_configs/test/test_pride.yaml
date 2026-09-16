@@ -8,5 +8,5 @@ download:
 ingests:
   - globs: ["pride/projects.json"]
     command: '
-      python3 $GREBI_DATALOAD_HOME/01_ingest/pride.py
+      grebi_ingest_pride
           -- $GREBI_INGEST_FILENAME'

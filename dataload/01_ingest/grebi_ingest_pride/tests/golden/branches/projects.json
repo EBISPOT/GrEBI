@@ -1,0 +1,26 @@
+[
+ {"accession": "PXD000001", "title": "  A titled project ", "projectDescription": "Desc", "doi": "https://doi.org/10.6019/PXD000001",
+  "submissionDate": "2014-01-02", "publicationDate": "2014-02-03", "license": "CC0", "submissionType": "COMPLETE",
+  "sampleProcessingProtocol": "sp", "dataProcessingProtocol": "dp",
+  "keywords": ["proteomics", "Proteomics", "proteomics", ""], "projectTags": ["Biomedical"],
+  "organisms": [{"accession": "9606", "name": "Homo sapiens"}, {"accession": "NEWT:10090", "name": "Mus musculus"}, {"name": "unknown organism"}, "taxon:9598", 42],
+  "organismParts": [{"accession": "UBERON:0002107", "name": "liver"}, {"accession": "UBERON:0002107", "name": "liver"}, {"value": "brain"}],
+  "diseases": [{"accession": "DOID:8893", "name": ""}, {"accession": "", "name": "psoriasis"}],
+  "instruments": {"accession": "MS:1000031", "name": "instrument model"},
+  "softwares": [{"accession": "MS:1001456", "name": "analysis software"}],
+  "experimentTypes": [{"accession": "PRIDE:0000429", "name": "Shotgun proteomics"}],
+  "quantificationMethods": [], "identifiedPTMStrings": [{"accession": "MOD:00046", "name": "O-phospho-L-serine"}],
+  "sampleAttributes": [
+    {"key": {"name": "Organism"}, "value": [{"accession": "NCBITaxon:9606", "name": "Homo sapiens"}]},
+    {"key": {"name": "biosample accession number"}, "value": "SAMEA123456"},
+    {"key": {"name": "Cell type"}, "value": [{"value": "hepatocyte"}]},
+    {"key": {"name": "unmapped attribute"}, "value": ["ignored"]},
+    {"key": {"name": "disease"}, "value": [{"accession": "DOID:8893", "name": "psoriasis"}]}
+  ],
+  "submitters": [{"name": "Ann Author", "orcid": "https://orcid.org/0000-0002-1825-0097", "affiliation": "EMBL-EBI"}, {"firstName": "Bob", "lastName": "Builder", "affiliation": "EMBL-EBI"}],
+  "labPIs": [{"name": "", "orcid": "0000-0001-5109-3700", "affiliation": "Institute X"}, {"name": "Ann Author", "orcid": "not-an-orcid"}],
+  "references": [{"pubmedID": 12345678, "doi": "10.1000/abc"}, {"pubmedID": "0", "doi": "doi:10.2000/def"}, {"pubmedID": "x"}],
+  "otherOmicsLinks": ["url:https://www.ebi.ac.uk/metabolights/MTBLS1", "ftp://ftp.ebi.ac.uk/pub/x", "GEO:GSE1234", "SAMN00012345", "px:PXD000001", "just text", "taxonomy:9606"]},
+ {"accession": "PRD000002", "title": "Legacy accession", "doi": "10.6019/PRD000002", "organisms": []},
+ {"accession": "PAD000003", "title": "Affinity", "references": [{"doi": "https://doi.org/10.3000/ghi"}], "otherOmicsLinks": ["biosample:SAMEA1"]}
+]
