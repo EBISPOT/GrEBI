@@ -6,6 +6,7 @@ import DatasourceSelector from "../DatasourceSelector"
 import { DatasourceTags } from "../DatasourceTag"
 import DataTable from "../datatable/DataTable"
 import LoadingOverlay from "../LoadingOverlay"
+import ErrorMessage from "../ErrorMessage"
 import NodeRefLink from "../node_edge_list/NodeRefLink"
 import { fchmod } from "fs"
 import PropVal from "../../model/PropVal"
@@ -36,6 +37,7 @@ export default function ResultsTable({
   let [dsEnabled,setDsEnabled] = useState<null|string[]>(null) 
 
   let [loading, setLoading] = useState(true)
+  let [error, setError] = useState<any>(null)
   let [page, setPage] = useState(0)
   let [rowsPerPage, setRowsPerPage] = useState(10)
   let [filter, setFilter] = useState("")
@@ -45,7 +47,9 @@ export default function ResultsTable({
     useEffect(() => {
         async function getResults() {
             setLoading(true)
-            let res = (await getPaginated<any>(`api/v1/graphs/${graph}/materialised_queries/${queryid}?${
+            let res: any
+            try {
+                res = (await getPaginated<any>(`api/v1/graphs/${graph}/materialised_queries/${queryid}?${
                 new URLSearchParams([
                     ['page', page],
                     ['size', rowsPerPage],
@@ -54,6 +58,12 @@ export default function ResultsTable({
                     ...(filter ? [['q', filter]] : []),
                 ] as any)
             }`))
+            } catch (e) {
+                setError(e)
+                setLoading(false)
+                return
+            }
+            setError(null)
             let newResultsState = {
                 total: res.totalElements,
                 results: res.elements,
@@ -67,10 +77,11 @@ export default function ResultsTable({
     }, [ graph, queryid, page, rowsPerPage, filter, sortColumn, sortDir ]);
 
     if(resultsState == null) {
-        return <LoadingOverlay message="Loading results..." />
+        return error ? <ErrorMessage what="The table" error={error} /> : <LoadingOverlay message="Loading results..." />
     }
 
     return <div>
+        { error && <ErrorMessage what="The table" error={error} /> }
         { loading && <LoadingOverlay message="Loading results..." /> }
         <DataTable
             addColumnsFromData={true}

@@ -8,6 +8,7 @@ import LoadingOverlay from "../LoadingOverlay";
 import { Download, Info } from "@mui/icons-material";
 import OutputBadge from "../query/OutputBadge";
 import EdgeMetadataDialog from "./EdgeMetadataDialog";
+import ErrorMessage from "../ErrorMessage";
 
 interface ResultsTableProps {
   graph: string;
@@ -39,6 +40,7 @@ export default function ResultsTable({ graph, queryId, params, resultColumns, ma
   const [selections, setSelections] = useState<Selections>({});
   const [facets, setFacets] = useState<Record<string, Record<string, number>>>({});
   const [edgeMetadata, setEdgeMetadata] = useState<{edgeId: string | null} | null>(null);
+  const [error, setError] = useState<any>(null);
   // Serial of the latest request, so a slow earlier response cannot overwrite
   // a newer one (facets can be ticked faster than a large closure answers).
   const requestSeq = useRef(0);
@@ -80,9 +82,16 @@ export default function ResultsTable({ graph, queryId, params, resultColumns, ma
       if (seq !== requestSeq.current) {
         return;
       }
+      setError(null);
       setData(response.elements);
       setDataCount(response.totalElements);
       setFacets((response.facetFieldsToCounts as any) || {});
+    } catch (e) {
+      if (seq === requestSeq.current) {
+        setError(e);
+        setData([]);
+        setDataCount(0);
+      }
     } finally {
       if (seq === requestSeq.current) {
         setLoading(false);
@@ -291,6 +300,8 @@ export default function ResultsTable({ graph, queryId, params, resultColumns, ma
 
       {loading && <LoadingOverlay scoped message="Loading results..." />}
 
+      {error && <ErrorMessage what="The results" error={error} />}
+
       <a href={process.env.REACT_APP_APIURL + `api/v1/graphs/${graph}/query/${queryId}.csv?` + narrowedParams().toString()}>
       <button
         className="
@@ -308,7 +319,7 @@ export default function ResultsTable({ graph, queryId, params, resultColumns, ma
       </button>
       </a>
 
-      {!loading && dataCount === 0 && (
+      {!loading && !error && dataCount === 0 && (
         <div className="px-4 py-2 text-sm text-neutral-default">No results found</div>
       )}
       <DataTable

@@ -3,7 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import EbiQueriesHomePage from './EbiQueriesHomePage'
 
-vi.mock('../../../app/api', () => ({ get: vi.fn(), getPaginated: vi.fn(), post: vi.fn() }))
+vi.mock('../../../app/api', async (importOriginal) => ({ ...(await importOriginal<any>()), get: vi.fn(), getPaginated: vi.fn(), post: vi.fn() }))
 import { get } from '../../../app/api'
 const mockedGet = vi.mocked(get)
 
@@ -106,5 +106,23 @@ describe('EbiQueriesHomePage', () => {
     renderPage()
     fireEvent.click(await screen.findByText('genes_for_disease'))
     expect(screen.getByTestId('location')).toHaveTextContent('/graphs/g1/queries/genes_for_disease?disease_id=mondo%3A0004979')
+  })
+})
+
+describe('EbiQueriesHomePage errors', () => {
+  it('shows why the queries could not be listed', async () => {
+    const { ApiError } = await import('../../../app/api')
+    mockedGet.mockImplementation(async (path: string) => {
+      if (path === 'api/v1/topics') return topics
+      if (path === 'api/v1/graphs/g1/query_templates') throw new ApiError(500, path, 'templates unreadable')
+      if (path === 'api/v1/graphs') return ['g1']
+      if (path === 'api/v1/stats') return {}
+      throw new Error('unexpected GET ' + path)
+    })
+    renderPage()
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('The queries could not be loaded')
+    expect(alert).toHaveTextContent('templates unreadable (HTTP 500)')
+    expect(screen.queryByRole('progressbar')).toBeNull()
   })
 })

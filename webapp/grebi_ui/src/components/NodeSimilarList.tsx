@@ -5,6 +5,7 @@ import { getPaginated, Page, get } from "../app/api"
 import NodeRefLink from "./node_edge_list/NodeRefLink"
 import GraphNodeRef from "../model/GraphNodeRef"
 import encodeNodeId from "../encodeNodeId"
+import ErrorMessage from "./ErrorMessage"
 
 type SimilarResult = {
     node: GraphNodeRef,
@@ -19,6 +20,7 @@ export default function NodeSimilarList(params:{
     let { graph, node, model } = params
     
   let [loading, setLoading] = useState(true)
+  let [error, setError] = useState<any>(null)
   let [results, setResults] = useState<SimilarResult[]|null>(null)
 
     useEffect(() => {
@@ -48,11 +50,19 @@ export default function NodeSimilarList(params:{
             })
         }
 
+        setError(null)
         getSimilar().then(r => {
             setResults(r)
+        }).catch(e => {
+            setError(e)
+            setLoading(false)
         })
 
     }, [ graph, node, model ])
+
+    if(error) {
+        return <ErrorMessage what="Similar nodes" error={error} />
+    }
 
     if(loading || !results) {
         return <div className="spinner-default w-7 h-7" />

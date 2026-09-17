@@ -12,6 +12,7 @@ import SourceCodeSection from "../../../components/query/SourceCodeSection";
 import GraphView from "../../../components/node_graph_view/GraphView";
 import { prefetchNodeEdgeCounts } from "../../../components/node_graph_view/edgeCountsCache";
 import GraphNode from "../../../model/GraphNode";
+import ErrorMessage from "../../../components/ErrorMessage";
 
 function buildNodeCacheKey(graph: string, sourceId: string): string {
   return `${graph}::${sourceId}`;
@@ -31,6 +32,7 @@ export default function EbiHomePage() {
   let [graph, setGraph] = useState<string|null>(params.graph || null);
   let [graphNode, setGraphNode] = useState<GraphNode|null>(null);
   let [graphLocked, setGraphLocked] = useState(false);
+  let [error, setError] = useState<any>(null);
   let [graphHovered, setGraphHovered] = useState(false);
   let nodeCacheRef = useRef<Record<string, GraphNode>>({});
   let nodeRequestRef = useRef<Record<string, Promise<GraphNode | null>>>({});
@@ -51,7 +53,7 @@ function selectGraph(sg: string) {
 
 
   useEffect(() => {
-    get<Stats>("api/v1/stats").then(r => setStats(r));
+    get<Stats>("api/v1/stats").then(r => setStats(r)).catch(() => {});
   }, [graph]);
 
   useEffect(() => {
@@ -143,8 +145,12 @@ function selectGraph(sg: string) {
         return [sg, name] as [string, string];
       }).catch(() => [sg, sg] as [string, string])))
         .then(pairs => setGraphNames(Object.fromEntries(pairs)));
-    });
+    }).catch(setError);
   }, []);
+
+  if(error) {
+    return <main className="container mx-auto px-4 my-8"><ErrorMessage what="The list of graphs" error={error} /></main>
+  }
 
   if(!graph) {
     return <div className="spinner-default w-7 h-7" />

@@ -11,6 +11,7 @@ import QueryInterface from "../../../components/query/QueryInterface";
 import QueryQuestion from "../../../components/query/QueryQuestion";
 import InputBadge from "../../../components/query/InputBadge";
 import OutputBadge from "../../../components/query/OutputBadge";
+import ErrorMessage from "../../../components/ErrorMessage";
 
 export default function EbiQueriesPage() {
 
@@ -20,10 +21,13 @@ export default function EbiQueriesPage() {
   const queryid:string|undefined = params.queryid
 
   const [queryTemplate, setQueryTemplate] = useState<QueryTemplate|undefined>(undefined)
+  const [error, setError] = useState<any>(null)
 
     useEffect(() => {
+        setError(null)
         get<QueryTemplate>(`api/v1/graphs/${graph}/query_templates/${queryid}`)
-            .then(r => setQueryTemplate(r));
+            .then(r => setQueryTemplate(r))
+            .catch(setError);
     }, [graph, queryid]);
 
   if(!graph || !queryid) {
@@ -41,7 +45,9 @@ export default function EbiQueriesPage() {
         <EbiBreadcrumbsBar graph={graph} entries={breadcrumbs} />
         <main className="container mx-auto px-4 h-fit pt-2">
 
-          { !queryTemplate && 
+          { error && <ErrorMessage what="The query template" error={error} /> }
+
+          { !queryTemplate && !error &&
             <div className="spinner-default w-7 h-7" />
           }
 

@@ -11,7 +11,7 @@ import DatasourceSelector from "../DatasourceSelector";
 import { DatasourceTags } from "../DatasourceTag";
 import DataTable from "../datatable/DataTable";
 import LoadingOverlay from "../LoadingOverlay";
-import { dir } from "console";
+import ErrorMessage from "../ErrorMessage";
 
 export interface EdgesState {
     total:number,
@@ -35,6 +35,7 @@ export default function EdgesList(params:{
   let [dsEnabled,setDsEnabled] = useState<null|string[]>(null) 
 
   let [loading, setLoading] = useState(true)
+  let [error, setError] = useState<any>(null)
   let [page, setPage] = useState(0)
   let [rowsPerPage, setRowsPerPage] = useState(10)
   let [filter, setFilter] = useState("")
@@ -43,10 +44,11 @@ export default function EdgesList(params:{
 
     useEffect(() => {
         async function getEdges() {
-            console.log('refreshing ', node.getNodeId(), JSON.stringify(dsEnabled), JSON.stringify(edgesState?.datasources))
             setLoading(true)
             let endpoint = direction === 'incoming' ? 'incoming_edges' : 'outgoing_edges'
-            let res = (await getPaginated<any>(`api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/${endpoint}?${
+            let res: any
+            try {
+                res = (await getPaginated<any>(`api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/${endpoint}?${
                 new URLSearchParams([
                     ['page', page],
                     ['size', rowsPerPage],
@@ -58,6 +60,12 @@ export default function EdgesList(params:{
                             difference(edgesState.datasources, dsEnabled).map(ds => ['-grebi:datasources', ds]) : [])
                 ])
             }`)).map(e => new GraphEdge(e))
+            } catch (e) {
+                setError(e)
+                setLoading(false)
+                return
+            }
+            setError(null)
             let facets = res.facetFieldsToCounts || {};
             let facetDatasources = Object.keys(facets['grebi:datasources'] || {});
             let newEdgesState = {
@@ -80,10 +88,11 @@ export default function EdgesList(params:{
     }, [ direction, node.getNodeId(), JSON.stringify(dsEnabled), page, rowsPerPage, filter, sortColumn, sortDir ]);
 
     if(edgesState == null) {
-        return <LoadingOverlay message="Loading edges..." />
+        return error ? <ErrorMessage what="The edges" error={error} /> : <LoadingOverlay message="Loading edges..." />
     }
 
     return <div>
+        { error && <ErrorMessage what="The edges" error={error} /> }
         <div className="pb-5">
         <DatasourceSelector datasources={edgesState.datasources} dsEnabled={dsEnabled!==null?dsEnabled:edgesState.datasources} setDsEnabled={setDsEnabled} />
         </div>

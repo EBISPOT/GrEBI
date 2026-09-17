@@ -1,6 +1,33 @@
 
 type ReqParams = {[k:string]:(string|string[])}|undefined 
 
+/**
+ * A request the API answered with an error status. The message is the API's
+ * own ({"error": "..."}) when it gave one, else the status line.
+ */
+export class ApiError extends Error {
+  status: number
+  url: string
+  constructor(status: number, url: string, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.url = url
+  }
+}
+
+/** What went wrong, for people. */
+export function describeError(error: any): string {
+  if (error instanceof ApiError) {
+    return error.status === 404 ? (error.message || 'Not found') : `${error.message || 'The API returned an error'} (HTTP ${error.status})`
+  }
+  if (error instanceof TypeError) {
+    // what fetch throws when the API cannot be reached at all
+    return 'The API could not be reached'
+  }
+  return (error && error.message) || String(error)
+}
+
 function buildSearchParams(reqParams:ReqParams|URLSearchParams):string {
   if( reqParams instanceof URLSearchParams) {
     return reqParams.toString()
@@ -36,9 +63,19 @@ export async function request(
   });
   console.timeEnd(message)
   if (!res.ok) {
-    const message = `Failure loading ${res.url} with status ${res.status} (${res.statusText})`;
-    console.dir(message);
-    return Promise.reject(new Error(message))
+    console.dir(`Failure loading ${res.url} with status ${res.status} (${res.statusText})`);
+    let detail = `${res.status} ${res.statusText}`.trim()
+    try {
+      const body = await res.json()
+      if (body && typeof body.error === 'string') {
+        detail = body.error
+      } else if (body && typeof body.message === 'string') {
+        detail = body.message
+      }
+    } catch (e) {
+      // no JSON body: the status line will do
+    }
+    return Promise.reject(new ApiError(res.status, res.url, detail))
   }
   return await res.json();
 }

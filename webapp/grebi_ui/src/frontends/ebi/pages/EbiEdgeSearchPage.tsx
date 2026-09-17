@@ -7,6 +7,7 @@ import GraphEdge from "../../../model/GraphEdge";
 import NodeRefLink from "../../../components/node_edge_list/NodeRefLink";
 import { DatasourceTags } from "../../../components/DatasourceTag";
 import LoadingOverlay from "../../../components/LoadingOverlay";
+import ErrorMessage from "../../../components/ErrorMessage";
 import { Pagination } from "@mui/material";
 import { Close, KeyboardArrowDown } from "@mui/icons-material";
 
@@ -21,6 +22,7 @@ export default function EbiEdgeSearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   let [loading, setLoading] = useState(true);
+  let [error, setError] = useState<any>(null);
   let [edges, setEdges] = useState<GraphEdge[]>([]);
   let [totalResults, setTotalResults] = useState(0);
   let [page, setPage] = useState(0);
@@ -73,9 +75,19 @@ export default function EbiEdgeSearchPage() {
       if (typeFilter) params.push(["grebi:type", typeFilter]);
       if (dsFilter) params.push(["grebi:datasources", dsFilter]);
 
-      let res = await getPaginated<any>(
-        `api/v1/graphs/${graph}/edges?${new URLSearchParams(params)}`
-      );
+      let res;
+      try {
+        res = await getPaginated<any>(
+          `api/v1/graphs/${graph}/edges?${new URLSearchParams(params)}`
+        );
+      } catch (e) {
+        setError(e);
+        setEdges([]);
+        setTotalResults(0);
+        setLoading(false);
+        return;
+      }
+      setError(null);
       setEdges(res.elements.map((e: any) => new GraphEdge(e)));
       setTotalResults(res.totalElements);
       const apiFacets = res.facetFieldsToCounts || {};
@@ -213,6 +225,8 @@ export default function EbiEdgeSearchPage() {
           <div className="flex-grow min-w-0">
             {loading ? (
               <LoadingOverlay message="Searching edges..." />
+            ) : error ? (
+              <ErrorMessage what="Edges" error={error} />
             ) : edges.length === 0 ? (
               <div className="text-gray-500 py-8 text-center">No edges found.</div>
             ) : (

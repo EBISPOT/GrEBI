@@ -127,6 +127,37 @@ describe('EbiNodePage', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('?lang=en&tab=properties')
   })
 
+  it('says when there is no such node, keeping the search box', async () => {
+    const { ApiError } = await import('../../../app/api')
+    mockedGet.mockImplementation(async (path: string) => {
+      if (path.startsWith('api/v1/graphs/g1/nodes/')) throw new ApiError(404, path, 'Node not found')
+      if (path === 'api/v1/graphs/g1/embedding_models') return models
+      if (path === 'api/v1/graphs') return ['g1']
+      if (path === 'api/v1/stats') return {}
+      throw new Error('unexpected GET ' + path)
+    })
+    renderPage()
+    expect(await screen.findByRole('alert')).toHaveTextContent(`No node with the id ${nodeId} in g1`)
+    expect(screen.getByPlaceholderText(/Search for knowledge/)).toBeInTheDocument()
+    expect(screen.queryByText('Loading node...')).toBeNull()
+  })
+
+  it('shows the error when the node cannot be loaded', async () => {
+    const { ApiError } = await import('../../../app/api')
+    mockedGet.mockImplementation(async (path: string) => {
+      if (path.startsWith('api/v1/graphs/g1/nodes/')) throw new ApiError(500, path, 'database down')
+      if (path === 'api/v1/graphs/g1/embedding_models') return models
+      if (path === 'api/v1/graphs') return ['g1']
+      if (path === 'api/v1/stats') return {}
+      throw new Error('unexpected GET ' + path)
+    })
+    renderPage()
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('The node could not be loaded')
+    expect(alert).toHaveTextContent('database down (HTTP 500)')
+    expect(screen.queryByText('Loading node...')).toBeNull()
+  })
+
   it('has no language picker for a node in one language', async () => {
     renderPage()
     await screen.findByText('A skin disease')

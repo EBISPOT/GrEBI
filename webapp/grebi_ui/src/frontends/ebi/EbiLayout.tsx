@@ -8,6 +8,7 @@ import Apps from "@mui/icons-material/Apps";
 import { ManageSearch, TableChart, MenuBook } from "@mui/icons-material";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import useEffectiveGraph from "./useEffectiveGraph";
+import { RouteErrorBoundary } from "../../components/ErrorBoundary";
 
 export default function EbiLayout() {
   const loc = useLocation();
@@ -199,7 +200,9 @@ export default function EbiLayout() {
         </div>
       </header>
       <div className="flex-1 min-h-0 overflow-auto">
-        <Outlet />
+        <RouteErrorBoundary>
+          <Outlet />
+        </RouteErrorBoundary>
       </div>
     </div>
   );

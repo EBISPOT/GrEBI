@@ -163,3 +163,19 @@ describe('SearchInterface', () => {
     expect(lastSearch().get('page')).toBe('0')
   })
 })
+
+describe('SearchInterface errors', () => {
+  it('shows why the search failed and stops waiting', async () => {
+    const { ApiError } = await import('../app/api')
+    api.getPaginated.mockImplementation(async (path: string) => {
+      if (path === 'api/v1/graphs/g/search') throw new ApiError(503, path, 'search index down')
+      return new Page<any>(0, 0, 0, 0, [], new Map())
+    })
+    api.get.mockResolvedValue([])
+    renderSearch('?q=psoriasis')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Search results could not be loaded')
+    expect(alert).toHaveTextContent('search index down (HTTP 503)')
+    await waitFor(() => expect(screen.queryByText('Search results loading...')).toBeNull())
+  })
+})

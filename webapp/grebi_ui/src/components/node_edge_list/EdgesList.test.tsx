@@ -132,3 +132,15 @@ describe('EdgesList', () => {
     expect(lastQuery().get('grebi:type')).toBe('biolink:has_phenotype')
   })
 })
+
+describe('EdgesList errors', () => {
+  it('shows why the edges could not be loaded instead of the overlay', async () => {
+    const { ApiError } = await import('../../app/api')
+    api.getPaginated.mockRejectedValueOnce(new ApiError(502, 'u', '502 Bad Gateway'))
+    renderList()
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('The edges could not be loaded')
+    expect(alert).toHaveTextContent('502 Bad Gateway (HTTP 502)')
+    expect(screen.queryByText('Loading edges...')).toBeNull()
+  })
+})

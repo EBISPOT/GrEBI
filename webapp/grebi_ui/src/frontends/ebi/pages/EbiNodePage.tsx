@@ -19,7 +19,8 @@ import GraphView from "../../../components/node_graph_view/GraphView";
 import PropTable from "../../../components/node_prop_table/PropTable";
 import SearchBox from "../../../components/SearchBox";
 import GraphNode from "../../../model/GraphNode";
-import { get, getPaginated } from "../../../app/api";
+import { get, getPaginated, ApiError } from "../../../app/api";
+import ErrorMessage from "../../../components/ErrorMessage";
 import encodeNodeId from "../../../encodeNodeId";
 import EdgesList from "../../../components/node_edge_list/EdgesList";
 import NodeLinks from "../../../components/NodeLinks";
@@ -36,6 +37,7 @@ export default function EbiNodePage() {
   const lang = searchParams.get("lang") || "en";
 
   let [node, setNode] = useState<GraphNode|null>(null);
+  let [error, setError] = useState<any>(null);
   const tab = searchParams.get("tab") || "graph";
 
   // a change of tab or language keeps the other in the URL
@@ -47,12 +49,25 @@ export default function EbiNodePage() {
   const { availableModels, selectedModel, setSelectedModel, hasEmbeddingModels } = useEmbeddingModels(graph);
 
   useEffect(() => {
+    let cancelled = false;
     async function getNode() {
-      let graphNode = new GraphNode(await get<any>(`api/v1/graphs/${graph}/nodes/${encodeNodeId(nodeId)}?lang=${lang}`))
-      setNode(graphNode)
+      try {
+        let graphNode = new GraphNode(await get<any>(`api/v1/graphs/${graph}/nodes/${encodeNodeId(nodeId)}?lang=${lang}`))
+        if (!cancelled) {
+          setError(null)
+          setNode(graphNode)
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(e)
+        }
+      }
     }
     getNode()
+    return () => { cancelled = true }
   }, [nodeId, lang]);
+
+  const notFound = error instanceof ApiError && error.status === 404;
 
   return (
     <div>
@@ -71,8 +86,20 @@ export default function EbiNodePage() {
           {node && <title>{node.getName(lang)}</title>}
           {node && <meta name="description" content={node.getDescription(lang)}/>}
         </Helmet>
-        { node == null && <LoadingOverlay message="Loading node..." /> }
-        {node !== null &&
+        { node == null && error == null && <LoadingOverlay message="Loading node..." /> }
+        { error &&
+      <main className="container mx-auto px-4 pt-1">
+        <SearchBox graph={graph} />
+        {notFound ? (
+          <div role="alert" className="text-center mt-8">
+            <Typography variant="h5">No node with the id <code>{nodeId}</code> in {graph}</Typography>
+            <p className="mt-2 text-neutral-dark">It may be absent from this graph or have been merged into another node. Try searching for it above.</p>
+          </div>
+        ) : (
+          <ErrorMessage what="The node" error={error} />
+        )}
+      </main>}
+        {node !== null && !error &&
       <main className="container mx-auto px-4 pt-1">
         <SearchBox graph={graph} availableModels={availableModels} selectedModel={selectedModel} onModelChange={setSelectedModel} />
         <div className="relative text-center pb-5">

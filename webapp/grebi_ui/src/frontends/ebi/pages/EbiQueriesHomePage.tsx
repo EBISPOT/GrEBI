@@ -13,6 +13,7 @@ import {
 import QueryTopic from "../../../model/QueryTopic";
 import { QueryTemplate } from "../../../model/QueryTemplate";
 import { get } from "../../../app/api";
+import ErrorMessage from "../../../components/ErrorMessage";
 
 /**
  * `initialTopic` pre-ticks a topic on arrival (from a /queries/<topic> link);
@@ -27,16 +28,18 @@ export default function EbiQueriesHomePage({ initialTopic }: { initialTopic?: st
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
   const [selectedInputs, setSelectedInputs] = useState<Set<string>>(new Set());
   const [selectedOutputs, setSelectedOutputs] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<any>(null);
 
   useEffect(() => {
-    get<QueryTopic[]>(`api/v1/topics`).then((response) => setTopics(response));
+    get<QueryTopic[]>(`api/v1/topics`).then((response) => setTopics(response)).catch(setError);
   }, []);
 
   useEffect(() => {
     if (!graph) {
       return;
     }
-    get<QueryTemplate[]>(`api/v1/graphs/${graph}/query_templates`).then((response) => setQueries(response));
+    setError(null);
+    get<QueryTemplate[]>(`api/v1/graphs/${graph}/query_templates`).then((response) => setQueries(response)).catch(setError);
   }, [graph]);
 
   useEffect(() => {
@@ -97,7 +100,9 @@ export default function EbiQueriesHomePage({ initialTopic }: { initialTopic?: st
             </Stack>
           </RouterLink>
 
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "250px 1fr" }, gap: 3 }}>
+          {error && <ErrorMessage what="The queries" error={error} />}
+
+          {!error && <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "250px 1fr" }, gap: 3 }}>
             {topics && queries ? (
               <QueryFacets
                 topics={topics}
@@ -125,7 +130,7 @@ export default function EbiQueriesHomePage({ initialTopic }: { initialTopic?: st
               onInputsChange={setSelectedInputs}
               onOutputsChange={setSelectedOutputs}
             />
-          </Box>
+          </Box>}
         </div>
       </main>
     </div>

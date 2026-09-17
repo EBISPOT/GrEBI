@@ -5,6 +5,7 @@ import GraphEdge from "../../model/GraphEdge";
 import GraphNodeRef from "../../model/GraphNodeRef";
 import { DatasourceTags } from "../DatasourceTag";
 import LoadingOverlay from "../LoadingOverlay";
+import ErrorMessage from "../ErrorMessage";
 
 export interface ChainSegment {
   label: string;
@@ -41,6 +42,7 @@ export default function EdgeExpandPanel({
   dsExclude?: Set<string>;
 }) {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
   const [edges, setEdges] = useState<GraphEdge[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -75,8 +77,12 @@ export default function EdgeExpandPanel({
 
         setEdges(res.elements);
         setTotal(res.totalElements);
+        setError(null);
       } catch (e) {
         console.error("Failed to load edges for expand panel", e);
+        setError(e);
+        setEdges([]);
+        setTotal(0);
       } finally {
         setLoading(false);
       }

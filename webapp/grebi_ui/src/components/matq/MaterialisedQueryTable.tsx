@@ -6,6 +6,7 @@ import { get } from "../../app/api";
 import { Box, Button, CircularProgress, Link, Stack } from "@mui/material";
 import { Download, Info } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import ErrorMessage from "../ErrorMessage";
 
 
 const cols= [
@@ -56,16 +57,22 @@ export default function MaterialisedQueryTable({
 
   let [matQs, setMatQs] = useState<MaterialisedQuery[]|null>(null);
   let [graphMetadata, setGraphMetadata] = useState<any|null>(null);
+  let [error, setError] = useState<any>(null);
   const navigate = useNavigate();
 
     useEffect(() => {
-        get<MaterialisedQuery[]>(graph ? `api/v1/graphs/${graph}/materialised_queries` : `api/v1/materialised_queries`).then(r => setMatQs(r));
+        setError(null);
+        get<MaterialisedQuery[]>(graph ? `api/v1/graphs/${graph}/materialised_queries` : `api/v1/materialised_queries`).then(r => setMatQs(r)).catch(setError);
     }, [graph]);
 
     useEffect(() => {
         if(graph)
-            get<GraphMetadata>(`api/v1/graphs/${graph}`).then(r => setGraphMetadata(r));
+            get<GraphMetadata>(`api/v1/graphs/${graph}`).then(r => setGraphMetadata(r)).catch(setError);
     }, [graph]);
+
+    if(error) {
+        return <ErrorMessage what="The tables" error={error} />
+    }
 
     if(!matQs) {
         return <CircularProgress />

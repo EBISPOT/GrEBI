@@ -9,6 +9,7 @@ import CollapsingIdList from "./CollapsingIdList";
 import { DatasourceTags } from "./DatasourceTag";
 import LoadingOverlay from "./LoadingOverlay";
 import SearchBox from "./SearchBox";
+import ErrorMessage from "./ErrorMessage";
 
 export default function SeachInterface(opts:{ graph:string }
 ) {
@@ -23,6 +24,7 @@ export default function SeachInterface(opts:{ graph:string }
   let [searchScores, setSearchScores] = useState<Map<string, number>>(new Map());
 
   let [facets, setFacets] = useState<any>({});
+  let [error, setError] = useState<any>(null);
 
   const prevSearch = usePrevious(search);
 
@@ -100,6 +102,8 @@ export default function SeachInterface(opts:{ graph:string }
 
     async function doSearch() {
       setLoadingResults(true)
+      setError(null)
+      try {
 
       if (isSemanticSearch) {
         // Semantic search via embeddings with resolve for full data
@@ -153,6 +157,12 @@ export default function SeachInterface(opts:{ graph:string }
         }
         setTotalResults(mapped.totalElements);
         setFacets(mapped.facetFieldsToCounts)
+      }
+
+      } catch (e) {
+        setError(e)
+        setResults([])
+        setTotalResults(0)
       }
 
       setLoadingResults(false)
@@ -334,6 +344,7 @@ export default function SeachInterface(opts:{ graph:string }
                 </div>
               </div>
             </div>
+            {error && <ErrorMessage what="Search results" error={error} />}
             {results.length > 0 ? (
               <div>
                 {results.map((graphNode: GraphNode) => {

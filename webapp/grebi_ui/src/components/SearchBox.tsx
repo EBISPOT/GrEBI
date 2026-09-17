@@ -145,7 +145,11 @@ export default function SearchBox({
       const searchToken = randomString();
       curSearchToken = searchToken;
 
-      const [nodes, autocomplete] = await Promise.all([
+      // suggestions are a convenience: when they fail the box just stops waiting
+      let nodes: any = null;
+      let autocomplete: string[] | null = null;
+      try {
+      [nodes, autocomplete] = await Promise.all([
         isEmbeddingSearch
           ? get<any[]>(
               `api/v1/graphs/${graph}/semantic_search?${new URLSearchParams({
@@ -184,6 +188,9 @@ export default function SearchBox({
             )
           : null
       ]);
+      } catch (e) {
+        console.error("Search suggestions failed", e);
+      }
       if (cancelPromisesRef.current && !mounted.current) return;
 
       if (searchToken === curSearchToken) {

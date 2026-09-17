@@ -5,6 +5,7 @@ import { get } from "../../../app/api";
 import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
 import DistributionPieChart from "../DistributionPieChart";
 import SearchBox from "../../../components/SearchBox";
+import ErrorMessage from "../../../components/ErrorMessage";
 
 interface DatasourceConfig {
   id: string;
@@ -36,6 +37,7 @@ export default function EbiGraphPage() {
 
   const navigate = useNavigate();
   let [meta, setMeta] = useState<GraphMeta | null>(null);
+  let [error, setError] = useState<any>(null);
   let [stats, setStats] = useState<any | null>(null);
   let [distStats, setDistStats] = useState<DistributionStats | null>(null);
   let [activeTab, setActiveTab] = useState<"Datasources" | "Node Types" | "Edge Types">("Datasources");
@@ -51,8 +53,9 @@ export default function EbiGraphPage() {
   document.title = `${graph} - GrEBI`;
 
   useEffect(() => {
-    get<GraphMeta>(`api/v1/graphs/${graph}`).then(setMeta);
-    get<any>("api/v1/stats").then(setStats);
+    setError(null);
+    get<GraphMeta>(`api/v1/graphs/${graph}`).then(setMeta).catch(setError);
+    get<any>("api/v1/stats").then(setStats).catch(() => {});
     get<DistributionStats>(`api/v1/graphs/${graph}/stats`)
       .then(setDistStats)
       .catch(() => {});
@@ -65,7 +68,7 @@ export default function EbiGraphPage() {
           { url: `/graphs`, label: "Graphs" }
         ]} />
         <main className="container mx-auto px-4 my-8">
-          <div className="spinner-default w-7 h-7" />
+          {error ? <ErrorMessage what={`The graph ${graph}`} error={error} /> : <div className="spinner-default w-7 h-7" />}
         </main>
       </Fragment>
     );

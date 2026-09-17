@@ -60,3 +60,16 @@ describe('ResultsTable', () => {
     expect(screen.getByText('Endometriosis or migraine')).toBeInTheDocument()
   })
 })
+
+describe('ResultsTable errors', () => {
+  it('shows why the results could not be loaded instead of waiting forever', async () => {
+    const mod: any = await import('../../app/api')
+    vi.mocked(mod.getPaginated).mockRejectedValueOnce(new mod.ApiError(500, 'u', 'closure exploded'))
+    renderTable()
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('The results could not be loaded')
+    expect(alert).toHaveTextContent('closure exploded (HTTP 500)')
+    expect(screen.queryByText('Loading results...')).toBeNull()
+    expect(screen.queryByText('No results found')).toBeNull()
+  })
+})

@@ -12,6 +12,7 @@ import InputBadge from "./InputBadge";
 import ResultsTable from "./ResultsTable";
 import TabbedSourceView from "./TabbedSourceView";
 import query2code from "./query2code";
+import ErrorMessage from "../ErrorMessage";
 import React from "react";
 
 
@@ -32,6 +33,7 @@ export default function QueryInterface({
     let [queryParams, setQueryParams] = useSearchParams();
 
     let [paramValues, setParamValues] = useState<Record<string, any>>({});
+    let [error, setError] = useState<any>(null);
     let [paramValuesSubmitted, setParamValuesSubmitted] = useState<Record<string, any>|undefined>(undefined);
 
     useEffect(() => {
@@ -64,7 +66,7 @@ export default function QueryInterface({
             setReady(true);
         }
 
-        setParamsFromQueryString();
+        setParamsFromQueryString().catch(setError);
 
     }, [params, queryParams]);
 
@@ -103,6 +105,8 @@ export default function QueryInterface({
 
 return (
   <Fragment>
+
+    {error && <ErrorMessage what="The query's inputs" error={error} />}
 
     <div className="flex gap-4 items-stretch mb-4">
       <div className="flex-1 min-w-0 flex flex-col">

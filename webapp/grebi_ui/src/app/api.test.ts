@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { request, get, post, put, getPaginated, Page } from './api'
+import { request, get, post, put, getPaginated, Page, ApiError, describeError } from './api'
 
 function fetchResponding(body: any, init: { ok?: boolean; status?: number; statusText?: string } = {}) {
   const fetchMock = vi.fn(async () => ({
@@ -59,10 +59,27 @@ describe('request / get', () => {
     expect(calledUrl(fetchMock)).toBe('https://www.ebi.ac.uk/kg/api/v1/graphs')
   })
 
-  it('rejects with the status when the response is not ok', async () => {
-    const fetchMock = fetchResponding({ error: 'x' }, { ok: false, status: 404, statusText: 'Not Found' })
-    await expect(request('api/v1/graphs/g/nodes/x', undefined)).rejects.toThrow('status 404 (Not Found)')
+  it("rejects with the status and the API's message when the response is not ok", async () => {
+    const fetchMock = fetchResponding({ error: 'Node not found' }, { ok: false, status: 404, statusText: 'Not Found' })
+    const error = await request('api/v1/graphs/g/nodes/x', undefined).catch(e => e)
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.status).toBe(404)
+    expect(error.message).toBe('Node not found')
+    expect(error.url).toBe('http://localhost:3000/whatever')
     expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    // no JSON body: the status line is the message
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 502, statusText: 'Bad Gateway', url: 'u', json: async () => { throw new Error('not json') } })))
+    const gateway = await request('api/v1/graphs', undefined).catch(e => e)
+    expect(gateway.message).toBe('502 Bad Gateway')
+  })
+
+  it('describes errors for people', () => {
+    expect(describeError(new ApiError(404, 'u', 'Node not found'))).toBe('Node not found')
+    expect(describeError(new ApiError(500, 'u', 'boom'))).toBe('boom (HTTP 500)')
+    expect(describeError(new TypeError('Failed to fetch'))).toBe('The API could not be reached')
+    expect(describeError(new Error('other'))).toBe('other')
+    expect(describeError('text')).toBe('text')
   })
 })
 

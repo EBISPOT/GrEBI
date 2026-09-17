@@ -3,7 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import EbiGraphPage from './EbiGraphPage'
 
-vi.mock('../../../app/api', () => ({ get: vi.fn(), getPaginated: vi.fn(), post: vi.fn() }))
+vi.mock('../../../app/api', async (importOriginal) => ({ ...(await importOriginal<any>()), get: vi.fn(), getPaginated: vi.fn(), post: vi.fn() }))
 import { get } from '../../../app/api'
 const mockedGet = vi.mocked(get)
 
@@ -120,5 +120,24 @@ describe('EbiGraphPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Node Types' }))
     expect(screen.queryByRole('button', { name: /^biolink:/ })).toBeNull()
     expect(container.querySelectorAll('.spinner-default').length).toBe(2)
+  })
+})
+
+describe('EbiGraphPage errors', () => {
+  it('says when there is no such graph', async () => {
+    const { ApiError } = await import('../../../app/api')
+    mockedGet.mockImplementation(async (path: string) => {
+      if (path === 'api/v1/graphs/g1') throw new ApiError(404, path, 'Unknown graph g1')
+      if (path === 'api/v1/stats') return {}
+      if (path === 'api/v1/graphs/g1/stats') return dist
+      if (path === 'api/v1/graphs/g1/embedding_models') return []
+      if (path === 'api/v1/graphs') return ['g1']
+      throw new Error('unexpected GET ' + path)
+    })
+    renderPage()
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('The graph g1 not found')
+    expect(alert).toHaveTextContent('Unknown graph g1')
+    expect(document.querySelector('.spinner-default')).toBeNull()
   })
 })

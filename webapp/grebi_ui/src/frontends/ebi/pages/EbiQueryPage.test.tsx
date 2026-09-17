@@ -115,3 +115,20 @@ describe('EbiQueryPage', () => {
     expect(document.querySelector('pre.bg-slate-900')!.textContent).toContain('MATCH (g:Gene {symbol: $gene_symbol})')
   })
 })
+
+describe('EbiQueryPage errors', () => {
+  it('says when there is no such query template', async () => {
+    const { ApiError } = await import('../../../app/api')
+    mockedGet.mockImplementation(async (path: string) => {
+      if (path === 'api/v1/graphs/g1/query_templates/q1') throw new ApiError(404, path, 'No such template')
+      if (path === 'api/v1/graphs') return ['g1']
+      if (path === 'api/v1/stats') return {}
+      throw new Error('unexpected GET ' + path)
+    })
+    renderPage()
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('The query template not found')
+    expect(alert).toHaveTextContent('No such template')
+    expect(document.querySelector('.spinner-default')).toBeNull()
+  })
+})
