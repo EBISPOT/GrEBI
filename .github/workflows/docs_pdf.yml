@@ -8,6 +8,8 @@ on:
       - 'webapp/generate_docs_pdf.py'
       - 'webapp/test_queries_and_make_docs.py'
       - 'query_templates/**'
+      - 'dataload/scripts/download_local.sh'
+      - 'dataload/scripts/dataload_local.sh'
       - '.github/workflows/docs_pdf.yml'
   workflow_dispatch: {}
 

@@ -15,6 +15,14 @@ SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 GREBI_HOME=$(dirname $(dirname $SCRIPT_PATH))
 GREBI_DOWNLOADS_BASE=${GREBI_DOWNLOADS_PATH:-$GREBI_HOME/downloads}
 
+# ./tmp may be a symlink onto a bigger disk (the docs workflow does that);
+# resolve it, as dataload_local.sh does, so the scratch can be mounted into the
+# orchestrator at its real path: inside the container the symlink would
+# otherwise point at nothing.
+TMP_BASE=$(readlink -f $GREBI_HOME/tmp 2>/dev/null || echo $GREBI_HOME/tmp)
+EXTRA_VOLS=""
+case "$TMP_BASE" in "$GREBI_HOME"*) ;; *) EXTRA_VOLS="-v $TMP_BASE:$TMP_BASE" ;; esac
+
 # The runtime image ships non-root (USER grebi), so the orchestrator must be
 # given explicit socket access: root on macOS (Docker Desktop maps the socket
 # for root), or the host uid + docker socket group on Linux. Nested process
@@ -31,7 +39,7 @@ fi
 IFS=',' read -ra SUBGRAPH_ARRAY <<< "$GREBI_SUBGRAPHS"
 for sg in "${SUBGRAPH_ARRAY[@]}"; do
   DL_PATH=$GREBI_DOWNLOADS_BASE/$sg
-  TMP_DIR=$GREBI_HOME/tmp/${sg}_download
+  TMP_DIR=$TMP_BASE/${sg}_download
   REPORTS_DIR=$GREBI_HOME/out/$sg/reports_download
   mkdir -p $TMP_DIR/NXF_WORK $TMP_DIR/NXF_HOME $TMP_DIR/NXF_TEMP $TMP_DIR/NXF_CACHE_DIR $REPORTS_DIR
   mkdir -p $DL_PATH
@@ -41,6 +49,7 @@ for sg in "${SUBGRAPH_ARRAY[@]}"; do
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v $GREBI_HOME:$GREBI_HOME \
     -v $DL_PATH:$DL_PATH \
+    $EXTRA_VOLS \
     -e GREBI_HOME=$GREBI_HOME \
     -e GREBI_DOWNLOADS_PATH=$DL_PATH \
     -e GREBI_SUBGRAPH=$sg \
