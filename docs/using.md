@@ -37,6 +37,8 @@ GrEBI is designed for graphs which have very large numbers of edges (> 1 billion
 
 <api-example method="GET" url="/api/v1/graphs/dismech/nodes/hgnc:1100" />
 
+A node whose labels exist in several languages lists them in `grebi:languages`. Its values are in English unless they carry a language: a translation is a reified value such as `{"grebi:value": "Gène A", "grebi:properties": {"grebi:lang": ["fr"]}}`. Ask for one language with `?lang=fr` on this endpoint, on the node search or on the semantic search: that language's values come first on every property, English follows as the fallback, and other languages are left out. The MCP `get_node` and `search_nodes` tools take the same `lang` argument.
+
 ### Response format
 
 All paginated endpoints return:

@@ -464,6 +464,7 @@ public class GrebiApi {
                     }
 
                     var resolve = ! "false".equals(ctx.queryParam("resolve"));
+                    var lang = ctx.queryParam("lang");
                     var res = postgres.searchNodesPaginated(
                         ctx.pathParam("graph"),
                         null,
@@ -472,7 +473,7 @@ public class GrebiApi {
                         limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"))
                     );
 
-                    ctx.json(res);
+                    ctx.json(resolve ? res.map(node -> Languages.localise(node, lang)) : res);
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");
@@ -487,7 +488,7 @@ public class GrebiApi {
                         ctx.status(404).result("{\"error\":\"Node not found\"}");
                         return;
                     }
-                    ctx.result(gson.toJson(res));
+                    ctx.result(gson.toJson(Languages.localise(res, ctx.queryParam("lang"))));
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/edge_counts", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
@@ -661,6 +662,7 @@ public class GrebiApi {
                     var vectorResults = postgres.searchByVector(graph, model, queryVector, n);
 
                     if (resolve) {
+                        var lang = ctx.queryParam("lang");
                         var nodeIds = vectorResults.stream().map(r -> r.nodeId).toList();
                         var pgClient = postgres.getPgClient();
                         var resolvedMap = pgClient.resolveToMap(graph, nodeIds);
@@ -672,6 +674,7 @@ public class GrebiApi {
                                 resolved.put("grebi:nodeId", vr.nodeId);
                                 resolved.put("grebi:name", vr.name != null ? List.of(vr.name) : List.of());
                             }
+                            resolved = Languages.localise(resolved, lang);
                             resolved.put("grebi:searchScore", 1.0 - vr.distance);
                             results.add(resolved);
                         }
@@ -796,10 +799,11 @@ public class GrebiApi {
                         filters.put(param.getKey(), param.getValue());
                     }
                     var resolve = ! "false".equals(ctx.queryParam("resolve"));
+                    var lang = ctx.queryParam("lang");
                     var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"));
                     var res = postgres.searchNodesPaginated(ctx.pathParam("graph"), searchText, filters, resolve, page);
                     ctx.contentType("application/json");
-                    ctx.json(res);
+                    ctx.json(resolve ? res.map(node -> Languages.localise(node, lang)) : res);
                 })
                 .get("/api/v1/graphs/{graph}/suggest", ctx -> {
                     limits.validateText(ctx.queryParam("q"), "q");

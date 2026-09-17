@@ -152,6 +152,26 @@ class GrebiMcpServerTest {
     }
 
     @Test
+    void nodesCanBeAskedForInALanguage() {
+        when(app.pgClient.resolveToList("g1", List.of("mondo:0005083"))).thenReturn(List.of(GrebiApiNodeRoutesTest.translatedNode()));
+        var node = text(client.callTool(call("get_node", Map.of("graph", "g1", "nodeId", "mondo:0005083", "lang", "fr")))).getAsJsonObject("node");
+        var names = node.getAsJsonArray("grebi:name");
+        assertEquals(2, names.size());
+        assertEquals("psoriasis (fr)", names.get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString());
+        assertEquals(List.of("en", "de", "fr", "ja"), TestApp.GSON.fromJson(node.get("grebi:languages"), List.class));
+
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), eq(true), any()))
+            .thenReturn(TestApp.facetedPage(List.of(GrebiApiNodeRoutesTest.translatedNode()), Map.of(), 1));
+        var hit = text(client.callTool(call("search_nodes", Map.of("graph", "g1", "q", "psoriasis", "lang", "de")))).getAsJsonArray("rows").get(0).getAsJsonObject();
+        assertEquals("Schuppenflechte", hit.getAsJsonArray("grebi:synonym").get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString());
+        assertEquals(1, hit.getAsJsonArray("grebi:name").size(), "no German name, so English alone");
+
+        var tools = client.listTools().tools().stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
+        assertTrue(tools.get("get_node").inputSchema().properties().containsKey("lang"));
+        assertTrue(tools.get("search_nodes").inputSchema().properties().containsKey("lang"));
+    }
+
+    @Test
     void edgeCountsFollowTheDirection() {
         when(app.postgres.getBothEdgeCounts("g1", "n1")).thenReturn(Map.of("incoming", Map.of("t", Map.of("ds", 1))));
         when(app.postgres.getIncomingEdgeCounts("g1", "n1")).thenReturn(Map.of("t", Map.of("ds", 2)));

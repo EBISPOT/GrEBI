@@ -590,6 +590,11 @@
           "Ontologies.tiny"
         ],
         "grebi:displayType": "owl:Class",
+        "grebi:languages": [
+          "en",
+          "fr",
+          "ja"
+        ],
         "grebi:name": [
           {
             "grebi:datasources": [
@@ -599,6 +604,38 @@
               "http://example.org/A"
             ],
             "grebi:value": "thing A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "grebi:lang": [
+                  "fr"
+                ]
+              },
+              "grebi:value": "chose A"
+            }
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "grebi:lang": [
+                  "ja"
+                ]
+              },
+              "grebi:value": "もの A"
+            }
           }
         ],
         "grebi:nodeId": "http://example.org/A",
@@ -3740,6 +3777,11 @@
           "Ontologies.tiny"
         ],
         "grebi:displayType": "owl:Class",
+        "grebi:languages": [
+          "en",
+          "fr",
+          "ja"
+        ],
         "grebi:name": [
           {
             "grebi:datasources": [
@@ -3749,6 +3791,38 @@
               "http://example.org/A"
             ],
             "grebi:value": "thing A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "grebi:lang": [
+                  "fr"
+                ]
+              },
+              "grebi:value": "chose A"
+            }
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "grebi:lang": [
+                  "ja"
+                ]
+              },
+              "grebi:value": "もの A"
+            }
           }
         ],
         "grebi:nodeId": "http://example.org/A",
@@ -4735,6 +4809,11 @@
           "Ontologies.tiny"
         ],
         "grebi:displayType": "owl:Class",
+        "grebi:languages": [
+          "en",
+          "fr",
+          "ja"
+        ],
         "grebi:name": [
           {
             "grebi:datasources": [
@@ -4744,6 +4823,38 @@
               "http://example.org/A"
             ],
             "grebi:value": "thing A"
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "grebi:lang": [
+                  "fr"
+                ]
+              },
+              "grebi:value": "chose A"
+            }
+          },
+          {
+            "grebi:datasources": [
+              "Ontologies.tiny"
+            ],
+            "grebi:sourceIds": [
+              "http://example.org/A"
+            ],
+            "grebi:value": {
+              "grebi:properties": {
+                "grebi:lang": [
+                  "ja"
+                ]
+              },
+              "grebi:value": "もの A"
+            }
           }
         ],
         "grebi:nodeId": "http://example.org/A",
@@ -5756,7 +5867,7 @@
         "count": 4
       },
       "grebi:name": {
-        "count": 4
+        "count": 6
       },
       "grebi:type": {
         "count": 6
@@ -5793,13 +5904,13 @@
         ],
         "cypher_query": "RETURN \"Hello, World!\" AS message",
         "description": "Tester query to see if the pipeline is working",
-        "end_time": "2026-07-10 15:40:55",
+        "end_time": "2026-09-17 13:08:13",
         "id": "hello_world_tester",
         "num_results": 1,
-        "start_time": "2026-07-10 15:40:54",
+        "start_time": "2026-09-17 13:08:12",
         "subgraph": "test_ubergraph",
         "table": "matq_test_ubergraph_hello_world_tester",
-        "time": 0.743083,
+        "time": 1.056587,
         "title": "Hello world",
         "uses_datasources": [
           "IMPC",

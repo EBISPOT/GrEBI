@@ -6,6 +6,8 @@ Ontology(<http://example.org/test_ubergraph>
   Declaration(Class(:C))
   Declaration(ObjectProperty(:part_of))
   AnnotationAssertion(rdfs:label :A "thing A")
+  AnnotationAssertion(rdfs:label :A "chose A"@fr)
+  AnnotationAssertion(rdfs:label :A "もの A"@ja)
   AnnotationAssertion(rdfs:label :B "thing B")
   AnnotationAssertion(rdfs:label :C "thing C")
   SubClassOf(:B :A)

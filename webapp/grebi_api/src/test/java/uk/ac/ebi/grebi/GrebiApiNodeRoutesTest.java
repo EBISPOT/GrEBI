@@ -68,6 +68,50 @@ class GrebiApiNodeRoutesTest {
         assertEquals("Node not found", missing.json().getAsJsonObject().get("error").getAsString());
     }
 
+    /** A node as the dataload merges it, with its name in three languages and a synonym in a fourth. */
+    static Map<String, Object> translatedNode() {
+        return TestApp.row("grebi:nodeId", NODE,
+            "grebi:name", List.of(LanguagesTest.merged("psoriasis"), LanguagesTest.merged(LanguagesTest.translated("psoriasis (fr)", "fr")),
+                LanguagesTest.merged(LanguagesTest.translated("乾癬", "ja"))),
+            "grebi:synonym", List.of(LanguagesTest.merged(LanguagesTest.translated("Schuppenflechte", "de"))));
+    }
+
+    @Test
+    void aNodeIsServedInTheLanguageAskedFor() {
+        when(app.pgClient.resolveToList("g1", List.of(NODE))).thenReturn(List.of(translatedNode()));
+
+        var all = app.get("/api/v1/graphs/g1/nodes/" + ENC).json().getAsJsonObject();
+        assertEquals(3, all.getAsJsonArray("grebi:name").size(), "without a language every value is served");
+        assertEquals(List.of("en", "de", "fr", "ja"), TestApp.GSON.fromJson(all.get("grebi:languages"), List.class));
+
+        var french = app.get("/api/v1/graphs/g1/nodes/" + ENC + "?lang=fr").json().getAsJsonObject();
+        var names = french.getAsJsonArray("grebi:name");
+        assertEquals(2, names.size());
+        assertEquals("psoriasis (fr)", names.get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString(), "the language asked for first");
+        assertEquals("psoriasis", names.get(1).getAsJsonObject().get("grebi:value").getAsString(), "then English as the fallback");
+        assertFalse(french.has("grebi:synonym"), "a property with values only in other languages is dropped");
+
+        var english = app.get("/api/v1/graphs/g1/nodes/" + ENC + "?lang=en").json().getAsJsonObject();
+        assertEquals(1, english.getAsJsonArray("grebi:name").size());
+        assertEquals(List.of("en", "de", "fr", "ja"), TestApp.GSON.fromJson(english.get("grebi:languages"), List.class), "still listed");
+    }
+
+    @Test
+    void resolvedSearchResultsAreServedInTheLanguageAskedFor() {
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), eq(true), any()))
+            .thenReturn(TestApp.facetedPage(List.of(translatedNode()), Map.of(), 1));
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), eq(false), any()))
+            .thenReturn(TestApp.facetedPage(List.of(TestApp.row("grebi:nodeId", NODE, "grebi:name", "psoriasis")), Map.of(), 1));
+
+        var hit = app.get("/api/v1/graphs/g1/search?q=psoriasis&lang=ja").json().getAsJsonObject().getAsJsonArray("content").get(0).getAsJsonObject();
+        assertEquals("乾癬", hit.getAsJsonArray("grebi:name").get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString());
+        assertEquals(2, hit.getAsJsonArray("grebi:name").size());
+
+        var light = app.get("/api/v1/graphs/g1/search?q=psoriasis&lang=ja&resolve=false").json().getAsJsonObject().getAsJsonArray("content").get(0).getAsJsonObject();
+        assertEquals("psoriasis", light.get("grebi:name").getAsString(), "unresolved hits carry the name column, which is English");
+        assertFalse(light.has("grebi:languages"));
+    }
+
     @Test
     void edgeCountsComeFromPostgresAndAreCacheable() {
         when(app.postgres.getBothEdgeCounts("g1", NODE)).thenReturn(Map.of("incoming", Map.of("biolink:subclass_of", Map.of("OLS.efo", 3))));
