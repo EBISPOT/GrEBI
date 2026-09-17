@@ -125,6 +125,44 @@ class GrebiApiNodeRoutesTest {
     }
 
     @Test
+    void searchResultsExportAsCsvWithTheSameFilters() {
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psor"), any(), eq(true), eq(false), any()))
+            .thenReturn(TestApp.facetedPage(List.of(
+                TestApp.row("grebi:nodeId", NODE, "grebi:name", "psoriasis, plaque", "grebi:type", List.of("biolink:Disease"),
+                    "grebi:datasources", List.of("OLS.mondo"), "grebi:sourceIds", List.of(NODE, "doid:8893"), "grebi:curie", "MONDO:0005083")), Map.of(), 1));
+
+        var res = app.get("/api/v1/graphs/g1/search.csv?q=psor&exactMatch=true&grebi:type=biolink:Disease");
+        assertEquals(200, res.status());
+        assertTrue(res.header("content-type").startsWith("text/csv"), res.header("content-type"));
+        assertEquals("attachment; filename=\"search.csv\"", res.header("content-disposition"));
+        assertEquals("grebi:nodeId,grebi:name,grebi:type,grebi:datasources,grebi:sourceIds,grebi:curie\n"
+            + NODE + ",\"psoriasis, plaque\",biolink:Disease,OLS.mondo,mondo:0005083; doid:8893,MONDO:0005083\n", res.body());
+        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psor"), eq(Map.of("grebi:type", List.of("biolink:Disease"))), eq(true), eq(false),
+            argThat(p -> p.getPageNumber() == 0 && p.getPageSize() == CsvExport.PAGE_SIZE));
+    }
+
+    @Test
+    void aNodesEdgesExportAsCsv() {
+        when(app.postgres.searchEdgesPaginated(eq("g1"), eq("grebi:toNodeId"), eq(NODE), any(), eq("grebi:type"), eq("desc"), any()))
+            .thenReturn(TestApp.facetedPage(List.of(TestApp.row("grebi:edgeId", "e1", "grebi:type", "is_a", "grebi:fromNodeId", "mondo:1", "grebi:toNodeId", NODE,
+                "grebi:datasources", List.of("OLS.mondo"), "from", Map.of("grebi:nodeId", "mondo:1", "grebi:name", List.of("plaque psoriasis")),
+                "to", Map.of("grebi:nodeId", NODE, "grebi:name", List.of("psoriasis")))), Map.of(), 1));
+
+        var res = app.get("/api/v1/graphs/g1/nodes/" + ENC + "/incoming_edges.csv?sortDir=desc&-grebi:datasources=GWAS");
+        assertEquals(200, res.status());
+        assertEquals("attachment; filename=\"mondo_0005083_incoming_edges.csv\"", res.header("content-disposition"));
+        assertEquals("grebi:edgeId,grebi:type,grebi:fromNodeId,from,grebi:toNodeId,to,grebi:datasources,properties\n"
+            + "e1,is_a,mondo:1,plaque psoriasis," + NODE + ",psoriasis,OLS.mondo,\n", res.body());
+        verify(app.postgres).searchEdgesPaginated(eq("g1"), eq("grebi:toNodeId"), eq(NODE), eq(Map.of("-grebi:datasources", List.of("GWAS"))),
+            eq("grebi:type"), eq("desc"), any());
+
+        when(app.postgres.searchEdgesPaginated(eq("g1"), eq("grebi:fromNodeId"), eq(NODE), any(), eq("grebi:type"), eq("asc"), any()))
+            .thenReturn(TestApp.facetedPage(List.of(), Map.of(), 0));
+        var out = app.get("/api/v1/graphs/g1/nodes/" + ENC + "/outgoing_edges.csv");
+        assertEquals("grebi:edgeId,grebi:type,grebi:fromNodeId,from,grebi:toNodeId,to,grebi:datasources,properties\n", out.body());
+    }
+
+    @Test
     void edgeCountsComeFromPostgresAndAreCacheable() {
         when(app.postgres.getBothEdgeCounts("g1", NODE)).thenReturn(Map.of("incoming", Map.of("biolink:subclass_of", Map.of("OLS.efo", 3))));
         when(app.postgres.getIncomingEdgeCounts("g1", NODE)).thenReturn(Map.of("biolink:subclass_of", Map.of("OLS.efo", 3)));

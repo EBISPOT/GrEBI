@@ -45,23 +45,29 @@ export default function EdgesList(params:{
   let [sortColumn, setSortColumn] = useState("grebi:type")
   let [sortDir, setSortDir] = useState<'asc'|'desc'>("asc")
 
+    const endpoint = direction === 'incoming' ? 'incoming_edges' : 'outgoing_edges'
+    // the sort and narrowing of the list, shared by the page fetch and the CSV export
+    const listParams = (): string[][] => [
+        ['sortBy', sortColumn],
+        ['sortDir', sortDir],
+        ...(extraSearchParams||[]),
+        ...(filter ? [['q', filter]] : []),
+        ...(edgesState && dsEnabled!==null ?
+                difference(edgesState.datasources, dsEnabled).map(ds => ['-grebi:datasources', ds]) : [])
+    ]
+    const csvHref = `${process.env.REACT_APP_APIURL}api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/${endpoint}.csv?${new URLSearchParams(listParams())}`
+
     useEffect(() => {
         async function getEdges() {
             setLoading(true)
-            let endpoint = direction === 'incoming' ? 'incoming_edges' : 'outgoing_edges'
             let res: any
             try {
                 res = (await getPaginated<any>(`api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/${endpoint}?${
                 new URLSearchParams([
                     ['page', page],
                     ['size', rowsPerPage],
-                    ['sortBy', sortColumn],
-                    ['sortDir', sortDir],
-                    ...(extraSearchParams||[]),
-                    ...(filter ? [['q', filter]] : []),
-                    ...(edgesState && dsEnabled!==null ? 
-                            difference(edgesState.datasources, dsEnabled).map(ds => ['-grebi:datasources', ds]) : [])
-                ])
+                    ...listParams()
+                ] as any)
             }`)).map(e => new GraphEdge(e))
             } catch (e) {
                 setError(e)
@@ -97,8 +103,13 @@ export default function EdgesList(params:{
     return <div>
         <EdgeMetadataDialog open={openEdgeId !== null} onClose={() => setOpenEdgeId(null)} graph={graph} edgeId={openEdgeId} />
         { error && <ErrorMessage what="The edges" error={error} /> }
-        <div className="pb-5">
+        <div className="pb-5 flex items-center justify-between gap-4">
         <DatasourceSelector datasources={edgesState.datasources} dsEnabled={dsEnabled!==null?dsEnabled:edgesState.datasources} setDsEnabled={setDsEnabled} />
+        {edgesState.total > 0 && (
+          <a className="link-default text-sm whitespace-nowrap" href={csvHref} title="Every edge of this list, as a CSV file">
+            Download as CSV
+          </a>
+        )}
         </div>
         { loading && <LoadingOverlay message="Loading edges..." /> }
         <DataTable columns={[

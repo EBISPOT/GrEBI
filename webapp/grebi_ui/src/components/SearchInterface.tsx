@@ -110,6 +110,14 @@ export default function SeachInterface(opts:{ graph:string }
   const model = searchParams.get("model");
   const isSemanticSearch = model && model !== "lexical";
 
+  // the same search, every page of it, as a CSV file from the API
+  const csvParams = new URLSearchParams(searchParams);
+  csvParams.set("q", search);
+  csvParams.delete("model");
+  for (const ds of datasourceFacetselected) csvParams.append("grebi:datasources", ds);
+  for (const t of typeFacetSelected) csvParams.append("grebi:type", t);
+  const csvHref = `${process.env.REACT_APP_APIURL}api/v1/graphs/${graph}/search.csv?${csvParams}`;
+
   useEffect(() => {
 
     async function doSearch() {
@@ -341,6 +349,11 @@ export default function SeachInterface(opts:{ graph:string }
                 Search results for: {search}
               </div>
               <div className="justify-between flex flex-row items-center gap-4">
+                {!isSemanticSearch && totalResults > 0 && (
+                  <a className="link-default text-sm whitespace-nowrap" href={csvHref} title="Every result of this search, as a CSV file">
+                    Download as CSV
+                  </a>
+                )}
                 {!isSemanticSearch && <button
                   className="lg:hidden button-secondary"
                   type="button"

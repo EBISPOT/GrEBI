@@ -528,6 +528,8 @@ public class GrebiApi {
                     var result = cypher.resolveSingleEdges(ctx.pathParam("graph"), nodeId, List.of(items));
                     ctx.result(gson.toJson(result));
                 })
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edges.csv", ctx -> edgeListCsv(ctx, postgres, "grebi:toNodeId", "incoming_edges"))
+                .get("/api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edges.csv", ctx -> edgeListCsv(ctx, postgres, "grebi:fromNodeId", "outgoing_edges"))
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edges", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), "grebi:type");
@@ -780,6 +782,29 @@ public class GrebiApi {
                     var res = PrefixService.get().reprefix(iris_or_curies);
                     ctx.result(gson.toJson(Map.of("curies", res)));
                 })
+                .get("/api/v1/graphs/{graph}/search.csv", ctx -> {
+                    var graph = ctx.pathParam("graph");
+                    var searchText = ctx.queryParam("q");
+                    limits.validateText(searchText, "q");
+                    var filters = nodeFilters(ctx);
+                    var exactMatch = "true".equals(ctx.queryParam("exactMatch"));
+                    ctx.future(() -> {
+                        try {
+                            var writer = csvResponse(ctx, "search.csv");
+                            return java.util.concurrent.CompletableFuture.runAsync(() -> {
+                                try {
+                                    CsvExport.writeNodes(writer, page -> postgres.searchNodesPaginated(graph, searchText, filters, exactMatch, false,
+                                            org.springframework.data.domain.PageRequest.of(page, CsvExport.PAGE_SIZE)).getContent());
+                                    writer.flush();
+                                } catch (IOException e) {
+                                    throw new RuntimeException("Failed to write CSV response", e);
+                                }
+                            });
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to write CSV response", e);
+                        }
+                    });
+                })
                 .get("/api/v1/graphs/{graph}/search", ctx -> {
                     var searchText = ctx.queryParam("q");
                     limits.validateText(searchText, "q");
@@ -959,4 +984,57 @@ public class GrebiApi {
         return cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page);
     }
 
+    /** The node search's filters: every query parameter that is not a control. */
+    private static Map<String, List<String>> nodeFilters(io.javalin.http.Context ctx) {
+        Map<String, List<String>> filters = new LinkedHashMap<>();
+        for (var param : ctx.queryParamMap().entrySet()) {
+            if (Set.of("q", "page", "size", "exactMatch", "includeObsoleteEntries", "resolve", "lang", "facet").contains(param.getKey())) {
+                continue;
+            }
+            filters.put(param.getKey(), param.getValue());
+        }
+        return filters;
+    }
+
+    /** Starts a CSV download and hands back its writer. */
+    private static java.io.PrintWriter csvResponse(io.javalin.http.Context ctx, String fileName) throws IOException {
+        var httpRes = ctx.res();
+        httpRes.setContentType("text/csv");
+        httpRes.setCharacterEncoding("UTF-8");
+        httpRes.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        httpRes.setStatus(200);
+        return httpRes.getWriter();
+    }
+
+    /** A node's incoming or outgoing edges as CSV, with the same filters and sort as the JSON list. */
+    private static void edgeListCsv(io.javalin.http.Context ctx, uk.ac.ebi.grebi.repo.GrebiPostgresRepo postgres, String filterField, String what) {
+        var graph = ctx.pathParam("graph");
+        var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
+        var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), "grebi:type");
+        var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
+        Map<String, List<String>> extraFilters = new LinkedHashMap<>();
+        for (var queryParam : ctx.queryParamMap().entrySet()) {
+            if (Set.of("page", "size", "sortBy", "sortDir", "facet").contains(queryParam.getKey())) {
+                continue;
+            }
+            extraFilters.put(queryParam.getKey(), queryParam.getValue());
+        }
+        var sort = Sort.by(sortDir.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, sortBy);
+        ctx.future(() -> {
+            try {
+                var writer = csvResponse(ctx, CsvExport.fileName(nodeId, "_" + what + ".csv"));
+                return java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    try {
+                        CsvExport.writeEdges(writer, page -> postgres.searchEdgesPaginated(graph, filterField, nodeId, extraFilters, sortBy, sortDir,
+                                org.springframework.data.domain.PageRequest.of(page, CsvExport.PAGE_SIZE, sort)).getContent());
+                        writer.flush();
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to write CSV response", e);
+                    }
+                });
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to write CSV response", e);
+            }
+        });
+    }
 }

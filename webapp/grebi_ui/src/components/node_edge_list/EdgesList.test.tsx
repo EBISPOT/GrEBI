@@ -158,3 +158,14 @@ describe('EdgesList edge details', () => {
     expect(screen.getByRole('link', { name: /Open edge page/ })).toHaveAttribute('href', `/graphs/g/edges/${encodeNodeId(edges[0]['grebi:edgeId'])}`)
   })
 })
+
+describe('EdgesList export', () => {
+  it('offers the whole list as CSV from the API, narrowed as the table is', async () => {
+    renderList()
+    const link = await screen.findByRole('link', { name: 'Download as CSV' })
+    const url = new URL(link.getAttribute('href')!)
+    expect(url.pathname).toBe(`/api/v1/graphs/g/nodes/${encodeNodeId('n-psoriasis')}/incoming_edges.csv`)
+    expect(url.searchParams.get('sortBy')).toBe('grebi:type')
+    expect(url.searchParams.get('page')).toBeNull()
+  })
+})

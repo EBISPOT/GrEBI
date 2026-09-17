@@ -33,7 +33,7 @@ GrEBI is designed for graphs which have very large numbers of edges (> 1 billion
 
 <api-example method="GET" url="/api/v1/graphs/dismech/search" q="BRCA1" size="5" />
 
-The text matches names by containment, best similarity first. Add `exactMatch=true` to match the whole name instead, ignoring case, for example to resolve a list of symbols one by one. The `grebi:type` and `grebi:datasources` parameters narrow the results, and the MCP `search_nodes` tool takes the same options.
+The text matches names by containment, best similarity first. Add `exactMatch=true` to match the whole name instead, ignoring case, for example to resolve a list of symbols one by one. The `grebi:type` and `grebi:datasources` parameters narrow the results, and the MCP `search_nodes` tool takes the same options. The same search at `/search.csv` streams every result (up to 100,000) as a CSV file, and a node's `/incoming_edges.csv` and `/outgoing_edges.csv` do the same for its edges, with the edge's other properties as JSON in the last column.
 
 #### Get a specific node
 

@@ -198,3 +198,19 @@ describe('SearchInterface exact matching', () => {
     await waitFor(() => expect(lastSearch().get('exactMatch')).toBeNull())
   })
 })
+
+describe('SearchInterface export', () => {
+  it('offers every result of the search as CSV from the API, with the facets ticked', async () => {
+    api.get.mockResolvedValue([])
+    api.getPaginated.mockResolvedValue(new Page<any>(0, hits.length, 1, hits.length, hits, facets as any))
+    renderSearch('?q=psoriasis&exactMatch=true')
+    const link = await screen.findByRole('link', { name: 'Download as CSV' })
+    const url = new URL(link.getAttribute('href')!)
+    expect(url.pathname).toBe('/api/v1/graphs/g/search.csv')
+    expect(url.searchParams.get('q')).toBe('psoriasis')
+    expect(url.searchParams.get('exactMatch')).toBe('true')
+
+    fireEvent.click(screen.getByLabelText(/^GWAS/))
+    await waitFor(() => expect(new URL(screen.getByRole('link', { name: 'Download as CSV' }).getAttribute('href')!).searchParams.getAll('grebi:datasources')).toEqual(['GWAS']))
+  })
+})
