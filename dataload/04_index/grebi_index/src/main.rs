@@ -232,6 +232,10 @@ fn main() {
                     if reified.is_some() {
                         let reified_u = reified.unwrap();
                         reified_u.props.iter().for_each(|prop| {
+                            // the language of a translated value is not an edge property
+                            if prop.key == grebi_shared::slice_merged_entity::LANGUAGE_PROP {
+                                return;
+                            }
                             let prop_key = prop.key.to_vec();
 
                             let count2 = edge_props_to_count.entry(prop_key).or_insert(0);

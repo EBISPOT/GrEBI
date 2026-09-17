@@ -14,11 +14,7 @@
       "count": 1
     }
   },
-  "edge_props": {
-    "grebi:lang": {
-      "count": 3
-    }
-  },
+  "edge_props": {},
   "types": {
     "ex:Gene": {
       "count": 1
