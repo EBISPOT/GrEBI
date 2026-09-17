@@ -4,6 +4,8 @@ import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
 import { useState } from "react";
 import { Link, Typography } from "@mui/material";
 import ResultsTable from "../../../components/matq/ResultsTable";
+import { materialisedQueryCsvUrl } from "../../../app/ftp";
+import { Download } from "@mui/icons-material";
 
 export default function EbiTablesPage() {
 
@@ -26,6 +28,11 @@ export default function EbiTablesPage() {
         <main className="container mx-auto px-4 h-fit pt-2">
         <div className="grid grid-cols-2 lg:grid-cols-1 lg:gap-8">
             <Typography variant="h4">{queryid}</Typography>
+            <p>
+              <a className="link-default inline-flex items-center gap-1" href={materialisedQueryCsvUrl(queryid)} target="_blank" rel="noopener noreferrer">
+                <Download fontSize="small" /> Download the whole table as CSV
+              </a>
+            </p>
             <ResultsTable graph={graph} queryid={queryid} />
         </div>
         </main>

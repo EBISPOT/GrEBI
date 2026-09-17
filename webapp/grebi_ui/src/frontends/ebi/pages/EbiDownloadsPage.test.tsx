@@ -25,6 +25,16 @@ describe('EbiDownloadsPage', () => {
     expect(ftp).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
+  it('lists the files of the graph in the latest release', () => {
+    renderPage()
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows.map((r) => within(r).getByRole('link').textContent)).toEqual([
+      'g1_neo4j.tar.xz', 'g1_metadata.json', 'query_results/', 'postgres.tar.xz', 'release.tar.xz',
+    ])
+    expect(within(rows[0]).getByRole('link')).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/latest/g1_neo4j.tar.xz')
+    expect(screen.getByRole('link', { name: 'latest/' })).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/latest/')
+  })
+
   it('shows breadcrumbs for the graph in the route', () => {
     renderPage()
     const crumbs = within(screen.getByLabelText('breadcrumb'))

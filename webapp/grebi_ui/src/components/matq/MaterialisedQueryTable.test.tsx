@@ -63,7 +63,8 @@ describe('MaterialisedQueryTable', () => {
 
     const downloads = screen.getAllByRole('link', { name: /CSV/ })
     expect(downloads).toHaveLength(2)
-    expect(downloads[0]).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/')
+    expect(downloads[0]).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/latest/query_results/gwas_by_disease.results.csv.gz')
+    expect(downloads[1]).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/latest/query_results/impc_x_gwas.results.csv.gz')
   })
 
   it('clicking a row opens that query on its own graph', async () => {

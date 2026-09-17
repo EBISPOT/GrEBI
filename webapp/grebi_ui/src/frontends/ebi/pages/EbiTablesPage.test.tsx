@@ -47,3 +47,10 @@ describe('EbiTablesPage', () => {
     expect(mockedGetPaginated).toHaveBeenCalledWith('api/v1/graphs/g1/materialised_queries/mq1?page=0&size=10')
   })
 })
+
+describe('EbiTablesPage download', () => {
+  it('links to the whole table as CSV on the FTP', () => {
+    renderPage()
+    expect(screen.getByRole('link', { name: /Download the whole table as CSV/ })).toHaveAttribute('href', expect.stringMatching(/\/latest\/query_results\/.+\.results\.csv\.gz$/))
+  })
+})

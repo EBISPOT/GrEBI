@@ -1,105 +1,52 @@
-
-
 import { Fragment } from "react";
-import DataTable, { Column } from "../../../components/datatable/DataTable";
-import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
-import React from "react";
 import { useParams } from "react-router-dom";
+import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
+import { FTP_BASE, LATEST_RELEASE, releaseFiles } from "../../../app/ftp";
 
+/** The files of the latest release that concern the graph in the URL. */
 export default function EbiDownloadsPage() {
-
-  let params = useParams();
+  const params = useParams();
+  const graph = params.graph as string;
+  const files = releaseFiles(graph);
 
   return (
     <Fragment>
-      <EbiBreadcrumbsBar graph={params.graph} entries={[
+      <EbiBreadcrumbsBar graph={graph} entries={[
         { url: `/graphs`, label: "Graphs" },
-        { url: `/graphs/${params.graph}/downloads`, label: "Downloads" }
+        { url: `/graphs/${graph}/downloads`, label: "Downloads" }
       ]} />
       <main className="container mx-auto px-4 my-8">
         <div className="text-2xl font-bold my-6">
           Downloading Knowledge Graph Exports
         </div>
-        <div>
-          <p className="px-1 mb-2 text-justify">
-            Neo4j and Postgres database exports of the KG can be downloaded from&thinsp;
-            <a
-              className="link-default"
-              href="https://ftp.ebi.ac.uk/pub/databases/spot/kg/"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-            https://ftp.ebi.ac.uk/pub/databases/spot/kg/
-            </a>.
-          </p>
-          {/* <DataTable columns={columns} data={data} /> */}
-        </div>
+        <p className="px-1 mb-4">
+          Releases are published on the EMBL-EBI FTP at&thinsp;
+          <a className="link-default" href={`${FTP_BASE}/`} rel="noopener noreferrer" target="_blank">{`${FTP_BASE}/`}</a>.
+          The files below are those of <code>{graph}</code> in the latest release,&thinsp;
+          <a className="link-default" href={`${LATEST_RELEASE}/`} rel="noopener noreferrer" target="_blank">latest/</a>;
+          earlier releases are in the dated folders beside it. Sizes and dates are listed there.
+        </p>
+        <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+          <thead>
+            <tr className="bg-gray-50 text-left text-gray-600 border-b border-gray-200">
+              <th className="py-2 px-3 font-medium">Description</th>
+              <th className="py-2 px-3 font-medium">File</th>
+              <th className="py-2 px-3 font-medium">Format</th>
+            </tr>
+          </thead>
+          <tbody>
+            {files.map((f, i) => (
+              <tr key={f.file} className={`border-b border-gray-100 ${i % 2 === 1 ? "bg-gray-50" : ""}`}>
+                <td className="py-2 px-3 text-gray-700">{f.description}</td>
+                <td className="py-2 px-3 whitespace-nowrap">
+                  <a className="link-default font-mono" href={f.url} rel="noopener noreferrer" target="_blank">{f.file}</a>
+                </td>
+                <td className="py-2 px-3 text-gray-600">{f.format}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </main>
     </Fragment>
   );
 }
-
-const columns: readonly Column[] = [
-  {
-    id: "Description",
-    name: "Description",
-    sortable: false,
-    selector: (data) => <span>{data.description}</span>,
-  },
-  {
-    id: "File",
-    name: "File",
-    sortable: false,
-    selector: (data) => (
-      <a
-        className="link-default"
-        target="_blank"
-        rel="noopener noreferrer"
-        href={data.downloadLink}
-      >
-        {data.downloadLabel}
-      </a>
-    ),
-  },
-  {
-    id: "Format",
-    name: "Format",
-    sortable: false,
-    selector: (data) => <span>{data.format}</span>,
-  },
-];
-
-const data: any[] = [
-  {
-    description:
-      "Neo4j database with all datasources (~700 GB uncompressed)",
-    downloadLabel: "neo4j.tar.xz",
-    downloadLink:
-      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi/latest/ebi_full_monarch_neo4j.tar.xz",
-    format: "Neo4j database",
-  },
-  {
-    description:
-      "Postgres database indexing all properties of all nodes and edges (~300 GB uncompressed)",
-    downloadLabel: "postgres.tar.xz",
-    downloadLink:
-      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/latest/postgres.tar.xz",
-    format: "Postgres database",
-  },
-  {
-    description:
-      "Metadata file with names, types, identifiers, datasources of all nodes (~20 GB uncompressed)",
-    downloadLabel: "metadata.jsonl.gz",
-    downloadLink:
-      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/latest/metadata.jsonl.gz",
-    format: "Gzipped JSON Lines",
-  },
-  {
-    description:
-      "JSON metadata of the KG contents (< 1 MB)",
-    downloadLabel: "metadata.json",
-    downloadLink:
-      "https://ftp.ebi.ac.uk/pub/databases/spot/kg/ebi_full_monarch/latest/metadata.json",
-    format: "JSON",
-  },
-];

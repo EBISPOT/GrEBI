@@ -7,6 +7,7 @@ import { Box, Button, CircularProgress, Link, Stack } from "@mui/material";
 import { Download, Info } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import ErrorMessage from "../ErrorMessage";
+import { materialisedQueryCsvUrl } from "../../app/ftp";
 
 
 const cols= [
@@ -37,7 +38,7 @@ const cols= [
     {
         id:"download",
         name:"",
-        selector:(row:any,key:string)=> <Link target="_blank" href="https://ftp.ebi.ac.uk/pub/databases/spot/kg/"><Button><Box
+        selector:(row:any,key:string)=> <Link target="_blank" rel="noopener noreferrer" href={materialisedQueryCsvUrl(row["id"])} onClick={(e) => e.stopPropagation()}><Button><Box
   display="flex"
   alignItems="center"
 >

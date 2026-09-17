@@ -51,7 +51,7 @@ describe('EbiTablesHomePage', () => {
     expect(row).toHaveTextContent('desc one')
     expect(row).toHaveTextContent('2025-01-01')
     expect(within(row).getAllByRole('link')[0]).toHaveAttribute('href', 'https://github.com/EBISPOT/GrEBI/blob/dev/query_templates/mq1.yaml')
-    expect(within(row).getByRole('link', { name: /CSV/ })).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/')
+    expect(within(row).getByRole('link', { name: /CSV/ })).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/latest/query_results/mq1.results.csv.gz')
   })
 
   it('opens a query\'s table for the graph it was materialised in', async () => {
