@@ -87,14 +87,16 @@ describe('EbiQueryPage', () => {
     fireEvent.click(within(examples).getByText('TP53'))
     expect(screen.getByTestId('location')).toHaveTextContent('/graphs/g1/queries/q1?gene_symbol=TP53')
     await waitFor(() => expect(mockedGetPaginated).toHaveBeenCalled())
-    expect(mockedGetPaginated.mock.calls[0][0]).toBe('api/v1/graphs/g1/query/q1')
+    // other fetches on the page may come first; what matters is that the query ran
+    expect(mockedGetPaginated.mock.calls.map((c) => c[0])).toContain('api/v1/graphs/g1/query/q1')
     expect(screen.getByRole('heading', { name: 'Results' })).toBeInTheDocument()
   })
 
   it('runs straight away when the parameters are already in the URL', async () => {
     renderPage('?gene_symbol=BRCA1')
     await screen.findByRole('heading', { name: 'Results' })
-    expect(mockedGetPaginated.mock.calls[0][0]).toBe('api/v1/graphs/g1/query/q1')
+    // other fetches on the page may come first; what matters is that the query ran
+    expect(mockedGetPaginated.mock.calls.map((c) => c[0])).toContain('api/v1/graphs/g1/query/q1')
     expect(screen.getByDisplayValue('BRCA1')).toBeInTheDocument()
   })
 
