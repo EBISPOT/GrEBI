@@ -662,6 +662,49 @@ public class GrebiApi {
                     }
 
                     float[] queryVector = client.embedText(model, q);
+
+                    // Paged form: the nearest candidates (up to the vector limit) among
+                    // those matching the filters, one page of them, and the type and
+                    // datasource counts of all of them, so the page can be faceted and
+                    // paged like the lexical search.
+                    if (ctx.queryParam("page") != null || ctx.queryParam("size") != null) {
+                        var pageable = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"));
+                        var filters = nodeFilters(ctx);
+                        var candidates = postgres.searchByVector(graph, model, queryVector, limits.maxVectorResults(), filters);
+                        var facets = new LinkedHashMap<String, Map<String, Long>>();
+                        facets.put("grebi:type", new LinkedHashMap<>());
+                        facets.put("grebi:datasources", new LinkedHashMap<>());
+                        for (var candidate : candidates) {
+                            for (var t : candidate.type) facets.get("grebi:type").merge(t, 1L, Long::sum);
+                            for (var ds : candidate.datasources) facets.get("grebi:datasources").merge(ds, 1L, Long::sum);
+                        }
+                        var from = (int) Math.min(pageable.getOffset(), candidates.size());
+                        var to = Math.min(from + pageable.getPageSize(), candidates.size());
+                        var hits = candidates.subList(from, to);
+                        var resolvedMap = resolve && !hits.isEmpty()
+                                ? postgres.getPgClient().resolveToMap(graph, hits.stream().map(r -> r.nodeId).toList())
+                                : Map.<String, Map<String, Object>>of();
+                        var lang = ctx.queryParam("lang");
+                        var content = new ArrayList<Map<String, Object>>();
+                        for (var hit : hits) {
+                            var row = resolvedMap.get(hit.nodeId);
+                            if (row == null) {
+                                row = new LinkedHashMap<>();
+                                row.put("grebi:nodeId", hit.nodeId);
+                                row.put("grebi:name", hit.name != null ? List.of(hit.name) : List.of());
+                                row.put("grebi:type", hit.type);
+                                row.put("grebi:datasources", hit.datasources);
+                                row.put("grebi:sourceIds", hit.sourceIds);
+                            }
+                            row = Languages.localise(row, lang);
+                            row.put("grebi:searchScore", 1.0 - hit.distance);
+                            content.add(row);
+                        }
+                        ctx.contentType("application/json");
+                        ctx.json(new GrebiFacetedResultsPage<>(content, facets, pageable, candidates.size()));
+                        return;
+                    }
+
                     var vectorResults = postgres.searchByVector(graph, model, queryVector, n);
 
                     if (resolve) {
@@ -988,7 +1031,7 @@ public class GrebiApi {
     private static Map<String, List<String>> nodeFilters(io.javalin.http.Context ctx) {
         Map<String, List<String>> filters = new LinkedHashMap<>();
         for (var param : ctx.queryParamMap().entrySet()) {
-            if (Set.of("q", "page", "size", "exactMatch", "includeObsoleteEntries", "resolve", "lang", "facet").contains(param.getKey())) {
+            if (Set.of("q", "page", "size", "exactMatch", "includeObsoleteEntries", "resolve", "lang", "facet", "model", "n").contains(param.getKey())) {
                 continue;
             }
             filters.put(param.getKey(), param.getValue());

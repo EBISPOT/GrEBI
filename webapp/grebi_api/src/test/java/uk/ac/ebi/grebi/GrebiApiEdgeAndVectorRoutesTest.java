@@ -117,6 +117,46 @@ class GrebiApiEdgeAndVectorRoutesTest {
     }
 
     @Test
+    void semanticSearchCanBePagedAndFacetedLikeTheLexicalOne() throws Exception {
+        var client = mock(EmbeddingServiceClient.class);
+        when(client.getAvailableModels()).thenReturn(List.of("m1"));
+        when(client.getEmbeddableModels()).thenReturn(Set.of("m1"));
+        when(client.embedText("m1", "psoriasis")).thenReturn(new float[] {0.1f});
+        app.embeddingClients.put("g1", client);
+        var hits = List.of(
+            new GrebiPostgresClient.VectorSearchResult("n1", "N1", List.of("GWAS"), List.of("biolink:Disease"), List.of(), 0.1),
+            new GrebiPostgresClient.VectorSearchResult("n2", "N2", List.of("OLS.mondo"), List.of("biolink:Disease"), List.of(), 0.2),
+            new GrebiPostgresClient.VectorSearchResult("n3", "N3", List.of("GWAS"), List.of("biolink:Gene"), List.of(), 0.3));
+        // the candidates are the nearest up to the vector limit, among those matching the filters
+        when(app.postgres.searchByVector(eq("g1"), eq("m1"), any(), eq(ResourceLimits.DEFAULT_MAX_VECTOR_RESULTS), eq(Map.of("grebi:datasources", List.of("GWAS", "OLS.mondo")))))
+            .thenReturn(hits);
+
+        var first = app.get("/api/v1/graphs/g1/semantic_search?q=psoriasis&model=m1&page=0&size=2&resolve=false&grebi:datasources=GWAS&grebi:datasources=OLS.mondo").json().getAsJsonObject();
+        assertEquals(3, first.get("totalElements").getAsInt(), "every candidate counts, not just the page");
+        assertEquals(2, first.get("totalPages").getAsInt());
+        var content = first.getAsJsonArray("content");
+        assertEquals(2, content.size());
+        assertEquals("n1", content.get(0).getAsJsonObject().get("grebi:nodeId").getAsString());
+        assertEquals(0.9, content.get(0).getAsJsonObject().get("grebi:searchScore").getAsDouble(), 1e-9);
+        assertEquals("N1", content.get(0).getAsJsonObject().getAsJsonArray("grebi:name").get(0).getAsString());
+        var facets = first.getAsJsonObject("facetFieldToCounts");
+        assertEquals(2, facets.getAsJsonObject("grebi:type").get("biolink:Disease").getAsInt());
+        assertEquals(1, facets.getAsJsonObject("grebi:type").get("biolink:Gene").getAsInt());
+        assertEquals(2, facets.getAsJsonObject("grebi:datasources").get("GWAS").getAsInt());
+
+        var second = app.get("/api/v1/graphs/g1/semantic_search?q=psoriasis&model=m1&page=1&size=2&resolve=false&grebi:datasources=GWAS&grebi:datasources=OLS.mondo").json().getAsJsonObject();
+        assertEquals(1, second.getAsJsonArray("content").size());
+        assertEquals("n3", second.getAsJsonArray("content").get(0).getAsJsonObject().get("grebi:nodeId").getAsString());
+
+        // resolved hits come from the blobs, localised
+        var full = new HashMap<String, Object>(Map.of("grebi:nodeId", "n1", "grebi:name", List.of("N1 full")));
+        when(app.pgClient.resolveToMap("g1", List.of("n1", "n2"))).thenReturn(Map.of("n1", full));
+        var resolved = app.get("/api/v1/graphs/g1/semantic_search?q=psoriasis&model=m1&page=0&size=2&resolve=true&grebi:datasources=GWAS&grebi:datasources=OLS.mondo").json().getAsJsonObject();
+        assertEquals("N1 full", resolved.getAsJsonArray("content").get(0).getAsJsonObject().getAsJsonArray("grebi:name").get(0).getAsString());
+        assertEquals("N2", resolved.getAsJsonArray("content").get(1).getAsJsonObject().getAsJsonArray("grebi:name").get(0).getAsString(), "unresolved hits keep the index's name");
+    }
+
+    @Test
     void similarNodesUseTheNodesOwnEmbedding() {
         var client = mock(EmbeddingServiceClient.class);
         when(client.getAvailableModels()).thenReturn(List.of("m1"));

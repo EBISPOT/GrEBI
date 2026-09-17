@@ -684,7 +684,37 @@ public class GrebiPostgresClient {
      */
     public List<VectorSearchResult> searchByVector(String graph, String embeddingModel,
                                                     float[] queryVector, int limit) {
+        return searchByVector(graph, embeddingModel, queryVector, limit, Map.of());
+    }
+
+    /**
+     * The nodes nearest the vector, among those matching the filters: the
+     * array columns (grebi:type, grebi:datasources, grebi:sourceIds) as
+     * alternatives when a filter repeats, and "-" exclusions, as in the node
+     * search. Other filter keys are ignored.
+     */
+    public List<VectorSearchResult> searchByVector(String graph, String embeddingModel,
+                                                    float[] queryVector, int limit,
+                                                    Map<String, List<String>> filters) {
         String col = checkedEmbeddingColumn(embeddingModel);
+
+        var where = new StringBuilder();
+        var arrayParams = new ArrayList<String[]>();
+        for (var entry : filters.entrySet()) {
+            var values = entry.getValue();
+            if (values == null || values.isEmpty()) continue;
+            if (entry.getKey().startsWith("-")) {
+                var column = entry.getKey().substring(1);
+                if (!ALLOWED_NODE_ARRAY_COLUMNS.contains(column)) continue;
+                for (var value : values) {
+                    where.append(" AND NOT (\"").append(column).append("\" @> ?::text[])");
+                    arrayParams.add(new String[] {value});
+                }
+            } else if (ALLOWED_NODE_ARRAY_COLUMNS.contains(entry.getKey())) {
+                where.append(" AND \"").append(entry.getKey()).append("\" && ?::text[]");
+                arrayParams.add(values.toArray(new String[0]));
+            }
+        }
 
         // Build the pgvector literal: [0.1,0.2,...]
         StringBuilder vecLiteral = new StringBuilder("[");
@@ -704,14 +734,18 @@ public class GrebiPostgresClient {
                     "\"grebi:datasources\", \"grebi:type\", \"grebi:sourceIds\", " +
                     "\"" + col + "\" <=> ?::vector AS distance " +
                     "FROM " + dsl().render(tbl) + " " +
-                    "WHERE \"" + col + "\" IS NOT NULL " +
+                    "WHERE \"" + col + "\" IS NOT NULL" + where + " " +
                     "ORDER BY distance " +
                     "LIMIT ?";
 
             List<VectorSearchResult> results = new ArrayList<>();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, vecLiteral.toString());
-                ps.setInt(2, limit);
+                int p = 1;
+                ps.setString(p++, vecLiteral.toString());
+                for (var values : arrayParams) {
+                    ps.setArray(p++, conn.createArrayOf("text", values));
+                }
+                ps.setInt(p, limit);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         java.sql.Array dsArr = rs.getArray("grebi:datasources");

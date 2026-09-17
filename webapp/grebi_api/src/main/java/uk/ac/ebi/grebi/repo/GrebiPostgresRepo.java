@@ -214,6 +214,12 @@ public class GrebiPostgresRepo {
         return pgClient.searchByVector(graph, embeddingModel, queryVector, limit);
     }
 
+    /** The nearest nodes among those matching the filters. */
+    public List<GrebiPostgresClient.VectorSearchResult> searchByVector(
+            String graph, String embeddingModel, float[] queryVector, int limit, Map<String, List<String>> filters) {
+        return pgClient.searchByVector(graph, embeddingModel, queryVector, limit, filters);
+    }
+
     /**
      * Get a node's embedding vector for a given model.
      */

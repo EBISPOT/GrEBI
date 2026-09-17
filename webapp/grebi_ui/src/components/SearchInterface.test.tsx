@@ -60,7 +60,9 @@ beforeEach(() => {
   api.getPaginated.mockImplementation(async (path: string) =>
     path === 'api/v1/graphs/g/search'
       ? new Page(0, hits.length, 1, hits.length, hits, facets as any)
-      : new Page(0, 0, 0, 0, [], new Map())
+      : path === 'api/v1/graphs/g/semantic_search'
+        ? new Page(0, 1, 1, 1, [{ ...hits[0], 'grebi:searchScore': 0.925 }], { 'grebi:type': { 'biolink:Disease': 1 }, 'grebi:datasources': { MONDO: 1 } } as any)
+        : new Page(0, 0, 0, 0, [], new Map())
   )
 })
 
@@ -145,13 +147,27 @@ describe('SearchInterface', () => {
     expect(screen.queryByRole('button', { name: 'Load more results...' })).toBeNull()
   })
 
-  it('a model parameter switches to semantic search with scores and no facets', async () => {
+  it('a model parameter switches to semantic search, paged and faceted, with scores', async () => {
     renderSearch('?q=psoriasis&model=minilm')
     expect(await screen.findByRole('link', { name: 'psoriasis' })).toBeInTheDocument()
     expect(screen.getByText('92.5%')).toBeInTheDocument()
-    expect(api.get).toHaveBeenCalledWith('api/v1/graphs/g/semantic_search?q=psoriasis&model=minilm&n=10&resolve=true')
+    const semantic = api.getPaginated.mock.calls.filter((c) => c[0] === 'api/v1/graphs/g/semantic_search')
+    expect(semantic).toHaveLength(1)
+    const p: URLSearchParams = semantic[0][1]
+    expect(p.get('q')).toBe('psoriasis')
+    expect(p.get('model')).toBe('minilm')
+    expect(p.get('page')).toBe('0')
+    expect(p.get('size')).toBe('10')
+    expect(p.get('resolve')).toBe('true')
     expect(searchCalls()).toHaveLength(0)
-    expect(screen.queryByText('Filter results')).toBeNull()
+    // the facets come from the nearest candidates, and narrow the next request
+    expect(screen.getByText('Filter results')).toBeInTheDocument()
+    expect(screen.queryByText('Whole name only')).toBeNull()
+    fireEvent.click(screen.getByLabelText(/^MONDO/))
+    await waitFor(() => expect(api.getPaginated.mock.calls.filter((c) => c[0] === 'api/v1/graphs/g/semantic_search')).toHaveLength(2))
+    expect((api.getPaginated.mock.calls.at(-1)![1] as URLSearchParams).getAll('grebi:datasources')).toEqual(['MONDO'])
+    // one candidate, one shown: nothing more to load
+    expect(screen.queryByRole('button', { name: 'Load more results...' })).toBeNull()
   })
 
   it('changing rows per page restarts from the first page with the new size', async () => {

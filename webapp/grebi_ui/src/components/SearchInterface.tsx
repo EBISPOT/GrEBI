@@ -2,7 +2,7 @@
 import { Close, KeyboardArrowDown } from "@mui/icons-material";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { get, getPaginated } from "../app/api";
+import { getPaginated } from "../app/api";
 import { usePrevious, copyToClipboard, joinSearchParams } from "../app/util";
 import GraphNode from "../model/GraphNode";
 import CollapsingIdList from "./CollapsingIdList";
@@ -126,31 +126,41 @@ export default function SeachInterface(opts:{ graph:string }
       try {
 
       if (isSemanticSearch) {
-        // Semantic search via embeddings with resolve for full data
-        const semanticResults = await get<any[]>(
-          `api/v1/graphs/${graph}/semantic_search?${new URLSearchParams({
-            q: search,
-            model: model,
-            n: ((page + 1) * rowsPerPage).toString(),
-            resolve: "true",
-          })}`
-        );
+        // Semantic search, paged and faceted like the lexical one: the API
+        // ranks the nearest candidates among those matching the facets and
+        // says how many there are, so "load more" knows when to stop.
+        const semanticParams: string[][] = [
+          ['page', page.toString()],
+          ['size', rowsPerPage.toString()],
+          ['q', search],
+          ['model', model],
+          ['resolve', 'true'],
+        ];
+        for (const ds of datasourceFacetselected) {
+          semanticParams.push(['grebi:datasources', ds]);
+        }
+        for (const t of typeFacetSelected) {
+          semanticParams.push(['grebi:type', t]);
+        }
+        const res = await getPaginated<any>(`api/v1/graphs/${graph}/semantic_search`, new URLSearchParams(semanticParams));
 
-        const scores = new Map<string, number>();
-        const mapped = (semanticResults || []).map(r => {
-          const nodeId = r["grebi:nodeId"];
-          const score = r["grebi:searchScore"];
-          if (nodeId && score !== undefined) {
-            scores.set(nodeId, score);
+        const mapped = res.elements.map(r => new GraphNode(r));
+        setSearchScores(prev => {
+          const scores = page === 0 ? new Map<string, number>() : new Map(prev);
+          for (const r of res.elements) {
+            if (r["grebi:nodeId"] && r["grebi:searchScore"] !== undefined) {
+              scores.set(r["grebi:nodeId"], r["grebi:searchScore"]);
+            }
           }
-          return new GraphNode(r);
+          return scores;
         });
-        setResults(mapped);
-        setSearchScores(scores);
-        // If we got as many as requested, there are likely more
-        const requested = (page + 1) * rowsPerPage;
-        setTotalResults(mapped.length >= requested ? mapped.length + 1 : mapped.length);
-        setFacets({});
+        if (page === 0) {
+          setResults(mapped);
+        } else {
+          setResults(prev => [...prev, ...mapped]);
+        }
+        setTotalResults(res.totalElements);
+        setFacets(res.facetFieldsToCounts || {});
       } else {
         // Standard lexical search
         const filterParams: string[][] = [
@@ -207,8 +217,8 @@ export default function SeachInterface(opts:{ graph:string }
         <div className="flex flex-nowrap gap-4 mb-6">
           <SearchBox graph={graph} initialQuery={search} />
         </div>
-        <div className={`grid grid-cols-1 ${isSemanticSearch ? '' : 'lg:grid-cols-4 lg:gap-8'}`}>
-          {!isSemanticSearch && <div
+        <div className="grid grid-cols-1 lg:grid-cols-4 lg:gap-8">
+          <div
             className={`fixed top-0 left-0 mb-4 z-30 lg:z-0 lg:static lg:col-span-1 bg-gradient-to-r from-neutral-light to-white rounded-lg p-8 text-neutral-black overflow-x-auto h-full lg:h-fit lg:translate-x-0 transition-transform ${
               hideFilters ? "-translate-x-full" : "translate-x-0"
             }`}
@@ -342,8 +352,8 @@ export default function SeachInterface(opts:{ graph:string }
                 </fieldset>
               </div>
             ) : null}
-          </div>}
-          <div className={isSemanticSearch ? "lg:col-span-1" : "lg:col-span-3"}>
+          </div>
+          <div className="lg:col-span-3">
             <div className="flex flex-col-reverse gap-4 lg:flex-row justify-between mb-4">
               <div className="lg:basis-3/4 lg:self-center text-2xl font-bold text-neutral-dark">
                 Search results for: {search}
@@ -354,7 +364,7 @@ export default function SeachInterface(opts:{ graph:string }
                     Download as CSV
                   </a>
                 )}
-                {!isSemanticSearch && <button
+                <button
                   className="lg:hidden button-secondary"
                   type="button"
                   onClick={() => {
@@ -362,7 +372,7 @@ export default function SeachInterface(opts:{ graph:string }
                   }}
                 >
                   Filters
-                </button>}
+                </button>
                 <div className="flex-none flex group relative text-md">
                   <label className="self-center px-3">Show</label>
                   <select
