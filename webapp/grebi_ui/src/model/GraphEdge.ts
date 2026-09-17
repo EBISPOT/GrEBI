@@ -16,6 +16,10 @@ export default class GraphEdge extends GraphNodeRef {
         return this.props['grebi:edgeId']
     }
 
+    getEncodedEdgeId():string {
+        return encodeNodeId(this.getEdgeId())
+    }
+
     getFrom():GraphNodeRef {
         return new GraphNodeRef( this.props['from'] )
     }

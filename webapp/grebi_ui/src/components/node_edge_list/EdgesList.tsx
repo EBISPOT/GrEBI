@@ -12,6 +12,8 @@ import { DatasourceTags } from "../DatasourceTag";
 import DataTable from "../datatable/DataTable";
 import LoadingOverlay from "../LoadingOverlay";
 import ErrorMessage from "../ErrorMessage";
+import EdgeMetadataDialog from "../query/EdgeMetadataDialog";
+import { Info } from "@mui/icons-material";
 
 export interface EdgesState {
     total:number,
@@ -36,6 +38,7 @@ export default function EdgesList(params:{
 
   let [loading, setLoading] = useState(true)
   let [error, setError] = useState<any>(null)
+  let [openEdgeId, setOpenEdgeId] = useState<string|null>(null)
   let [page, setPage] = useState(0)
   let [rowsPerPage, setRowsPerPage] = useState(10)
   let [filter, setFilter] = useState("")
@@ -92,12 +95,28 @@ export default function EdgesList(params:{
     }
 
     return <div>
+        <EdgeMetadataDialog open={openEdgeId !== null} onClose={() => setOpenEdgeId(null)} graph={graph} edgeId={openEdgeId} />
         { error && <ErrorMessage what="The edges" error={error} /> }
         <div className="pb-5">
         <DatasourceSelector datasources={edgesState.datasources} dsEnabled={dsEnabled!==null?dsEnabled:edgesState.datasources} setDsEnabled={setDsEnabled} />
         </div>
         { loading && <LoadingOverlay message="Loading edges..." /> }
         <DataTable columns={[
+                {
+                    id: 'grebi:edgeId',
+                    name: '',
+                    selector: (row:GraphEdge) => {
+                        return <button
+                            className="text-link-default hover:text-link-dark"
+                            title="View edge properties"
+                            aria-label={`View edge ${row.getEdgeId()}`}
+                            onClick={(e) => { e.stopPropagation(); setOpenEdgeId(row.getEdgeId()) }}
+                        >
+                            <Info fontSize="small" />
+                        </button>
+                    },
+                    sortable: false,
+                },
                 {
                     id: 'grebi:datasources',
                     name: 'Datasources',

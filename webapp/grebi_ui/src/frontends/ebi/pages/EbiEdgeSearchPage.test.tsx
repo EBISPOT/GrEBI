@@ -131,3 +131,18 @@ describe('EbiEdgeSearchPage', () => {
     expect(screen.queryByText(/results/)).toBeNull()
   })
 })
+
+describe('EbiEdgeSearchPage edge details', () => {
+  it('opens the properties of an edge from its row', async () => {
+    renderPage()
+    const button = await screen.findByRole('button', { name: 'View edge e1' })
+    mockedGet.mockImplementation(async (path: string) => {
+      if (path === `api/v1/graphs/g1/edges/${encodeNodeId('e1')}`) return { 'grebi:edgeId': 'e1', 'grebi:type': 'is_a', 'grebi:datasources': ['gwas'], from: alpha, to: beta, 'gwas:pvalue': ['1e-8'], _refs: {} }
+      return { edge_counts_by_type: {}, edge_counts_by_datasource: {} }
+    })
+    fireEvent.click(button)
+    expect(await screen.findByText('Edge Properties')).toBeInTheDocument()
+    expect(await screen.findByText(/1e-8/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Open edge page/ })).toHaveAttribute('href', `/graphs/g1/edges/${encodeNodeId('e1')}`)
+  })
+})

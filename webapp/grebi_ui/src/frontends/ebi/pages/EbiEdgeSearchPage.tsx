@@ -8,8 +8,9 @@ import NodeRefLink from "../../../components/node_edge_list/NodeRefLink";
 import { DatasourceTags } from "../../../components/DatasourceTag";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import ErrorMessage from "../../../components/ErrorMessage";
+import EdgeMetadataDialog from "../../../components/query/EdgeMetadataDialog";
 import { Pagination } from "@mui/material";
-import { Close, KeyboardArrowDown } from "@mui/icons-material";
+import { Close, KeyboardArrowDown, Info } from "@mui/icons-material";
 
 function hasFacetData(f: any): boolean {
   return Object.keys(f || {}).some(k => Object.keys(f[k] || {}).length > 0);
@@ -23,6 +24,7 @@ export default function EbiEdgeSearchPage() {
 
   let [loading, setLoading] = useState(true);
   let [error, setError] = useState<any>(null);
+  let [openEdgeId, setOpenEdgeId] = useState<string | null>(null);
   let [edges, setEdges] = useState<GraphEdge[]>([]);
   let [totalResults, setTotalResults] = useState(0);
   let [page, setPage] = useState(0);
@@ -125,6 +127,7 @@ export default function EbiEdgeSearchPage() {
         entries={breadcrumbs}
       />
       <main className="container mx-auto px-4 my-8">
+        <EdgeMetadataDialog open={openEdgeId !== null} onClose={() => setOpenEdgeId(null)} graph={graph} edgeId={openEdgeId} />
         <div className="text-2xl font-bold my-6">
           Edge Search
           {totalResults > 0 && !loading && (
@@ -238,6 +241,7 @@ export default function EbiEdgeSearchPage() {
                       <th className="py-2 px-3 font-medium">Edge Type</th>
                       <th className="py-2 px-3 font-medium">To</th>
                       <th className="py-2 px-3 font-medium">Datasources</th>
+                      <th className="py-2 px-3 font-medium"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -272,6 +276,18 @@ export default function EbiEdgeSearchPage() {
                           </td>
                           <td className="py-2 px-3">
                             <DatasourceTags dss={edge.getDatasources()} linked />
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            {edge.getEdgeId() && (
+                              <button
+                                className="text-link-default hover:text-link-dark"
+                                title="View edge properties"
+                                aria-label={`View edge ${edge.getEdgeId()}`}
+                                onClick={() => setOpenEdgeId(edge.getEdgeId())}
+                              >
+                                <Info fontSize="small" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );

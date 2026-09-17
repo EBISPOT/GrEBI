@@ -6,11 +6,11 @@ import GraphNode from '../../model/GraphNode'
 import encodeNodeId from '../../encodeNodeId'
 import { Page } from '../../app/api'
 
-const api = vi.hoisted(() => ({ getPaginated: vi.fn() }))
+const api = vi.hoisted(() => ({ getPaginated: vi.fn(), get: vi.fn() }))
 
 vi.mock('../../app/api', async (importOriginal) => {
   const mod: any = await importOriginal()
-  return { ...mod, getPaginated: api.getPaginated }
+  return { ...mod, getPaginated: api.getPaginated, get: api.get }
 })
 
 const node = new GraphNode({ 'grebi:nodeId': 'n-psoriasis', 'grebi:name': ['psoriasis'], _refs: {} })
@@ -85,9 +85,10 @@ describe('EdgesList', () => {
     expect(screen.queryByText('grebi:datasources')).toBeNull()
 
     // the property column reads the edge's own properties
+    // the first cell is the edge's info button
     const cells = screen.getByText('biolink:has_phenotype').closest('tr')!.querySelectorAll('td')
-    expect(cells).toHaveLength(4)
-    expect(cells[3].textContent).toBe('1e-8')
+    expect(cells).toHaveLength(5)
+    expect(cells[4].textContent).toBe('1e-8')
   })
 
   it('reports the loaded edges to the parent', async () => {
@@ -142,5 +143,18 @@ describe('EdgesList errors', () => {
     expect(alert).toHaveTextContent('The edges could not be loaded')
     expect(alert).toHaveTextContent('502 Bad Gateway (HTTP 502)')
     expect(screen.queryByText('Loading edges...')).toBeNull()
+  })
+})
+
+describe('EdgesList edge details', () => {
+  it('opens the properties of an edge from its row', async () => {
+    api.get.mockResolvedValue({ 'grebi:edgeId': edges[0]['grebi:edgeId'], 'grebi:type': 'is_a', 'grebi:datasources': ['MONDO'], 'source': ['a paper'], _refs: {} })
+    renderList()
+    const button = await screen.findByRole('button', { name: `View edge ${edges[0]['grebi:edgeId']}` })
+    fireEvent.click(button)
+    expect(await screen.findByText('Edge Properties')).toBeInTheDocument()
+    expect(api.get).toHaveBeenCalledWith(`api/v1/graphs/g/edges/${encodeNodeId(edges[0]['grebi:edgeId'])}`)
+    expect(await screen.findByText('a paper')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Open edge page/ })).toHaveAttribute('href', `/graphs/g/edges/${encodeNodeId(edges[0]['grebi:edgeId'])}`)
   })
 })

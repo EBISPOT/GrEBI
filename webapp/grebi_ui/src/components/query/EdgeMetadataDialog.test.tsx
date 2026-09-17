@@ -80,6 +80,15 @@ describe('EdgeMetadataDialog', () => {
     }
   })
 
+  it('links to the edge page and closes on the way', async () => {
+    const { onClose } = renderDialog()
+    await screen.findByRole('link', { name: 'aspirin' })
+    const link = screen.getByRole('link', { name: /Open edge page/ })
+    expect(link).toHaveAttribute('href', `/graphs/g/edges/${encodeNodeId('edge-1')}`)
+    fireEvent.click(link)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('the close button reports back', async () => {
     const { onClose } = renderDialog()
     await screen.findByRole('link', { name: 'aspirin' })
