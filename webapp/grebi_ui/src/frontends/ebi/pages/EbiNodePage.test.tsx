@@ -91,6 +91,48 @@ describe('EbiNodePage', () => {
     expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=fr`)
   })
 
+  it('offers the languages a translated node has, and reads it in the one chosen', async () => {
+    // values as the API serves them: wrapped with their provenance, a translation reified with its language
+    const merged = (value: any) => ({ 'grebi:datasources': ['OLS.mondo'], 'grebi:sourceIds': [nodeId], 'grebi:value': value })
+    const translated = (text: string, lang: string) => merged({ 'grebi:value': text, 'grebi:properties': { 'grebi:lang': [lang] } })
+    mockedGet.mockImplementation(async (path: string) => {
+      if (path.startsWith('api/v1/graphs/g1/nodes/')) return {
+        ...nodeProps,
+        'grebi:name': [merged('psoriasis'), translated('psoriasis (fr)', 'fr')],
+        'grebi:description': [merged('A skin disease'), translated('Une maladie de la peau', 'fr')],
+        'grebi:languages': ['en', 'fr'],
+        '_refs': {},
+      }
+      if (path === 'api/v1/graphs/g1/embedding_models') return models
+      if (path === 'api/v1/graphs') return ['g1']
+      if (path === 'api/v1/stats') return {}
+      throw new Error('unexpected GET ' + path)
+    })
+    renderPage()
+    expect(await screen.findByRole('heading', { name: /psoriasis/ })).toHaveTextContent('psoriasis Disease')
+    const picker = screen.getByRole('combobox', { name: 'Language' }) as HTMLSelectElement
+    expect(Array.from(picker.options).map(o => o.textContent)).toEqual(['English', 'French'])
+    expect(picker.value).toBe('en')
+
+    fireEvent.change(picker, { target: { value: 'fr' } })
+    expect(screen.getByTestId('location')).toHaveTextContent('?lang=fr')
+    await waitFor(() => expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=fr`))
+    expect(await screen.findByRole('heading', { name: /psoriasis \(fr\)/ })).toBeInTheDocument()
+    expect(screen.getByText('Une maladie de la peau')).toBeInTheDocument()
+
+    // the language survives a change of tab, and the tab a change of language
+    fireEvent.click(screen.getByRole('tab', { name: 'Property View' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('?lang=fr&tab=properties')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Language' }), { target: { value: 'en' } })
+    expect(screen.getByTestId('location')).toHaveTextContent('?lang=en&tab=properties')
+  })
+
+  it('has no language picker for a node in one language', async () => {
+    renderPage()
+    await screen.findByText('A skin disease')
+    expect(screen.queryByRole('combobox', { name: 'Language' })).toBeNull()
+  })
+
   it('opens the graph tab by default and switches tabs through the URL', async () => {
     renderPage()
     expect(await screen.findByTestId('graph-view')).toHaveTextContent('g1:psoriasis')

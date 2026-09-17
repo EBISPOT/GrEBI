@@ -1,6 +1,19 @@
 import { KeyboardArrowDown } from "@mui/icons-material";
-import countryCodeToFlagEmoji from "country-code-to-flag-emoji";
 import React from "react";
+
+/**
+ * The name of a language in the user's own language ("French" in an English
+ * browser), falling back to the code. Languages are not countries, so no flags.
+ */
+export function languageName(lang: string): string {
+  try {
+    const locale = typeof navigator !== "undefined" && navigator.language ? navigator.language : "en";
+    const name = new Intl.DisplayNames([locale], { type: "language" }).of(lang);
+    return name || lang;
+  } catch {
+    return lang;
+  }
+}
 
 export default function LanguagePicker({
   languages,
@@ -14,16 +27,17 @@ export default function LanguagePicker({
   return (
     <div className="flex items-center group relative text-md">
       <select
+        aria-label="Language"
         className="input-default appearance-none pr-7 z-20 bg-transparent cursor-pointer max-w-xs"
         onChange={(e) => {
           onChangeLang(e.target.value);
         }}
         value={lang}
       >
-        {languages.map((lang) => {
+        {languages.map((code) => {
           return (
-            <option key={lang} value={lang}>
-              {getEmoji(lang)}&nbsp;&nbsp;{lang}
+            <option key={code} value={code}>
+              {languageName(code)}
             </option>
           );
         })}
@@ -32,16 +46,5 @@ export default function LanguagePicker({
         <KeyboardArrowDown fontSize="medium" />
       </div>
     </div>
-  );
-}
-
-function getEmoji(lang: string) {
-  // handle special cases
-  return countryCodeToFlagEmoji(
-    {
-      en: "en-GB",
-      cs: "cs-CZ",
-      zh: "zh-CN",
-    }[lang] || lang
   );
 }

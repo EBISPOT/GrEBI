@@ -24,6 +24,7 @@ import encodeNodeId from "../../../encodeNodeId";
 import EdgesList from "../../../components/node_edge_list/EdgesList";
 import NodeLinks from "../../../components/NodeLinks";
 import NodeSimilarList from "../../../components/NodeSimilarList";
+import LanguagePicker from "../../../components/LanguagePicker";
 import { useEmbeddingModels } from "../../../app/useEmbeddingModels";
 
 
@@ -36,6 +37,13 @@ export default function EbiNodePage() {
 
   let [node, setNode] = useState<GraphNode|null>(null);
   const tab = searchParams.get("tab") || "graph";
+
+  // a change of tab or language keeps the other in the URL
+  function setParam(key: string, value: string) {
+    const next = new URLSearchParams(searchParams);
+    next.set(key, value);
+    setSearchParams(next);
+  }
   const { availableModels, selectedModel, setSelectedModel, hasEmbeddingModels } = useEmbeddingModels(graph);
 
   useEffect(() => {
@@ -54,22 +62,27 @@ export default function EbiNodePage() {
         { url: `/graphs/${graph}`, label: "Nodes" },
 
         ...(node ? (
-          [{ url: `/graphs/${graph}/nodes/${encodeNodeId(nodeId)}`, label: node.getName() }]
+          [{ url: `/graphs/${graph}/nodes/${encodeNodeId(nodeId)}`, label: node.getName(lang) }]
         ) : [])
 
       ]} />
         <Helmet>
           <meta charSet="utf-8" />
-          {node && <title>{node.getName()}</title>}
-          {node && <meta name="description" content={node.getDescription()}/>}
+          {node && <title>{node.getName(lang)}</title>}
+          {node && <meta name="description" content={node.getDescription(lang)}/>}
         </Helmet>
         { node == null && <LoadingOverlay message="Loading node..." /> }
         {node !== null &&
       <main className="container mx-auto px-4 pt-1">
         <SearchBox graph={graph} availableModels={availableModels} selectedModel={selectedModel} onModelChange={setSelectedModel} />
-        <div className="text-center pb-5">
-        <Typography variant="h5">{node.getName()} {
+        <div className="relative text-center pb-5">
+        <Typography variant="h5">{node.getName(lang)} {
           node.extractType()?.longName && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.longName}</span>}</Typography>
+        {/* a node with labels in several languages can be read in any of them */}
+        {node.getLanguages().length > 1 &&
+          <div className="absolute right-0 top-0">
+            <LanguagePicker languages={node.getLanguages()} lang={lang} onChangeLang={(l) => setParam("lang", l)} />
+          </div>}
         </div>
 
         <div style={{width:'90%'}} className="mx-auto">
@@ -80,10 +93,10 @@ export default function EbiNodePage() {
             </Grid>
             </div>
 
-        <Typography className="text-center pb-3">{node.getDescription()}</Typography>
+        <Typography className="text-center pb-3">{node.getDescription(lang)}</Typography>
         <Grid container spacing={1} direction="column">
             <Grid item xs={2}>
-          <Tabs centered orientation="horizontal" value={tab} aria-label="basic tabs example" className="border-green justify-center" sx={{ borderBottom: 1, borderColor: 'divider' }} onChange={(e, tab) => setSearchParams({tab})}>
+          <Tabs centered orientation="horizontal" value={tab} aria-label="basic tabs example" className="border-green justify-center" sx={{ borderBottom: 1, borderColor: 'divider' }} onChange={(e, tab) => setParam("tab", tab)}>
             {/* <Tab label="Links" icon={<Share/>} value="links" /> */}
             <Tab label="Graph" icon={<Share/>} value="graph" />
             <Tab label="Property View" icon={<FormatListBulleted/>} value="properties" />

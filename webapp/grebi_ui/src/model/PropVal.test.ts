@@ -1,6 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import PropVal from './PropVal'
 
+describe('PropVal.language', () => {
+  it('knows the language of a translated value', () => {
+    const merged = (value: any) => ({ 'grebi:datasources': ['A'], 'grebi:value': value })
+    expect(PropVal.from(merged('Gene A')).language()).toBeUndefined()
+    expect(PropVal.from(merged({ 'grebi:value': 'Gène A', 'grebi:properties': { 'grebi:lang': ['fr'] } })).language()).toBe('fr')
+    expect(PropVal.from(merged({ 'grebi:value': 'Gène A', 'grebi:properties': { 'grebi:lang': ['FR'] } })).language()).toBe('fr')
+    expect(PropVal.from(merged({ 'grebi:value': 'x', 'grebi:properties': { 'p': ['q'] } })).language()).toBeUndefined()
+    expect(PropVal.from('plain').language()).toBeUndefined()
+  })
+})
+
 describe('PropVal.from', () => {
   it('wraps primitives with no datasources or props', () => {
     const p = PropVal.from('psoriasis')

@@ -13,6 +13,22 @@ class PropVal {
     }
 
 
+    /**
+     * The language of a translated value, or undefined for a value in the
+     * graph's own language. The dataload keeps a literal in a language other
+     * than English as a reified value carrying grebi:lang; English and
+     * untagged literals are plain strings.
+     */
+    language():string|undefined {
+        // from() keeps a reified value's properties under grebi:properties
+        let bag = this.props && this.props['grebi:properties'] ? this.props['grebi:properties'] : this.props
+        let lang = bag ? bag['grebi:lang'] : undefined
+        if(Array.isArray(lang)) {
+            lang = lang[0]
+        }
+        return typeof lang === 'string' ? lang.toLowerCase() : undefined
+    }
+
     public static from(src:any):PropVal {
 
         if(src === undefined || src === null)

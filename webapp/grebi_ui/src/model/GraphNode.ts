@@ -20,8 +20,8 @@ export default class GraphNode extends GraphNodeRef {
         return PropVal.arrFrom(this.props['grebi:description'])
     }
 
-    getDescription():string|undefined {
-        return PropVal.arrFrom(this.getDescriptions())[0]?.value
+    getDescription(lang?:string):string|undefined {
+        return GraphNodeRef.pickValue(this.getDescriptions(), lang)
     }
 
     getLinkUrl(graph:string):string {

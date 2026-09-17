@@ -9,6 +9,7 @@ import isSingleLineProp from "./isSingleLineProp";
 import Refs from "../../model/Refs";
 import { externalLinkForId } from "../../db_links/dbLinks";
 import { DbIcon } from "../SourceIdChip";
+import { languageName } from "../LanguagePicker";
 
 let MAX_VALS_ONELINE = 10
 let MAX_VALS_MULTILINE = 5 
@@ -128,8 +129,15 @@ function PropValue(params:{graph:string,refs:Refs,value:PropVal,monospace:boolea
         )
       }
       let val_to_display = typeof value.value === 'string' ? value.value : JSON.stringify(value.value)
+      // a translated value says which language it is in
+      const language = value.language()
+      const languageChip = language ? (
+        <span className="ml-1 px-1 rounded text-xs uppercase align-middle" style={{backgroundColor:'rgb(240,240,240)', color:'rgb(90,90,90)'}} title={languageName(language)}>
+          {language}
+        </span>
+      ) : null
       if(!monospace) {
-          return <span className="mr-0">{separator} {val_to_display}</span>
+          return <span className="mr-0">{separator} {val_to_display}{languageChip}</span>
       } else {
           return (
           <span className="mr-0">
@@ -137,7 +145,7 @@ function PropValue(params:{graph:string,refs:Refs,value:PropVal,monospace:boolea
       className="rounded-sm font-mono py-0 pl-1 ml-1 my-1 text-sm" style={{backgroundColor:'rgb(240,240,240)'}}
       >
               {value.value}
-              </span>
+              </span>{languageChip}
           </span>
           )
       }

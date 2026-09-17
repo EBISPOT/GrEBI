@@ -20,7 +20,6 @@
     "@types/three": "^0.152.1",
     "codemirror": "^5.65.16",
     "concurrently": "^7.5.0",
-    "country-code-to-flag-emoji": "^1.2.1",
     "date-fns": "^2.19.0",
     "file-saver": "^2.0.5",
     "graphology": "^0.25.4",

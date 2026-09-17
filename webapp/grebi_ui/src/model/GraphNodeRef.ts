@@ -42,13 +42,29 @@ export default class GraphNodeRef {
         return PropVal.arrFrom(this.props['grebi:name'] || []);
     }
 
-    getName():string {
-        let names = this.getNames();
-        if (names.length > 0) {
-            return names[0].value;
-        } else {
-            return this.getId().value;
+    /**
+     * The languages the node has values in, "en" first; empty when nothing on
+     * the node is translated.
+     */
+    getLanguages():string[] {
+        return this.props['grebi:languages'] || []
+    }
+
+    /**
+     * The name in the language asked for; else the name in the graph's own
+     * language, which is an untagged value; else whatever name comes first;
+     * else the id.
+     */
+    getName(lang?:string):string {
+        return GraphNodeRef.pickValue(this.getNames(), lang) ?? this.getId().value;
+    }
+
+    static pickValue(values:PropVal[], lang?:string):string|undefined {
+        if (values.length === 0) {
+            return undefined;
         }
+        let wanted = lang ? values.find(v => v.language() === lang.toLowerCase()) : undefined;
+        return (wanted || values.find(v => !v.language()) || values[0]).value;
     }
 
     getTypes():string[] {

@@ -17,6 +17,15 @@ const short = (n: number) => Array.from({ length: n }, (_, i) => `v${i}`)
 const long = (n: number) => Array.from({ length: n }, (_, i) => `long value number ${i} `.padEnd(60, '.'))
 
 describe('PropVals', () => {
+  it('marks a translated value with its language', () => {
+    const { container } = renderVals([
+      { 'grebi:datasources': ['A'], 'grebi:value': 'Gene A' },
+      { 'grebi:datasources': ['A'], 'grebi:value': { 'grebi:value': 'Gène A', 'grebi:properties': { 'grebi:lang': ['fr'] } } },
+    ])
+    expect(container.textContent!.replace(/\s+/g, ' ').trim()).toBe('Gene A; Gène Afr')
+    expect(screen.getByTitle('French')).toHaveTextContent('fr')
+  })
+
   it('refuses to render without refs', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => renderVals(['x'], null as any)).toThrow('refs missing')
