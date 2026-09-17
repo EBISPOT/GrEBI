@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import Graph from "graphology";
 import Sigma from "sigma";
+import { downloadAsImage } from "@sigma/export-image";
 import { createEdgeArrowProgram, NodeProgram } from "sigma/rendering";
 import { createEdgeCurveProgram, indexParallelEdgesIndex, createDrawCurvedEdgeLabel } from "@sigma/edge-curve";
 import { DEFAULT_EDGE_ARROW_HEAD_PROGRAM_OPTIONS } from "sigma/rendering";
@@ -155,13 +156,22 @@ export interface GraphRendererProps {
   onClickCountNode: (parentNodeId: string, parentEncodedNodeId: string, direction: "incoming" | "outgoing", edgeType: string) => void;
   onClickExpandedNode: (parentNodeId: string, parentEncodedNodeId: string, direction: "incoming" | "outgoing", edgeType: string) => void;
   onClickAutoExpandedNode: (parentNodeId: string, parentEncodedNodeId: string, direction: "incoming" | "outgoing", edgeType: string) => void;
-  onDoubleClickExpandedNode: (parentNodeId: string, direction: "incoming" | "outgoing", edgeType: string, nodeId: string) => void;
+  /** `newTab` when the double click came with ctrl or cmd held */
+  onDoubleClickExpandedNode: (parentNodeId: string, direction: "incoming" | "outgoing", edgeType: string, nodeId: string, options?: { newTab: boolean }) => void;
+  /** A right click on an expanded node, with where in the container it happened */
+  onContextMenuNode?: (node: LayoutNode, x: number, y: number) => void;
   highlightedDatasource: string | null;
   highlightedEdgeType: string | null;
   /** Node IDs to zoom into after layout update (parent + newly expanded nodes) */
   focusNodeIds: string[] | null;
   onHoverNode?: (node: LayoutNode) => void;
   onLeaveNode?: () => void;
+}
+
+/** What the view can ask the renderer for. */
+export interface GraphRendererHandle {
+  /** Saves the graph as it is drawn, as a PNG named after `fileName`. */
+  downloadImage: (fileName: string) => void;
 }
 
 /**
@@ -172,22 +182,31 @@ export interface GraphRendererProps {
  * sigma's nodeReducer/edgeReducer are updated via setSetting when
  * the `highlightedDatasource` prop changes.
  */
-export default function GraphRenderer({
+const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(function GraphRenderer({
   layout,
   onClickRoot,
   onClickCountNode,
   onClickExpandedNode,
   onClickAutoExpandedNode,
   onDoubleClickExpandedNode,
+  onContextMenuNode,
   highlightedDatasource,
   highlightedEdgeType,
   focusNodeIds,
   onHoverNode,
   onLeaveNode,
-}: GraphRendererProps) {
+}: GraphRendererProps, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaRef = useRef<Sigma | null>(null);
   const graphRef = useRef<Graph | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    downloadImage: (fileName: string) => {
+      if (sigmaRef.current) {
+        downloadAsImage(sigmaRef.current, { format: "png", fileName, backgroundColor: "#ffffff" });
+      }
+    },
+  }), []);
 
   // Use refs for callbacks so event handlers always call the latest version
   const onClickRootRef = useRef(onClickRoot);
@@ -200,6 +219,8 @@ export default function GraphRenderer({
   onClickAutoExpandedNodeRef.current = onClickAutoExpandedNode;
   const onDoubleClickExpandedNodeRef = useRef(onDoubleClickExpandedNode);
   onDoubleClickExpandedNodeRef.current = onDoubleClickExpandedNode;
+  const onContextMenuNodeRef = useRef(onContextMenuNode);
+  onContextMenuNodeRef.current = onContextMenuNode;
 
   // Use refs for hover callbacks
   const onHoverNodeRef = useRef(onHoverNode);
@@ -347,16 +368,29 @@ export default function GraphRenderer({
       }
     });
 
-    // Double-click handler
+    // Double-click handler; ctrl or cmd asks for a new tab
     sigma.on("doubleClickNode", ({ node, event }) => {
       event.preventSigmaDefault();
+      const original: any = event.original;
+      const newTab = !!(original && (original.ctrlKey || original.metaKey));
       const attrs = sigma.getGraph().getNodeAttributes(node);
-      if (attrs.nodeType === "expanded_node") {
-        onDoubleClickExpandedNodeRef.current(attrs.parentNodeId, attrs.direction, attrs.edgeType, node);
-      } else if (attrs.nodeType === "auto_expanded_node") {
-        onDoubleClickExpandedNodeRef.current(attrs.parentNodeId, attrs.direction, attrs.edgeType, node);
+      if (attrs.nodeType === "expanded_node" || attrs.nodeType === "auto_expanded_node") {
+        onDoubleClickExpandedNodeRef.current(attrs.parentNodeId, attrs.direction, attrs.edgeType, node, { newTab });
       }
     });
+
+    // Right click: the view shows a menu for the node
+    sigma.on("rightClickNode", ({ node, event }) => {
+      event.preventSigmaDefault();
+      const attrs = sigma.getGraph().getNodeAttributes(node);
+      const layoutNode = layoutNodesRef.current.get(node);
+      if (layoutNode && (attrs.nodeType === "expanded_node" || attrs.nodeType === "auto_expanded_node")) {
+        onContextMenuNodeRef.current?.(layoutNode, event.x, event.y);
+      }
+    });
+    const container = containerRef.current;
+    const suppressBrowserMenu = (e: MouseEvent) => e.preventDefault();
+    container.addEventListener("contextmenu", suppressBrowserMenu);
 
     // Hover handlers — just cursor + path bar, no graph effects
     sigma.on("enterNode", ({ node }) => {
@@ -437,7 +471,7 @@ export default function GraphRenderer({
       />
     </div>
   );
-}
+});
 
 /**
  * Custom label renderer: draw count labels inside the circle,
@@ -513,3 +547,5 @@ function drawNodeHover(
   // Then redraw the label on top
   drawNodeLabel(context, data, settings);
 }
+
+export default GraphRenderer;

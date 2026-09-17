@@ -15,7 +15,8 @@ vi.mock('../../../components/node_graph_view/GraphView', () => ({
       <button onClick={() => onExplorationChange('abc', { replace: false })}>explore</button>
       <button onClick={() => onExplorationChange('def', { replace: true })}>filter</button>
       <button onClick={() => onExplorationChange(null, { replace: false })}>reset</button>
-      <button onClick={() => onNavigateToNode({ getEncodedNodeId: () => encodeNodeId('mondo:1') })}>go child</button>
+      <button onClick={() => onNavigateToNode({ getEncodedNodeId: () => encodeNodeId('mondo:1') }, { newTab: false })}>go child</button>
+      <button onClick={() => onNavigateToNode({ getEncodedNodeId: () => encodeNodeId('mondo:1') }, { newTab: true })}>go child tab</button>
     </div>
   ),
 }))
@@ -180,6 +181,16 @@ describe('EbiNodePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'go child' }))
     expect(screen.getByTestId('location')).toHaveTextContent(`/graphs/g1/nodes/${encodeNodeId('mondo:1')}?tab=graph`)
+  })
+
+  it('opens a node the graph asks for in a new tab', async () => {
+    const open = vi.fn()
+    vi.stubGlobal('open', open)
+    renderPage('?tab=graph')
+    await screen.findByTestId('graph-view')
+    fireEvent.click(screen.getByRole('button', { name: 'go child tab' }))
+    expect(open).toHaveBeenCalledWith(`/graphs/g1/nodes/${encodeNodeId('mondo:1')}?tab=graph`, '_blank', 'noopener')
+    vi.unstubAllGlobals()
   })
 
   it('has no language picker for a node in one language', async () => {

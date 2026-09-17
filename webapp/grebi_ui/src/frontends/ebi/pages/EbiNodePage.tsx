@@ -63,8 +63,13 @@ export default function EbiNodePage() {
     setSearchParams(next, { replace: options.replace });
   }, [setSearchParams]);
   const navigate = useNavigate();
-  const onNavigateToNode = useCallback((target: { getEncodedNodeId(): string }) => {
-    navigate(`/graphs/${graph}/nodes/${target.getEncodedNodeId()}?tab=graph`);
+  const onNavigateToNode = useCallback((target: { getEncodedNodeId(): string }, options: { newTab: boolean }) => {
+    const url = `/graphs/${graph}/nodes/${target.getEncodedNodeId()}?tab=graph`;
+    if (options.newTab) {
+      window.open((process.env.PUBLIC_URL || "").replace(/\/+$/, "") + url, "_blank", "noopener");
+    } else {
+      navigate(url);
+    }
   }, [navigate, graph]);
   const { availableModels, selectedModel, setSelectedModel, hasEmbeddingModels } = useEmbeddingModels(graph);
 

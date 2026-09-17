@@ -152,9 +152,9 @@ describe('GraphRenderer', () => {
     const { props, sigma } = renderGraph()
     const event = { preventSigmaDefault: vi.fn() }
     sigma.emit('doubleClickNode', { node: 'child', event })
-    expect(props.onDoubleClickExpandedNode).toHaveBeenCalledWith('root', 'incoming', 'is_a', 'child')
+    expect(props.onDoubleClickExpandedNode).toHaveBeenCalledWith('root', 'incoming', 'is_a', 'child', { newTab: false })
     sigma.emit('doubleClickNode', { node: 'auto', event })
-    expect(props.onDoubleClickExpandedNode).toHaveBeenCalledWith('root', 'outgoing', 'part_of', 'auto')
+    expect(props.onDoubleClickExpandedNode).toHaveBeenCalledWith('root', 'outgoing', 'part_of', 'auto', { newTab: false })
     sigma.emit('doubleClickNode', { node: 'count::root::outgoing::has_part', event })
     sigma.emit('doubleClickNode', { node: 'root', event })
     expect(props.onDoubleClickExpandedNode).toHaveBeenCalledTimes(2)

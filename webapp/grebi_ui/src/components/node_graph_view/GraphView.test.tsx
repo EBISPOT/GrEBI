@@ -6,28 +6,36 @@ import GraphView from './GraphView'
 
 // GraphRenderer wraps sigma (WebGL). Replace it with a stub that exposes the
 // layout as buttons so the click/hover wiring in GraphView can be exercised.
-vi.mock('./GraphRenderer', () => ({
-  default: (props: any) => (
-    <div data-testid="renderer" data-ds={props.highlightedDatasource ?? ''} data-et={props.highlightedEdgeType ?? ''}>
-      {props.layout.nodes.map((n: any) => (
-        <button
-          key={n.id}
-          onClick={() => {
-            if (n.type === 'root') props.onClickRoot()
-            else if (n.type === 'count') props.onClickCountNode(n.parentNodeId, n.parentEncodedNodeId, n.direction, n.edgeType)
-            else if (n.type === 'expanded_node') props.onClickExpandedNode(n.parentNodeId, n.parentEncodedNodeId, n.direction, n.edgeType)
-            else props.onClickAutoExpandedNode(n.parentNodeId, n.parentEncodedNodeId, n.direction, n.edgeType)
-          }}
-          onDoubleClick={() => props.onDoubleClickExpandedNode(n.parentNodeId, n.direction, n.edgeType, n.id)}
-          onMouseEnter={() => props.onHoverNode?.(n)}
-          onMouseLeave={() => props.onLeaveNode?.()}
-        >
-          {n.id}
-        </button>
-      ))}
-    </div>
-  ),
-}))
+const downloadImage = vi.hoisted(() => vi.fn())
+vi.mock('./GraphRenderer', async () => {
+  const React = await import('react')
+  return {
+    default: React.forwardRef((props: any, ref: any) => {
+      React.useImperativeHandle(ref, () => ({ downloadImage }))
+      return (
+        <div data-testid="renderer" data-ds={props.highlightedDatasource ?? ''} data-et={props.highlightedEdgeType ?? ''}>
+          {props.layout.nodes.map((n: any) => (
+            <button
+              key={n.id}
+              onClick={() => {
+                if (n.type === 'root') props.onClickRoot()
+                else if (n.type === 'count') props.onClickCountNode(n.parentNodeId, n.parentEncodedNodeId, n.direction, n.edgeType)
+                else if (n.type === 'expanded_node') props.onClickExpandedNode(n.parentNodeId, n.parentEncodedNodeId, n.direction, n.edgeType)
+                else props.onClickAutoExpandedNode(n.parentNodeId, n.parentEncodedNodeId, n.direction, n.edgeType)
+              }}
+              onDoubleClick={(e) => props.onDoubleClickExpandedNode(n.parentNodeId, n.direction, n.edgeType, n.id, { newTab: e.ctrlKey || e.metaKey })}
+              onContextMenu={(e) => { e.preventDefault(); props.onContextMenuNode?.(n, 12, 34) }}
+              onMouseEnter={() => props.onHoverNode?.(n)}
+              onMouseLeave={() => props.onLeaveNode?.()}
+            >
+              {n.id}
+            </button>
+          ))}
+        </div>
+      )
+    }),
+  }
+})
 
 vi.mock('./EdgeExpandPanel', async () => {
   const { default: GraphNodeRef } = await import('../../model/GraphNodeRef')
@@ -224,6 +232,49 @@ describe('GraphView', () => {
     expect(onNavigate.mock.calls[0][0].getNodeId()).toBe('child')
     // still rooted at the original node
     expect(screen.getByRole('button', { name: 'root' })).toBeInTheDocument()
+  })
+
+  it('saves the drawing as an image named after the root', async () => {
+    await renderLoaded()
+    fireEvent.click(screen.getByTitle('Download as image'))
+    expect(downloadImage).toHaveBeenCalledWith('Root-graph')
+  })
+
+  it('offers a menu on a node: its page, a new tab, or the graph from there', async () => {
+    const onNavigate = vi.fn()
+    render(<GraphView graph="g" node={rootNode} onNavigateToNode={onNavigate} />)
+    await screen.findByTestId('renderer')
+    fireEvent.click(screen.getByRole('button', { name: 'count::root::outgoing::has_part' }))
+    fireEvent.click(screen.getByRole('button', { name: 'pick' }))
+    const child = await screen.findByRole('button', { name: 'child' })
+
+    fireEvent.contextMenu(child)
+    const menu = screen.getByRole('menu', { name: 'Child' })
+    expect(menu).toHaveStyle({ left: '12px', top: '34px' })
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Open in a new tab' }))
+    expect(onNavigate).toHaveBeenCalledWith(expect.anything(), { newTab: true })
+    expect(onNavigate.mock.calls[0][0].getNodeId()).toBe('child')
+    expect(screen.queryByRole('menu')).toBeNull()
+
+    fireEvent.contextMenu(child)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Open node page' }))
+    expect(onNavigate).toHaveBeenLastCalledWith(expect.anything(), { newTab: false })
+
+    // ctrl + double click is the keyboard way to a new tab
+    fireEvent.doubleClick(child, { ctrlKey: true })
+    expect(onNavigate).toHaveBeenLastCalledWith(expect.anything(), { newTab: true })
+  })
+
+  it('without a page to go to, the menu explores from the node in place', async () => {
+    await renderLoaded()
+    fireEvent.click(screen.getByRole('button', { name: 'count::root::outgoing::has_part' }))
+    fireEvent.click(screen.getByRole('button', { name: 'pick' }))
+    const child = await screen.findByRole('button', { name: 'child' })
+    fireEvent.contextMenu(child)
+    expect(screen.queryByRole('menuitem', { name: 'Open node page' })).toBeNull()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Explore from here' }))
+    await waitFor(() => expect(mockedFetch).toHaveBeenLastCalledWith('g', encodeNodeId('child')))
+    expect(screen.queryByRole('menu')).toBeNull()
   })
 
   it('toggles fullscreen', async () => {

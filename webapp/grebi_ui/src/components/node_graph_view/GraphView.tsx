@@ -3,7 +3,7 @@ import GraphNode from "../../model/GraphNode";
 import GraphNodeRef from "../../model/GraphNodeRef";
 import useGraphViewState from "./useGraphViewState";
 import { computeRadialLayout, LayoutNode } from "./graphLayout";
-import GraphRenderer from "./GraphRenderer";
+import GraphRenderer, { GraphRendererHandle } from "./GraphRenderer";
 import GraphViewControls from "./GraphViewControls";
 import EdgeExpandPanel, { ChainSegment } from "./EdgeExpandPanel";
 import LoadingOverlay from "../LoadingOverlay";
@@ -11,7 +11,7 @@ import { expandedKey } from "./useGraphViewState";
 import { explorationOf, parseExploration, serialiseExploration } from "./exploration";
 import { get } from "../../app/api";
 import encodeNodeId from "../../encodeNodeId";
-import { ArrowForward as ArrowForwardIcon, Close as CloseIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, Link as LinkIcon, Check as CheckIcon } from "@mui/icons-material";
+import { ArrowForward as ArrowForwardIcon, Close as CloseIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, Link as LinkIcon, Check as CheckIcon, Download as DownloadIcon } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 
 interface ExpandDialogState {
@@ -35,14 +35,16 @@ export default function GraphView({
   exploration?: string | null;
   /** Told the exploration the view now shows; `replace` when only the filters changed. */
   onExplorationChange?: (exploration: string | null, options: { replace: boolean }) => void;
-  /** Where to go when a node in the graph is double-clicked; without it the view re-roots in place. */
-  onNavigateToNode?: (node: GraphNodeRef) => void;
+  /** Where to go when a node in the graph is opened; without it the view re-roots in place. */
+  onNavigateToNode?: (node: GraphNodeRef, options: { newTab: boolean }) => void;
 }) {
   const state = useGraphViewState(graph);
   const [highlightedDs, setHighlightedDs] = useState<string | null>(null);
   const [highlightedEdgeType, setHighlightedEdgeType] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const rendererRef = useRef<GraphRendererHandle>(null);
+  const [contextMenu, setContextMenu] = useState<{ node: GraphNodeRef; label: string; x: number; y: number } | null>(null);
 
   // The exploration last taken from or written to the URL, keyed by root, so
   // the two effects below neither restore what the view just wrote nor write
@@ -224,21 +226,44 @@ export default function GraphView({
     [state.autoExpandedNodes, state.expandEdge]
   );
 
-  const handleDoubleClickExpandedNode = useCallback(
-    (parentNodeId: string, direction: "incoming" | "outgoing", edgeType: string, nodeId: string) => {
+  /** The node an expanded or auto-expanded slot shows. */
+  const nodeAt = useCallback(
+    (parentNodeId: string, direction: "incoming" | "outgoing", edgeType: string): GraphNodeRef | undefined => {
       const key = expandedKey(parentNodeId, direction, edgeType);
-      const target = state.expandedNodes.get(key)?.node || state.autoExpandedNodes.get(key);
+      return state.expandedNodes.get(key)?.node || state.autoExpandedNodes.get(key);
+    },
+    [state.expandedNodes, state.autoExpandedNodes]
+  );
+
+  const handleDoubleClickExpandedNode = useCallback(
+    (parentNodeId: string, direction: "incoming" | "outgoing", edgeType: string, nodeId: string, options?: { newTab: boolean }) => {
+      const target = nodeAt(parentNodeId, direction, edgeType);
       if (!target) return;
       // On a node page the node's own page is the place to continue from;
       // elsewhere the view re-roots in place.
       if (onNavigateToNode) {
-        onNavigateToNode(target);
+        onNavigateToNode(target, { newTab: !!options?.newTab });
       } else {
         state.loadEdgeCounts(target);
       }
     },
-    [state.expandedNodes, state.autoExpandedNodes, state.loadEdgeCounts, onNavigateToNode]
+    [nodeAt, state.loadEdgeCounts, onNavigateToNode]
   );
+
+  const handleContextMenuNode = useCallback(
+    (layoutNode: LayoutNode, x: number, y: number) => {
+      if (!layoutNode.parentNodeId || !layoutNode.direction || !layoutNode.edgeType) return;
+      const target = nodeAt(layoutNode.parentNodeId, layoutNode.direction, layoutNode.edgeType);
+      if (!target) return;
+      setContextMenu({ node: target, label: layoutNode.label, x, y });
+    },
+    [nodeAt]
+  );
+
+  const downloadImage = useCallback(() => {
+    const name = (state.root?.getName() || "graph").replace(/[^\w.-]+/g, "_");
+    rendererRef.current?.downloadImage(`${name}-graph`);
+  }, [state.root]);
 
   const handleClickRoot = useCallback(() => {
     // Reset the graph view back to the original node
@@ -418,6 +443,22 @@ export default function GraphView({
           flexDirection: "column",
         }}
       >
+        {/* Save the drawing as an image */}
+        <IconButton
+          onClick={downloadImage}
+          size="small"
+          title="Download as image"
+          sx={{
+            position: "absolute",
+            top: 4,
+            right: onExplorationChange ? 76 : 40,
+            zIndex: 20,
+            background: "rgba(255,255,255,0.85)",
+            "&:hover": { background: "rgba(255,255,255,1)" },
+          }}
+        >
+          <DownloadIcon fontSize="small" />
+        </IconButton>
         {/* Copy a link to this exploration, when the URL carries it */}
         {onExplorationChange && (
           <IconButton
@@ -567,12 +608,14 @@ export default function GraphView({
 
             {!state.loading && stableLayout.nodes.length > 0 && (
               <GraphRenderer
+                ref={rendererRef}
                 layout={stableLayout}
                 onClickRoot={handleClickRoot}
                 onClickCountNode={handleClickCountNode}
                 onClickExpandedNode={handleClickExpandedNode}
                 onClickAutoExpandedNode={handleClickAutoExpandedNode}
                 onDoubleClickExpandedNode={handleDoubleClickExpandedNode}
+                onContextMenuNode={handleContextMenuNode}
                 highlightedDatasource={highlightedDs}
                 highlightedEdgeType={highlightedEdgeType}
                 focusNodeIds={null}
@@ -606,6 +649,30 @@ export default function GraphView({
               >
                 No edges found for this node
               </div>
+            )}
+
+            {/* The menu of a right-clicked node */}
+            {contextMenu && (
+              <>
+                <div style={{ position: "absolute", inset: 0, zIndex: 60 }} onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }} />
+                <ul
+                  role="menu"
+                  aria-label={contextMenu.label}
+                  className="bg-white border border-gray-200 rounded-md shadow-lg py-1 text-sm"
+                  style={{ position: "absolute", left: contextMenu.x, top: contextMenu.y, zIndex: 61, minWidth: 180 }}
+                >
+                  <li className="px-3 py-1 text-gray-500 truncate border-b border-gray-100" style={{ maxWidth: 260 }}>{contextMenu.label}</li>
+                  {onNavigateToNode ? (
+                    <>
+                      <li role="menuitem" className="px-3 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => { onNavigateToNode(contextMenu.node, { newTab: false }); setContextMenu(null); }}>Open node page</li>
+                      <li role="menuitem" className="px-3 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => { onNavigateToNode(contextMenu.node, { newTab: true }); setContextMenu(null); }}>Open in a new tab</li>
+                    </>
+                  ) : (
+                    <li role="menuitem" className="px-3 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => { state.loadEdgeCounts(contextMenu.node); setContextMenu(null); }}>Explore from here</li>
+                  )}
+                  <li role="menuitem" className="px-3 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => { navigator.clipboard?.writeText(contextMenu.node.getNodeId()).catch(() => {}); setContextMenu(null); }}>Copy node id</li>
+                </ul>
+              </>
             )}
           </div>
         )}
