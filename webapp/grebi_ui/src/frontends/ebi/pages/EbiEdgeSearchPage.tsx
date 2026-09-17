@@ -1,21 +1,33 @@
-import React, { Fragment, useCallback, useEffect, useState, useRef } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import React, { useCallback, useEffect, useState, useRef } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { get, getPaginated } from "../../../app/api";
-import { difference } from "../../../app/util";
 import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
 import GraphEdge from "../../../model/GraphEdge";
+import GraphNodeRef from "../../../model/GraphNodeRef";
 import NodeRefLink from "../../../components/node_edge_list/NodeRefLink";
+import NodeSelectorBox from "../../../components/NodeSelectorBox";
 import { DatasourceTags } from "../../../components/DatasourceTag";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import ErrorMessage from "../../../components/ErrorMessage";
 import EdgeMetadataDialog from "../../../components/query/EdgeMetadataDialog";
+import encodeNodeId from "../../../encodeNodeId";
 import { Pagination } from "@mui/material";
-import { Close, KeyboardArrowDown, Info } from "@mui/icons-material";
+import { Close, KeyboardArrowDown, Info, ArrowUpward, ArrowDownward } from "@mui/icons-material";
 
 function hasFacetData(f: any): boolean {
   return Object.keys(f || {}).some(k => Object.keys(f[k] || {}).length > 0);
 }
 
+const TYPE = "grebi:type";
+const DATASOURCES = "grebi:datasources";
+const FROM = "grebi:fromNodeId";
+const TO = "grebi:toNodeId";
+
+/**
+ * Edges of a graph, narrowed by any number of types and datasources (each a
+ * list of alternatives), by their end nodes, and sorted by type; every filter
+ * lives in the URL.
+ */
 export default function EbiEdgeSearchPage() {
   let params = useParams();
   const graph: string = params.graph as string;
@@ -31,16 +43,31 @@ export default function EbiEdgeSearchPage() {
   let [rowsPerPage] = useState(20);
   let [facets, setFacets] = useState<any>({});
 
-  // Read filters from URL
-  const typeFilter = searchParams.get("grebi:type") || "";
-  const dsFilter = searchParams.get("grebi:datasources") || "";
+  // Filters and sort, all read from the URL
+  const typeFilters = searchParams.getAll(TYPE);
+  const dsFilters = searchParams.getAll(DATASOURCES);
+  const fromNodeId = searchParams.get(FROM);
+  const toNodeId = searchParams.get(TO);
+  const sortDir = searchParams.get("sortDir") === "desc" ? "desc" : "asc";
+  const filterKey = [typeFilters.join("\u0001"), dsFilters.join("\u0001"), fromNodeId, toNodeId, sortDir].join("|");
 
   // Facet state
-  const typeFacets: Record<string, number> = facets?.["grebi:type"] || {};
-  const dsFacets: Record<string, number> = facets?.["grebi:datasources"] || {};
+  const typeFacets: Record<string, number> = facets?.[TYPE] || {};
+  const dsFacets: Record<string, number> = facets?.[DATASOURCES] || {};
   const [hideFilters, setHideFilters] = useState(false);
 
-  const hasFilters = !!(typeFilter || dsFilter);
+  const hasFilters = typeFilters.length > 0 || dsFilters.length > 0 || !!fromNodeId || !!toNodeId;
+
+  // The end nodes named in the URL, resolved so their names can be shown
+  const [endNodes, setEndNodes] = useState<Record<string, GraphNodeRef>>({});
+  useEffect(() => {
+    for (const nodeId of [fromNodeId, toNodeId]) {
+      if (!nodeId || endNodes[nodeId]) continue;
+      get<any>(`api/v1/graphs/${graph}/nodes/${encodeNodeId(nodeId)}`)
+        .then((props) => setEndNodes((prev) => ({ ...prev, [nodeId]: new GraphNodeRef(props) })))
+        .catch(() => setEndNodes((prev) => ({ ...prev, [nodeId]: new GraphNodeRef({ "grebi:nodeId": nodeId }) })));
+    }
+  }, [graph, fromNodeId, toNodeId]);
 
   // Fetch stats for sidebar facets (used when API skips expensive facet computation)
   const [statsFacets, setStatsFacets] = useState<any>({});
@@ -50,8 +77,8 @@ export default function EbiEdgeSearchPage() {
   useEffect(() => {
     get<any>(`api/v1/graphs/${graph}/stats`).then((stats) => {
       const f: any = {};
-      if (stats.edge_counts_by_type) f["grebi:type"] = stats.edge_counts_by_type;
-      if (stats.edge_counts_by_datasource) f["grebi:datasources"] = stats.edge_counts_by_datasource;
+      if (stats.edge_counts_by_type) f[TYPE] = stats.edge_counts_by_type;
+      if (stats.edge_counts_by_datasource) f[DATASOURCES] = stats.edge_counts_by_datasource;
       statsFacetsRef.current = f;
       setStatsFacets(f);
     }).catch(() => {});
@@ -63,7 +90,7 @@ export default function EbiEdgeSearchPage() {
 
   useEffect(() => {
     setPage(0);
-  }, [typeFilter, dsFilter]);
+  }, [filterKey]);
 
   useEffect(() => {
     async function fetchEdges() {
@@ -71,11 +98,13 @@ export default function EbiEdgeSearchPage() {
       let params: string[][] = [
         ["page", String(page)],
         ["size", String(rowsPerPage)],
-        ["sortBy", "grebi:type"],
-        ["sortDir", "asc"],
+        ["sortBy", TYPE],
+        ["sortDir", sortDir],
       ];
-      if (typeFilter) params.push(["grebi:type", typeFilter]);
-      if (dsFilter) params.push(["grebi:datasources", dsFilter]);
+      for (const t of typeFilters) params.push([TYPE, t]);
+      for (const ds of dsFilters) params.push([DATASOURCES, ds]);
+      if (fromNodeId) params.push([FROM, fromNodeId]);
+      if (toNodeId) params.push([TO, toNodeId]);
 
       let res;
       try {
@@ -98,19 +127,38 @@ export default function EbiEdgeSearchPage() {
       setLoading(false);
     }
     fetchEdges();
-  }, [graph, typeFilter, dsFilter, page, rowsPerPage]);
+  }, [graph, filterKey, page, rowsPerPage]);
 
-  const setFilter = useCallback(
-    (key: string, value: string) => {
+  const updateParams = useCallback(
+    (change: (next: URLSearchParams) => void) => {
       const next = new URLSearchParams(searchParams);
+      change(next);
+      setSearchParams(next);
+    },
+    [searchParams, setSearchParams]
+  );
+
+  /** Adds the value to a list filter, or removes it when it is already there. */
+  const toggleValue = useCallback(
+    (key: string, value: string) => updateParams((next) => {
+      const values = next.getAll(key);
+      next.delete(key);
+      for (const v of values.includes(value) ? values.filter((v) => v !== value) : [...values, value]) {
+        next.append(key, v);
+      }
+    }),
+    [updateParams]
+  );
+
+  const setSingle = useCallback(
+    (key: string, value: string | null) => updateParams((next) => {
       if (value) {
         next.set(key, value);
       } else {
         next.delete(key);
       }
-      setSearchParams(next);
-    },
-    [searchParams, setSearchParams]
+    }),
+    [updateParams]
   );
 
   const totalPages = Math.ceil(totalResults / rowsPerPage);
@@ -119,6 +167,21 @@ export default function EbiEdgeSearchPage() {
     { url: `/graphs`, label: "Graphs" },
     { url: `/graphs/${graph}/edges`, label: "Edges" },
   ];
+
+  const chip = (key: string, label: string, value: string, text: string, colour: string) => (
+    <span key={`${key}:${value}`} className={`inline-flex items-center gap-1 px-3 py-1 ${colour} rounded-full text-sm`}>
+      {label}: {text}
+      <button
+        onClick={() => (key === FROM || key === TO ? setSingle(key, null) : toggleValue(key, value))}
+        aria-label={`Remove ${label} ${text}`}
+        className="hover:opacity-70"
+      >
+        <Close fontSize="small" />
+      </button>
+    </span>
+  );
+
+  const endNodeName = (nodeId: string) => endNodes[nodeId]?.getName() || nodeId;
 
   return (
     <div>
@@ -138,24 +201,12 @@ export default function EbiEdgeSearchPage() {
         </div>
 
         {/* Active filters */}
-        {(typeFilter || dsFilter) && (
+        {hasFilters && (
           <div className="flex flex-wrap gap-2 mb-4">
-            {typeFilter && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                Type: {typeFilter}
-                <button onClick={() => setFilter("grebi:type", "")} className="hover:text-blue-600">
-                  <Close fontSize="small" />
-                </button>
-              </span>
-            )}
-            {dsFilter && (
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                Datasource: {dsFilter}
-                <button onClick={() => setFilter("grebi:datasources", "")} className="hover:text-green-600">
-                  <Close fontSize="small" />
-                </button>
-              </span>
-            )}
+            {typeFilters.map((t) => chip(TYPE, "Type", t, t, "bg-blue-100 text-blue-800"))}
+            {dsFilters.map((ds) => chip(DATASOURCES, "Datasource", ds, ds, "bg-green-100 text-green-800"))}
+            {fromNodeId && chip(FROM, "From", fromNodeId, endNodeName(fromNodeId), "bg-purple-100 text-purple-800")}
+            {toNodeId && chip(TO, "To", toNodeId, endNodeName(toNodeId), "bg-purple-100 text-purple-800")}
           </div>
         )}
 
@@ -175,7 +226,29 @@ export default function EbiEdgeSearchPage() {
 
             {!hideFilters && (
               <>
-                {/* Type facets */}
+                {/* End nodes */}
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1">From node</div>
+                  <NodeSelectorBox
+                    graph={graph}
+                    placeholder="Any node"
+                    selectedNode={fromNodeId ? endNodes[fromNodeId] || new GraphNodeRef({ "grebi:nodeId": fromNodeId }) : undefined}
+                    onNodeSelect={(node) => setSingle(FROM, node.getNodeId())}
+                    onClear={() => setSingle(FROM, null)}
+                  />
+                </div>
+                <div className="mb-4">
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1">To node</div>
+                  <NodeSelectorBox
+                    graph={graph}
+                    placeholder="Any node"
+                    selectedNode={toNodeId ? endNodes[toNodeId] || new GraphNodeRef({ "grebi:nodeId": toNodeId }) : undefined}
+                    onNodeSelect={(node) => setSingle(TO, node.getNodeId())}
+                    onClear={() => setSingle(TO, null)}
+                  />
+                </div>
+
+                {/* Type facets: any number, alternatives */}
                 {Object.keys(typeFacets).length > 0 && (
                   <div className="mb-4">
                     <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Edge Type</div>
@@ -185,10 +258,11 @@ export default function EbiEdgeSearchPage() {
                         .map(([type, count]) => (
                           <button
                             key={type}
+                            aria-pressed={typeFilters.includes(type)}
                             className={`block w-full text-left text-sm px-2 py-1 rounded hover:bg-gray-100 ${
-                              typeFilter === type ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700"
+                              typeFilters.includes(type) ? "bg-blue-50 text-blue-700 font-medium" : "text-gray-700"
                             }`}
-                            onClick={() => setFilter("grebi:type", typeFilter === type ? "" : type)}
+                            onClick={() => toggleValue(TYPE, type)}
                           >
                             <span className="truncate">{type}</span>
                             <span className="text-gray-400 text-xs ml-1">({count.toLocaleString()})</span>
@@ -198,7 +272,7 @@ export default function EbiEdgeSearchPage() {
                   </div>
                 )}
 
-                {/* Datasource facets */}
+                {/* Datasource facets: any number, alternatives */}
                 {Object.keys(dsFacets).length > 0 && (
                   <div className="mb-4">
                     <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Datasource</div>
@@ -208,10 +282,11 @@ export default function EbiEdgeSearchPage() {
                         .map(([ds, count]) => (
                           <button
                             key={ds}
+                            aria-pressed={dsFilters.includes(ds)}
                             className={`block w-full text-left text-sm px-2 py-1 rounded hover:bg-gray-100 ${
-                              dsFilter === ds ? "bg-green-50 text-green-700 font-medium" : "text-gray-700"
+                              dsFilters.includes(ds) ? "bg-green-50 text-green-700 font-medium" : "text-gray-700"
                             }`}
-                            onClick={() => setFilter("grebi:datasources", dsFilter === ds ? "" : ds)}
+                            onClick={() => toggleValue(DATASOURCES, ds)}
                           >
                             <span className="truncate">{ds}</span>
                             <span className="text-gray-400 text-xs ml-1">({count.toLocaleString()})</span>
@@ -238,7 +313,16 @@ export default function EbiEdgeSearchPage() {
                   <thead>
                     <tr className="bg-gray-50 text-left text-gray-600 border-b border-gray-200">
                       <th className="py-2 px-3 font-medium">From</th>
-                      <th className="py-2 px-3 font-medium">Edge Type</th>
+                      <th className="py-2 px-3 font-medium">
+                        <button
+                          className="inline-flex items-center gap-1 hover:text-gray-900"
+                          title={`Sorted by type, ${sortDir === "asc" ? "ascending" : "descending"}; click to reverse`}
+                          onClick={() => setSingle("sortDir", sortDir === "asc" ? "desc" : "asc")}
+                        >
+                          Edge Type
+                          {sortDir === "asc" ? <ArrowUpward fontSize="inherit" /> : <ArrowDownward fontSize="inherit" />}
+                        </button>
+                      </th>
                       <th className="py-2 px-3 font-medium">To</th>
                       <th className="py-2 px-3 font-medium">Datasources</th>
                       <th className="py-2 px-3 font-medium"></th>

@@ -267,6 +267,25 @@ public class GrebiPostgresClient {
         return table(name("edges_" + graph));
     }
 
+    /**
+     * The array column contains any of the values. Repeated values of one
+     * filter are alternatives, as the facets of a search are; a single value
+     * is the plain containment the GIN index serves.
+     */
+    private static Condition arrayHasAnyOf(Field<?> column, List<String> values) {
+        if (values.size() == 1) {
+            return condition("{0} @> ARRAY[{1}]::text[]", column, inline(values.get(0)));
+        }
+        var placeholders = new StringBuilder();
+        var args = new ArrayList<Object>();
+        args.add(column);
+        for (int i = 0; i < values.size(); i++) {
+            placeholders.append(i == 0 ? "" : ",").append("{").append(i + 1).append("}");
+            args.add(inline(values.get(i)));
+        }
+        return condition("{0} && ARRAY[" + placeholders + "]::text[]", args.toArray());
+    }
+
     private Field<String> checkedColumn(String columnName) {
         if (!ALLOWED_COLUMNS.contains(columnName)) {
             throw new IllegalArgumentException("Disallowed column: " + columnName);
@@ -334,14 +353,9 @@ public class GrebiPostgresClient {
                         );
                     }
                 } else if (ALLOWED_ARRAY_CONTAINS_COLUMNS.contains(key)) {
-                    for (String val : values) {
-                        conditions.add(
-                            condition("{0} @> ARRAY[{1}]::text[]",
-                                field(name(key)), inline(val))
-                        );
-                    }
+                    conditions.add(arrayHasAnyOf(field(name(key)), values));
                 } else if (ALLOWED_COLUMNS.contains(key)) {
-                    conditions.add(checkedColumn(key).eq(values.get(0)));
+                    conditions.add(values.size() == 1 ? checkedColumn(key).eq(values.get(0)) : checkedColumn(key).in(values));
                 }
             }
         }
@@ -934,14 +948,10 @@ public class GrebiPostgresClient {
                         );
                     }
                 } else if (ALLOWED_NODE_ARRAY_COLUMNS.contains(key)) {
-                    for (String val : values) {
-                        conditions.add(
-                            condition("{0} @> ARRAY[{1}]::text[]",
-                                field(name(key)), inline(val))
-                        );
-                    }
+                    conditions.add(arrayHasAnyOf(field(name(key)), values));
                 } else if (ALLOWED_NODE_COLUMNS.contains(key)) {
-                    conditions.add(field(name(key), String.class).eq(values.get(0)));
+                    var column = field(name(key), String.class);
+                    conditions.add(values.size() == 1 ? column.eq(values.get(0)) : column.in(values));
                 }
             }
         }
