@@ -505,6 +505,10 @@ public class GrebiMcpServer {
             "type", "boolean",
             "description", "Whether to resolve lightweight hits to full node blobs"
         ));
+        searchNodesProps.put("exactMatch", Map.of(
+            "type", "boolean",
+            "description", "Match the whole name (ignoring case) instead of searching by similarity"
+        ));
         searchNodesProps.put("lang", Map.of(
             "type", "string",
             "description", "Language of the resolved nodes' labels (e.g. fr): that language first, English as the fallback, other languages dropped. Nodes list the languages they have in grebi:languages."
@@ -540,6 +544,7 @@ public class GrebiMcpServer {
 
                 var q = getStringArg(request.arguments(), "q", null);
                 var resolve = getBooleanArg(request.arguments(), "resolve", true);
+                var exactMatch = getBooleanArg(request.arguments(), "exactMatch", false);
                 var lang = getStringArg(request.arguments(), "lang", null);
                 var pageNum = getIntArg(request.arguments(), "pageNum", 0);
                 var pageSize = getIntArg(request.arguments(), "pageSize", ResourceLimits.DEFAULT_PAGE_SIZE);
@@ -548,7 +553,7 @@ public class GrebiMcpServer {
                 limits.validateQueryParams(filters);
 
                 var page = limits.pageRequest(pageNum, pageSize);
-                var nodes = postgres.searchNodesPaginated(graph, q, filters, resolve, page);
+                var nodes = postgres.searchNodesPaginated(graph, q, filters, exactMatch, resolve, page);
                 var result = pagedResult(resolve ? nodes.map(node -> Languages.localise(node, lang)) : nodes);
                 return toolResult(gson, result, pagedRowsOutputSchema);
             }

@@ -179,3 +179,22 @@ describe('SearchInterface errors', () => {
     await waitFor(() => expect(screen.queryByText('Search results loading...')).toBeNull())
   })
 })
+
+describe('SearchInterface exact matching', () => {
+  it('keeps the whole-name toggle in the URL and sends it with the search', async () => {
+    api.get.mockResolvedValue([])
+    api.getPaginated.mockResolvedValue(new Page<any>(0, 0, 0, 0, [], new Map()))
+    renderSearch('?q=cancer')
+    await waitFor(() => expect(searchCalls().length).toBeGreaterThan(0))
+    expect(lastSearch().get('exactMatch')).toBeNull()
+
+    const toggle = screen.getByLabelText('Whole name only') as HTMLInputElement
+    expect(toggle.checked).toBe(false)
+    fireEvent.click(toggle)
+    await waitFor(() => expect(lastSearch().get('exactMatch')).toBe('true'))
+    expect((screen.getByLabelText('Whole name only') as HTMLInputElement).checked).toBe(true)
+
+    fireEvent.click(screen.getByLabelText('Whole name only'))
+    await waitFor(() => expect(lastSearch().get('exactMatch')).toBeNull())
+  })
+})

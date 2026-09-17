@@ -23,8 +23,6 @@ export default function SearchBox({
   graph,
   initialQuery,
   placeholder,
-  collectionId,
-  showExact,
   showSuggestions,
   additionalParams,
   availableModels: controlledModels,
@@ -34,8 +32,6 @@ export default function SearchBox({
   graph:string,
   initialQuery?: string;
   placeholder?: string;
-  collectionId?: string;
-  showExact?: boolean;
   showSuggestions?: boolean;
   additionalParams?:URLSearchParams;
   availableModels?: {model: string, can_embed: boolean}[];
@@ -100,23 +96,8 @@ export default function SearchBox({
 
   const isEmbeddingSearch = selectedModel && selectedModel !== "lexical";
 
+  // the search page's "whole name only" toggle, which the suggestions follow
   let exact = searchParams.get("exactMatch") === "true";
-  let obsolete = searchParams.get("includeObsoleteEntries") === "true";
-  let canonical = searchParams.get("isDefiningcollection") === "true";
-
-  const setExact = useCallback(
-    (exact: boolean) => {
-      let newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.set("q", query);
-      if (exact.toString() === "true") {
-        newSearchParams.set("exactMatch", exact.toString());
-      } else {
-        newSearchParams.delete("exactMatch");
-      }
-      setSearchParams(newSearchParams);
-    },
-    [searchParams, setSearchParams]
-  );
 
   if(showSuggestions === undefined) {
     showSuggestions = true;
@@ -173,17 +154,12 @@ export default function SearchBox({
             lang: "en",
             exactMatch: exact.toString(),
             resolve: "false",
-            includeObsoleteEntries: obsolete.toString(),
-            ...(collectionId ? { collectionId } : {}),
-            ...((canonical ? { isDefiningcollection: true } : {}) as any),
           }), additionalParams)}`
         ),
         showSuggestions && !isEmbeddingSearch
           ? get<string[]>(
               `api/v1/graphs/${graph}/suggest?${joinSearchParams(new URLSearchParams({
                 q: query,
-                exactMatch: exact.toString(),
-                includeObsoleteEntries: obsolete.toString(),
               }), additionalParams)}`
             )
           : null
@@ -207,14 +183,13 @@ export default function SearchBox({
     return () => {
       cancelPromisesRef.current = true;
     };
-  }, [query, exact, obsolete, canonical, isEmbeddingSearch, selectedModel]);
+  }, [query, exact, isEmbeddingSearch, selectedModel]);
 
   let autocompleteToShow = autocomplete?.slice(0, 5) || [];
   let autocompleteElements = autocompleteToShow.map(
     (text, i): SearchBoxEntry => {
       const p = new URLSearchParams(searchParams);
       p.set("q", text);
-      if (collectionId) p.set("collection", collectionId);
 
       var linkUrl = `/graphs/${graph}/search?${p}`;
 
@@ -328,7 +303,6 @@ export default function SearchBox({
                   } else if (query) {
                     const p = new URLSearchParams(searchParams);
                     p.set("q", query);
-                    if (collectionId) p.set("collection", collectionId);
                     if (isEmbeddingSearch) {
                       p.set("model", selectedModel);
                     } else {
@@ -389,8 +363,6 @@ export default function SearchBox({
                     if (query) {
                       let params = additionalParams ? joinSearchParams(searchParams, additionalParams) : searchParams;
                       params.set("q", query);
-                      if (collectionId)
-                        params.set("collection", collectionId);
                       if (isEmbeddingSearch) {
                         params.set("model", selectedModel);
                       } else {
@@ -416,7 +388,6 @@ export default function SearchBox({
                 if (query) {
                   let params = additionalParams ? joinSearchParams(searchParams, additionalParams) : searchParams;
                   params.set("q", query);
-                  if (collectionId) params.set("collection", collectionId);
                   if (isEmbeddingSearch) {
                     params.set("model", selectedModel);
                   } else {

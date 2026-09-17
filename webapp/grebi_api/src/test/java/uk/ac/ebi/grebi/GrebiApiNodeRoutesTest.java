@@ -36,7 +36,7 @@ class GrebiApiNodeRoutesTest {
     @Test
     @SuppressWarnings("unchecked")
     void nodeListingPassesFiltersResolveAndPageToPostgres() {
-        when(app.postgres.searchNodesPaginated(eq("g1"), isNull(), any(), anyBoolean(), any()))
+        when(app.postgres.searchNodesPaginated(eq("g1"), isNull(), any(), anyBoolean(), anyBoolean(), any()))
             .thenReturn(TestApp.facetedPage(List.of(TestApp.row("grebi:nodeId", NODE)), Map.of(), 1));
 
         var res = app.get("/api/v1/graphs/g1/nodes?grebi:type=biolink:Disease&grebi:sourceIds=" + NODE + "&page=1&size=7&facet=x");
@@ -45,14 +45,14 @@ class GrebiApiNodeRoutesTest {
 
         var filters = ArgumentCaptor.forClass(Map.class);
         var page = ArgumentCaptor.forClass(Pageable.class);
-        verify(app.postgres).searchNodesPaginated(eq("g1"), isNull(), filters.capture(), eq(true), page.capture());
+        verify(app.postgres).searchNodesPaginated(eq("g1"), isNull(), filters.capture(), eq(false), eq(true), page.capture());
         assertEquals(Map.of("grebi:type", List.of("biolink:Disease"), "grebi:sourceIds", List.of(NODE)), filters.getValue(),
             "page, size and facet are not filters");
         assertEquals(1, page.getValue().getPageNumber());
         assertEquals(7, page.getValue().getPageSize());
 
         app.get("/api/v1/graphs/g1/nodes?resolve=false");
-        verify(app.postgres).searchNodesPaginated(eq("g1"), isNull(), eq(Map.of()), eq(false), any());
+        verify(app.postgres).searchNodesPaginated(eq("g1"), isNull(), eq(Map.of()), eq(false), eq(false), any());
     }
 
     @Test
@@ -98,9 +98,9 @@ class GrebiApiNodeRoutesTest {
 
     @Test
     void resolvedSearchResultsAreServedInTheLanguageAskedFor() {
-        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), eq(true), any()))
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), anyBoolean(), eq(true), any()))
             .thenReturn(TestApp.facetedPage(List.of(translatedNode()), Map.of(), 1));
-        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), eq(false), any()))
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), anyBoolean(), eq(false), any()))
             .thenReturn(TestApp.facetedPage(List.of(TestApp.row("grebi:nodeId", NODE, "grebi:name", "psoriasis")), Map.of(), 1));
 
         var hit = app.get("/api/v1/graphs/g1/search?q=psoriasis&lang=ja").json().getAsJsonObject().getAsJsonArray("content").get(0).getAsJsonObject();
@@ -110,6 +110,18 @@ class GrebiApiNodeRoutesTest {
         var light = app.get("/api/v1/graphs/g1/search?q=psoriasis&lang=ja&resolve=false").json().getAsJsonObject().getAsJsonArray("content").get(0).getAsJsonObject();
         assertEquals("psoriasis", light.get("grebi:name").getAsString(), "unresolved hits carry the name column, which is English");
         assertFalse(light.has("grebi:languages"));
+    }
+
+    @Test
+    void searchCanAskForTheWholeName() {
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("cancer"), any(), anyBoolean(), anyBoolean(), any()))
+            .thenReturn(TestApp.facetedPage(List.of(TestApp.row("grebi:nodeId", NODE)), Map.of(), 1));
+
+        assertEquals(200, app.get("/api/v1/graphs/g1/search?q=cancer&exactMatch=true").status());
+        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("cancer"), any(), eq(true), eq(true), any());
+
+        app.get("/api/v1/graphs/g1/search?q=cancer");
+        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("cancer"), any(), eq(false), eq(true), any());
     }
 
     @Test
@@ -185,18 +197,17 @@ class GrebiApiNodeRoutesTest {
 
     @Test
     void searchAndSuggest() {
-        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), anyBoolean(), any()))
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), anyBoolean(), anyBoolean(), any()))
             .thenReturn(TestApp.facetedPage(List.of(TestApp.row("grebi:nodeId", NODE)), Map.of("grebi:type", Map.of("biolink:Disease", 1L)), 1));
         var res = app.get("/api/v1/graphs/g1/search?q=psoriasis&grebi:type=biolink:Disease&size=5");
         assertEquals(200, res.status());
         var body = res.json().getAsJsonObject();
         assertEquals(1, body.get("totalElements").getAsInt());
         assertEquals(1, body.getAsJsonObject("facetFieldToCounts").getAsJsonObject("grebi:type").get("biolink:Disease").getAsInt());
-        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psoriasis"), eq(Map.of("grebi:type", List.of("biolink:Disease"))), eq(true),
-            argThat(p -> p.getPageSize() == 5));
+        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psoriasis"), eq(Map.of("grebi:type", List.of("biolink:Disease"))), eq(false), eq(true), argThat(p -> p.getPageSize() == 5));
 
         app.get("/api/v1/graphs/g1/search?q=psoriasis&resolve=false");
-        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psoriasis"), eq(Map.of()), eq(false), any());
+        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psoriasis"), eq(Map.of()), eq(false), eq(false), any());
 
         when(app.postgres.autocomplete("g1", "pso")).thenReturn(List.of("psoriasis", "psoriatic arthritis"));
         assertEquals(List.of("psoriasis", "psoriatic arthritis"),

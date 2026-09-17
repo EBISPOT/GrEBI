@@ -234,9 +234,9 @@ public class GrebiPostgresRepo {
      */
     public GrebiFacetedResultsPage<Map<String, Object>> searchNodesPaginated(
             String graph, String q, Map<String, List<String>> filters,
-            boolean resolve, Pageable pageable) {
+            boolean exactMatch, boolean resolve, Pageable pageable) {
 
-        var result = pgClient.searchNodes(graph, q, filters,
+        var result = pgClient.searchNodes(graph, q, filters, exactMatch,
                 (int) pageable.getOffset(), pageable.getPageSize());
 
         List<Map<String, Object>> content;
@@ -546,7 +546,7 @@ public class GrebiPostgresRepo {
     private String resolveExampleSourceIdToNodeId(String graph, String sourceId) {
         Map<String, List<String>> filters = new LinkedHashMap<>();
         filters.put("grebi:sourceIds", List.of(sourceId));
-        var result = pgClient.searchNodes(graph, null, filters, 0, 1);
+        var result = pgClient.searchNodes(graph, null, filters, false, 0, 1);
         if (result.results.isEmpty()) {
             return null;
         }

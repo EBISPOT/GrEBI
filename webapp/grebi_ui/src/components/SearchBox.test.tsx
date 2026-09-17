@@ -82,9 +82,9 @@ describe('SearchBox', () => {
     fireEvent.change(input(), { target: { value: 'psoriasis' } })
     await waitFor(() => expect(api.getPaginated).toHaveBeenCalledTimes(1))
     expect(api.getPaginated.mock.calls[0][0]).toBe(
-      'api/v1/graphs/g/search?q=psoriasis&size=5&lang=en&exactMatch=false&resolve=false&includeObsoleteEntries=false'
+      'api/v1/graphs/g/search?q=psoriasis&size=5&lang=en&exactMatch=false&resolve=false'
     )
-    expect(api.get).toHaveBeenCalledWith('api/v1/graphs/g/suggest?q=psoriasis&exactMatch=false&includeObsoleteEntries=false')
+    expect(api.get).toHaveBeenCalledWith('api/v1/graphs/g/suggest?q=psoriasis')
 
     // node entries are re-keyed on every render, so always query afresh
     const nodeLink = () => screen.getByRole('link', { name: /psoriasis/ })

@@ -469,6 +469,7 @@ public class GrebiApi {
                         ctx.pathParam("graph"),
                         null,
                         filters,
+                        false,
                         resolve,
                         limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"))
                     );
@@ -799,9 +800,10 @@ public class GrebiApi {
                         filters.put(param.getKey(), param.getValue());
                     }
                     var resolve = ! "false".equals(ctx.queryParam("resolve"));
+                    var exactMatch = "true".equals(ctx.queryParam("exactMatch"));
                     var lang = ctx.queryParam("lang");
                     var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"));
-                    var res = postgres.searchNodesPaginated(ctx.pathParam("graph"), searchText, filters, resolve, page);
+                    var res = postgres.searchNodesPaginated(ctx.pathParam("graph"), searchText, filters, exactMatch, resolve, page);
                     ctx.contentType("application/json");
                     ctx.json(resolve ? res.map(node -> Languages.localise(node, lang)) : res);
                 })

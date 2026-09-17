@@ -989,8 +989,14 @@ public class GrebiPostgresClient {
         return results;
     }
 
+    /**
+     * Nodes matching the text and filters. The text matches the name by
+     * containment, best similarity first, or, with exactMatch, the whole name
+     * ignoring case, in name order.
+     */
     public NodeQueryResult searchNodes(String graph, String q,
                                         Map<String, List<String>> filters,
+                                        boolean exactMatch,
                                         int offset, int limit) {
         try {
             var ctx = dsl();
@@ -999,7 +1005,11 @@ public class GrebiPostgresClient {
             var nameField = field(name("grebi:name"), String.class);
 
             if (q != null && !q.isBlank()) {
-                conditions.add(nameField.likeIgnoreCase("%" + escapeLike(q) + "%"));
+                if (exactMatch) {
+                    conditions.add(lower(nameField).eq(q.trim().toLowerCase()));
+                } else {
+                    conditions.add(nameField.likeIgnoreCase("%" + escapeLike(q) + "%"));
+                }
             }
 
             boolean unfiltered = conditions.isEmpty();
@@ -1046,9 +1056,10 @@ public class GrebiPostgresClient {
             List<Map<String, Object>> results;
             if (q != null && !q.isBlank()) {
                 results = new ArrayList<>();
-                for (var record : select.orderBy(
-                        field("similarity({0}, {1})", Double.class, nameField, val(q)).desc()
-                ).limit(limit).offset(offset).fetch()) {
+                var ordered = exactMatch
+                        ? select.orderBy(nameField.asc())
+                        : select.orderBy(field("similarity({0}, {1})", Double.class, nameField, val(q)).desc());
+                for (var record : ordered.limit(limit).offset(offset).fetch()) {
                     Map<String, Object> row = new LinkedHashMap<>();
                     row.put("grebi:nodeId", record.get(nodeIdField));
                     row.put("grebi:name", record.get(nameField));

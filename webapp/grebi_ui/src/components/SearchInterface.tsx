@@ -15,8 +15,20 @@ export default function SeachInterface(opts:{ graph:string }
 ) {
     let { graph } = opts
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get("q") || "";
+  const exactMatch = searchParams.get("exactMatch") === "true";
+  // exact matching lives in the URL, where the search box's suggestions read it too
+  const setExactMatch = (on: boolean) => {
+    const next = new URLSearchParams(searchParams);
+    if (on) {
+      next.set("exactMatch", "true");
+    } else {
+      next.delete("exactMatch");
+    }
+    setPage(0);
+    setSearchParams(next);
+  };
 
   let [loadingResults, setLoadingResults] = useState<boolean>(true);
   let [results, setResults] = useState<GraphNode[]>([]);
@@ -207,6 +219,22 @@ export default function SeachInterface(opts:{ graph:string }
                 <Close />
               </button>
             </div>
+            {!isSemanticSearch && (
+              <div className="text-neutral-black mb-4">
+                <div className="font-semibold text-lg mb-2">Matching</div>
+                <label htmlFor="exact-match" className="block p-1 w-fit">
+                  <input
+                    type="checkbox"
+                    id="exact-match"
+                    className="invisible hidden peer"
+                    checked={exactMatch}
+                    onChange={(e) => setExactMatch(e.target.checked)}
+                  />
+                  <span className="input-checkbox mr-4" />
+                  <span className="mr-4">Whole name only</span>
+                </label>
+              </div>
+            )}
             {totalResults > 0 ? (
               <div className="text-neutral-black">
                 <div className="font-semibold text-lg mb-2">Type</div>

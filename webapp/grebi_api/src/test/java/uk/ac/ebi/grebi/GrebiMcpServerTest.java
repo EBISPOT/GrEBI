@@ -116,7 +116,7 @@ class GrebiMcpServerTest {
     @Test
     @SuppressWarnings("unchecked")
     void searchNodesPagesThroughPostgresAndReportsFacets() {
-        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), anyBoolean(), any()))
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), anyBoolean(), anyBoolean(), any()))
             .thenReturn(TestApp.facetedPage(List.of(TestApp.row("grebi:nodeId", "mondo:0005083")), Map.of("grebi:type", Map.of("biolink:Disease", 1L)), 1));
 
         var result = client.callTool(call("search_nodes", Map.of("graph", "g1", "q", "psoriasis",
@@ -130,7 +130,7 @@ class GrebiMcpServerTest {
 
         var filters = ArgumentCaptor.forClass(Map.class);
         var page = ArgumentCaptor.forClass(Pageable.class);
-        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psoriasis"), filters.capture(), eq(false), page.capture());
+        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psoriasis"), filters.capture(), eq(false), eq(false), page.capture());
         assertEquals(Map.of("grebi:type", List.of("a", "b"), "grebi:datasources", List.of("GWAS")), filters.getValue(),
             "a filter value may be a string or a list of strings");
         assertEquals(5, page.getValue().getPageSize());
@@ -152,6 +152,16 @@ class GrebiMcpServerTest {
     }
 
     @Test
+    void searchCanAskForTheWholeName() {
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("cancer"), any(), anyBoolean(), anyBoolean(), any()))
+            .thenReturn(TestApp.facetedPage(List.of(TestApp.row("grebi:nodeId", "mondo:0004992")), Map.of(), 1));
+        client.callTool(call("search_nodes", Map.of("graph", "g1", "q", "cancer", "exactMatch", true)));
+        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("cancer"), any(), eq(true), anyBoolean(), any());
+        var tools = client.listTools().tools().stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
+        assertTrue(tools.get("search_nodes").inputSchema().properties().containsKey("exactMatch"));
+    }
+
+    @Test
     void nodesCanBeAskedForInALanguage() {
         when(app.pgClient.resolveToList("g1", List.of("mondo:0005083"))).thenReturn(List.of(GrebiApiNodeRoutesTest.translatedNode()));
         var node = text(client.callTool(call("get_node", Map.of("graph", "g1", "nodeId", "mondo:0005083", "lang", "fr")))).getAsJsonObject("node");
@@ -160,7 +170,7 @@ class GrebiMcpServerTest {
         assertEquals("psoriasis (fr)", names.get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString());
         assertEquals(List.of("en", "de", "fr", "ja"), TestApp.GSON.fromJson(node.get("grebi:languages"), List.class));
 
-        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), eq(true), any()))
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), anyBoolean(), eq(true), any()))
             .thenReturn(TestApp.facetedPage(List.of(GrebiApiNodeRoutesTest.translatedNode()), Map.of(), 1));
         var hit = text(client.callTool(call("search_nodes", Map.of("graph", "g1", "q", "psoriasis", "lang", "de")))).getAsJsonArray("rows").get(0).getAsJsonObject();
         assertEquals("Schuppenflechte", hit.getAsJsonArray("grebi:synonym").get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString());
