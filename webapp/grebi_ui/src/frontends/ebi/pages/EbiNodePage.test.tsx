@@ -9,7 +9,15 @@ vi.mock('../../../app/api', async (importOriginal) => {
   return { ...mod, get: vi.fn(), getPaginated: vi.fn(), post: vi.fn() }
 })
 vi.mock('../../../components/node_graph_view/GraphView', () => ({
-  default: ({ graph, node }: any) => <div data-testid="graph-view">{graph}:{node.getName()}</div>,
+  default: ({ graph, node, exploration, onExplorationChange, onNavigateToNode }: any) => (
+    <div data-testid="graph-view" data-exploration={exploration ?? ''}>
+      {graph}:{node.getName()}
+      <button onClick={() => onExplorationChange('abc', { replace: false })}>explore</button>
+      <button onClick={() => onExplorationChange('def', { replace: true })}>filter</button>
+      <button onClick={() => onExplorationChange(null, { replace: false })}>reset</button>
+      <button onClick={() => onNavigateToNode({ getEncodedNodeId: () => encodeNodeId('mondo:1') })}>go child</button>
+    </div>
+  ),
 }))
 
 import { get, getPaginated, Page } from '../../../app/api'
@@ -156,6 +164,22 @@ describe('EbiNodePage', () => {
     expect(alert).toHaveTextContent('The node could not be loaded')
     expect(alert).toHaveTextContent('database down (HTTP 500)')
     expect(screen.queryByText('Loading node...')).toBeNull()
+  })
+
+  it('keeps the graph exploration in the URL and goes to a node the graph asks for', async () => {
+    renderPage('?tab=graph&g=xyz')
+    expect(await screen.findByTestId('graph-view')).toHaveAttribute('data-exploration', 'xyz')
+
+    fireEvent.click(screen.getByRole('button', { name: 'explore' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('?tab=graph&g=abc')
+    fireEvent.click(screen.getByRole('button', { name: 'filter' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('?tab=graph&g=def')
+    fireEvent.click(screen.getByRole('button', { name: 'reset' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('?tab=graph')
+    expect(screen.getByTestId('location')).not.toHaveTextContent('g=')
+
+    fireEvent.click(screen.getByRole('button', { name: 'go child' }))
+    expect(screen.getByTestId('location')).toHaveTextContent(`/graphs/g1/nodes/${encodeNodeId('mondo:1')}?tab=graph`)
   })
 
   it('has no language picker for a node in one language', async () => {

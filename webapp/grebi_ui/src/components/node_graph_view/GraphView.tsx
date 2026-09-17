@@ -8,7 +8,10 @@ import GraphViewControls from "./GraphViewControls";
 import EdgeExpandPanel, { ChainSegment } from "./EdgeExpandPanel";
 import LoadingOverlay from "../LoadingOverlay";
 import { expandedKey } from "./useGraphViewState";
-import { ArrowForward as ArrowForwardIcon, Close as CloseIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon } from "@mui/icons-material";
+import { explorationOf, parseExploration, serialiseExploration } from "./exploration";
+import { get } from "../../app/api";
+import encodeNodeId from "../../encodeNodeId";
+import { ArrowForward as ArrowForwardIcon, Close as CloseIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, Link as LinkIcon, Check as CheckIcon } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 
 interface ExpandDialogState {
@@ -22,14 +25,32 @@ interface ExpandDialogState {
 export default function GraphView({
   graph,
   node,
+  exploration,
+  onExplorationChange,
+  onNavigateToNode,
 }: {
   graph: string;
   node: GraphNode;
+  /** The exploration to show, as serialised by an earlier onExplorationChange (kept in the page's URL). */
+  exploration?: string | null;
+  /** Told the exploration the view now shows; `replace` when only the filters changed. */
+  onExplorationChange?: (exploration: string | null, options: { replace: boolean }) => void;
+  /** Where to go when a node in the graph is double-clicked; without it the view re-roots in place. */
+  onNavigateToNode?: (node: GraphNodeRef) => void;
 }) {
   const state = useGraphViewState(graph);
   const [highlightedDs, setHighlightedDs] = useState<string | null>(null);
   const [highlightedEdgeType, setHighlightedEdgeType] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  // The exploration last taken from or written to the URL, keyed by root, so
+  // the two effects below neither restore what the view just wrote nor write
+  // what it just restored.
+  const appliedRef = useRef<string | null>(null);
+  const chainRef = useRef<string>("");
+  const restoringRef = useRef(false);
+  const rootId = state.root?.getNodeId();
 
   // Debounce highlight changes to avoid rapid re-renders during fast mouse movement
   const highlightDsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,6 +78,64 @@ export default function GraphView({
   useEffect(() => {
     state.loadEdgeCounts(node);
   }, [node.getNodeId()]);
+
+  // Restore the exploration the URL asks for: the filters, then the chain of
+  // expansions step by step, fetching each node on the way.
+  useEffect(() => {
+    if (!onExplorationChange || state.loading || !rootId) return;
+    const wanted = exploration || null;
+    const key = rootId + "|" + (wanted ?? "");
+    if (key === appliedRef.current) return;
+    appliedRef.current = key;
+    const parsed = parseExploration(wanted);
+    chainRef.current = JSON.stringify(parsed ? parsed.steps : []);
+    if (!parsed) {
+      state.collapseDescendants(rootId);
+      state.setFilters([], []);
+      return;
+    }
+    restoringRef.current = true;
+    (async () => {
+      try {
+        state.setFilters(parsed.excludedDatasources, parsed.hiddenEdgeTypes);
+        state.collapseDescendants(rootId);
+        let parent = rootId;
+        for (const step of parsed.steps) {
+          const props = await get<any>(`api/v1/graphs/${graph}/nodes/${encodeNodeId(step.nodeId)}`);
+          await state.expandEdge(parent, step.direction, step.edgeType, new GraphNodeRef(props));
+          parent = step.nodeId;
+        }
+      } catch (e) {
+        console.error("Could not restore the exploration", e);
+      } finally {
+        restoringRef.current = false;
+      }
+    })();
+  }, [onExplorationChange, exploration, state.loading, rootId]);
+
+  // Tell the page what the view shows now, so the URL follows the exploration.
+  useEffect(() => {
+    if (!onExplorationChange || state.loading || !rootId || restoringRef.current) return;
+    const current = explorationOf(rootId, state.expandedNodes, state.dsExclude, state.hiddenEdgeTypes);
+    const serialised = serialiseExploration(current);
+    const key = rootId + "|" + (serialised ?? "");
+    if (key === appliedRef.current) return;
+    const chain = JSON.stringify(current.steps);
+    const replace = chain === chainRef.current;
+    chainRef.current = chain;
+    appliedRef.current = key;
+    onExplorationChange(serialised, { replace });
+  }, [onExplorationChange, state.loading, rootId, state.expandedNodes, state.dsExclude, state.hiddenEdgeTypes]);
+
+  const copyLink = useCallback(() => {
+    const done = () => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1500);
+    };
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href).then(done).catch(() => {});
+    }
+  }, []);
 
   // Compute the radial layout from state
   const layout = useMemo(() => {
@@ -148,18 +227,17 @@ export default function GraphView({
   const handleDoubleClickExpandedNode = useCallback(
     (parentNodeId: string, direction: "incoming" | "outgoing", edgeType: string, nodeId: string) => {
       const key = expandedKey(parentNodeId, direction, edgeType);
-      const expanded = state.expandedNodes.get(key);
-      if (expanded) {
-        state.loadEdgeCounts(expanded.node);
-        return;
-      }
-      // Also handle double-click on auto-expanded nodes
-      const autoNode = state.autoExpandedNodes.get(key);
-      if (autoNode) {
-        state.loadEdgeCounts(autoNode);
+      const target = state.expandedNodes.get(key)?.node || state.autoExpandedNodes.get(key);
+      if (!target) return;
+      // On a node page the node's own page is the place to continue from;
+      // elsewhere the view re-roots in place.
+      if (onNavigateToNode) {
+        onNavigateToNode(target);
+      } else {
+        state.loadEdgeCounts(target);
       }
     },
-    [state.expandedNodes, state.autoExpandedNodes, state.loadEdgeCounts]
+    [state.expandedNodes, state.autoExpandedNodes, state.loadEdgeCounts, onNavigateToNode]
   );
 
   const handleClickRoot = useCallback(() => {
@@ -340,6 +418,24 @@ export default function GraphView({
           flexDirection: "column",
         }}
       >
+        {/* Copy a link to this exploration, when the URL carries it */}
+        {onExplorationChange && (
+          <IconButton
+            onClick={copyLink}
+            size="small"
+            title={linkCopied ? "Link copied" : "Copy link to this view"}
+            sx={{
+              position: "absolute",
+              top: 4,
+              right: 40,
+              zIndex: 20,
+              background: "rgba(255,255,255,0.85)",
+              "&:hover": { background: "rgba(255,255,255,1)" },
+            }}
+          >
+            {linkCopied ? <CheckIcon fontSize="small" /> : <LinkIcon fontSize="small" />}
+          </IconButton>
+        )}
         {/* Fullscreen toggle */}
         <IconButton
           onClick={() => setIsFullscreen((f) => !f)}

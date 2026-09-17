@@ -313,6 +313,12 @@ export default function useGraphViewState(graph: string) {
     setHiddenEdgeTypes(new Set());
   }, []);
 
+  /** Both filters at once, when an exploration is restored. */
+  const setFilters = useCallback((excludedDatasources: string[], hidden: string[]) => {
+    setDsExclude(new Set(excludedDatasources));
+    setHiddenEdgeTypes(new Set(hidden));
+  }, []);
+
   const hideAllEdgeTypes = useCallback(() => {
     const allTypes = new Set<string>();
     for (const et of Object.keys(incomingEdgeCounts)) allTypes.add(et);
@@ -481,5 +487,6 @@ export default function useGraphViewState(graph: string) {
     toggleEdgeTypeHidden,
     showAllEdgeTypes,
     hideAllEdgeTypes,
+    setFilters,
   };
 }

@@ -1,5 +1,5 @@
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   Link,
   useNavigate,
@@ -46,6 +46,26 @@ export default function EbiNodePage() {
     next.set(key, value);
     setSearchParams(next);
   }
+
+  // the graph view's exploration lives in ?g=, so it can be shared, bookmarked
+  // and stepped back through; the current params are read through a ref so
+  // the callback stays the same across renders
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+  const exploration = searchParams.get("g");
+  const onExplorationChange = useCallback((g: string | null, options: { replace: boolean }) => {
+    const next = new URLSearchParams(searchParamsRef.current);
+    if (g) {
+      next.set("g", g);
+    } else {
+      next.delete("g");
+    }
+    setSearchParams(next, { replace: options.replace });
+  }, [setSearchParams]);
+  const navigate = useNavigate();
+  const onNavigateToNode = useCallback((target: { getEncodedNodeId(): string }) => {
+    navigate(`/graphs/${graph}/nodes/${target.getEncodedNodeId()}?tab=graph`);
+  }, [navigate, graph]);
   const { availableModels, selectedModel, setSelectedModel, hasEmbeddingModels } = useEmbeddingModels(graph);
 
   useEffect(() => {
@@ -137,7 +157,7 @@ export default function EbiNodePage() {
           <NodeLinks node={node} graph={graph} />
         </TabPanel> */}
         <TabPanel value={tab} index={"graph"}>
-         <GraphView graph={graph} node={node} />
+         <GraphView graph={graph} node={node} exploration={exploration} onExplorationChange={onExplorationChange} onNavigateToNode={onNavigateToNode} />
         </TabPanel>
         <TabPanel value={tab} index={"properties"}>
           <PropTable lang={lang} graph={graph} node={node} />
