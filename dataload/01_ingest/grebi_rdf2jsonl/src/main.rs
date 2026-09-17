@@ -343,6 +343,16 @@ fn write_subjects(
     eprintln!("Writing JSONL took {} seconds", start_time2.elapsed().as_secs());
 }
 
+/// A literal's language when it is not English: lowercased, with `en` and its
+/// regional variants treated as the graph's own language.
+fn translated_language(tag:Option<&str>) -> Option<String> {
+    let language = tag?.trim().to_lowercase();
+    if language.is_empty() || language == "en" || language.starts_with("en-") {
+        return None;
+    }
+    Some(language)
+}
+
 fn term_to_json(
     term:&Term<Rc<str>>,
     ds:&CustomGraph,
@@ -463,14 +473,27 @@ fn term_to_json(
                 }
             };
 
+            // A literal in a language other than English becomes a reified value
+            // carrying its language, so every reader can tell translations apart;
+            // English and untagged literals stay plain strings.
+            let language = if o.kind() == Literal { translated_language(o.language()) } else { None };
+
             if reif_subj.is_some() {
                 let mut reif_as_json = term_to_json(reif_subj.unwrap(), ds, nest_preds, None, false, reif_pointer_preds, reif_value_preds);
                 let reif_as_json_o = reif_as_json.as_object_mut().unwrap();
                 reif_as_json_o.remove_entry("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
                 reif_as_json_o.remove_entry("id");
+                if let Some(language) = &language {
+                    reif_as_json_o.insert("grebi:lang".to_string(), json!([language]));
+                }
                 v = json!({
                     "grebi:value": v,
                     "grebi:properties": reif_as_json_o
+                })
+            } else if let Some(language) = &language {
+                v = json!({
+                    "grebi:value": v,
+                    "grebi:properties": { "grebi:lang": [language] }
                 })
             }
 

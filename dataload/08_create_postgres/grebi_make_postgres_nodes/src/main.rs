@@ -196,3 +196,25 @@ fn write_columns(
         writeln!(writer, "\"embedding:{}\" vector({})", model_name, dim).unwrap();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The name column is the graph's own language: a translation, which is a
+    /// reified value carrying grebi:lang, never becomes the name even when the
+    /// merge lists it first.
+    #[test]
+    fn the_name_column_skips_translations() {
+        let names: Value = serde_json::from_str(r#"[
+            {"grebi:datasources":["A"],"grebi:sourceIds":["x"],"grebi:value":{"grebi:value":"Gène A","grebi:properties":{"grebi:lang":["fr"]}}},
+            {"grebi:datasources":["A"],"grebi:sourceIds":["x"],"grebi:value":"Gene A"}
+        ]"#).unwrap();
+        assert_eq!(extract_first_string(Some(&names)), "Gene A");
+        let only_translated: Value = serde_json::from_str(r#"[
+            {"grebi:datasources":["A"],"grebi:sourceIds":["x"],"grebi:value":{"grebi:value":"Gène A","grebi:properties":{"grebi:lang":["fr"]}}}
+        ]"#).unwrap();
+        assert_eq!(extract_first_string(Some(&only_translated)), "");
+        assert_eq!(extract_first_string(None), "");
+    }
+}

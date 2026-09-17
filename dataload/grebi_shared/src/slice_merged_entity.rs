@@ -168,7 +168,18 @@ pub struct SlicedReified<'a> {
     pub value_kind: JsonTokenType,
 }
 
+/// The reified property the ingests give a literal in a language other than
+/// English: `{"grebi:value":"Gène","grebi:properties":{"grebi:lang":["fr"]}}`.
+/// English and untagged literals stay plain strings, so a value carrying it is
+/// a translation of some plain value on the same property.
+pub const LANGUAGE_PROP: &[u8] = b"grebi:lang";
+
 impl<'a> SlicedReified<'a> {
+
+    /// Whether this value is a translation, i.e. carries `grebi:lang`.
+    pub fn is_translated(&self) -> bool {
+        self.props.iter().any(|prop| prop.key == LANGUAGE_PROP)
+    }
 
      pub fn from_json(buf:&'a &[u8]) -> Option<SlicedReified<'a>> {
 
@@ -300,6 +311,14 @@ mod tests {
         let r = SlicedReified::from_json(&json).unwrap();
         assert_eq!(r.value, br#"{"a":1}"#);
         assert_eq!(r.value_kind, JsonTokenType::StartObject);
+    }
+
+    #[test]
+    fn a_value_carrying_a_language_is_a_translation() {
+        let json: &[u8] = r#"{"grebi:value":"Gène A","grebi:properties":{"grebi:lang":["fr"]}}"#.as_bytes();
+        assert!(SlicedReified::from_json(&json).unwrap().is_translated());
+        let json: &[u8] = br#"{"grebi:value":"Gene A","grebi:properties":{"oboinowl:hasDbXref":["PMID:1"]}}"#;
+        assert!(!SlicedReified::from_json(&json).unwrap().is_translated());
     }
 
     #[test]

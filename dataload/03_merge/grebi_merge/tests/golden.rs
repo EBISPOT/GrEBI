@@ -7,3 +7,14 @@ fn merges_the_assigned_nodes_into_one_entity_per_group() {
         .args(["--exclude-props", "ols:hierarchicalProperty,ols:synonymProperty,ols:curie,ols:shortForm,ols:ontologyPreferredPrefix,ols:iri,ols:uri,ols:imported,ols:hasHierarchicalParents,ols:hasHierarchicalChildren,ols:hasDirectParents,ols:hasDirectChildren,ols:numDescendants,ols:numHierarchicalDescendants,oboinowl:id,oboinowl:url,monarch:iri,cco:hasDocument,cco:hasMolecule", "--prioritise-datasources", "Ontologies.biolink,Ontologies.ro,Ontologies.chebi,Ontologies.hp,Ontologies.mp,Ontologies.mondo,Ontologies.oba,Ontologies.efo,Ontologies.doid,HGNC,IMPC", "--annotate-subgraph-name", "test_clique_merge", "TestCliqueMerge:$CASE/TestCliqueMerge_0c1b5f74_nodes_with_ids.sorted.jsonl.gz", "TestCliqueMerge:$CASE/TestCliqueMerge_6d67346f_nodes_with_ids.sorted.jsonl.gz"]).stdout("merged.jsonl")
         .run();
 }
+
+/// A translation is a reified value carrying grebi:lang; the plain (English)
+/// value of a property sorts before it even when the datasource listed the
+/// translation first, so every reader that takes the first value gets English.
+#[test]
+fn plain_values_come_before_translations() {
+    GoldenCase::new(env!("CARGO_BIN_EXE_grebi_merge"), "tests/golden/translated_labels")
+        .args(["--annotate-subgraph-name", "test_translations", "Translations:$CASE/Translations_nodes_with_ids.sorted.jsonl.gz"])
+        .stdout("merged.jsonl")
+        .run();
+}

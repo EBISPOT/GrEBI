@@ -205,7 +205,9 @@ fn main() {
                             let reif = SlicedReified::from_json(&val.value);
                             if reif.is_some() {
                                 let reif_u = reif.unwrap();
-                                if reif_u.value_kind == JsonTokenType::StartString {
+                                // the metadata names label ids in edges and query
+                                // results, in the graph's language: no translations
+                                if reif_u.value_kind == JsonTokenType::StartString && !reif_u.is_translated() {
                                     if is_first {
                                         is_first = false;
                                     } else {
@@ -235,7 +237,9 @@ fn main() {
                             let count2 = edge_props_to_count.entry(prop_key).or_insert(0);
                             *count2 += 1;
                         });
-                        if prop_key.eq(b"grebi:name") || prop.key.eq(b"grebi:synonym") {
+                        // translations are not offered by the autocomplete,
+                        // which suggests names in the graph's language
+                        if (prop_key.eq(b"grebi:name") || prop.key.eq(b"grebi:synonym")) && !reified_u.is_translated() {
                             if reified_u.value_kind == JsonTokenType::StartString {
                                 all_names.insert(reified_u.value[1..reified_u.value.len()-1].to_vec());
                             }

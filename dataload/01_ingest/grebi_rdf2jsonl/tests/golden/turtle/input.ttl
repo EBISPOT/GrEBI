@@ -3,7 +3,7 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 ex:a rdf:type ex:Gene ;
-    rdfs:label "Gene A" ;
+    rdfs:label "Gene A", "Gène A"@fr, "遺伝子 A"@ja, "Gene A (US)"@en-US ;
     ex:partOf ex:b ;
     ex:hasName ex:n1 ;
     ex:hasSecret ex:s1 ;

@@ -249,22 +249,27 @@ fn write_node(entity:&SlicedEntity, all_node_props:&BTreeSet<String>, nodes_writ
             if header_prop.as_bytes() == row_prop.key {
                 let mut written_values:BTreeSet<Vec<u8>> = BTreeSet::new();
                 for val in row_prop.values.iter() {
+                    // Neo4j properties are flat, so a reified value is written
+                    // as its bare value. Translations are left out: the
+                    // property keeps the graph's language, which is what the
+                    // Cypher templates and the tables built from them read.
+                    let reified = if val.kind == JsonTokenType::StartObject { SlicedReified::from_json(&val.value) } else { None };
+                    if reified.as_ref().map_or(false, |r| r.is_translated()) {
+                        continue;
+                    }
                     if !wrote_any {
                         nodes_writer.write_all(b"\"").unwrap();
                         wrote_any = true;
                     } else {
                         nodes_writer.write_all(&[(31 as u8)]).unwrap();
                     }
-                    if val.kind == JsonTokenType::StartObject {
-                        let reified = SlicedReified::from_json(&val.value); 
-                        if reified.is_some() {
-                            let to_write = get_value_to_write(reified.unwrap().value, &refs);
-                            if !written_values.contains(&to_write) {
-                                nodes_writer.write_all(&to_write).unwrap();
-                                written_values.insert(to_write);
-                            }
-                            continue;
+                    if let Some(reified) = reified {
+                        let to_write = get_value_to_write(reified.value, &refs);
+                        if !written_values.contains(&to_write) {
+                            nodes_writer.write_all(&to_write).unwrap();
+                            written_values.insert(to_write);
                         }
+                        continue;
                     }
                     let to_write = get_value_to_write(val.value, &refs);
                     if !written_values.contains(&to_write) {
@@ -342,6 +347,10 @@ fn write_edge(edge:SlicedEdge, all_edge_props:&BTreeSet<String>, edges_writer: &
         for row_prop in &edge.props {
             for val in row_prop.values.iter() {
                 if header_prop.as_bytes() == row_prop.key {
+                    // as for nodes, translations stay out of Neo4j
+                    if val.kind == JsonTokenType::StartObject && SlicedReified::from_json(&val.value).map_or(false, |r| r.is_translated()) {
+                        continue;
+                    }
                     if is_first {
                         is_first = false;
                     } else {

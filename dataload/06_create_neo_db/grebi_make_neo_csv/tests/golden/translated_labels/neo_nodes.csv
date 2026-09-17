@@ -1,0 +1,2 @@
+grebi:nodeId:ID,:LABEL,grebi:datasources:string[],grebi:subgraph:string,grebi:displayType:string,grebi:curie:string,"grebi:name:string[]","grebi:synonym:string[]","grebi:type:string[]","id:string[]"
+"test_translations:ex:a","GraphNodeex:Gene","Translations","test_translations","","","Gene A",,,"ex:a"

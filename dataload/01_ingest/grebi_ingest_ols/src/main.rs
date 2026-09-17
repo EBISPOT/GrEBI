@@ -370,7 +370,9 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
 
         if obj_types.is_some() {
             if is_reification_type(obj_types.unwrap()) {
-                let reified_value = obj.get("ols:value").unwrap();
+                // A reified literal in another language keeps one level of
+                // reification: its language joins the axiom properties.
+                let (reified_value, language) = literal_and_language(obj.get("ols:value").unwrap());
                 let axiom_sets = obj.get("ols:axioms").unwrap().as_array().unwrap();
                 for axiom_set in axiom_sets {
                     let reified_props = axiom_set.as_object().unwrap();
@@ -379,6 +381,10 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
                     write_value(reified_value, output_nodes);
                     output_nodes.write_all(r#","grebi:properties":{"#.as_bytes()).unwrap();
                         let mut is_first = true;
+                        if let Some(language) = &language {
+                            write_language_property(language, output_nodes);
+                            is_first = false;
+                        }
                         for k in reified_props.keys() {
                             if is_first {
                                 is_first = false;
@@ -410,7 +416,20 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
             } else {
                 if obj.contains_key("ols:value") {
                     let value = obj.get("ols:value").unwrap();
-                    write_value(&value, output_nodes);
+                    match translated_language(obj) {
+                        // A literal in a language other than English becomes a
+                        // reified value carrying its language, so every reader
+                        // can tell translations apart; English and untagged
+                        // literals stay plain strings.
+                        Some(language) => {
+                            output_nodes.write_all(r#"{"grebi:value":"#.as_bytes()).unwrap();
+                            write_value(&value, output_nodes);
+                            output_nodes.write_all(r#","grebi:properties":{"#.as_bytes()).unwrap();
+                            write_language_property(&language, output_nodes);
+                            output_nodes.write_all(r#"}}"#.as_bytes()).unwrap();
+                        }
+                        None => write_value(&value, output_nodes),
+                    }
                 } else if obj.contains_key("ols:iri") {
                     // TODO: Datatypes
 
@@ -443,6 +462,35 @@ fn write_value(v:&Value, output_nodes: &mut BufWriter<StdoutLock>) {
     }
 
     output_nodes.write_all(v.to_string().as_bytes()).unwrap();
+}
+
+/// The language of an OLS literal object when it is not English: lowercased,
+/// with `en` and its regional variants treated as the graph's own language.
+fn translated_language(literal:&Map<String,Value>) -> Option<String> {
+    let language = literal.get("ols:lang")?.as_str()?.trim().to_lowercase();
+    if language.is_empty() || language == "en" || language.starts_with("en-") {
+        return None;
+    }
+    Some(language)
+}
+
+/// A reified value's literal and its language, so a translated literal inside a
+/// reification is not reified twice.
+fn literal_and_language(v:&Value) -> (&Value, Option<String>) {
+    if let Some(obj) = v.as_object() {
+        if obj.get("ols:type").map_or(false, |t| !is_reification_type(t)) {
+            if let Some(value) = obj.get("ols:value") {
+                return (value, translated_language(obj));
+            }
+        }
+    }
+    (v, None)
+}
+
+fn write_language_property(language:&str, output_nodes: &mut BufWriter<StdoutLock>) {
+    output_nodes.write_all(r#""grebi:lang":[""#.as_bytes()).unwrap();
+    output_nodes.write_all(language.as_bytes()).unwrap();
+    output_nodes.write_all(r#""]"#.as_bytes()).unwrap();
 }
 
 fn is_reification_type(v:&Value) -> bool {
