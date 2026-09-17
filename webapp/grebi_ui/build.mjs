@@ -11,6 +11,11 @@ let define = {};
 for (const k in process.env) {
   define[`process.env.${k}`] = JSON.stringify(process.env[k]);
 }
+// A variable the source reads but the build does not set (an optional
+// REACT_APP_* such as REACT_APP_FTP_BASE) must come out as undefined in the
+// browser, where there is no process global: without this the untouched
+// process.env.X throws "process is not defined" and takes the whole app down.
+define["process.env"] = "{}";
 
 ///
 /// Build docs manifest (reads docs/ and bundles into a JSON file)

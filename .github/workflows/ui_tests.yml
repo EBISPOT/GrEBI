@@ -49,3 +49,13 @@ jobs:
 
       - name: Build the bundle
         run: npm run build:ebi
+
+      # A process.env read the build left in place throws "process is not
+      # defined" in the browser and takes the whole app down; the build must
+      # have replaced every one, set or not (comments excepted).
+      - name: The bundle reads nothing from process.env at runtime
+        run: |
+          if grep -v '^ *//' dist/bundle.js | grep -q 'process\.env\.'; then
+            grep -n 'process\.env\.' dist/bundle.js | grep -v '^[0-9]*: *//' | head
+            exit 1
+          fi
