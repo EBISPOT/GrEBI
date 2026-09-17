@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import NodeLinks from './NodeLinks'
 import GraphNode from '../model/GraphNode'
 import encodeNodeId from '../encodeNodeId'
 import { Page } from '../app/api'
+import { LinksTab } from './getNodeLinksTabs'
 
 const api = vi.hoisted(() => ({ getPaginated: vi.fn() }))
 
@@ -25,13 +26,6 @@ const gene = new GraphNode({
   'grebi:sourceIds': ['hgnc:1101', 'ensembl:ENSG00000139618'],
   _refs: {},
 })
-const disease = new GraphNode({
-  'grebi:nodeId': 'n-psoriasis',
-  'grebi:name': ['psoriasis'],
-  'grebi:type': ['biolink:Disease'],
-  'grebi:sourceIds': ['mondo:0005083'],
-  _refs: {},
-})
 
 // an incoming chemical-gene edge as the API returns it
 const interaction = {
@@ -49,11 +43,12 @@ const interaction = {
 
 const edgesPath = `api/v1/graphs/g/nodes/${encodeNodeId('n-brca2')}/incoming_edges`
 const typeFilter = { 'grebi:type': 'biolink:chemical_gene_interaction_association' }
+const chemicalTab: LinksTab = { tabId: 'chemical_gene_interactions', tabName: 'Chemical Interactions', count: 7 }
 
-function renderLinks(node: GraphNode, search = '') {
+function renderLinks(tabs: LinksTab[], search = '') {
   return render(
     <MemoryRouter initialEntries={[`/graphs/g/nodes/x${search}`]}>
-      <NodeLinks node={node} graph="g" />
+      <NodeLinks node={gene} graph="g" tabs={tabs} />
       <LocationDisplay />
     </MemoryRouter>
   )
@@ -61,52 +56,19 @@ function renderLinks(node: GraphNode, search = '') {
 
 beforeEach(() => {
   api.getPaginated.mockReset()
-  api.getPaginated.mockImplementation(async (_path: string, params: any) =>
-    // the tab count asks for a single row; the tab body asks for the page
-    params?.size === '1' ? new Page(0, 1, 7, 7, [interaction], new Map()) : new Page(0, 1, 1, 1, [interaction], new Map())
-  )
+  api.getPaginated.mockResolvedValue(new Page(0, 1, 1, 1, [interaction], new Map()))
 })
 
 describe('NodeLinks', () => {
-  it('lists the source ids and has no extra tabs for a node that is not a gene', async () => {
-    renderLinks(disease)
-    expect(screen.getByRole('tab', { name: 'Source IDs' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'mondo:0005083' })).toHaveAttribute('href', expect.stringContaining('ols4/ontologies/mondo'))
-    await act(async () => {})
-    expect(screen.getAllByRole('tab')).toHaveLength(1)
-    expect(api.getPaginated).not.toHaveBeenCalled()
-  })
-
-  it('copies a source id to the clipboard', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined)
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
-    try {
-      renderLinks(disease)
-      fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
-      expect(writeText).toHaveBeenCalledWith('mondo:0005083')
-    } finally {
-      delete (navigator as any).clipboard
-    }
-  })
-
-  it('adds a chemical interactions tab for genes, counted with a one-row query', async () => {
-    renderLinks(gene)
-    expect(await screen.findByRole('tab', { name: 'Chemical Interactions' })).toBeInTheDocument()
-    expect(api.getPaginated).toHaveBeenCalledTimes(1)
-    expect(api.getPaginated).toHaveBeenCalledWith(edgesPath, { size: '1', ...typeFilter })
-    expect(screen.getByText('hgnc:1101')).toBeInTheDocument()
-    expect(screen.getByText('ensembl:ENSG00000139618')).toBeInTheDocument()
-  })
-
-  it('selecting the tab records it in the URL and loads the interactions', async () => {
-    renderLinks(gene)
-    fireEvent.click(await screen.findByRole('tab', { name: 'Chemical Interactions' }))
-    expect(screen.getByTestId('location')).toHaveTextContent('?linksTab=chemical_gene_interactions')
+  it('opens the first link tab, with its count, and loads the interactions', async () => {
+    renderLinks([chemicalTab])
+    expect(screen.getByRole('tab', { name: 'Chemical Interactions (7)' })).toHaveAttribute('aria-selected', 'true')
 
     // the table re-keys its rows on every render, so always query afresh
     const chemical = () => screen.getByRole('link', { name: 'aspirin' })
     await waitFor(() => expect(chemical()).toHaveAttribute('href', `/graphs/g/nodes/${encodeNodeId('n-aspirin')}`))
-    expect(api.getPaginated).toHaveBeenLastCalledWith(edgesPath, typeFilter)
+    expect(api.getPaginated).toHaveBeenCalledTimes(1)
+    expect(api.getPaginated).toHaveBeenCalledWith(edgesPath, typeFilter)
     expect(screen.getByText('Chemical')).toBeInTheDocument()
     expect(screen.getByText('CTD')).toBeInTheDocument()
     // the remaining edge properties become columns, values resolved through _refs
@@ -116,12 +78,35 @@ describe('NodeLinks', () => {
     for (const hidden of ['grebi:fromNodeId', 'grebi:type', 'to']) {
       expect(screen.queryByText(hidden)).toBeNull()
     }
+    // the source ids live in the page header now, not here
+    expect(screen.queryByText('hgnc:1101')).toBeNull()
   })
 
-  it('opens the tab named in the URL directly', async () => {
-    renderLinks(gene, '?linksTab=chemical_gene_interactions')
+  it('records the chosen tab in the URL beside the page parameters', async () => {
+    const other: LinksTab = { tabId: 'other_links', tabName: 'Other', count: 2 }
+    renderLinks([other, chemicalTab], '?tab=links&lang=fr')
+    expect(screen.getByRole('tab', { name: 'Other (2)' })).toHaveAttribute('aria-selected', 'true')
+    expect(api.getPaginated).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Chemical Interactions (7)' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('?tab=links&lang=fr&linksTab=chemical_gene_interactions')
     await waitFor(() => expect(screen.getByRole('link', { name: 'aspirin' })).toBeInTheDocument())
-    expect(screen.queryByText('hgnc:1101')).toBeNull()
-    expect(api.getPaginated).toHaveBeenLastCalledWith(edgesPath, typeFilter)
+  })
+
+  it('opens the tab named in the URL, falling back to the first for an unknown one', async () => {
+    const other: LinksTab = { tabId: 'other_links', tabName: 'Other', count: 2 }
+    renderLinks([other, chemicalTab], '?linksTab=chemical_gene_interactions')
+    expect(screen.getByRole('tab', { name: 'Chemical Interactions (7)' })).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(screen.getByRole('link', { name: 'aspirin' })).toBeInTheDocument())
+
+    const { unmount } = renderLinks([other, chemicalTab], '?linksTab=nope')
+    expect(screen.getAllByRole('tab', { name: 'Other (2)' }).at(-1)).toHaveAttribute('aria-selected', 'true')
+    unmount()
+  })
+
+  it('says so when a node has no links', () => {
+    renderLinks([])
+    expect(screen.getByText('This node has no links of its own.')).toBeInTheDocument()
+    expect(screen.queryByRole('tab')).toBeNull()
   })
 })

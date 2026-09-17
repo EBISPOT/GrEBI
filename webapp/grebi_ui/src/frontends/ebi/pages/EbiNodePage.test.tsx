@@ -219,6 +219,28 @@ describe('EbiNodePage', () => {
     expect(screen.queryByTestId('graph-view')).toBeNull()
   })
 
+  it('offers the Links tab only to nodes with links of their own', async () => {
+    // a disease has none
+    const { unmount } = renderPage()
+    await screen.findByText('A skin disease')
+    expect(screen.queryByRole('tab', { name: 'Links' })).toBeNull()
+    unmount()
+
+    // a gene has its chemical interactions, counted with a one-row query
+    mockedGet.mockImplementation(async (path: string) => {
+      if (path.startsWith('api/v1/graphs/g1/nodes/')) return { ...nodeProps, 'grebi:type': ['biolink:Gene'] }
+      if (path === 'api/v1/graphs/g1/embedding_models') return models
+      return path === 'api/v1/graphs' ? ['g1'] : {}
+    })
+    renderPage()
+    await screen.findByText('A skin disease')
+    fireEvent.click(await screen.findByRole('tab', { name: 'Links' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('?tab=links')
+    expect(await screen.findByRole('tab', { name: 'Chemical Interactions (1)' })).toHaveAttribute('aria-selected', 'true')
+    expect(await screen.findByRole('link', { name: 'plaque psoriasis' })).toBeInTheDocument()
+    expect(mockedGetPaginated.mock.calls.map((c) => c[1])).toContainEqual({ size: '1', 'grebi:type': 'biolink:chemical_gene_interaction_association' })
+  })
+
   it('only offers the Similar tab when the graph has embedding models', async () => {
     const { unmount } = renderPage()
     await screen.findByText('A skin disease')

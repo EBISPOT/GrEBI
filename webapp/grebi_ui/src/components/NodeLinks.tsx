@@ -1,11 +1,9 @@
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import GraphNode from "../model/GraphNode";
 import { getPaginated, Page } from "../app/api";
 import encodeNodeId from "../encodeNodeId";
-import { CircularProgress, Grid, Tab, Tabs, Typography } from "@mui/material";
+import { CircularProgress, Grid, Tab, Tabs } from "@mui/material";
 import { asArray } from "../app/util";
-import SourceIdChip from "./SourceIdChip";
-import { orderSourceIds } from "../db_links/dbLinks";
 import LocalDataTable from "./datatable/LocalDataTable";
 import NodeRefLink from "./node_edge_list/NodeRefLink";
 import GraphEdge from "../model/GraphEdge";
@@ -15,162 +13,112 @@ import Refs from "../model/Refs";
 import PropVals from "./node_prop_table/PropVals";
 import PropVal from "../model/PropVal";
 import { useSearchParams } from "react-router-dom";
-import getExposureLinksTabs, { LinksTab } from "./getNodeLinksTabs";
-import { OpenInNew, Share } from "@mui/icons-material";
+import { LinksTab } from "./getNodeLinksTabs";
 import TabPanel from "./TabPanel";
 
+/**
+ * The link tabs a node has (see getNodeLinksTabs), one sub-tab each, the
+ * chosen one kept in the URL as ?linksTab= beside the page's own parameters.
+ * The node page only shows this when the node has at least one such tab.
+ */
+export default function NodeLinks({ node, graph, tabs }: { node: GraphNode; graph: string; tabs: LinksTab[] }) {
+  const [searchParams, setSearchParams] = useSearchParams();
 
-export default function NodeLinks({node, graph}:{node:GraphNode, graph:string}) {
+  if (tabs.length === 0) {
+    return <p className="text-gray-600">This node has no links of its own.</p>;
+  }
 
-  let [searchParams, setSearchParams] = useSearchParams();
-  let linksTab = searchParams.get("linksTab") || "sourceids";
+  const asked = searchParams.get("linksTab");
+  const linksTab = tabs.some((t) => t.tabId === asked) ? (asked as string) : tabs[0].tabId;
+  const selectLinksTab = (tabId: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("linksTab", tabId);
+    setSearchParams(next);
+  };
 
-  let [linksTabs, setLinksTabs] = useState<LinksTab[]>([])
+  return (
+    <Grid container spacing={1} direction="column" className="py-0">
+      <Grid item xs={2} className="py-0">
+        <Tabs orientation="horizontal" value={linksTab} className="bg-gray-100 border-black justify-center rounded-lg"
+          sx={{ borderBottom: 1, borderColor: "divider" }} onChange={(e, tab) => selectLinksTab(tab)}>
+          {tabs.map((tab) => (
+            <Tab key={tab.tabId} label={`${tab.tabName} (${tab.count.toLocaleString()})`} value={tab.tabId} className="grebi-subtab" />
+          ))}
+        </Tabs>
+      </Grid>
+      <Grid item xs={10}>
+        {tabs.some((tab) => tab.tabId === "chemical_gene_interactions") && (
+          <TabPanel value={linksTab} index={"chemical_gene_interactions"}>
+            <GeneExposureLinks node={node} graph={graph} />
+          </TabPanel>
+        )}
+      </Grid>
+    </Grid>
+  );
+}
+
+function getDefaultSelector(graph: string) {
+  return function DefaultSelector(row: any, key: string) {
+    let vals = asArray(row[key]).map(PropVal.from);
+    if (!row["_refs"]) {
+      throw new Error("No refs in row");
+    }
+    return <PropVals graph={graph} refs={new Refs(row["_refs"])} values={vals} />;
+  };
+}
+
+/** The chemicals recorded as interacting with a gene: its incoming chemical-gene interaction edges. */
+function GeneExposureLinks({ node, graph }: { node: GraphNode; graph: string }) {
+  let [affectedBy, setAffectedBy] = useState<Page<any> | null>(null);
 
   useEffect(() => {
-    async function getLinksTabs() {
-        let tabs = await getExposureLinksTabs(node, graph)
-        setLinksTabs(tabs)
+    async function getAffectedBy() {
+      let res = await getPaginated<any>(`api/v1/graphs/${graph}/nodes/${encodeNodeId(node.getNodeId())}/incoming_edges`, {
+        "grebi:type": "biolink:chemical_gene_interaction_association",
+      });
+      setAffectedBy(res);
     }
-    getLinksTabs()
-  }, [node])
+    getAffectedBy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.getNodeId()]);
 
-    return <Grid container spacing={1} direction="column" className="py-0">
-            <Grid item xs={2} className="py-0">
-    <Tabs orientation="horizontal" value={linksTab} className="bg-gray-100 border-black justify-center rounded-lg" sx={{ borderBottom: 1, borderColor: 'divider' }} onChange={(e, tab) => setSearchParams({linksTab:tab})}>
-        <Tab label={
-            <div>
-                {/* <OpenInNew fontSize="small" style = { {verticalAlign : 'middle'} } /> */}
-                Source IDs </div>
-         } value={"sourceids"} className="grebi-subtab" />
-        {linksTabs.map(tab => <Tab label={
-            <div>
-                {/* <OpenInNew fontSize="small" style = { {verticalAlign : 'middle'} } /> */}
-                {tab.tabName} </div>
-            } value={tab.tabId} className="grebi-subtab" />)}
-    </Tabs>
-    </Grid>
-    <Grid item xs={10} >
-    <TabPanel value={linksTab} index={"sourceids"}>
-                    <Grid
-                    container spacing={0.5} direction="row" alignItems={"left"} justifyContent={"left"} className="pb-5">
-               {orderSourceIds(node.getSourceIds().map(id => id.value)).map(id => <Grid item key={id}>
-                 <SourceIdChip id={id} />
-               </Grid>)}
-             </Grid>
-    </TabPanel>
-    {!linksTabs && <CircularProgress />}
-    {linksTabs && linksTabs.filter(tab => tab.tabId === 'chemical_gene_interactions').length > 0 &&
-    <TabPanel value={linksTab} index={"chemical_gene_interactions"}>
-        <GeneExposureLinks node={node} graph={graph} />
-    </TabPanel>
-    }
-             </Grid>
-             </Grid>
-}
+  if (!affectedBy) {
+    return <CircularProgress />;
+  }
 
-
-function getDefaultSelector(graph:string) {
-
-    return function DefaultSelector(row:any, key:string) {
-    let vals = asArray(row[key]).map(PropVal.from);
-
-    console.dir(vals)
-
-    if(!row['_refs']) {
-        throw new Error("No refs in row")
-    }
-
-    return <PropVals 
-     graph={graph} 
-    refs={new Refs(row['_refs'])}
-    values={vals} />
-}
-
-}
-
-function GeneExposureLinks({node, graph}:{node:GraphNode, graph:string}) {
-
-    let [affectedBy, setAffectedBy] = useState<Page<any>|null>(null)
-
-    useEffect(() => {
-
-        async function getAffectedBy() {
-            let res = await getPaginated<any>(`api/v1/graphs/${
-                    graph
-                }/nodes/${encodeNodeId(node.getNodeId())}/incoming_edges`, {
-                'grebi:type': 'biolink:chemical_gene_interaction_association'
-            });
-            setAffectedBy(res)
-        }
-         
-        getAffectedBy()
-
-    }, [node.getNodeId()])
-
-    if(!affectedBy) {
-        return <CircularProgress/>
-    }
-
-let fixedCols = [
+  let fixedCols = [
     {
-        id: "grebi:datasources",
-        name: "Datasources",
-        selector: (edge:GraphEdge, key:string) => <DatasourceTags dss={edge['grebi:datasources']} linked />,
-        sortable:true
+      id: "grebi:datasources",
+      name: "Datasources",
+      selector: (edge: GraphEdge, key: string) => <DatasourceTags dss={edge["grebi:datasources"]} linked />,
+      sortable: true,
     },
     {
-        id: "from",
-        name: "Chemical",
-        selector: (edge:GraphEdge, key:string) => <NodeRefLink graph={graph} nodeRef={new GraphNodeRef(edge['from'])} showTypeChip={false} />,
-        sortable:true
-    }
-];
+      id: "from",
+      name: "Chemical",
+      selector: (edge: GraphEdge, key: string) => <NodeRefLink graph={graph} nodeRef={new GraphNodeRef(edge["from"])} showTypeChip={false} />,
+      sortable: true,
+    },
+  ];
 
-    return <LocalDataTable
-                    data={affectedBy?.elements} 
-                    addColumnsFromData={true}
-                    columns={fixedCols}
-                    maxRowHeight={"1.5em"}
-                    defaultSelector={getDefaultSelector(graph)}
-                    hideColumns={[
-                        "_refs",
-                        "grebi:edgeId",
-                        "grebi:subgraph",
-                        "grebi:type",
-                        "grebi:fromNodeId",
-                        "grebi:toNodeId",
-                        "grebi:fromSourceIds",
-                        "grebi:name",
-                        "to"
-                    ]}
-                    />
-}
-
-function ChemicalExposureLinks({node}:{node:GraphNode}) {
-
-    return <div></div>
-}
-
-
-
-function ExpandableSection({title, loading, children}:{title:string, loading?:boolean|undefined, children:any}) {
-
-    let [expanded, setExpanded] = useState<boolean>(false);
-
-    return <div>
-        <Typography variant="h6" onClick={() => setExpanded(!expanded)} style={{cursor:'pointer'}}>
-            {loading ?
-            <Fragment>
-                <CircularProgress size="1rem" />
-                &nbsp;
-            </Fragment>
-            :
-                <Fragment>{expanded ? '-\t' : '+\t'}</Fragment>
-            }
-            {title}
-        </Typography>
-        { expanded && children }
-    </div>
-
+  return (
+    <LocalDataTable
+      data={affectedBy?.elements}
+      addColumnsFromData={true}
+      columns={fixedCols}
+      maxRowHeight={"1.5em"}
+      defaultSelector={getDefaultSelector(graph)}
+      hideColumns={[
+        "_refs",
+        "grebi:edgeId",
+        "grebi:subgraph",
+        "grebi:type",
+        "grebi:fromNodeId",
+        "grebi:toNodeId",
+        "grebi:fromSourceIds",
+        "grebi:name",
+        "to",
+      ]}
+    />
+  );
 }

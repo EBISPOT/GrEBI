@@ -9,7 +9,7 @@ import {
 import { Helmet } from 'react-helmet'
 import React from "react";
 import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
-import { FormatListBulleted, CallReceived, CallMade, Share, AutoAwesome } from "@mui/icons-material";
+import { FormatListBulleted, CallReceived, CallMade, Share, AutoAwesome, Link as LinkIcon } from "@mui/icons-material";
 import { Typography, Grid, Tabs, Tab, Box } from "@mui/material";
 import SourceIdChip from "../../../components/SourceIdChip";
 import { orderSourceIds } from "../../../db_links/dbLinks";
@@ -24,6 +24,7 @@ import ErrorMessage from "../../../components/ErrorMessage";
 import encodeNodeId from "../../../encodeNodeId";
 import EdgesList from "../../../components/node_edge_list/EdgesList";
 import NodeLinks from "../../../components/NodeLinks";
+import getNodeLinksTabs, { LinksTab } from "../../../components/getNodeLinksTabs";
 import NodeSimilarList from "../../../components/NodeSimilarList";
 import LanguagePicker from "../../../components/LanguagePicker";
 import { useEmbeddingModels } from "../../../app/useEmbeddingModels";
@@ -39,6 +40,8 @@ export default function EbiNodePage() {
   let [node, setNode] = useState<GraphNode|null>(null);
   let [error, setError] = useState<any>(null);
   const tab = searchParams.get("tab") || "graph";
+  // the link tabs this kind of node has (see getNodeLinksTabs); the Links tab appears when there are any
+  const [linksTabs, setLinksTabs] = useState<LinksTab[]>([]);
 
   // a change of tab or language keeps the other in the URL
   function setParam(key: string, value: string) {
@@ -91,6 +94,16 @@ export default function EbiNodePage() {
     getNode()
     return () => { cancelled = true }
   }, [nodeId, lang]);
+
+  useEffect(() => {
+    setLinksTabs([]);
+    if (!node) return;
+    let cancelled = false;
+    getNodeLinksTabs(node, graph)
+      .then((tabs) => { if (!cancelled) setLinksTabs(tabs.filter((t) => t.count > 0)); })
+      .catch(() => { if (!cancelled) setLinksTabs([]); });
+    return () => { cancelled = true; };
+  }, [node, graph]);
 
   const notFound = error instanceof ApiError && error.status === 404;
 
@@ -149,18 +162,15 @@ export default function EbiNodePage() {
         <Grid container spacing={1} direction="column">
             <Grid item xs={2}>
           <Tabs centered orientation="horizontal" value={tab} aria-label="basic tabs example" className="border-green justify-center" sx={{ borderBottom: 1, borderColor: 'divider' }} onChange={(e, tab) => setParam("tab", tab)}>
-            {/* <Tab label="Links" icon={<Share/>} value="links" /> */}
             <Tab label="Graph" icon={<Share/>} value="graph" />
             <Tab label="Property View" icon={<FormatListBulleted/>} value="properties" />
             <Tab label="Edges In" icon={<CallReceived/>} value="edges_in" />
             <Tab label="Edges Out" icon={<CallMade/>} value="edges_out" />
+            {linksTabs.length > 0 && <Tab label="Links" icon={<LinkIcon/>} value="links" />}
             {hasEmbeddingModels && <Tab label="Similar" icon={<AutoAwesome/>} value="similar" />}
           </Tabs>
           </Grid>
           <Grid item xs={10}>
-        {/* <TabPanel value={tab} index={"links"}>
-          <NodeLinks node={node} graph={graph} />
-        </TabPanel> */}
         <TabPanel value={tab} index={"graph"}>
          <GraphView graph={graph} node={node} exploration={exploration} onExplorationChange={onExplorationChange} onNavigateToNode={onNavigateToNode} />
         </TabPanel>
@@ -173,6 +183,9 @@ export default function EbiNodePage() {
         <TabPanel value={tab} index={"edges_out"}>
           <EdgesList direction="outgoing" graph={graph} node={node} />
         </TabPanel>
+        {linksTabs.length > 0 && <TabPanel value={tab} index={"links"}>
+          <NodeLinks node={node} graph={graph} tabs={linksTabs} />
+        </TabPanel>}
         {hasEmbeddingModels && <TabPanel value={tab} index={"similar"}>
          <NodeSimilarList graph={graph} node={node} model={selectedModel} />
         </TabPanel>}
