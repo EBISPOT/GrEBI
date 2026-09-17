@@ -46,6 +46,8 @@ final class TestApp implements AutoCloseable {
     final GrebiMetadataRepo metadata;
     final GrebiQueryTemplatesRepo templates;
     final Map<String, EmbeddingServiceClient> embeddingClients = new LinkedHashMap<>();
+    /** What the prefix service makes of an identifier; identifiers not listed here pass through unchanged. */
+    final Map<String, String> normalised = new LinkedHashMap<>();
     final Javalin app;
     final String baseUrl;
     private final HttpClient http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
@@ -72,7 +74,8 @@ final class TestApp implements AutoCloseable {
         when(metadata.getMetadata("g1")).thenAnswer(inv -> graphMetadata("g1"));
         when(metadata.getMetadata("g2")).thenAnswer(inv -> graphMetadata("g2"));
         templates = new GrebiQueryTemplatesRepo(FIXTURES);
-        app = GrebiApi.createApp(cypher, postgres, metadata, GRAPHS, templates, embeddingClients)
+        app = GrebiApi.createApp(cypher, postgres, metadata, GRAPHS, templates, embeddingClients,
+                ids -> ids.stream().map(id -> normalised.getOrDefault(id, id)).toList())
             .start("127.0.0.1", 0);
         baseUrl = "http://127.0.0.1:" + app.port();
     }

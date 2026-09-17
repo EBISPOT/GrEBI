@@ -22,6 +22,7 @@ import EbiDatasourcesPage from "./pages/EbiDatasourcesPage";
 import EbiGraphPage from "./pages/EbiGraphPage";
 import EbiEdgeSearchPage from "./pages/EbiEdgeSearchPage";
 import EbiEdgePage from "./pages/EbiEdgePage";
+import EbiLookupPage from "./pages/EbiLookupPage";
 import DocsPage from "./pages/DocsPage";
 import EbiLayout from "./EbiLayout";
 
@@ -56,6 +57,7 @@ class EbiApp extends React.Component {
             <Route path={`/graphs`} element={<EbiDatasourcesPage />} />
             <Route path={`/graphs/:graph`} element={<EbiGraphPage />} />
             <Route path={`/graphs/:graph/search`} element={<EbiSearchPage />} />
+            <Route path={`/graphs/:graph/lookup`} element={<EbiLookupPage />} />
             <Route path={`/graphs/:graph/edges`} element={<EbiEdgeSearchPage />} />
             <Route path={`/graphs/:graph/edges/:edgeId`} element={<EbiEdgePage />} />
             <Route path={`/graphs/:graph/nodes/:nodeId`} element={<EbiNodePage />} />

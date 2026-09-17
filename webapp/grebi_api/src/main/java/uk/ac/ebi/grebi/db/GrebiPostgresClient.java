@@ -917,6 +917,71 @@ public class GrebiPostgresClient {
         return result;
     }
 
+    // --- Bulk identifier lookup ---
+
+    /**
+     * The nodes any of the identifiers name, by source id, node id or curie, and
+     * by name when lower-cased names are given too. The identifiers are matched
+     * exactly as given, so the caller passes every form it wants found. At most
+     * limit rows, in node id order, so that the cut-off is deterministic.
+     */
+    public List<Map<String, Object>> lookupNodes(String graph, Collection<String> identifiers,
+                                                 Collection<String> lowerNames, int limit) {
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
+        }
+        boolean byId = identifiers != null && !identifiers.isEmpty();
+        boolean byName = lowerNames != null && !lowerNames.isEmpty();
+        if (!byId && !byName) {
+            return List.of();
+        }
+
+        var clauses = new ArrayList<String>();
+        if (byId) {
+            clauses.add("\"grebi:sourceIds\" && ?");
+            clauses.add("\"grebi:nodeId\" = ANY(?)");
+            clauses.add("\"grebi:curie\" = ANY(?)");
+        }
+        if (byName) {
+            clauses.add("lower(\"grebi:name\") = ANY(?)");
+        }
+        String sql = "SELECT \"grebi:nodeId\", \"grebi:name\", \"grebi:type\", \"grebi:datasources\", \"grebi:sourceIds\", \"grebi:curie\""
+                + " FROM \"nodes_" + graph + "\" WHERE " + String.join(" OR ", clauses)
+                + " ORDER BY \"grebi:nodeId\" LIMIT ?";
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            int p = 1;
+            if (byId) {
+                var ids = conn.createArrayOf("text", identifiers.toArray(new String[0]));
+                ps.setArray(p++, ids);
+                ps.setArray(p++, ids);
+                ps.setArray(p++, ids);
+            }
+            if (byName) {
+                ps.setArray(p++, conn.createArrayOf("text", lowerNames.toArray(new String[0])));
+            }
+            ps.setInt(p, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("grebi:nodeId", rs.getString(1));
+                    row.put("grebi:name", rs.getString(2));
+                    row.put("grebi:type", toDatasourceList(rs.getArray(3)));
+                    row.put("grebi:datasources", toDatasourceList(rs.getArray(4)));
+                    row.put("grebi:sourceIds", toDatasourceList(rs.getArray(5)));
+                    row.put("grebi:curie", rs.getString(6));
+                    rows.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Identifier lookup failed for graph {}", graph, e);
+            throw new RuntimeException(e);
+        }
+        return rows;
+    }
+
     // --- Autocomplete ---
 
     private Table<?> autocompleteTable(String graph) {

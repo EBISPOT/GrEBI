@@ -8,8 +8,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -175,6 +177,78 @@ class GrebiApiNodeRoutesTest {
             .getAsJsonObject("biolink:subclass_of").get("OLS.efo").getAsInt());
         assertEquals(2, app.get("/api/v1/graphs/g1/nodes/" + ENC + "/outgoing_edge_counts").json().getAsJsonObject()
             .getAsJsonObject("biolink:broad_match").get("OLS.efo").getAsInt());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void identifiersAreLookedUpInBulkFromAnyBodyForm() {
+        var iri = "http://purl.obolibrary.org/obo/MONDO_0005083";
+        app.normalised.put(iri, NODE);
+        var hit = TestApp.row("grebi:nodeId", NODE, "grebi:name", "psoriasis", "grebi:sourceIds", List.of(NODE), "grebi:curie", NODE);
+        when(app.postgres.lookupNodes(eq("g1"), any(), isNull(), anyInt())).thenReturn(List.of(hit));
+
+        var res = app.post("/api/v1/graphs/g1/lookup", "{\"ids\": [\"" + iri + "\", \"nope:1\"]}");
+        assertEquals(200, res.status());
+        var body = res.json().getAsJsonObject();
+        var results = body.getAsJsonArray("results");
+        assertEquals(2, results.size());
+        assertEquals(iri, results.get(0).getAsJsonObject().get("id").getAsString());
+        assertEquals(NODE, results.get(0).getAsJsonObject().getAsJsonArray("nodes").get(0).getAsJsonObject().get("grebi:nodeId").getAsString());
+        assertEquals(0, results.get(1).getAsJsonObject().getAsJsonArray("nodes").size());
+        assertEquals("nope:1", body.getAsJsonArray("notFound").get(0).getAsString());
+        assertFalse(body.get("truncated").getAsBoolean());
+
+        var forms = ArgumentCaptor.forClass(Collection.class);
+        verify(app.postgres).lookupNodes(eq("g1"), forms.capture(), isNull(), eq(21));
+        assertEquals(Set.of(iri, iri.toLowerCase(), NODE, "nope:1"), Set.copyOf(forms.getValue()),
+            "as given, lower-cased and as the prefix service normalises it");
+
+        // a JSON array and plain text with one identifier per line are the same request
+        assertEquals(200, app.post("/api/v1/graphs/g1/lookup", "[\"nope:1\"]").status());
+        assertEquals(200, app.post("/api/v1/graphs/g1/lookup", "nope:1\nnope:2\n").status());
+        verify(app.postgres).lookupNodes(eq("g1"), eq(Set.of("nope:1")), isNull(), eq(11));
+        verify(app.postgres).lookupNodes(eq("g1"), eq(Set.of("nope:1", "nope:2")), isNull(), eq(21));
+    }
+
+    @Test
+    void lookupOptionsComeFromTheQueryString() {
+        var hit = TestApp.row("grebi:nodeId", NODE, "grebi:name", "Psoriasis", "grebi:sourceIds", List.of(NODE));
+        when(app.postgres.lookupNodes(eq("g1"), any(), any(), anyInt())).thenReturn(List.of(hit));
+        when(app.pgClient.resolveToMap(eq("g1"), any())).thenReturn(Map.of(NODE, translatedNode()));
+
+        var res = app.post("/api/v1/graphs/g1/lookup?matchNames=true&resolve=true&lang=fr", "PSORIASIS");
+        assertEquals(200, res.status());
+        // matchNames: the lower-cased identifiers are matched against names too
+        verify(app.postgres).lookupNodes(eq("g1"), eq(Set.of("PSORIASIS", "psoriasis")), eq(List.of("psoriasis")), eq(11));
+        // resolve and lang: the hit is the full node, in French with English as the fallback
+        var node = res.json().getAsJsonObject().getAsJsonArray("results").get(0).getAsJsonObject().getAsJsonArray("nodes").get(0).getAsJsonObject();
+        assertEquals(List.of("en", "de", "fr", "ja"), TestApp.GSON.fromJson(node.get("grebi:languages"), List.class));
+        var names = node.getAsJsonArray("grebi:name");
+        assertEquals(2, names.size());
+        assertEquals("psoriasis (fr)", names.get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString());
+        verify(app.pgClient).resolveToMap("g1", Set.of(NODE));
+    }
+
+    @Test
+    void lookupsRejectUnknownGraphsBadBodiesAndTooManyIdentifiers() {
+        var unknown = app.post("/api/v1/graphs/nope/lookup", "[\"a\"]");
+        assertEquals(404, unknown.status());
+        assertEquals("Unknown graph nope", unknown.json().getAsJsonObject().get("error").getAsString());
+
+        var empty = app.post("/api/v1/graphs/g1/lookup", "\n\n");
+        assertEquals(400, empty.status());
+        assertEquals("No identifiers given", empty.json().getAsJsonObject().get("error").getAsString());
+
+        var malformed = app.post("/api/v1/graphs/g1/lookup", "{\"ids\": \"a\"}");
+        assertEquals(400, malformed.status());
+        assertTrue(malformed.json().getAsJsonObject().get("error").getAsString().contains("\"ids\" array"));
+
+        var tooMany = app.post("/api/v1/graphs/g1/lookup", String.join("\n",
+            java.util.stream.IntStream.rangeClosed(0, ResourceLimits.DEFAULT_MAX_LOOKUP_IDS).mapToObj(i -> "id:" + i).toList()));
+        assertEquals(400, tooMany.status());
+        assertTrue(tooMany.json().getAsJsonObject().get("error").getAsString().contains(String.valueOf(ResourceLimits.DEFAULT_MAX_LOOKUP_IDS)));
+
+        verify(app.postgres, never()).lookupNodes(any(), any(), any(), anyInt());
     }
 
     @Test

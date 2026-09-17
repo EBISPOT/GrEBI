@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.javalin.plugin.bundled.CorsPluginConfig;
@@ -139,17 +140,36 @@ public class GrebiApi {
         final GrebiQueryTemplatesRepo queryTemplates,
         final Map<String, EmbeddingServiceClient> embeddingClients
     ) {
+        return createApp(cypher, postgres, metadata, graphs, queryTemplates, embeddingClients,
+            NodeLookup.prefixServiceNormaliser());
+    }
+
+    /**
+     * @param normaliser how the identifier lookup turns identifiers into the
+     *                   graph's own CURIEs: the prefix service in production,
+     *                   whatever a test wants otherwise.
+     */
+    static Javalin createApp(
+        final GrebiCypherRepo cypher,
+        final GrebiPostgresRepo postgres,
+        final GrebiMetadataRepo metadata,
+        final Set<String> graphs,
+        final GrebiQueryTemplatesRepo queryTemplates,
+        final Map<String, EmbeddingServiceClient> embeddingClients,
+        final Function<List<String>, List<String>> normaliser
+    ) {
         var stats = cypher != null ? cypher.getStats() : null;
 
         Gson gson = new Gson();
         ResourceLimits limits = ResourceLimits.get();
+        NodeLookup lookup = new NodeLookup(postgres, limits, normaliser);
 
         // Serialized summary metadata per graph; the underlying metadata is loaded
         // once at startup and never mutated, so this only ever needs building once.
         final Map<String, String> summaryMetadataJson = new java.util.concurrent.ConcurrentHashMap<>();
 
         GrebiMcpServer mcpServer = new GrebiMcpServer(
-            cypher, postgres, metadata, graphs, queryTemplates
+            cypher, postgres, metadata, graphs, queryTemplates, lookup
         );
 
         return Javalin.create(config -> {
@@ -475,6 +495,22 @@ public class GrebiApi {
                     );
 
                     ctx.json(resolve ? res.map(node -> Languages.localise(node, lang)) : res);
+                })
+                .post("/api/v1/graphs/{graph}/lookup", ctx -> {
+                    // Many identifiers at once: the body is a JSON object with an
+                    // "ids" array, a JSON array, or one identifier per line.
+                    ctx.contentType("application/json");
+                    var graph = ctx.pathParam("graph");
+                    if (!graphs.contains(graph)) {
+                        ctx.status(404).result(gson.toJson(Map.of("error", "Unknown graph " + graph)));
+                        return;
+                    }
+                    var bodyBytes = ctx.bodyAsBytes();
+                    limits.validateRequestBody(bodyBytes);
+                    var ids = NodeLookup.parseIds(new String(bodyBytes, StandardCharsets.UTF_8));
+                    var matchNames = "true".equals(ctx.queryParam("matchNames"));
+                    var resolve = "true".equals(ctx.queryParam("resolve"));
+                    ctx.result(gson.toJson(lookup.lookup(graph, ids, matchNames, resolve, ctx.queryParam("lang"))));
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");

@@ -86,7 +86,7 @@ class GrebiMcpServerTest {
     @Test
     void thereIsAToolPerParameterisedTemplatePlusTheFixedOnes() {
         var tools = client.listTools().tools().stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
-        assertTrue(tools.keySet().containsAll(Set.of("search_nodes", "get_node", "get_node_edge_counts", "list_node_edges", "get_edge",
+        assertTrue(tools.keySet().containsAll(Set.of("search_nodes", "lookup_nodes", "get_node", "get_node_edge_counts", "list_node_edges", "get_edge",
             "studies_by_trait", "snps_by_trait_materialised", "study_counts_by_trait", "node_count")), tools.keySet().toString());
         assertFalse(tools.containsKey("all_studies"), "a standalone materialised query is a table, not a tool");
 
@@ -111,6 +111,34 @@ class GrebiMcpServerTest {
         var search = tools.get("search_nodes");
         assertEquals(List.of("graph"), search.inputSchema().required());
         assertEquals(List.of("g1", "g2"), ((Map<?, ?>) search.inputSchema().properties().get("graph")).get("enum"));
+    }
+
+    @Test
+    void identifiersAreLookedUpInBulk() {
+        var hit = TestApp.row("grebi:nodeId", "mondo:0005083", "grebi:name", "psoriasis", "grebi:sourceIds", List.of("mondo:0005083", "doid:8893"));
+        when(app.postgres.lookupNodes(eq("g1"), any(), any(), anyInt())).thenReturn(List.of(hit));
+
+        var result = client.callTool(call("lookup_nodes", Map.of("graph", "g1", "ids", List.of("DOID:8893", "nope:1"))));
+        assertNotEquals(Boolean.TRUE, result.isError());
+        var body = text(result);
+        var results = body.getAsJsonArray("results");
+        assertEquals("DOID:8893", results.get(0).getAsJsonObject().get("id").getAsString());
+        assertEquals("mondo:0005083", results.get(0).getAsJsonObject().getAsJsonArray("nodes").get(0).getAsJsonObject().get("grebi:nodeId").getAsString());
+        assertEquals(List.of("nope:1"), TestApp.GSON.fromJson(body.get("notFound"), List.class));
+        assertEquals(List.of("nope:1"), result.structuredContent().get("notFound"));
+        verify(app.postgres).lookupNodes(eq("g1"), eq(Set.of("DOID:8893", "doid:8893", "nope:1")), isNull(), eq(21));
+
+        // the identifiers may come as one string with one per line, and names are matched on request
+        client.callTool(call("lookup_nodes", Map.of("graph", "g1", "ids", "psoriasis\nDOID:8893", "matchNames", true)));
+        verify(app.postgres).lookupNodes(eq("g1"), eq(Set.of("psoriasis", "DOID:8893", "doid:8893")), eq(List.of("psoriasis", "doid:8893")), eq(21));
+
+        assertTrue(toolError(client, call("lookup_nodes", Map.of("graph", "g1"))).contains("Missing required argument: ids"));
+        assertTrue(toolError(client, call("lookup_nodes", Map.of("graph", "g1", "ids", 7))).contains("ids must be an array of strings"));
+        assertTrue(toolError(client, call("lookup_nodes", Map.of("graph", "g1", "ids", List.of()))).contains("No identifiers given"));
+
+        var tools = client.listTools().tools().stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
+        assertEquals(List.of("graph", "ids"), tools.get("lookup_nodes").inputSchema().required());
+        assertEquals(ResourceLimits.DEFAULT_MAX_LOOKUP_IDS, ((Map<?, ?>) tools.get("lookup_nodes").inputSchema().properties().get("ids")).get("maxItems"));
     }
 
     @Test

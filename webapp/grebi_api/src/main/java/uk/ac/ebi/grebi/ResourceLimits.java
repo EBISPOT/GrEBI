@@ -21,6 +21,7 @@ public final class ResourceLimits {
     public static final int DEFAULT_MAX_QUERY_PARAM_VALUES = 200;
     public static final long DEFAULT_MAX_REQUEST_BODY_BYTES = 1_048_576;
     public static final int DEFAULT_MAX_RESOLVE_SINGLE_EDGES = 100;
+    public static final int DEFAULT_MAX_LOOKUP_IDS = 1_000;
     public static final int DEFAULT_QUERY_TIMEOUT_SECONDS = 60;
     public static final int DEFAULT_RATE_LIMIT_REQUESTS = 300;
     public static final int DEFAULT_RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -36,6 +37,7 @@ public final class ResourceLimits {
     private final int maxQueryParamValues;
     private final long maxRequestBodyBytes;
     private final int maxResolveSingleEdges;
+    private final int maxLookupIds;
     private final int queryTimeoutSeconds;
     private final int rateLimitRequests;
     private final int rateLimitWindowSeconds;
@@ -52,6 +54,7 @@ public final class ResourceLimits {
         int maxQueryParamValues,
         long maxRequestBodyBytes,
         int maxResolveSingleEdges,
+        int maxLookupIds,
         int queryTimeoutSeconds,
         int rateLimitRequests,
         int rateLimitWindowSeconds
@@ -65,6 +68,7 @@ public final class ResourceLimits {
         this.maxQueryParamValues = requirePositive(maxQueryParamValues, "maxQueryParamValues");
         this.maxRequestBodyBytes = requirePositive(maxRequestBodyBytes, "maxRequestBodyBytes");
         this.maxResolveSingleEdges = requirePositive(maxResolveSingleEdges, "maxResolveSingleEdges");
+        this.maxLookupIds = requirePositive(maxLookupIds, "maxLookupIds");
         this.queryTimeoutSeconds = requirePositive(queryTimeoutSeconds, "queryTimeoutSeconds");
         this.rateLimitRequests = Math.max(0, rateLimitRequests);
         this.rateLimitWindowSeconds = requirePositive(rateLimitWindowSeconds, "rateLimitWindowSeconds");
@@ -88,6 +92,7 @@ public final class ResourceLimits {
             intEnv("GREBI_MAX_QUERY_PARAM_VALUES", DEFAULT_MAX_QUERY_PARAM_VALUES),
             longEnv("GREBI_MAX_REQUEST_BODY_BYTES", DEFAULT_MAX_REQUEST_BODY_BYTES),
             intEnv("GREBI_MAX_RESOLVE_SINGLE_EDGES", DEFAULT_MAX_RESOLVE_SINGLE_EDGES),
+            intEnv("GREBI_MAX_LOOKUP_IDS", DEFAULT_MAX_LOOKUP_IDS),
             intEnv("GREBI_QUERY_TIMEOUT_SECONDS", DEFAULT_QUERY_TIMEOUT_SECONDS),
             intEnv("GREBI_RATE_LIMIT_REQUESTS", DEFAULT_RATE_LIMIT_REQUESTS),
             intEnv("GREBI_RATE_LIMIT_WINDOW_SECONDS", DEFAULT_RATE_LIMIT_WINDOW_SECONDS)
@@ -116,6 +121,10 @@ public final class ResourceLimits {
 
     public int maxResolveSingleEdges() {
         return maxResolveSingleEdges;
+    }
+
+    public int maxLookupIds() {
+        return maxLookupIds;
     }
 
     public int queryTimeoutSeconds() {
@@ -173,6 +182,12 @@ public final class ResourceLimits {
     public void validateResolveSingleEdgesCount(int count) {
         if (count > maxResolveSingleEdges) {
             throw badRequest("resolve_single_edges may not include more than " + maxResolveSingleEdges + " entries");
+        }
+    }
+
+    public void validateLookupIdsCount(int count) {
+        if (count > maxLookupIds) {
+            throw badRequest("A lookup may not include more than " + maxLookupIds + " identifiers");
         }
     }
 

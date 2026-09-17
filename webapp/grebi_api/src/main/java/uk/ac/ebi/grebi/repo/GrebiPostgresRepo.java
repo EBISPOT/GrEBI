@@ -260,6 +260,15 @@ public class GrebiPostgresRepo {
     }
 
     /**
+     * The nodes any of the identifiers name, or, with lower-cased names, are
+     * called; see {@link GrebiPostgresClient#lookupNodes}.
+     */
+    public List<Map<String, Object>> lookupNodes(String graph, Collection<String> identifiers,
+                                                 Collection<String> lowerNames, int limit) {
+        return pgClient.lookupNodes(graph, identifiers, lowerNames, limit);
+    }
+
+    /**
      * Search materialised query results with optional text search, filters, and facets.
      */
     public GrebiFacetedResultsPage<Map<String, Object>> searchMaterialisedQueryResultsPaginated(

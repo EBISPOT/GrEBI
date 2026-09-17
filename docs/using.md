@@ -37,6 +37,18 @@ The text matches names by containment, best similarity first. Add `exactMatch=tr
 
 Graphs with embedding models also have `/semantic_search?q=…&model=…`, which ranks nodes by the similarity of their embeddings to the text. With `page` and `size` it returns a page like the node search, with the type and datasource counts of the nearest candidates as facets and the same filters applied inside the ranking; with `n` alone it returns a plain list of the nearest `n`.
 
+#### Look up many identifiers at once
+
+A list of identifiers (CURIEs, IRIs or database accessions) is resolved in one request by posting it to `/lookup`. The body is a JSON object with an `ids` array, a bare JSON array, or plain text with one identifier per line, up to 1,000 identifiers:
+
+```
+curl -X POST "https://www.ebi.ac.uk/spot/kg/api/v1/graphs/dismech/lookup" \
+  -H "Content-Type: application/json" \
+  -d '{"ids": ["hgnc:1100", "MONDO:0005083", "http://purl.obolibrary.org/obo/CHEBI_15365", "nope:1"]}'
+```
+
+Each identifier is matched, as given and with its prefix in any case, against every identifier a node has (its source ids, node id and CURIE); IRIs are compacted to the graph's CURIEs first, so all three forms above find their node. The answer keeps the order given: `results` has one entry per identifier with the `nodes` it names, `notFound` lists the identifiers that name nothing, and `truncated` is true if the lookup hit its row limit of ten nodes per identifier. Add `matchNames=true` to match node names too, ignoring case, which is slower; `resolve=true` returns the full nodes instead of the lightweight hits, and `lang` picks their language as on the node endpoint. The MCP `lookup_nodes` tool takes the same options, and the [identifier lookup page](/graphs/dismech/lookup) does the same in the browser with a CSV download of the answer.
+
 #### Get a specific node
 
 <api-example method="GET" url="/api/v1/graphs/dismech/nodes/hgnc:1100" />
@@ -84,6 +96,7 @@ GrEBI exposes a Streamable HTTP MCP endpoint at `/api/v1/mcp`.
 The MCP server makes query templates available as tools, so LLM agents can execute the same pre-baked graph queries that are available in the browser and REST API. It also provides a small graph-traversal toolset for exploring the graph directly:
 
 - `search_nodes` to find candidate starting nodes
+- `lookup_nodes` to resolve a list of identifiers to nodes in one call
 - `get_node` to inspect a specific node
 - `get_node_edge_counts` to summarise incoming and outgoing edges by type and datasource
 - `list_node_edges` to traverse incoming or outgoing edges, with an optional lightweight `refsOnly` mode

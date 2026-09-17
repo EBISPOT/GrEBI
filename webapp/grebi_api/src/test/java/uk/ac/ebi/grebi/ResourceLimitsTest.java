@@ -40,6 +40,16 @@ class ResourceLimitsTest {
     }
 
     @Test
+    void lookupsAreCappedAtTheConfiguredNumberOfIdentifiers() {
+        var limits = testLimits();
+
+        assertEquals(3, limits.maxLookupIds());
+        limits.validateLookupIdsCount(3);
+        var rejected = assertThrows(ResourceLimits.ResourceLimitException.class, () -> limits.validateLookupIdsCount(4));
+        assertEquals(400, rejected.statusCode());
+    }
+
+    @Test
     void queryParameterLimitsAreEnforced() {
         var limits = testLimits();
 
@@ -72,6 +82,7 @@ class ResourceLimitsTest {
                 3,
                 20,
                 2,
+                3,
                 30,
                 2,
                 60

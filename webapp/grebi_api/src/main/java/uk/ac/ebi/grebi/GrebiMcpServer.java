@@ -168,6 +168,21 @@ public class GrebiMcpServer {
         return Boolean.parseBoolean(value.toString());
     }
 
+    /** An identifier list argument: an array of strings, or one string with an identifier per line. */
+    private static List<String> getIdsArg(Gson gson, Map<String, Object> args, String key) {
+        var raw = args.get(key);
+        if (raw == null) {
+            throw new RuntimeException("Missing required argument: " + key);
+        }
+        if (raw instanceof List<?> list) {
+            return NodeLookup.parseIds(gson.toJson(list));
+        }
+        if (raw instanceof String text) {
+            return NodeLookup.parseIds(text);
+        }
+        throw new RuntimeException(key + " must be an array of strings");
+    }
+
     private static Map<String, List<String>> getFiltersArg(Map<String, Object> args, String key) {
         var raw = args.get(key);
         if (raw == null) {
@@ -245,7 +260,8 @@ public class GrebiMcpServer {
         final GrebiPostgresRepo postgres,
         final GrebiMetadataRepo metadata,
         final Set<String> graphs,
-        final GrebiQueryTemplatesRepo queryTemplates
+        final GrebiQueryTemplatesRepo queryTemplates,
+        final NodeLookup lookup
     ) {
         var stats = cypher != null ? cypher.getStats() : null;
 
@@ -556,6 +572,71 @@ public class GrebiMcpServer {
                 var nodes = postgres.searchNodesPaginated(graph, q, filters, exactMatch, resolve, page);
                 var result = pagedResult(resolve ? nodes.map(node -> Languages.localise(node, lang)) : nodes);
                 return toolResult(gson, result, pagedRowsOutputSchema);
+            }
+        ));
+
+        var lookupProps = new LinkedHashMap<String, Object>();
+        lookupProps.put("graph", Map.of(
+            "enum", graphEnum,
+            "description", "Graph to look the identifiers up in"
+        ));
+        lookupProps.put("ids", Map.of(
+            "type", "array",
+            "items", Map.of("type", "string"),
+            "maxItems", limits.maxLookupIds(),
+            "description", "Identifiers to look up: CURIEs such as mondo:0005083 or HGNC:1100, IRIs, or database accessions. A single string with one identifier per line is accepted too."
+        ));
+        lookupProps.put("matchNames", Map.of(
+            "type", "boolean",
+            "description", "Also match node names, ignoring case (slower; off by default)"
+        ));
+        lookupProps.put("resolve", Map.of(
+            "type", "boolean",
+            "description", "Return full node blobs instead of lightweight hits (off by default)"
+        ));
+        lookupProps.put("lang", Map.of(
+            "type", "string",
+            "description", "Language of the resolved nodes' labels (e.g. fr): that language first, English as the fallback, other languages dropped."
+        ));
+        var lookupOutputProps = new LinkedHashMap<String, Object>();
+        lookupOutputProps.put("results", Map.of(
+            "type", "array",
+            "items", Map.of("type", "object"),
+            "description", "One entry per identifier, in the order given: {id, nodes}"
+        ));
+        lookupOutputProps.put("notFound", Map.of(
+            "type", "array",
+            "items", Map.of("type", "string"),
+            "description", "The identifiers that name no node"
+        ));
+        lookupOutputProps.put("truncated", Map.of(
+            "type", "boolean",
+            "description", "True when the lookup hit its row limit, so some matches may be missing"
+        ));
+        var lookupOutputSchema = Map.<String, Object>of(
+            "type", "object",
+            "properties", lookupOutputProps,
+            "required", List.of("results", "notFound")
+        );
+
+        tools.add(new McpServerFeatures.AsyncToolSpecification(
+            McpSchema.Tool.builder()
+                .name("lookup_nodes")
+                .description("Look up many identifiers at once: the node each CURIE, IRI or accession names, and which identifiers name nothing. Prefix case does not matter and IRIs are compacted to the graph's CURIEs.")
+                .inputSchema(buildInputSchema(lookupProps, List.of("graph", "ids")))
+                .outputSchema(lookupOutputSchema)
+                .build(),
+            null,
+            (exchange, request) -> {
+                limits.checkRateLimit("mcp:tools");
+                var graph = requireStringArg(request.arguments(), "graph");
+                validateGraph(graphs, graph);
+                var ids = getIdsArg(gson, request.arguments(), "ids");
+                var matchNames = getBooleanArg(request.arguments(), "matchNames", false);
+                var resolve = getBooleanArg(request.arguments(), "resolve", false);
+                var lang = getStringArg(request.arguments(), "lang", null);
+                var result = lookup.lookup(graph, ids, matchNames, resolve, lang);
+                return toolResult(gson, result, lookupOutputSchema);
             }
         ));
 

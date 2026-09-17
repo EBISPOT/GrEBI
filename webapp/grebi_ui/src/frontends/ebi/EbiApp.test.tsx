@@ -11,6 +11,7 @@ vi.mock('./pages/EbiDatasourcesPage', () => ({ default: () => <div data-testid="
 vi.mock('./pages/EbiGraphPage', () => ({ default: () => <div data-testid="page">GraphPage</div> }))
 vi.mock('./pages/EbiSearchPage', () => ({ default: () => <div data-testid="page">SearchPage</div> }))
 vi.mock('./pages/EbiEdgeSearchPage', () => ({ default: () => <div data-testid="page">EdgeSearchPage</div> }))
+vi.mock('./pages/EbiLookupPage', () => ({ default: () => <div data-testid="page">LookupPage</div> }))
 vi.mock('./pages/EbiNodePage', () => ({ default: () => <div data-testid="page">NodePage</div> }))
 vi.mock('./pages/EbiTablesHomePage', () => ({ default: () => <div data-testid="page">TablesHomePage</div> }))
 vi.mock('./pages/EbiTablesPage', () => ({ default: () => <div data-testid="page">TablesPage</div> }))
@@ -46,6 +47,7 @@ describe('EbiApp routes', () => {
     ['/graphs/g1', 'GraphPage'],
     ['/graphs/g1/search', 'SearchPage'],
     ['/graphs/g1/edges', 'EdgeSearchPage'],
+    ['/graphs/g1/lookup', 'LookupPage'],
     ['/graphs/g1/nodes/bW9uZG86MQ', 'NodePage'],
     ['/tables', 'TablesHomePage'],
     ['/graphs/g1/tables', 'TablesHomePage'],
