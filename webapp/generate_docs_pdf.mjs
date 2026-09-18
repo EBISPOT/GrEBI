@@ -275,6 +275,89 @@ function openApiToMarkdown(spec) {
   return out.join("\n");
 }
 
+// The <mcp-reference /> tag: what the MCP server publishes, from the catalogue
+// the running stack serves, with the template tools under each graph they are
+// for (every graph has its own query templates).
+function mcpCatalogueToMarkdown(c) {
+  const controls = ["graph", "sortBy", "sortDir", "pageNum", "pageSize"];
+  const typeOf = (s) => {
+    if (!s) return "";
+    if (s.enum) return s.enum.join(" \\| ");
+    if (Array.isArray(s.type)) return s.type.join(" \\| ");
+    if (s.type === "array") return `array of ${typeOf(s.items) || "any"}`;
+    return s.type || "";
+  };
+  const cell = (s) => String(s ?? "").replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ");
+  const argumentsTable = (tool, only) => {
+    const props = tool.inputSchema?.properties || {};
+    const required = tool.inputSchema?.required || [];
+    const names = Object.keys(props).filter((n) => !only || only(n));
+    if (names.length === 0) return ["No arguments of its own.", ""];
+    const rows = ["| Argument | Type | Description |", "|---|---|---|"];
+    for (const n of names) {
+      rows.push(`| \`${cell(n)}\`${required.includes(n) ? " (required)" : ""} | ${cell(typeOf(props[n]))} | ${cell(props[n]?.description || "")} |`);
+    }
+    return [...rows, ""];
+  };
+  const out = [];
+  out.push(`Server \`${c.server.name}\` ${c.server.version}, endpoint \`${c.server.endpoint}\` (${c.server.transport}). The instance these docs were built against serves ${c.graphs.map((g) => `\`${g}\``).join(", ")}; a running instance's own \`tools/list\` is authoritative for what it serves.`, "");
+  out.push("## Instructions to agents", "", ...c.instructions.split(/\n\s*\n/).map((p) => "> " + p.replace(/\s*\n\s*/g, " ")), "");
+  out.push("## Resources", "", "| URI | Name | Type |", "|---|---|---|");
+  for (const r of c.resources) out.push(`| \`${r.uri}\` | ${cell(r.name)}${r.description ? ": " + cell(r.description) : ""} | ${r.mimeType || ""} |`);
+  out.push("");
+  out.push("## Tools for every graph", "");
+  for (const t of c.tools.filter((t) => !t.template)) {
+    out.push(`#### \`${t.name}\``, "", t.description || "", "", ...argumentsTable(t));
+    const outputs = Object.keys(t.outputSchema?.properties || {});
+    if (outputs.length > 0) out.push(`Returns ${outputs.map((o) => `\`${o}\``).join(", ")}.`, "");
+  }
+  for (const graph of c.graphs) {
+    out.push(`## Tools for \`${graph}\``, "");
+    const tools = c.tools.filter((t) => t.template && (!t.graphs || t.graphs.includes(graph)));
+    if (tools.length === 0) out.push("No query templates for this graph.", "");
+    for (const t of tools) {
+      out.push(`#### \`${t.name}\`${t.graphs ? "" : " (runs on any graph the instance serves)"}`, "", t.description || "", "", ...argumentsTable(t, (n) => !controls.includes(n)));
+      const sortBy = t.inputSchema?.properties?.sortBy?.enum || [];
+      if (sortBy.length > 0) out.push(`Sort by ${sortBy.map((s) => `\`${s}\``).join(", ")}.`, "");
+      const columns = Object.entries(t.outputSchema?.properties?.rows?.items?.properties || {});
+      if (columns.length > 0) out.push(`Result columns: ${columns.map(([n, s]) => `\`${n}\`${typeOf(s) ? ` (${typeOf(s)})` : ""}`).join(", ")}.`, "");
+    }
+  }
+  const others = c.tools.filter((t) => t.template && t.graphs && !t.graphs.some((g) => c.graphs.includes(g)));
+  if (others.length > 0) {
+    out.push("## Templates for other graphs", "",
+      "Query templates in this version of GrEBI for graphs the instance these docs were built against does not serve. An instance serving one of these graphs offers them as tools, with the same arguments as above.", "",
+      "| Template | Question | Graphs |", "|---|---|---|");
+    for (const t of others) {
+      const description = t.description || "";
+      const colon = description.indexOf(": ");
+      out.push(`| \`${t.name}\` | ${cell(colon > 0 ? description.slice(0, colon) : description)} | ${t.graphs.map((g) => `\`${g}\``).join(", ")} |`);
+    }
+    out.push("");
+  }
+  return out.join("\n");
+}
+
+async function processMcpReference(content, apiUrl, apiAvailable) {
+  const regex = /<mcp-reference\s*\/\s*>/g;
+  if (!regex.test(content)) return content;
+  let markdown;
+  if (!apiAvailable) {
+    markdown = "*The MCP reference could not be captured: the API was not available when these docs were built.*";
+  } else {
+    try {
+      const r = await fetch(`${apiUrl}/api/v1/mcp/catalogue`, { signal: AbortSignal.timeout(10000) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      markdown = mcpCatalogueToMarkdown(await r.json());
+      console.log("  Rendered the MCP reference from the server's catalogue");
+    } catch (e) {
+      console.warn(`  Could not fetch the MCP catalogue: ${e.message}`);
+      markdown = `*The MCP reference could not be captured: ${e.message}.*`;
+    }
+  }
+  return content.replace(/<mcp-reference\s*\/\s*>/g, markdown);
+}
+
 async function processOpenApiReference(content, apiUrl, apiAvailable) {
   const regex = /<openapi-reference\s*\/\s*>/g;
   if (!regex.test(content)) return content;
@@ -475,6 +558,7 @@ async function main() {
     availableGraphs
   );
   content = await processOpenApiReference(content, opts.apiUrl, apiAvailable);
+  content = await processMcpReference(content, opts.apiUrl, apiAvailable);
   const pubmed = processPubmedInline(content, opts.docsDir);
   content = pubmed.content;
   content = processLinks(content);

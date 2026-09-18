@@ -114,6 +114,52 @@ class GrebiMcpServerTest {
     }
 
     @Test
+    void theCatalogueMirrorsWhatTheServerPublishes() {
+        var published = client.listTools().tools().stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
+        var res = app.get("/api/v1/mcp/catalogue");
+        assertEquals(200, res.status());
+        var catalogue = res.json().getAsJsonObject();
+
+        assertEquals("/api/v1/mcp", catalogue.getAsJsonObject("server").get("endpoint").getAsString());
+        assertTrue(catalogue.get("instructions").getAsString().contains("query templates"));
+        assertEquals(List.of("g1", "g2"), TestApp.GSON.fromJson(catalogue.get("graphs"), List.class));
+
+        var tools = new java.util.LinkedHashMap<String, JsonObject>();
+        for (var t : catalogue.getAsJsonArray("tools")) {
+            tools.put(t.getAsJsonObject().get("name").getAsString(), t.getAsJsonObject());
+        }
+        assertEquals(published.keySet(), tools.keySet(), "the same tools, by name");
+
+        // a tool made from a template names the template and the graphs it declares
+        var studies = tools.get("studies_by_trait");
+        assertEquals("studies_by_trait", studies.get("template").getAsString());
+        assertEquals(List.of("g1"), TestApp.GSON.fromJson(studies.get("graphs"), List.class));
+        assertEquals(published.get("studies_by_trait").description(), studies.get("description").getAsString());
+        assertEquals(List.copyOf(published.get("studies_by_trait").inputSchema().properties().keySet()),
+            List.copyOf(studies.getAsJsonObject("inputSchema").getAsJsonObject("properties").keySet()));
+        assertEquals(published.get("studies_by_trait").inputSchema().required(),
+            TestApp.GSON.fromJson(studies.getAsJsonObject("inputSchema").get("required"), List.class));
+        assertTrue(studies.getAsJsonObject("outputSchema").getAsJsonObject("properties").has("rows"));
+        // a template without a graphs list runs on any graph: the catalogue leaves graphs out
+        var count = tools.get("node_count");
+        assertEquals("node_count", count.get("template").getAsString());
+        assertFalse(count.has("graphs"));
+        // a fixed tool is not a template
+        var search = tools.get("search_nodes");
+        assertFalse(search.has("template"));
+        assertFalse(search.has("graphs"));
+        assertEquals(List.of("graph"), TestApp.GSON.fromJson(search.getAsJsonObject("inputSchema").get("required"), List.class));
+
+        var publishedResources = client.listResources().resources().stream().map(McpSchema.Resource::uri).collect(Collectors.toSet());
+        var resources = new java.util.HashSet<String>();
+        for (var r : catalogue.getAsJsonArray("resources")) {
+            resources.add(r.getAsJsonObject().get("uri").getAsString());
+        }
+        assertEquals(publishedResources, resources);
+        assertEquals(Set.of("grebi://stats", "grebi://topics", "grebi://graphs", "grebi://query_templates"), resources);
+    }
+
+    @Test
     void identifiersAreLookedUpInBulk() {
         var hit = TestApp.row("grebi:nodeId", "mondo:0005083", "grebi:name", "psoriasis", "grebi:sourceIds", List.of("mondo:0005083", "doid:8893"));
         when(app.postgres.lookupNodes(eq("g1"), any(), any(), anyInt())).thenReturn(List.of(hit));

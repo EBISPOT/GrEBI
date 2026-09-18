@@ -11,6 +11,8 @@ GrEBI is designed for graphs which have very large numbers of edges (> 1 billion
 
 ## Running queries
 
+Each graph has its own query templates: the questions its datasources can answer, listed on the graph's queries page and by the API at `/api/v1/graphs/{graph}/query_templates`. A template takes a few parameters and returns a table; for example, the genes associated with a disease in the Disorder Mechanisms Knowledge Base:
+
 <query-template id="disease_to_genes" graph="dismech" disease_id="mondo:0005002" />
 
 ## Using the GrEBI API
@@ -93,15 +95,4 @@ Errors return standard HTTP status codes with a JSON body:
 
 ## Using the GrEBI MCP server
 
-GrEBI exposes a Streamable HTTP MCP endpoint at `/api/v1/mcp`.
-
-The MCP server makes query templates available as tools, so LLM agents can execute the same pre-baked graph queries that are available in the browser and REST API. It also provides a small graph-traversal toolset for exploring the graph directly:
-
-- `search_nodes` to find candidate starting nodes
-- `lookup_nodes` to resolve a list of identifiers to nodes in one call
-- `get_node` to inspect a specific node
-- `get_node_edge_counts` to summarise incoming and outgoing edges by type and datasource
-- `list_node_edges` to traverse incoming or outgoing edges, with an optional lightweight `refsOnly` mode
-- `get_edge` to inspect a specific edge
-
-The MCP server also publishes read-only resources for available graphs, query topics, query templates, and graph statistics.
+GrEBI is also a Model Context Protocol server, at `/api/v1/mcp`, so LLM agents can run the same query templates and explore the graphs through tools. It has its own page: [MCP server](#mcp-server).

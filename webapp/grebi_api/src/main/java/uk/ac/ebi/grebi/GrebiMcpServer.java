@@ -343,6 +343,8 @@ public class GrebiMcpServer {
 
 
         List<McpServerFeatures.AsyncToolSpecification> tools = new ArrayList<>();
+        // per template tool, the graphs the template names (null: any graph the instance serves)
+        Map<String, List<String>> declaredGraphs = new LinkedHashMap<>();
 
         queryTemplates.getQueryTemplates().forEach(qt -> {
 
@@ -351,6 +353,7 @@ public class GrebiMcpServer {
             if (qt.isStandaloneMaterialised()) {
                 return;
             }
+            declaredGraphs.put(qt.id, qt.graphs);
 
             var paramProps = new LinkedHashMap<String, Object>();
             // no graphs list means the template runs on every graph; no params list
@@ -423,7 +426,8 @@ public class GrebiMcpServer {
             tools.add(new McpServerFeatures.AsyncToolSpecification(
                 McpSchema.Tool.builder()
                     .name(qt.id)
-                    .description(qt.title+": " + qt.description)
+                    // a template without a description is described by its title alone
+                    .description(qt.description == null || qt.description.isBlank() ? qt.title : qt.title + ": " + qt.description)
                     .inputSchema(inputSchema)
                     .outputSchema(outputSchema)
                     .build(),
@@ -848,6 +852,8 @@ public class GrebiMcpServer {
         ));
 
 
+        catalogue = buildCatalogue(tools, resources, graphs, declaredGraphs);
+
         mcpServer = McpServer.async(transportProvider)
             .serverInfo("grebi", "1.0.0")
             .instructions(INSTRUCTIONS)
@@ -865,6 +871,79 @@ public class GrebiMcpServer {
 
     public HttpServletStreamableServerTransportProvider getTransportProvider() {
         return transportProvider;
+    }
+
+    private final Map<String, Object> catalogue;
+
+    /**
+     * What this server publishes, as plain JSON for the docs: its instructions,
+     * the graphs it serves, its resources, and every tool with the schemas
+     * handed to tools/list. A tool made from a query template carries the
+     * template's id and the graphs the template names; without "graphs" it runs
+     * on any graph the instance serves.
+     */
+    public Map<String, Object> catalogue() {
+        return catalogue;
+    }
+
+    private static Map<String, Object> buildCatalogue(
+        List<McpServerFeatures.AsyncToolSpecification> tools,
+        List<McpServerFeatures.AsyncResourceSpecification> resources,
+        Set<String> graphs,
+        Map<String, List<String>> declaredGraphs
+    ) {
+        var out = new LinkedHashMap<String, Object>();
+        var server = new LinkedHashMap<String, Object>();
+        server.put("name", "grebi");
+        server.put("version", "1.0.0");
+        server.put("endpoint", "/api/v1/mcp");
+        server.put("transport", "streamable-http");
+        out.put("server", server);
+        out.put("instructions", INSTRUCTIONS.strip());
+        out.put("graphs", List.copyOf(graphs));
+
+        var resourceList = new ArrayList<Map<String, Object>>();
+        for (var spec : resources) {
+            var resource = spec.resource();
+            var entry = new LinkedHashMap<String, Object>();
+            entry.put("uri", resource.uri());
+            entry.put("name", resource.name());
+            if (resource.description() != null) {
+                entry.put("description", resource.description());
+            }
+            entry.put("mimeType", resource.mimeType());
+            resourceList.add(entry);
+        }
+        out.put("resources", resourceList);
+
+        var toolList = new ArrayList<Map<String, Object>>();
+        for (var spec : tools) {
+            var tool = spec.tool();
+            var entry = new LinkedHashMap<String, Object>();
+            entry.put("name", tool.name());
+            entry.put("description", tool.description());
+            var input = new LinkedHashMap<String, Object>();
+            var schema = tool.inputSchema();
+            if (schema != null) {
+                input.put("type", schema.type());
+                input.put("properties", schema.properties() == null ? Map.of() : schema.properties());
+                input.put("required", schema.required() == null ? List.of() : schema.required());
+            }
+            entry.put("inputSchema", input);
+            if (tool.outputSchema() != null) {
+                entry.put("outputSchema", tool.outputSchema());
+            }
+            if (declaredGraphs.containsKey(tool.name())) {
+                entry.put("template", tool.name());
+                var declared = declaredGraphs.get(tool.name());
+                if (declared != null) {
+                    entry.put("graphs", List.copyOf(declared));
+                }
+            }
+            toolList.add(entry);
+        }
+        out.put("tools", toolList);
+        return out;
     }
     
 

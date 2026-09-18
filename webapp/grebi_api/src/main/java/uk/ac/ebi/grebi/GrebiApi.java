@@ -209,6 +209,10 @@ public class GrebiApi {
                     ctx.contentType("application/yaml");
                     ctx.result(openApi.yaml());
                 })
+                .get("/api/v1/mcp/catalogue", ctx -> {
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(mcpServer.catalogue()));
+                })
                 .get("/api/v1/stats", ctx -> {
                     ctx.contentType("application/json");
                     if(stats != null) {

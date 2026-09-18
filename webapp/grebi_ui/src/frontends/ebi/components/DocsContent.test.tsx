@@ -95,6 +95,11 @@ describe('DocsContent', () => {
     expect(screen.getByText('Loading the API description…')).toBeInTheDocument()
   })
 
+  it('renders the mcp-reference element, which loads the catalogue from the API', () => {
+    renderDocs('# MCP server\n\n<mcp-reference></mcp-reference>')
+    expect(screen.getByText('Loading the MCP catalogue…')).toBeInTheDocument()
+  })
+
   it('numbers pubmed citations and lists the references straight away', async () => {
     const markdown = 'As shown<pubmed id="40323307"></pubmed> before.'
     renderDocs(markdown)

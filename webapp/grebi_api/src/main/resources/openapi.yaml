@@ -51,6 +51,8 @@ tags:
     description: Query templates, the pre-built questions of a graph, run live or from their materialised tables.
   - name: Tables
     description: Materialised queries, whole result tables built with the graph.
+  - name: MCP
+    description: The Model Context Protocol server at `/api/v1/mcp`, for LLM agents.
 
 paths:
   /api/health:
@@ -89,6 +91,22 @@ paths:
           content:
             application/yaml:
               schema: { type: string }
+  /api/v1/mcp/catalogue:
+    get:
+      tags: [MCP]
+      summary: What the MCP server publishes
+      description: |
+        The MCP server's instructions, the graphs it serves, its resources and every tool with the
+        input and output schemas it hands to `tools/list`, as plain JSON for reading without an MCP
+        client. A tool made from a query template carries the template's id and the graphs the
+        template names; without `graphs` it runs on any graph the instance serves.
+      operationId: mcpCatalogue
+      responses:
+        "200":
+          description: The catalogue.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/McpCatalogue" }
   /api/v1/stats:
     get:
       tags: [Service]
@@ -1318,6 +1336,44 @@ components:
         edge_counts_by_type:
           type: object
           additionalProperties: { type: integer }
+    McpCatalogue:
+      type: object
+      properties:
+        server:
+          type: object
+          properties:
+            name: { type: string }
+            version: { type: string }
+            endpoint: { type: string }
+            transport: { type: string }
+        instructions: { type: string }
+        graphs:
+          type: array
+          items: { type: string }
+        resources:
+          type: array
+          items:
+            type: object
+            properties:
+              uri: { type: string }
+              name: { type: string }
+              description: { type: string }
+              mimeType: { type: string }
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              description: { type: string }
+              inputSchema: { type: object }
+              outputSchema: { type: object }
+              template: { type: string, description: "The query template the tool runs, when it is one" }
+              graphs:
+                type: array
+                items: { type: string }
+                description: The graphs the template names; absent when the tool runs on any graph the instance serves
+      required: [server, instructions, graphs, resources, tools]
     GraphMetadata:
       type: object
       description: What the dataload recorded about the graph.
