@@ -94,9 +94,10 @@ describe('EbiQueryPage', () => {
 
   it('runs straight away when the parameters are already in the URL', async () => {
     renderPage('?gene_symbol=BRCA1')
-    await screen.findByRole('heading', { name: 'Results' })
-    // other fetches on the page may come first; what matters is that the query ran
-    expect(mockedGetPaginated.mock.calls.map((c) => c[0])).toContain('api/v1/graphs/g1/query/q1')
+    // the heading can render before the query's fetch is recorded, so wait for the call itself;
+    // other fetches on the page may come first, what matters is that the query ran
+    await waitFor(() => expect(mockedGetPaginated.mock.calls.map((c) => c[0])).toContain('api/v1/graphs/g1/query/q1'))
+    expect(await screen.findByRole('heading', { name: 'Results' })).toBeInTheDocument()
     expect(screen.getByDisplayValue('BRCA1')).toBeInTheDocument()
   })
 
