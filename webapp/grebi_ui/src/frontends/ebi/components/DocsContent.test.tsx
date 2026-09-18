@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import DocsContent from './DocsContent'
+
+// the API reference asks the API for its description; here it never answers
+vi.mock('../../../app/api', async (importOriginal) => {
+  const mod: any = await importOriginal()
+  return { ...mod, get: vi.fn(() => new Promise(() => {})), getPaginated: vi.fn(), post: vi.fn() }
+})
 import { resetPubmedRefs } from './pubmedRegistry'
 
 // the parameter labels have no htmlFor, so find the input that follows the label
@@ -82,6 +88,11 @@ describe('DocsContent', () => {
     expect(screen.getByText('graph: g1')).toBeInTheDocument()
     expect(paramInput('trait_id')).toHaveValue('mondo:1')
     await act(async () => {})
+  })
+
+  it('renders the openapi-reference element, which loads the description from the API', () => {
+    renderDocs('# API reference\n\n<openapi-reference></openapi-reference>')
+    expect(screen.getByText('Loading the API description…')).toBeInTheDocument()
   })
 
   it('numbers pubmed citations and lists the references straight away', async () => {

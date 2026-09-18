@@ -207,6 +207,94 @@ async function processApiExamples(content, apiUrl, apiAvailable) {
   return content;
 }
 
+// The <openapi-reference /> tag: the API reference, from the description the
+// running stack serves, as headings and tables (the UI renders the same
+// description live, with a Try it block per example).
+function openApiToMarkdown(spec) {
+  const resolve = (o) => {
+    if (o && o.$ref) {
+      let found = spec;
+      for (const step of String(o.$ref).replace(/^#\//, "").split("/")) found = found?.[step];
+      return found ?? o;
+    }
+    return o;
+  };
+  const label = (schema) => {
+    if (!schema) return "";
+    if (schema.$ref) return String(schema.$ref).split("/").pop();
+    if (schema.type === "array") return `array of ${label(schema.items) || "any"}`;
+    if (schema.enum) return schema.enum.join(" \\| ");
+    return schema.type || "";
+  };
+  const cell = (s) => String(s ?? "").replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ");
+  const operations = [];
+  for (const [p, item] of Object.entries(spec.paths || {})) {
+    for (const method of ["get", "post", "put", "delete", "patch"]) {
+      if (item[method]) operations.push({ method, path: p, item, op: item[method] });
+    }
+  }
+  const tags = (spec.tags || []).map((t) => t.name);
+  for (const o of operations) for (const t of o.op.tags || []) if (!tags.includes(t)) tags.push(t);
+  const out = [];
+  if (spec.info?.description) out.push(spec.info.description.trim(), "");
+  for (const tag of tags) {
+    const ops = operations.filter((o) => (o.op.tags || []).includes(tag));
+    if (ops.length === 0) continue;
+    out.push(`## ${tag}`, "");
+    const description = (spec.tags || []).find((t) => t.name === tag)?.description;
+    if (description) out.push(description, "");
+    for (const { method, path: p, item, op } of ops) {
+      out.push(`#### ${method.toUpperCase()} \`${p}\`${op.deprecated ? " (deprecated)" : ""}`, "", `**${op.summary || ""}**`, "");
+      if (op.description) out.push(op.description.trim(), "");
+      const parameters = [...(item.parameters || []), ...(op.parameters || [])].map(resolve);
+      if (parameters.length > 0) {
+        out.push("| Parameter | In | Type | Description |", "|---|---|---|---|");
+        for (const q of parameters) {
+          const notes = [q.description || ""];
+          if (q.schema?.default !== undefined) notes.push(`Default \`${q.schema.default}\`.`);
+          if (q.example !== undefined) notes.push(`Example \`${Array.isArray(q.example) ? q.example.join(", ") : q.example}\`.`);
+          out.push(`| \`${cell(q.name)}\`${q.required ? " (required)" : ""} | ${q.in} | ${cell(label(q.schema))} | ${cell(notes.join(" "))} |`);
+        }
+        out.push("");
+      }
+      if (op.requestBody) {
+        const body = resolve(op.requestBody);
+        const type = Object.keys(body.content || {})[0];
+        out.push(`Request body (${type}${body.required ? ", required" : ""})${body.description ? ": " + body.description : ""}`, "");
+        const example = type && body.content[type].example;
+        if (example !== undefined) out.push("```json", typeof example === "string" ? example : JSON.stringify(example, null, 2), "```", "");
+      }
+      for (const [status, r] of Object.entries(op.responses || {})) {
+        const response = resolve(r);
+        const type = response.content ? Object.keys(response.content)[0] : null;
+        out.push(`- \`${status}\` ${response.description || ""}${type && type !== "application/json" ? ` (${type})` : ""}`);
+      }
+      out.push("");
+    }
+  }
+  return out.join("\n");
+}
+
+async function processOpenApiReference(content, apiUrl, apiAvailable) {
+  const regex = /<openapi-reference\s*\/\s*>/g;
+  if (!regex.test(content)) return content;
+  let markdown;
+  if (!apiAvailable) {
+    markdown = "*The API reference could not be captured: the API was not available when these docs were built.*";
+  } else {
+    try {
+      const r = await fetch(`${apiUrl}/api/v1/openapi.json`, { signal: AbortSignal.timeout(10000) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      markdown = openApiToMarkdown(await r.json());
+      console.log("  Rendered the API reference from the OpenAPI description");
+    } catch (e) {
+      console.warn(`  Could not fetch the OpenAPI description: ${e.message}`);
+      markdown = `*The API reference could not be captured: ${e.message}.*`;
+    }
+  }
+  return content.replace(/<openapi-reference\s*\/\s*>/g, markdown);
+}
+
 async function processQueryTemplateExamples(
   content,
   apiUrl,
@@ -386,6 +474,7 @@ async function main() {
     apiAvailable,
     availableGraphs
   );
+  content = await processOpenApiReference(content, opts.apiUrl, apiAvailable);
   const pubmed = processPubmedInline(content, opts.docsDir);
   content = pubmed.content;
   content = processLinks(content);

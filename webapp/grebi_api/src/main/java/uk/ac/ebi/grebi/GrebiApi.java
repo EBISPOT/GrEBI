@@ -163,6 +163,7 @@ public class GrebiApi {
         Gson gson = new Gson();
         ResourceLimits limits = ResourceLimits.get();
         NodeLookup lookup = new NodeLookup(postgres, limits, normaliser);
+        OpenApi openApi = OpenApi.load();
 
         // Serialized summary metadata per graph; the underlying metadata is loaded
         // once at startup and never mutated, so this only ever needs building once.
@@ -199,6 +200,14 @@ public class GrebiApi {
                 .get("/api/health", ctx -> {
                     ctx.contentType("application/json");
                     ctx.result("{\"status\":\"ok\"}");
+                })
+                .get("/api/v1/openapi.json", ctx -> {
+                    ctx.contentType("application/json");
+                    ctx.result(openApi.json());
+                })
+                .get("/api/v1/openapi.yaml", ctx -> {
+                    ctx.contentType("application/yaml");
+                    ctx.result(openApi.yaml());
                 })
                 .get("/api/v1/stats", ctx -> {
                     ctx.contentType("application/json");

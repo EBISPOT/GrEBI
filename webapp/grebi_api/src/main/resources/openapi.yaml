@@ -1,0 +1,1342 @@
+openapi: 3.1.0
+info:
+  title: GrEBI API
+  version: "1"
+  summary: The REST API of the GrEBI knowledge graphs.
+  description: |
+    GrEBI integrates many datasources into knowledge graphs. Every graph is served by the same
+    endpoints, under `/api/v1/graphs/{graph}/…`; `/api/v1/graphs` lists the graphs of an instance.
+
+    **Identifiers in paths.** A node or edge id can contain any character, so in a path it is
+    Base64url-encoded without padding: `hgnc:1100` is `aGduYzoxMTAw`. Query parameters and request
+    bodies take identifiers as they are.
+
+    **Nodes and their values.** A node is the merge of everything the datasources say about one
+    thing. Each property value is wrapped with its provenance,
+    `{"grebi:datasources": [...], "grebi:sourceIds": [...], "grebi:value": ...}`; a value with
+    properties of its own is reified as `{"grebi:value": ..., "grebi:properties": {...}}`, and a
+    translation is a reified value carrying `grebi:lang`. Search hits and the ends of edges are
+    lightweight references (`grebi:nodeId`, `grebi:name`, `grebi:type`, `grebi:datasources`,
+    `grebi:sourceIds`, `grebi:curie`) unless the endpoint resolves them to full nodes.
+
+    **Paging.** Paged endpoints take `page` (from 0) and `size` (10 by default, 100 at most, never
+    more than 10,000 rows deep) and answer with `content`, `totalElements`, `totalPages`, `number`
+    and `numberOfElements`; searches add `facetFieldToCounts`. Edge lists carry the count as
+    `total` instead.
+
+    **Errors** are `{"error": "..."}` with the status: 400 for a bad parameter, 404 for something
+    unknown, 413 for a request body over 1 MB, 429 beyond 300 requests a minute from one client,
+    503 when a service the endpoint needs is not deployed, 500 otherwise.
+
+    **MCP.** The same graphs are available to LLM agents over the Model Context Protocol at
+    `/api/v1/mcp` (streamable HTTP): every query template is a tool, beside `search_nodes`,
+    `lookup_nodes`, `get_node`, `get_node_edge_counts`, `list_node_edges` and `get_edge`.
+servers:
+  - url: https://www.ebi.ac.uk/spot/kg
+    description: The EMBL-EBI instance
+  - url: /
+    description: The instance serving this document
+tags:
+  - name: Service
+    description: Health, statistics and this description.
+  - name: Graphs
+    description: The graphs an instance serves and what is in them.
+  - name: Nodes
+    description: A node, its properties and its edges.
+  - name: Search
+    description: Finding nodes by name, identifier or meaning.
+  - name: Edges
+    description: Edges across a graph, and one edge by id.
+  - name: Queries
+    description: Query templates, the pre-built questions of a graph, run live or from their materialised tables.
+  - name: Tables
+    description: Materialised queries, whole result tables built with the graph.
+
+paths:
+  /api/health:
+    get:
+      tags: [Service]
+      summary: Whether the API is up
+      operationId: health
+      responses:
+        "200":
+          description: 'Always `{"status": "ok"}` once the API has loaded its metadata.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: ok }
+  /api/v1/openapi.json:
+    get:
+      tags: [Service]
+      summary: This description as JSON
+      operationId: openApiJson
+      responses:
+        "200":
+          description: The OpenAPI 3.1 description of this API.
+          content:
+            application/json:
+              schema: { type: object }
+  /api/v1/openapi.yaml:
+    get:
+      tags: [Service]
+      summary: This description as YAML
+      operationId: openApiYaml
+      responses:
+        "200":
+          description: The OpenAPI 3.1 description of this API, as it is maintained.
+          content:
+            application/yaml:
+              schema: { type: string }
+  /api/v1/stats:
+    get:
+      tags: [Service]
+      summary: Node and edge counts of every graph
+      description: 'From the Neo4j service. Without one the answer is `{"error": "cypher service is not available"}` with status 200.'
+      operationId: stats
+      responses:
+        "200":
+          description: Per graph, its `num_nodes` and `num_edges`.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    num_nodes: { type: integer }
+                    num_edges: { type: integer }
+  /api/v1/topics:
+    get:
+      tags: [Queries]
+      summary: The topics query templates are grouped under
+      operationId: topics
+      responses:
+        "200":
+          description: Every topic.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/QueryTopic" }
+
+  /api/v1/graphs:
+    get:
+      tags: [Graphs]
+      summary: The graphs this instance serves
+      operationId: graphs
+      responses:
+        "200":
+          description: The graph names, as used in every other path.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+              example: ["dismech", "xspecies"]
+  /api/v1/graphs/{graph}:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Graphs]
+      summary: What a graph contains
+      description: |
+        The graph's metadata as the dataload recorded it: its datasources, node types with counts,
+        the properties nodes and edges have, embedding models, materialised queries and more. By
+        default the bulk parts are left out; `full=true` adds the matrix of edge types between node
+        types by datasource, which can be hundreds of megabytes.
+      operationId: graphMetadata
+      parameters:
+        - name: full
+          in: query
+          description: Include the bulk metadata (the edge-type matrix). Anything but `false` counts as true.
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: The metadata object.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GraphMetadata" }
+  /api/v1/graphs/{graph}/stats:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Graphs]
+      summary: Node and edge counts by type and by datasource
+      operationId: graphStats
+      responses:
+        "200":
+          description: Four maps of counts.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GraphStats" }
+
+  /api/v1/materialised_queries:
+    get:
+      tags: [Tables]
+      summary: The materialised queries of every graph
+      operationId: materialisedQueries
+      responses:
+        "200":
+          description: Each materialised query with the `graph` it belongs to.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MaterialisedQuery" }
+  /api/v1/graphs/{graph}/materialised_queries:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Tables]
+      summary: The materialised queries of a graph
+      operationId: graphMaterialisedQueries
+      responses:
+        "200":
+          description: The materialised queries, empty when the graph has none.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MaterialisedQuery" }
+  /api/v1/graphs/{graph}/materialised_queries/{queryid}:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - name: queryid
+        in: path
+        required: true
+        description: The materialised query's `id`.
+        schema: { type: string }
+    get:
+      tags: [Tables]
+      summary: A page of a materialised query's table
+      description: |
+        The table can be narrowed by free text over its typed columns (`q`) and by column values:
+        any other query parameter names a column and the values it may have, repeated for
+        alternatives. `facet` names a column to count the values of in `facetFieldToCounts`.
+      operationId: materialisedQueryRows
+      parameters:
+        - name: q
+          in: query
+          description: Free text to narrow the rows by.
+          schema: { type: string, maxLength: 4096 }
+        - name: facet
+          in: query
+          description: A column to return value counts for; repeatable.
+          schema: { type: string }
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of rows, one object per row keyed by column id.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacetedPage" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/graphs/{graph}/query_templates:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Queries]
+      summary: The query templates a graph offers
+      description: Templates without a graph list are offered on every graph; standalone materialised queries are tables, not templates, and are left out.
+      operationId: queryTemplates
+      responses:
+        "200":
+          description: The templates.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/QueryTemplate" }
+  /api/v1/graphs/{graph}/query_templates/{templateId}:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/templateId"
+    get:
+      tags: [Queries]
+      summary: One query template
+      operationId: queryTemplate
+      responses:
+        "200":
+          description: The template, with its parameters, result columns and examples.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QueryTemplate" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/graphs/{graph}/query/{templateId}:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/templateId"
+    get:
+      tags: [Queries]
+      summary: Run a query template
+      description: |
+        The template's parameters are query parameters named by their `param_id`, for example
+        `disease_id=mondo:0005002`. A template materialised as a typed table is served from that
+        table, and then a query parameter naming one of its result columns selects rows by that
+        column's value (repeatable for alternatives) and `q` narrows by free text; other templates
+        run live in Neo4j.
+      operationId: runQuery
+      parameters:
+        - name: disease_id
+          in: query
+          description: An example of a template parameter (`disease_to_genes` takes `disease_id`); each template lists its own.
+          schema: { type: string }
+          example: "mondo:0005002"
+        - name: q
+          in: query
+          description: Free text to narrow the rows by (materialised typed tables only).
+          schema: { type: string, maxLength: 4096 }
+        - $ref: "#/components/parameters/sortBy"
+        - $ref: "#/components/parameters/sortDir"
+        - name: resolve
+          in: query
+          description: Return the nodes in node-valued columns in full rather than as references.
+          schema: { type: boolean, default: false }
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of result rows, one object per row keyed by the template's column ids.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Page" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/graphs/{graph}/query/{templateId}.csv:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/templateId"
+    get:
+      tags: [Queries]
+      summary: Run a query template and stream every row as CSV
+      description: The same parameters and narrowing as running the template, without paging; the whole result streams as a file.
+      operationId: runQueryCsv
+      parameters:
+        - name: q
+          in: query
+          description: Free text to narrow the rows by (materialised typed tables only).
+          schema: { type: string, maxLength: 4096 }
+        - $ref: "#/components/parameters/sortBy"
+        - $ref: "#/components/parameters/sortDir"
+      responses:
+        "200":
+          description: The rows, one per line, with the template's column ids as the header.
+          content:
+            text/csv:
+              schema: { type: string }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/graphs/{graph}/nodes:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Nodes]
+      summary: List nodes by property
+      description: |
+        Nodes matching every filter given, in name order. A filter is a query parameter named after
+        a node column: `grebi:type`, `grebi:datasources` and `grebi:sourceIds` match any of the
+        values given, `grebi:nodeId`, `grebi:name` and `grebi:curie` match exactly, and a leading
+        `-` turns an array filter into an exclusion. The counts of types and datasources come back
+        as facets while fewer than 100,000 nodes match.
+      operationId: listNodes
+      parameters:
+        - $ref: "#/components/parameters/nodeTypeFilter"
+        - $ref: "#/components/parameters/nodeDatasourcesFilter"
+        - $ref: "#/components/parameters/nodeSourceIdsFilter"
+        - $ref: "#/components/parameters/nodeCurieFilter"
+        - $ref: "#/components/parameters/nodeDatasourcesExclusion"
+        - $ref: "#/components/parameters/nodeTypeExclusion"
+        - $ref: "#/components/parameters/resolveNodes"
+        - $ref: "#/components/parameters/lang"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of nodes (full, or references when `resolve=false`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacetedPage" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/graphs/{graph}/lookup:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    post:
+      tags: [Search]
+      summary: Look up many identifiers at once
+      description: |
+        Which node each identifier names. An identifier is matched as given, lower-cased, and as the
+        prefix service normalises it (an IRI or a synonym prefix becomes the graph's own CURIE),
+        against every node's source ids, node id and curie; with `matchNames` a node's name matches
+        too, ignoring case. Up to 1,000 identifiers. The answer keeps the order given.
+      operationId: lookupNodes
+      parameters:
+        - name: matchNames
+          in: query
+          description: Also match node names, ignoring case. Slower.
+          schema: { type: boolean, default: false }
+        - name: resolve
+          in: query
+          description: Return the full nodes instead of references.
+          schema: { type: boolean, default: false }
+        - $ref: "#/components/parameters/lang"
+      requestBody:
+        required: true
+        description: The identifiers, as a JSON object with an `ids` array, a bare JSON array, or plain text with one identifier per line.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items: { type: string }
+                  maxItems: 1000
+              required: [ids]
+            example: { "ids": ["hgnc:1100", "MONDO:0005083", "http://purl.obolibrary.org/obo/CHEBI_15365", "nope:1"] }
+          text/plain:
+            schema: { type: string }
+            example: "hgnc:1100\nMONDO:0005083\n"
+      responses:
+        "200":
+          description: The nodes each identifier names.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LookupAnswer" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          description: The body is over 1 MB.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/v1/graphs/{graph}/nodes/{nodeId}:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: One node in full
+      description: Every property of the node with its provenance. A node with labels in several languages lists them in `grebi:languages`; ask for one with `lang`.
+      operationId: node
+      parameters:
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200":
+          description: The node.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Node" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/graphs/{graph}/nodes/{nodeId}/edge_counts:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: How many edges a node has, by direction, type and datasource
+      operationId: edgeCounts
+      responses:
+        "200":
+          description: Under `incoming` and `outgoing`, the count per edge type per datasource. Cacheable for ten minutes.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  incoming: { $ref: "#/components/schemas/EdgeCounts" }
+                  outgoing: { $ref: "#/components/schemas/EdgeCounts" }
+  /api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edge_counts:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: How many edges point at a node, by type and datasource
+      operationId: incomingEdgeCounts
+      responses:
+        "200":
+          description: The count per edge type per datasource.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EdgeCounts" }
+  /api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edge_counts:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: How many edges leave a node, by type and datasource
+      operationId: outgoingEdgeCounts
+      responses:
+        "200":
+          description: The count per edge type per datasource.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EdgeCounts" }
+  /api/v1/graphs/{graph}/nodes/{nodeId}/resolve_single_edges:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    post:
+      tags: [Nodes]
+      summary: The node at the other end of edges a node has exactly one of
+      description: For each direction and edge type asked for (at most 100), the one node it leads to, keyed `direction::edgeType`. Pairs with more than one edge are left out. Needs the Neo4j service; without it the answer is `{}`.
+      operationId: resolveSingleEdges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              maxItems: 100
+              items:
+                type: object
+                properties:
+                  direction: { type: string, enum: [incoming, outgoing] }
+                  edgeType: { type: string }
+                required: [direction, edgeType]
+            example: [{ "direction": "outgoing", "edgeType": "biolink:subclass_of" }]
+      responses:
+        "200":
+          description: The node references by `direction::edgeType`.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { $ref: "#/components/schemas/NodeRef" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edges:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: The edges pointing at a node
+      description: A page of edges whose target is the node, each with its `from` and `to` references and its other properties, with the counts of types and datasources as facets. Filter with the edge filters.
+      operationId: incomingEdges
+      parameters:
+        - $ref: "#/components/parameters/edgeTypeFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesExclusion"
+        - $ref: "#/components/parameters/edgeSortBy"
+        - $ref: "#/components/parameters/sortDir"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of edges.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EdgePage" }
+  /api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edges:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: The edges leaving a node
+      description: A page of edges whose source is the node, as for the incoming edges.
+      operationId: outgoingEdges
+      parameters:
+        - $ref: "#/components/parameters/edgeTypeFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesExclusion"
+        - $ref: "#/components/parameters/edgeSortBy"
+        - $ref: "#/components/parameters/sortDir"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of edges.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EdgePage" }
+  /api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edges.csv:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: Every edge pointing at a node, as CSV
+      description: The same list as the incoming edges, streamed whole (up to 100,000 edges) with the edge's other properties as JSON in the last column.
+      operationId: incomingEdgesCsv
+      parameters:
+        - $ref: "#/components/parameters/edgeTypeFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesExclusion"
+        - $ref: "#/components/parameters/edgeSortBy"
+        - $ref: "#/components/parameters/sortDir"
+      responses:
+        "200":
+          description: "Columns: grebi:edgeId, grebi:type, grebi:fromNodeId, from, grebi:toNodeId, to, grebi:datasources, properties."
+          content:
+            text/csv:
+              schema: { type: string }
+  /api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edges.csv:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: Every edge leaving a node, as CSV
+      operationId: outgoingEdgesCsv
+      parameters:
+        - $ref: "#/components/parameters/edgeTypeFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesExclusion"
+        - $ref: "#/components/parameters/edgeSortBy"
+        - $ref: "#/components/parameters/sortDir"
+      responses:
+        "200":
+          description: The same columns as the incoming edges CSV.
+          content:
+            text/csv:
+              schema: { type: string }
+  /api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edge_refs:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: The edges pointing at a node, ends only
+      description: As the incoming edges, but each edge is only its type, datasources, the two node ids and the referenced nodes; cheaper for drawing a neighbourhood.
+      operationId: incomingEdgeRefs
+      parameters:
+        - $ref: "#/components/parameters/edgeTypeFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesExclusion"
+        - $ref: "#/components/parameters/edgeSortBy"
+        - $ref: "#/components/parameters/sortDir"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of edge references.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EdgeRefPage" }
+  /api/v1/graphs/{graph}/nodes/{nodeId}/outgoing_edge_refs:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Nodes]
+      summary: The edges leaving a node, ends only
+      operationId: outgoingEdgeRefs
+      parameters:
+        - $ref: "#/components/parameters/edgeTypeFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesExclusion"
+        - $ref: "#/components/parameters/edgeSortBy"
+        - $ref: "#/components/parameters/sortDir"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of edge references.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EdgeRefPage" }
+  /api/v1/graphs/{graph}/nodes/{nodeId}/similar:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - $ref: "#/components/parameters/nodeId"
+    get:
+      tags: [Search]
+      summary: The nodes nearest to a node in embedding space
+      description: Needs a graph with embedding models (see the embedding models endpoint) and a node with an embedding.
+      operationId: similarNodes
+      parameters:
+        - name: model
+          in: query
+          description: The embedding model; the graph's first one by default.
+          schema: { type: string }
+        - $ref: "#/components/parameters/n"
+      responses:
+        "200":
+          description: The nearest nodes with their cosine distance, nearest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/VectorHit" }
+        "404":
+          description: No embedding models for the graph, or no embedding for the node.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/v1/graphs/{graph}/search:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Search]
+      summary: Search nodes by name
+      description: |
+        Nodes whose name contains the text, best similarity first; with `exactMatch` the whole
+        name, ignoring case, in name order. The node filters narrow the search, and the counts of
+        types and datasources come back as facets while fewer than 100,000 nodes match.
+      operationId: searchNodes
+      parameters:
+        - name: q
+          in: query
+          description: The text to search for.
+          schema: { type: string, maxLength: 4096 }
+          example: BRCA1
+        - name: exactMatch
+          in: query
+          description: Match the whole name, ignoring case.
+          schema: { type: boolean, default: false }
+        - $ref: "#/components/parameters/nodeTypeFilter"
+        - $ref: "#/components/parameters/nodeDatasourcesFilter"
+        - $ref: "#/components/parameters/nodeSourceIdsFilter"
+        - $ref: "#/components/parameters/nodeDatasourcesExclusion"
+        - $ref: "#/components/parameters/nodeTypeExclusion"
+        - $ref: "#/components/parameters/resolveNodes"
+        - $ref: "#/components/parameters/lang"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of nodes (full, or references when `resolve=false`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacetedPage" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/graphs/{graph}/search.csv:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Search]
+      summary: Every search hit, as CSV
+      description: The same search, streamed whole (up to 100,000 nodes) as node references.
+      operationId: searchNodesCsv
+      parameters:
+        - name: q
+          in: query
+          description: The text to search for.
+          schema: { type: string, maxLength: 4096 }
+        - name: exactMatch
+          in: query
+          description: Match the whole name, ignoring case.
+          schema: { type: boolean, default: false }
+        - $ref: "#/components/parameters/nodeTypeFilter"
+        - $ref: "#/components/parameters/nodeDatasourcesFilter"
+        - $ref: "#/components/parameters/nodeSourceIdsFilter"
+        - $ref: "#/components/parameters/nodeDatasourcesExclusion"
+        - $ref: "#/components/parameters/nodeTypeExclusion"
+      responses:
+        "200":
+          description: "Columns: grebi:nodeId, grebi:name, grebi:type, grebi:datasources, grebi:sourceIds, grebi:curie."
+          content:
+            text/csv:
+              schema: { type: string }
+  /api/v1/graphs/{graph}/suggest:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Search]
+      summary: Names to complete a search box with
+      operationId: suggest
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: What has been typed so far.
+          schema: { type: string, maxLength: 4096 }
+          example: psor
+      responses:
+        "200":
+          description: Node names starting with the text.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+  /api/v1/graphs/{graph}/embedding_models:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Search]
+      summary: The embedding models a graph has
+      description: Each with whether the service can embed new text with it (`can_embed`), which the semantic search needs.
+      operationId: embeddingModels
+      responses:
+        "200":
+          description: The models; empty when the graph has none.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    model: { type: string }
+                    can_embed: { type: boolean }
+  /api/v1/graphs/{graph}/semantic_search:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Search]
+      summary: Search nodes by meaning
+      description: |
+        The text is embedded with the model and the nodes nearest to it in embedding space are
+        returned. With `page` or `size` the answer is a page like the name search: the nearest
+        candidates (at most 50) among those matching the node filters, with their type and
+        datasource counts as facets, each with `grebi:searchScore`. Without them it is a plain list
+        of the nearest `n`.
+      operationId: semanticSearch
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: The text to search by.
+          schema: { type: string, maxLength: 4096 }
+        - name: model
+          in: query
+          required: true
+          description: An embedding model of the graph that can embed text.
+          schema: { type: string }
+        - $ref: "#/components/parameters/n"
+        - name: resolve
+          in: query
+          description: Return the full nodes instead of references.
+          schema: { type: boolean, default: false }
+        - $ref: "#/components/parameters/lang"
+        - $ref: "#/components/parameters/nodeTypeFilter"
+        - $ref: "#/components/parameters/nodeDatasourcesFilter"
+        - $ref: "#/components/parameters/nodeDatasourcesExclusion"
+        - $ref: "#/components/parameters/nodeTypeExclusion"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of nodes, or a list of the nearest hits.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FacetedPage"
+                  - type: array
+                    items: { $ref: "#/components/schemas/VectorHit" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/graphs/{graph}/edges:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Edges]
+      summary: Search edges across a graph
+      description: A page of edges matching every filter given, with the counts of types and datasources as facets while fewer than 100,000 match.
+      operationId: searchEdges
+      parameters:
+        - $ref: "#/components/parameters/edgeTypeFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesFilter"
+        - $ref: "#/components/parameters/edgeDatasourcesExclusion"
+        - name: grebi:fromNodeId
+          in: query
+          description: Edges leaving this node (its id, not encoded).
+          schema: { type: string }
+        - name: grebi:toNodeId
+          in: query
+          description: Edges pointing at this node (its id, not encoded).
+          schema: { type: string }
+        - $ref: "#/components/parameters/edgeSortBy"
+        - $ref: "#/components/parameters/sortDir"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/size"
+      responses:
+        "200":
+          description: A page of edges.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EdgePage" }
+  /api/v1/graphs/{graph}/edges/{edgeId}:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+      - name: edgeId
+        in: path
+        required: true
+        description: The edge id, Base64url-encoded without padding.
+        schema: { type: string }
+    get:
+      tags: [Edges]
+      summary: One edge in full
+      operationId: edge
+      responses:
+        "200":
+          description: The edge with its properties and its `from` and `to` node references.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Edge" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/collections:
+    get:
+      tags: [Service]
+      summary: Collections (none)
+      description: Kept for older clients; always `{}`.
+      deprecated: true
+      operationId: collections
+      responses:
+        "200":
+          description: An empty object.
+          content:
+            application/json:
+              schema: { type: object }
+  /api/v1/normalise_curies:
+    get:
+      tags: [Search]
+      summary: Normalise IRIs and CURIEs to the graphs' own prefixes
+      description: Each identifier becomes the canonical CURIE the graphs use, or stays as it is when no prefix matches.
+      operationId: normaliseCuries
+      parameters:
+        - name: iris_or_curies
+          in: query
+          required: true
+          description: An IRI or CURIE; repeatable.
+          schema:
+            type: array
+            items: { type: string }
+          example: ["http://purl.obolibrary.org/obo/MONDO_0005002", "HGNC:1100"]
+      responses:
+        "200":
+          description: The normalised identifiers, in the order given.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  curies:
+                    type: array
+                    items: { type: string }
+
+components:
+  parameters:
+    graph:
+      name: graph
+      in: path
+      required: true
+      description: The graph, one of those `/api/v1/graphs` lists.
+      schema: { type: string }
+      example: dismech
+    nodeId:
+      name: nodeId
+      in: path
+      required: true
+      description: The node id, Base64url-encoded without padding (`hgnc:1100` is `aGduYzoxMTAw`).
+      schema: { type: string }
+      example: aGduYzoxMTAw
+    templateId:
+      name: templateId
+      in: path
+      required: true
+      description: The template's `id`, as `/query_templates` lists them.
+      schema: { type: string }
+      example: disease_to_genes
+    page:
+      name: page
+      in: query
+      description: The page, counting from 0. Pages never reach beyond 10,000 rows.
+      schema: { type: integer, minimum: 0, default: 0 }
+    size:
+      name: size
+      in: query
+      description: Rows per page.
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+    n:
+      name: n
+      in: query
+      description: How many nearest nodes to return.
+      schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+    lang:
+      name: lang
+      in: query
+      description: A language such as `fr`. Values in that language come first on every property, English follows as the fallback, other languages are left out.
+      schema: { type: string }
+    resolveNodes:
+      name: resolve
+      in: query
+      description: Return the full nodes (the default) or only references.
+      schema: { type: boolean, default: true }
+    sortBy:
+      name: sortBy
+      in: query
+      description: The column to sort by; the template's first result column by default.
+      schema: { type: string }
+    edgeSortBy:
+      name: sortBy
+      in: query
+      description: The edge column to sort by.
+      schema: { type: string, default: "grebi:type" }
+    sortDir:
+      name: sortDir
+      in: query
+      schema: { type: string, enum: [asc, desc], default: asc }
+    nodeTypeFilter:
+      name: grebi:type
+      in: query
+      description: Only nodes of any of these types; repeatable.
+      schema: { type: string }
+    nodeDatasourcesFilter:
+      name: grebi:datasources
+      in: query
+      description: Only nodes with any of these datasources; repeatable.
+      schema: { type: string }
+    nodeSourceIdsFilter:
+      name: grebi:sourceIds
+      in: query
+      description: Only nodes carrying any of these identifiers; repeatable.
+      schema: { type: string }
+    nodeCurieFilter:
+      name: grebi:curie
+      in: query
+      description: Only the node with this CURIE.
+      schema: { type: string }
+    nodeDatasourcesExclusion:
+      name: -grebi:datasources
+      in: query
+      description: Leave out nodes with this datasource; repeatable.
+      schema: { type: string }
+    nodeTypeExclusion:
+      name: -grebi:type
+      in: query
+      description: Leave out nodes of this type; repeatable.
+      schema: { type: string }
+    edgeTypeFilter:
+      name: grebi:type
+      in: query
+      description: Only edges of any of these types; repeatable.
+      schema: { type: string }
+    edgeDatasourcesFilter:
+      name: grebi:datasources
+      in: query
+      description: Only edges with any of these datasources; repeatable.
+      schema: { type: string }
+    edgeDatasourcesExclusion:
+      name: -grebi:datasources
+      in: query
+      description: Leave out edges with this datasource; repeatable.
+      schema: { type: string }
+  responses:
+    BadRequest:
+      description: A parameter or the body is not acceptable.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: No such thing.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    Page:
+      type: object
+      description: One page of results.
+      properties:
+        content:
+          type: array
+          items: { type: object }
+        totalElements: { type: integer, description: How many results match in all }
+        totalPages: { type: integer }
+        number: { type: integer, description: "This page, counting from 0" }
+        numberOfElements: { type: integer, description: How many rows this page holds }
+      required: [content, totalElements, totalPages, number, numberOfElements]
+    FacetedPage:
+      allOf:
+        - $ref: "#/components/schemas/Page"
+        - type: object
+          properties:
+            facetFieldToCounts:
+              type: object
+              description: Per facet field, how many results have each value.
+              additionalProperties:
+                type: object
+                additionalProperties: { type: integer }
+    EdgePage:
+      type: object
+      description: One page of edges. The count is `total`.
+      properties:
+        content:
+          type: array
+          items: { $ref: "#/components/schemas/Edge" }
+        total: { type: integer }
+        facetFieldToCounts:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: { type: integer }
+      required: [content, total]
+    EdgeRefPage:
+      type: object
+      description: One page of edge references. The count is `total`.
+      properties:
+        content:
+          type: array
+          items: { $ref: "#/components/schemas/EdgeRef" }
+        total: { type: integer }
+        facetFieldToCounts:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: { type: integer }
+      required: [content, total]
+    PropertyValue:
+      type: object
+      description: A property value with its provenance.
+      properties:
+        grebi:datasources:
+          type: array
+          items: { type: string }
+          description: The datasources that assert it
+        grebi:sourceIds:
+          type: array
+          items: { type: string }
+          description: The identifiers under which they assert it
+        grebi:value:
+          description: The value, or a reified value (`grebi:value` with `grebi:properties`) when it has properties of its own, such as `grebi:lang` for a translation.
+      required: [grebi:value]
+    NodeRef:
+      type: object
+      description: A node in brief.
+      properties:
+        grebi:nodeId: { type: string }
+        grebi:name: { type: string }
+        grebi:type:
+          type: array
+          items: { type: string }
+        grebi:datasources:
+          type: array
+          items: { type: string }
+        grebi:sourceIds:
+          type: array
+          items: { type: string }
+        grebi:curie: { type: string }
+      required: [grebi:nodeId]
+    Node:
+      type: object
+      description: A node in full. Every property other than those named here is an array of property values.
+      properties:
+        grebi:nodeId: { type: string }
+        grebi:name:
+          type: array
+          items: { $ref: "#/components/schemas/PropertyValue" }
+        grebi:type:
+          type: array
+          items: { type: string }
+        grebi:datasources:
+          type: array
+          items: { type: string }
+        grebi:sourceIds:
+          type: array
+          items: { type: string }
+        grebi:languages:
+          type: array
+          items: { type: string }
+          description: The languages the node has values in, English first; absent when nothing is translated.
+        _refs:
+          type: object
+          description: The nodes this node's values refer to, by id, in brief.
+          additionalProperties: { $ref: "#/components/schemas/NodeRef" }
+      required: [grebi:nodeId]
+      additionalProperties:
+        type: array
+        items: { $ref: "#/components/schemas/PropertyValue" }
+    EdgeRef:
+      type: object
+      description: An edge in brief.
+      properties:
+        grebi:type: { type: string }
+        grebi:datasources:
+          type: array
+          items: { type: string }
+        grebi:fromNodeId: { type: string }
+        grebi:toNodeId: { type: string }
+        _refs:
+          type: object
+          additionalProperties: { $ref: "#/components/schemas/NodeRef" }
+    Edge:
+      type: object
+      description: An edge in full. Every property other than those named here is an array of property values.
+      properties:
+        grebi:edgeId: { type: string }
+        grebi:type: { type: string }
+        grebi:fromNodeId: { type: string }
+        grebi:toNodeId: { type: string }
+        grebi:datasources:
+          type: array
+          items: { type: string }
+        from: { $ref: "#/components/schemas/NodeRef" }
+        to: { $ref: "#/components/schemas/NodeRef" }
+        _refs:
+          type: object
+          additionalProperties: { $ref: "#/components/schemas/NodeRef" }
+      required: [grebi:edgeId, grebi:type, grebi:fromNodeId, grebi:toNodeId]
+    EdgeCounts:
+      type: object
+      description: Per edge type, the count per datasource.
+      additionalProperties:
+        type: object
+        additionalProperties: { type: integer }
+    VectorHit:
+      type: object
+      properties:
+        nodeId: { type: string }
+        name: { type: string }
+        datasources:
+          type: array
+          items: { type: string }
+        type:
+          type: array
+          items: { type: string }
+        sourceIds:
+          type: array
+          items: { type: string }
+        distance: { type: number, description: Cosine distance; 0 is identical }
+      required: [nodeId, distance]
+    LookupAnswer:
+      type: object
+      properties:
+        results:
+          type: array
+          description: One entry per identifier, in the order given.
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              nodes:
+                type: array
+                items: { $ref: "#/components/schemas/NodeRef" }
+        notFound:
+          type: array
+          items: { type: string }
+          description: The identifiers that name no node.
+        truncated:
+          type: boolean
+          description: True when the lookup hit its limit of ten nodes per identifier, so some matches may be missing.
+      required: [results, notFound, truncated]
+    QueryTopic:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string }
+        description: { type: string }
+        url: { type: string }
+    QueryTemplate:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        question: { type: string }
+        description: { type: string }
+        graphs:
+          type: array
+          items: { type: string }
+          description: The graphs the template is for; absent means every graph.
+        topics:
+          type: array
+          items: { type: string }
+        params:
+          type: array
+          items:
+            type: object
+            properties:
+              param_id: { type: string }
+              param_name: { type: string }
+              param_type: { type: string }
+              param_default: { type: string }
+        result_columns:
+          type: array
+          items:
+            type: object
+            properties:
+              column_id: { type: string }
+              column_type: { type: string }
+              optional: { type: boolean }
+              facet: { type: boolean }
+        examples:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              params:
+                type: object
+                additionalProperties: { type: string }
+      required: [id]
+    MaterialisedQuery:
+      type: object
+      properties:
+        id: { type: string }
+        graph: { type: string }
+        table: { type: string }
+        mode: { type: string }
+        columns:
+          type: array
+          items:
+            type: object
+            properties:
+              column_id: { type: string }
+              column_type: { type: string }
+              facet: { type: boolean }
+      required: [id]
+    GraphStats:
+      type: object
+      properties:
+        node_counts_by_datasource:
+          type: object
+          additionalProperties: { type: integer }
+        node_counts_by_type:
+          type: object
+          additionalProperties: { type: integer }
+        edge_counts_by_datasource:
+          type: object
+          additionalProperties: { type: integer }
+        edge_counts_by_type:
+          type: object
+          additionalProperties: { type: integer }
+    GraphMetadata:
+      type: object
+      description: What the dataload recorded about the graph.
+      properties:
+        subgraph_name: { type: string }
+        types:
+          type: object
+          description: Per node type, its `count` and more.
+          additionalProperties: { type: object }
+        node_counts_by_datasource:
+          type: object
+          additionalProperties: { type: integer }
+        entity_props:
+          type: object
+          description: The properties nodes have.
+        edge_props:
+          type: object
+          description: The properties edges have.
+        materialised_queries:
+          type: array
+          items: { $ref: "#/components/schemas/MaterialisedQuery" }
+      additionalProperties: true

@@ -15,6 +15,8 @@ GrEBI is designed for graphs which have very large numbers of edges (> 1 billion
 
 ## Using the GrEBI API
 
+The [API reference](#api-reference) lists every endpoint with its parameters, from the OpenAPI description the API serves at `/api/v1/openapi.json`. The examples below show the common calls in context.
+
 ### Endpoints
 
 #### List available graphs

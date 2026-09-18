@@ -11,6 +11,7 @@ import "prismjs/components/prism-r";
 import "prismjs/components/prism-json";
 import "prismjs/components/prism-yaml";
 import ApiExample from "./ApiExample";
+import OpenApiReference from "./OpenApiReference";
 import QueryTemplateExample from "./QueryTemplateExample";
 import PubmedCitation from "./PubmedCitation";
 import PubmedReferences from "./PubmedReferences";
@@ -272,6 +273,7 @@ export default function DocsContent({
       },
       // Custom HTML elements for interactive examples
       "api-example": (props: any) => <ApiExample {...props} />,
+      "openapi-reference": (props: any) => <OpenApiReference {...props} />,
       "query-template": (props: any) => <QueryTemplateExample {...props} />,
       "pubmed": (props: any) => <PubmedCitation {...props} />,
       "todo": ({ children, ...props }: any) => (
