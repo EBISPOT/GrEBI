@@ -110,7 +110,9 @@ fn doi_identifier(value: &str) -> Option<String> {
     while stripped {
         stripped = false;
         for prefix in ["doi:", "https://doi.org/", "http://doi.org/", "https://dx.doi.org/", "http://dx.doi.org/"] {
-            if value.len() >= prefix.len() && value[..prefix.len()].eq_ignore_ascii_case(prefix) {
+            // get(), not [..]: the slice must not land inside a multibyte
+            // character of a value that is not a DOI at all ("α-Gal A").
+            if value.get(..prefix.len()).is_some_and(|head| head.eq_ignore_ascii_case(prefix)) {
                 value = value[prefix.len()..].to_string();
                 stripped = true;
             }
@@ -427,6 +429,13 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_non_doi_with_multibyte_characters_is_not_a_doi() {
+        assert_eq!(doi_identifier("Fabry Disease, α-Gal A, Enhancer, lncRNA, readthrough locus, BioInformatic"), None);
+        assert_eq!(doi_identifier("αβγ"), None);
+        assert_eq!(doi_identifier("DOI:https://doi.org/10.1000/αβγ"), Some("doi:10.1000/αβγ".to_string()));
+    }
 
     #[test]
     fn stdin_is_one_document_or_one_per_line() {
