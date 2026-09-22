@@ -92,16 +92,85 @@ struct Args {
     datasource_from_isdefinedby:Option<String> // JSON file mapping ontology IRI -> datasource name; per term, set grebi:datasource from its rdfs:isDefinedBy target (per-ontology provenance for the ubergraph)
 }
 
+/// A UTF-16 surrogate pair written as two `\uXXXX` escapes, which N-Triples,
+/// N-Quads and Turtle do not allow: a code point outside the BMP must be one
+/// `\UXXXXXXXX` escape. Some producers (UberGraph's N-Quads export, 2026-09)
+/// emit the pair anyway — the JSON habit — and rio then fails the whole parse
+/// with `InvalidUnicodeCodePoint`. Rewrite the pair to the single escape.
+fn repair_surrogate_escapes(line: &str) -> std::borrow::Cow<'_, str> {
+    if !line.contains("\\u") {
+        return std::borrow::Cow::Borrowed(line);
+    }
+    let bytes = line.as_bytes();
+    let hex4 = |at: usize| -> Option<u32> {
+        if at + 6 <= bytes.len() && bytes[at] == b'\\' && bytes[at + 1] == b'u' {
+            std::str::from_utf8(&bytes[at + 2..at + 6]).ok().and_then(|h| u32::from_str_radix(h, 16).ok())
+        } else {
+            None
+        }
+    };
+    let mut out = String::with_capacity(line.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if let (Some(high), Some(low)) = (hex4(i), hex4(i + 6)) {
+            if (0xD800..=0xDBFF).contains(&high) && (0xDC00..=0xDFFF).contains(&low) {
+                let code = 0x10000 + ((high - 0xD800) << 10) + (low - 0xDC00);
+                out.push_str(&format!("\\U{:08X}", code));
+                i += 12;
+                continue;
+            }
+        }
+        // Copy one whole character (the line is valid UTF-8).
+        let ch = line[i..].chars().next().unwrap();
+        out.push(ch);
+        i += ch.len_utf8();
+    }
+    std::borrow::Cow::Owned(out)
+}
+
+/// Line-by-line reader that applies `repair_surrogate_escapes` to its input.
+struct SurrogateEscapeRepair<R: io::BufRead> {
+    inner: R,
+    line: String,
+    pending: Vec<u8>,
+    pos: usize,
+}
+
+impl<R: io::BufRead> SurrogateEscapeRepair<R> {
+    fn new(inner: R) -> Self {
+        SurrogateEscapeRepair { inner, line: String::new(), pending: Vec::new(), pos: 0 }
+    }
+}
+
+impl<R: io::BufRead> io::Read for SurrogateEscapeRepair<R> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.pos >= self.pending.len() {
+            self.line.clear();
+            self.pending.clear();
+            self.pos = 0;
+            if self.inner.read_line(&mut self.line)? == 0 {
+                return Ok(0);
+            }
+            self.pending.extend_from_slice(repair_surrogate_escapes(&self.line).as_bytes());
+        }
+        let n = std::cmp::min(buf.len(), self.pending.len() - self.pos);
+        buf[..n].copy_from_slice(&self.pending[self.pos..self.pos + n]);
+        self.pos += n;
+        Ok(n)
+    }
+}
+
 fn main() -> std::io::Result<()> {
 
      let args = Args::parse();
 
     let start_time = std::time::Instant::now();
 
-    // Read RDF/XML from stdin
+    // Read RDF from stdin, repairing UTF-16 surrogate-pair escapes on the way
+    // (see SurrogateEscapeRepair).
     let stdin = io::stdin();
     let handle = stdin.lock();
-    let reader = BufReader::new(handle);
+    let reader = BufReader::new(SurrogateEscapeRepair::new(BufReader::new(handle)));
 
     let stdout = io::stdout().lock();
     let mut output_nodes = BufWriter::new(stdout);
@@ -519,7 +588,40 @@ fn term_to_json(
     return Value::Object(json);
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Read;
 
+    #[test]
+    fn surrogate_pair_escapes_become_one_escape() {
+        // 𝑥 is U+1D465: 𝑥 in UTF-16.
+        assert_eq!(repair_surrogate_escapes("<s> <p> \"f(\\uD835\\uDC65)\" ."), "<s> <p> \"f(\\U0001D465)\" .");
+        assert_eq!(repair_surrogate_escapes("\\uD835\\uDC65\\uD835\\uDC66"), "\\U0001D465\\U0001D466");
+    }
 
+    #[test]
+    fn other_escapes_and_text_are_untouched() {
+        for line in ["<s> <p> \"caf\\u00e9\" .", "<s> <p> \"\\U0001D465\" .", "<s> <p> \"𝑥 raw\" .", "\\uD835 lone", "\\uD835\\u0041", "\\u12"] {
+            assert_eq!(repair_surrogate_escapes(line), line);
+        }
+    }
 
-
+    #[test]
+    fn reader_repairs_every_line_and_preserves_the_rest() {
+        let input = "a \\uD835\\uDC65 b\nplain line\n\\uD83D\\uDE00";
+        let mut out = String::new();
+        SurrogateEscapeRepair::new(std::io::BufReader::new(input.as_bytes())).read_to_string(&mut out).unwrap();
+        assert_eq!(out, "a \\U0001D465 b\nplain line\n\\U0001F600");
+        // A tiny destination buffer still yields the same bytes.
+        let mut small = Vec::new();
+        let mut reader = SurrogateEscapeRepair::new(std::io::BufReader::new(input.as_bytes()));
+        let mut chunk = [0u8; 3];
+        loop {
+            let n = reader.read(&mut chunk).unwrap();
+            if n == 0 { break; }
+            small.extend_from_slice(&chunk[..n]);
+        }
+        assert_eq!(String::from_utf8(small).unwrap(), out);
+    }
+}
