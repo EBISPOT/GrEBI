@@ -2,11 +2,10 @@ id: BioStudies
 enabled: true
 description: "Test datasource: BioStudies PageTab metadata without linked submission files"
 download:
-  - dest: test_biostudies/fire
+  # Uncompressed so the fixture is diffable; the real snapshot is gzipped.
+  - dest: test_biostudies/biostudies.jsonl
     sources:
-      - tests/data/test_biostudies/fire
+      - tests/data/test_biostudies/biostudies.jsonl
 ingests:
-  - globs: ["test_biostudies/fire"]
-    command: '
-      grebi_ingest_biostudies
-          -- $GREBI_INGEST_FILENAME'
+  - globs: ["test_biostudies/biostudies.jsonl"]
+    command: 'cat $GREBI_INGEST_FILENAME | grebi_ingest_biostudies'
