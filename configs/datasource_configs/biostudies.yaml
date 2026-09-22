@@ -2,11 +2,29 @@ id: BioStudies
 enabled: true
 description: "EMBL-EBI BioStudies study and collection metadata, excluding Europe PMC and linked submission files"
 download:
-  # This is the NFS mount of the public BioStudies FTP tree. Linking the tree
-  # avoids copying submission payloads into GrEBI's download area.
-  - dest: biostudies/fire
-    sources:
-      - /nfs/ftp/public/biostudies/fire
+  # Every non-Europe-PMC study (~100k), fetched from the public API into the
+  # FTP tree's <ACC>/<ACC>.json layout. The FTP tree itself is only reachable
+  # over HTTP and has no per-study index, and Europe PMC (3.3M studies) is
+  # excluded by the ingest anyway, so the studies are enumerated by collection
+  # plus the accession prefixes of the uncollected families. Files already
+  # present are kept, so a rerun fetches only what is new.
+  - dest: biostudies/fire/
+    command: >-
+      python3 "$GREBI_DATALOAD_HOME/00_download/biostudies.py"
+      --collection ArrayExpress
+      --collection BioImages
+      --collection BioImages-EMPIAR
+      --collection SourceData
+      --accession-prefix S-BSST
+      --accession-prefix S-BIAD
+      --accession-prefix S-CMO
+      --accession-prefix S-VHPS
+      --accession-prefix S-MBRS
+      --accession-prefix S-ONTX
+      --accession-prefix S-RHER
+      --accession-prefix S-AIMD
+      --accession-prefix S-BAIR
+      -- "$GREBI_DOWNLOAD_DEST"
 ingests:
   - globs: ["biostudies/fire"]
     memory: "4 GB"

@@ -142,6 +142,57 @@ class DownloadWorkflowTest(unittest.TestCase):
                 server.server_close()
                 thread.join()
 
+    def test_command_entry_populates_its_directory_and_is_not_cached(self):
+        with tempfile.TemporaryDirectory(prefix="grebi-download-test-") as tmp:
+            home = Path(tmp)
+            (home / "configs/subgraph_configs").mkdir(parents=True)
+            (home / "dataload").mkdir()
+            (home / "configs/subgraph_configs/test.json").write_text(json.dumps({"datasource_configs": ["source.yaml"]}))
+            config = {"download": [
+                # The command sees the dest dir (already created) and the dataload home.
+                {"dest": "studies/fire/", "command": 'test -d "$GREBI_DOWNLOAD_DEST" && test -d "$GREBI_DATALOAD_HOME" '
+                                                    '&& mkdir -p "$GREBI_DOWNLOAD_DEST/S-1" '
+                                                    '&& python3 -c "import time; print(time.time_ns())" > "$GREBI_DOWNLOAD_DEST/S-1/S-1.json"'},
+                {"dest": "reference.json", "sources": [str(ROOT / "tests/data/test_expression_atlas/reference_nodes.json")]},
+            ]}
+            (home / "source.yaml").write_text(json.dumps(config))
+            downloads = home / "downloads"
+            downloads.mkdir()
+            env = {**os.environ, "GREBI_HOME": str(home), "GREBI_SUBGRAPH": "test",
+                   "GREBI_DOWNLOADS_PATH": str(downloads), "NXF_ANSI_LOG": "false",
+                   "NXF_HOME": str(home / "nxf-home"), "GREBI_DATALOAD_HOME": str(ROOT / "dataload")}
+
+            def run(number):
+                result = subprocess.run([
+                    "nextflow", str(ROOT / "dataload/nextflow/download.nf"),
+                    "-work-dir", str(home / "work"), "-resume", "-ansi-log", "false",
+                    "-with-trace", str(home / f"trace-{number}.tsv"),
+                ], cwd=home, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180)
+                self.assertEqual(result.returncode, 0, result.stdout)
+                with (home / f"trace-{number}.tsv").open() as trace:
+                    return {t["name"]: t["status"] for t in csv.DictReader(trace, delimiter="\t")}
+
+            tasks = run(1)
+            study = downloads / "studies/fire/S-1/S-1.json"
+            self.assertTrue(study.is_file())
+            first = study.read_text()
+            self.assertTrue((downloads / "reference.json").is_file())
+            self.assertEqual(tasks["download_command (studies/fire/)"], "COMPLETED")
+
+            tasks = run(2)
+            self.assertEqual(tasks["download_command (studies/fire/)"], "COMPLETED")  # reran: the command decides freshness
+            self.assertNotEqual(study.read_text(), first)
+            self.assertEqual(sum(status == "CACHED" for name, status in tasks.items() if name.startswith("download_file")), 1)
+
+            # A command entry must own a directory, not a file.
+            config["download"][0]["dest"] = "studies/fire.json"
+            (home / "source.yaml").write_text(json.dumps(config))
+            result = subprocess.run([
+                "nextflow", str(ROOT / "dataload/nextflow/download.nf"), "-ansi-log", "false",
+            ], cwd=home, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Invalid command download entry", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

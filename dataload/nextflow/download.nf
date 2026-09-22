@@ -199,6 +199,36 @@ process download_file {
     downloadScript(download_entry, params.downloads_path, params.grebi_home)
 }
 
+// A `download` entry with a `command` instead of `sources`: one task that
+// populates the whole `dest` directory itself, for resources with no NFS tree
+// and no per-file catalogue (BioStudies is fetched study by study from its
+// API). Not cached: the command decides what is current, and keeps files it
+// already has, so a rerun is cheap without Nextflow needing to know that.
+process download_command {
+    cache false
+    memory 4.GB
+    time 24.hour
+    errorStrategy { task.attempt <= 2 ? 'retry' : 'terminate' }
+    maxRetries 2
+    tag { download_entry.dest }
+
+    input:
+    val(download_entry)
+
+    output:
+    val(download_entry.dest)
+
+    script:
+    """
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    export GREBI_DOWNLOAD_DEST="${params.downloads_path}/${download_entry.dest}"
+    export GREBI_DATALOAD_HOME="${params.grebi_home}/dataload"
+    mkdir -p "\$GREBI_DOWNLOAD_DEST"
+    ${download_entry.command}
+    """
+}
+
 process discover_downloads {
     // Re-read the upstream catalogue even on resume. Individual files still cache.
     cache false
@@ -301,7 +331,21 @@ workflow {
         }
         entries
     }
-    static_entries = Channel.fromList(datasources.collectMany { it.download ?: [] })
+    all_static = datasources.collectMany { it.download ?: [] }
+    command_entries = all_static.findAll { it instanceof Map && it.containsKey('command') }
+    command_entries.each { entry ->
+        if (!(entry.dest instanceof String) || !(entry.dest ==~ /[A-Za-z0-9_.\/-]+\//) ||
+            entry.dest.startsWith('/') || entry.dest.tokenize('/').contains('..') ||
+            !(entry.command instanceof String) || !entry.command || entry.containsKey('sources')) {
+            error "Invalid command download entry (needs a directory dest ending in '/', a command, and no sources): ${entry}"
+        }
+    }
+    if (command_entries.collect { it.dest }.unique().size() != command_entries.size()) {
+        error 'Command download destinations must be unique'
+    }
+    download_command(Channel.fromList(command_entries))
+
+    static_entries = Channel.fromList(all_static.findAll { !(it instanceof Map && it.containsKey('command')) })
     // concat, not mix: if a dest ever gains sources from both static config
     // and a discovered manifest, the merged source order — and with it the
     // download_file cache key — must not depend on channel interleaving.

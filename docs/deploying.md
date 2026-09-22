@@ -160,6 +160,33 @@ available; a deliberate full refresh can disable the download task cache using
 `GREBI_NF_EXTRA_ARGS='-cache false'` with `download_local.sh`. Running the dataload
 alone does not refresh the catalogue; run the download stage first.
 
+### Command downloads
+
+A `download` entry may give a `command` instead of `sources`. One task runs the
+command, which populates the whole destination directory itself. Use this for a
+resource that has no NFS tree and no per-file catalogue to generate a file list
+from, so the ordinary one-task-per-file downloads do not fit — BioStudies is
+fetched study by study from its API, about 100k small documents:
+
+```yaml
+download:
+  - dest: biostudies/fire/
+    command: >-
+      python3 "$GREBI_DATALOAD_HOME/00_download/biostudies.py"
+      --collection BioImages
+      -- "$GREBI_DOWNLOAD_DEST"
+```
+
+`dest` must be a directory (end in `/`) and unique among command entries. The
+command runs with `GREBI_DOWNLOAD_DEST` set to that directory, already created,
+and `GREBI_DATALOAD_HOME` pointing to the checkout's `dataload` directory. It is
+run on every download invocation, including `-resume` — the command decides what
+is current, so it should keep files it already has and remove ones the upstream
+no longer lists, as [`biostudies.py`](../dataload/00_download/biostudies.py) does.
+It has 24 hours and one retry; be polite to the upstream (bounded concurrency,
+a User-Agent) and exit nonzero if a meaningful fraction of files could not be
+fetched, rather than silently ingesting a partial set.
+
 ### PRIDE project metadata
 
 [`pride.yaml`](../configs/datasource_configs/pride.yaml) downloads the live
