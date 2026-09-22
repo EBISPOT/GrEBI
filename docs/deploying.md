@@ -677,3 +677,9 @@ kubectl create secret generic grebi-postgres \
 ```
 
 Then either name your Helm release `grebi`, or set `postgres.secret.name` to the secret name you want the chart to reference. The chart does not create this secret for you.
+
+### Query templates
+
+The backend reads query templates from the directory in `GREBI_QUERY_TEMPLATES_PATH` (default `query_templates`; the Helm chart points it at `/data_import/query_templates` on the release volume). They are read from disk, not baked into the image, so they can be edited in place: the backend re-scans the directory every `GREBI_QUERY_TEMPLATES_POLL_SECONDS` (default 5; `0` disables) and reloads when any file changes. No restart is needed.
+
+Templates are loaded one file at a time. A file that does not parse — malformed YAML, a key this version of the backend does not know, a duplicate template id — is skipped with an error in the log, and the rest keep serving. If a whole reload fails (for example the directory is briefly unreadable), the previously loaded templates stay in place.
