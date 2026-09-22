@@ -30,7 +30,9 @@ fn re(cell: &'static OnceLock<Regex>, pattern: &str) -> &'static Regex {
     cell.get_or_init(|| Regex::new(pattern).unwrap())
 }
 fn accession_re() -> &'static Regex { static R: OnceLock<Regex> = OnceLock::new(); re(&R, r"^E-[A-Z]+-\d+$") }
-fn gene_id_re() -> &'static Regex { static R: OnceLock<Regex> = OnceLock::new(); re(&R, r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$") }
+// Ensembl/Ensembl Genomes gene IDs, including the model-organism native ones
+// Atlas passes through: yeast tRNA genes are named like tA(AGC)D.
+fn gene_id_re() -> &'static Regex { static R: OnceLock<Regex> = OnceLock::new(); re(&R, r"^[A-Za-z0-9_][A-Za-z0-9_.()-]*$") }
 fn ontology_uri_re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
     re(&R, r"^https?://(?:purl\.obolibrary\.org/obo/|www\.ebi\.ac\.uk/efo/)([A-Za-z]+)_([A-Za-z0-9]+)$")
@@ -631,6 +633,16 @@ mod tests {
 
     fn evidence(gene: &Value) -> Vec<Value> {
         gene["expression_atlas:evidence"].as_array().unwrap().iter().map(|text| serde_json::from_str(text.as_str().unwrap()).unwrap()).collect()
+    }
+
+    #[test]
+    fn yeast_trna_gene_ids_with_parentheses_are_valid() {
+        assert!(gene_id_re().is_match("tA(AGC)D"));
+        assert!(gene_id_re().is_match("tY(GUA)M1"));
+        assert!(gene_id_re().is_match("ENSG00000000003"));
+        assert!(!gene_id_re().is_match("tA(AGC) D"));
+        assert!(!gene_id_re().is_match(""));
+        assert_eq!(gene_node("tA(AGC)D", "", "NCBITaxon:4932").unwrap()["id"], "ensembl:tA(AGC)D");
     }
 
     #[test]
