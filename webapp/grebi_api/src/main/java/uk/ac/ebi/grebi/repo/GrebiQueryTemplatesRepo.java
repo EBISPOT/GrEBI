@@ -16,7 +16,10 @@ import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.stream.Collectors;
 
 
 public class GrebiQueryTemplatesRepo {
@@ -31,8 +34,10 @@ public class GrebiQueryTemplatesRepo {
         return "query_templates";
     }
 
-    private volatile List<QueryTemplate> queryTemplates;
-    private volatile List<QueryTopic> queryTopics;
+    // Always non-null: a failed (re)load keeps the last good set, and before the
+    // first load there is simply nothing to serve.
+    private volatile List<QueryTemplate> queryTemplates = List.of();
+    private volatile List<QueryTopic> queryTopics = List.of();
     private final List<Consumer<List<QueryTemplate>>> reloadListeners = new CopyOnWriteArrayList<>();
 
     private final String path;
@@ -45,7 +50,7 @@ public class GrebiQueryTemplatesRepo {
     public GrebiQueryTemplatesRepo(String path) {
         this.path = path;
         reload();
-        startWatching();
+        startPolling();
     }
 
     public List<QueryTemplate> getQueryTemplates() {
@@ -65,14 +70,18 @@ public class GrebiQueryTemplatesRepo {
     private void reload() {
         try {
             List<QueryTemplate> newTemplates = loadQueryTemplates(path);
-            List<QueryTopic> newTopics = loadQueryTopics(path + "/_topics.yaml");
             this.queryTemplates = newTemplates;
-            this.queryTopics = newTopics;
-            System.out.println("Loaded " + newTemplates.size() + " query templates and " + newTopics.size() + " topics");
+            logger.info("Loaded {} query templates", newTemplates.size());
             notifyReloadListeners(newTemplates);
         } catch (Exception e) {
-            System.err.println("Failed to reload query templates: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Failed to reload query templates; keeping the previous {}", queryTemplates.size(), e);
+        }
+        try {
+            List<QueryTopic> newTopics = loadQueryTopics(path + "/_topics.yaml");
+            this.queryTopics = newTopics;
+            logger.info("Loaded {} query topics", newTopics.size());
+        } catch (Exception e) {
+            logger.error("Failed to reload query topics; keeping the previous {}", queryTopics.size(), e);
         }
     }
 
@@ -83,124 +92,107 @@ public class GrebiQueryTemplatesRepo {
             try {
                 listener.accept(templates);
             } catch (Exception e) {
-                System.err.println("Query template reload listener failed: " + e.getMessage());
-                e.printStackTrace();
+                logger.error("Query template reload listener failed", e);
             }
         }
     }
 
-    private void startWatching() {
-        Path rootDir = Path.of(path).toAbsolutePath();
-        Thread watchThread = new Thread(() -> {
-            try {
-                WatchService watchService = FileSystems.getDefault().newWatchService();
-                Set<Path> watchedDirs = new HashSet<>();
-                registerDirectoryTree(rootDir, watchService, watchedDirs);
-                System.out.println("Watching query templates directory tree for changes: " + rootDir);
-                while (true) {
-                    WatchKey key = watchService.take();
-                    Path watchedDir = (Path) key.watchable();
-                    // Drain all pending events
-                    for (WatchEvent<?> event : key.pollEvents()) {
-                        Path changed = (Path) event.context();
-                        Path changedPath = watchedDir.resolve(changed);
-                        System.out.println("Query template file changed: " + changedPath + " (" + event.kind() + ")");
+    // Reload when anything under the templates directory changes. This polls
+    // rather than using a WatchService: in production the directory is an NFS
+    // mount written to from another host, and inotify never sees those writes.
+    // The tree is ~100 small files, so a stat walk every few seconds is cheap.
+    static final int POLL_SECONDS = Integer.parseInt(
+            System.getenv().getOrDefault("GREBI_QUERY_TEMPLATES_POLL_SECONDS", "5"));
 
-                        if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE && Files.isDirectory(changedPath)) {
-                            registerDirectoryTree(changedPath, watchService, watchedDirs);
-                        }
-                    }
-                    if (!key.reset()) {
-                        watchedDirs.remove(watchedDir);
-                    }
-                    // Brief pause to coalesce rapid successive changes (e.g. editor save)
-                    Thread.sleep(500);
-                    // Drain any events that arrived during the pause
-                    WatchKey extra = watchService.poll();
-                    while (extra != null) {
-                        Path extraWatchedDir = (Path) extra.watchable();
-                        for (WatchEvent<?> event : extra.pollEvents()) {
-                            Path changed = (Path) event.context();
-                            Path changedPath = extraWatchedDir.resolve(changed);
-                            if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE && Files.isDirectory(changedPath)) {
-                                registerDirectoryTree(changedPath, watchService, watchedDirs);
-                            }
-                        }
-                        extra.reset();
-                        extra = watchService.poll();
-                    }
+    private void startPolling() {
+        if (POLL_SECONDS <= 0) {
+            logger.info("Query template polling disabled (GREBI_QUERY_TEMPLATES_POLL_SECONDS={})", POLL_SECONDS);
+            return;
+        }
+        Path rootDir = Path.of(path).toAbsolutePath().normalize();
+        Thread pollThread = new Thread(() -> {
+            String last = fingerprint(rootDir);
+            logger.info("Polling query templates directory tree every {}s for changes: {}", POLL_SECONDS, rootDir);
+            while (true) {
+                try {
+                    Thread.sleep(POLL_SECONDS * 1000L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                String now = fingerprint(rootDir);
+                if (!now.equals(last)) {
+                    logger.info("Query templates changed on disk; reloading");
+                    last = now;
                     reload();
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.out.println("Query template watcher thread interrupted");
-            } catch (IOException e) {
-                System.err.println("Failed to watch query templates directory: " + e.getMessage());
-                e.printStackTrace();
             }
-        }, "query-template-watcher");
-        watchThread.setDaemon(true);
-        watchThread.start();
+        }, "query-template-poller");
+        pollThread.setDaemon(true);
+        pollThread.start();
     }
 
-    private static void registerDirectoryTree(Path rootDir, WatchService watchService, Set<Path> watchedDirs) throws IOException {
+    // Path, size and mtime of every regular file in the tree. Any edit, add,
+    // remove or rename changes it.
+    static String fingerprint(Path rootDir) {
         try (var stream = Files.walk(rootDir)) {
-            stream.filter(Files::isDirectory)
+            return stream
+                    .filter(Files::isRegularFile)
                     .sorted()
-                    .forEach(dir -> registerDirectory(dir, watchService, watchedDirs));
-        }
-    }
-
-    private static void registerDirectory(Path dir, WatchService watchService, Set<Path> watchedDirs) {
-        try {
-            Path absoluteDir = dir.toAbsolutePath().normalize();
-            if (!watchedDirs.add(absoluteDir)) {
-                return;
-            }
-            absoluteDir.register(
-                    watchService,
-                    StandardWatchEventKinds.ENTRY_CREATE,
-                    StandardWatchEventKinds.ENTRY_MODIFY,
-                    StandardWatchEventKinds.ENTRY_DELETE
-            );
+                    .map(p -> {
+                        try {
+                            var attrs = Files.readAttributes(p, BasicFileAttributes.class);
+                            return p + "|" + attrs.size() + "|" + attrs.lastModifiedTime().toMillis();
+                        } catch (IOException e) {
+                            return p + "|?";
+                        }
+                    })
+                    .collect(Collectors.joining("\n"));
         } catch (IOException e) {
-            throw new RuntimeException("Failed to watch query templates directory " + dir, e);
+            // Directory missing or unreadable mid-copy: report "no change" so a
+            // transient NFS hiccup does not reload an empty tree over a good one.
+            logger.warn("Could not scan query templates directory {}: {}", rootDir, e.getMessage());
+            return "";
         }
     }
 
-    private static List<QueryTemplate> loadQueryTemplates(String directoryPath) {
+    // A template that does not parse (bad YAML, a key this build does not know,
+    // a duplicate id) is skipped with an error so the rest keep working: the
+    // templates are edited in place on the server, and one broken file must not
+    // take the API down. Only an unreadable directory fails the load.
+    static List<QueryTemplate> loadQueryTemplates(String directoryPath) throws IOException {
         List<QueryTemplate> templates = new ArrayList<>();
         Set<String> ids = new HashSet<>();
-        try {
-            Yaml yaml = new Yaml();
-            Path rootDir = Path.of(directoryPath).toAbsolutePath().normalize();
+        Yaml yaml = new Yaml();
+        Path rootDir = Path.of(directoryPath).toAbsolutePath().normalize();
 
-            try (var stream = Files.walk(rootDir)) {
-                List<Path> templateFiles = stream
-                        .filter(Files::isRegularFile)
-                        .filter(path -> path.getFileName().toString().endsWith(".yaml"))
-                        .filter(path -> !path.getFileName().toString().startsWith("_"))
-                        .sorted(Comparator.comparing(path -> rootDir.relativize(path).toString()))
-                        .toList();
+        List<Path> templateFiles;
+        try (var stream = Files.walk(rootDir)) {
+            templateFiles = stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".yaml"))
+                    .filter(path -> !path.getFileName().toString().startsWith("_"))
+                    .sorted(Comparator.comparing(path -> rootDir.relativize(path).toString()))
+                    .toList();
+        }
 
-                for (Path file : templateFiles) {
-                    String templateId = file.getFileName().toString().replace(".yaml", "");
-                    if (!ids.add(templateId)) {
-                        throw new IllegalStateException("Duplicate query template id '" + templateId + "' found at " + rootDir.relativize(file));
-                    }
-
-                    System.out.println("Loading query template from " + rootDir.relativize(file));
-
-                    try (InputStream input = Files.newInputStream(file)) {
-                        QueryTemplate qt = yaml.loadAs(input, QueryTemplate.class);
-                        qt.id = templateId;
-                        normaliseOntologyDatasourceNames(qt);
-                        templates.add(qt);
-                    }
-                }
+        for (Path file : templateFiles) {
+            String templateId = file.getFileName().toString().replace(".yaml", "");
+            Path relative = rootDir.relativize(file);
+            if (!ids.add(templateId)) {
+                logger.error("Skipping query template {}: duplicate id '{}'", relative, templateId);
+                continue;
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load query templates", e);
+            try (InputStream input = Files.newInputStream(file)) {
+                QueryTemplate qt = yaml.loadAs(input, QueryTemplate.class);
+                qt.id = templateId;
+                normaliseOntologyDatasourceNames(qt);
+                templates.add(qt);
+                logger.debug("Loaded query template {}", relative);
+            } catch (Exception e) {
+                ids.remove(templateId);
+                logger.error("Skipping query template {}: {}", relative, e.getMessage());
+            }
         }
         return Collections.unmodifiableList(templates);
     }
