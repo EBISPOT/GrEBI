@@ -10,7 +10,7 @@
 use regex::Regex;
 use serde_json::{Map, Value};
 use std::collections::HashSet;
-use std::io::{self, BufWriter, Read, Write};
+use std::io::{self, BufRead, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
@@ -348,28 +348,56 @@ fn load_document(path: &Path) -> Result<Map<String, Value>, String> {
     }
 }
 
-/// The documents on stdin: one pretty-printed PageTab document, or JSONL with
-/// one document per line. Unlike a file found by a tree walk, every line of the
-/// snapshot we publish ourselves must parse.
-fn stdin_documents(text: &str) -> Result<Vec<(String, Map<String, Value>)>, String> {
-    if let Ok(Value::Object(o)) = serde_json::from_str::<Value>(text) {
-        return Ok(vec![("stdin".to_string(), o)]);
-    }
-    let mut documents = Vec::new();
-    for (index, line) in text.lines().enumerate() {
-        if line.trim().is_empty() {
-            continue;
+/// The documents on stdin, delivered one at a time: JSONL with one document
+/// per line (the published snapshot, ~100k studies — never held in memory at
+/// once), or a single pretty-printed PageTab document. Unlike a file found by
+/// a tree walk, every line of the snapshot we publish ourselves must parse.
+fn stdin_documents<R: BufRead>(input: R, mut emit: impl FnMut(&str, &Map<String, Value>)) -> Result<usize, String> {
+    let mut lines = input.lines().enumerate();
+    // The first non-empty line decides: a complete object means JSONL.
+    let (first_index, first) = loop {
+        match lines.next() {
+            Some((index, line)) => {
+                let line = line.map_err(|e| e.to_string())?;
+                if !line.trim().is_empty() {
+                    break (index, line);
+                }
+            }
+            None => return Err("stdin: expected a JSON object or JSONL".to_string()),
         }
-        match serde_json::from_str::<Value>(line) {
-            Ok(Value::Object(o)) => documents.push((format!("stdin line {}", index + 1), o)),
-            Ok(_) => return Err(format!("stdin line {}: expected a JSON object", index + 1)),
-            Err(e) => return Err(format!("stdin line {}: {}", index + 1, e)),
+    };
+    let mut count = 0;
+    match serde_json::from_str::<Value>(&first) {
+        Ok(Value::Object(o)) => {
+            emit(&format!("stdin line {}", first_index + 1), &o);
+            count += 1;
+            for (index, line) in lines {
+                let line = line.map_err(|e| e.to_string())?;
+                if line.trim().is_empty() {
+                    continue;
+                }
+                match serde_json::from_str::<Value>(&line) {
+                    Ok(Value::Object(o)) => { emit(&format!("stdin line {}", index + 1), &o); count += 1; }
+                    Ok(_) => return Err(format!("stdin line {}: expected a JSON object", index + 1)),
+                    Err(e) => return Err(format!("stdin line {}: {}", index + 1, e)),
+                }
+            }
+        }
+        _ => {
+            // A single document spread over several lines: read the rest.
+            let mut text = first;
+            for (_, line) in lines {
+                text.push('\n');
+                text.push_str(&line.map_err(|e| e.to_string())?);
+            }
+            match serde_json::from_str::<Value>(&text) {
+                Ok(Value::Object(o)) => { emit("stdin", &o); count += 1; }
+                Ok(_) => return Err("stdin: expected a JSON object".to_string()),
+                Err(e) => return Err(format!("stdin: {}", e)),
+            }
         }
     }
-    if documents.is_empty() {
-        return Err("stdin: expected a JSON object or JSONL".to_string());
-    }
-    Ok(documents)
+    Ok(count)
 }
 
 fn main() {
@@ -393,13 +421,10 @@ fn main() {
         }
     };
     if paths.is_empty() {
-        let mut text = String::new();
-        io::stdin().read_to_string(&mut text).unwrap();
-        match stdin_documents(&text) {
-            Ok(documents) => for (source, document) in documents.iter() {
-                emit(source, document, &mut out);
-            },
-            Err(e) => { eprintln!("{}", e); std::process::exit(1); }
+        let stdin = io::stdin();
+        if let Err(e) = stdin_documents(stdin.lock(), |source, document| emit(source, document, &mut out)) {
+            eprintln!("{}", e);
+            std::process::exit(1);
         }
     }
     for path in paths {
@@ -437,26 +462,41 @@ mod tests {
         assert_eq!(doi_identifier("DOI:https://doi.org/10.1000/αβγ"), Some("doi:10.1000/αβγ".to_string()));
     }
 
-    #[test]
-    fn stdin_is_one_document_or_one_per_line() {
-        let single = stdin_documents("{\n  \"accno\": \"S-BSST1\"\n}\n").unwrap();
-        assert_eq!(single.len(), 1);
-        assert_eq!(single[0].1["accno"], "S-BSST1");
-
-        let lines = stdin_documents("{\"accno\":\"S-BSST1\"}\n\n{\"accno\":\"E-MTAB-1\"}\n").unwrap();
-        assert_eq!(lines.iter().map(|(_, d)| d["accno"].as_str().unwrap()).collect::<Vec<_>>(), ["S-BSST1", "E-MTAB-1"]);
-        assert_eq!(lines[1].0, "stdin line 3");
-
-        assert!(stdin_documents("{\"accno\":\"S-BSST1\"}\n[1]\n").unwrap_err().starts_with("stdin line 2"));
-        assert!(stdin_documents("{\"accno\":\"S-BSST1\"}\n{oops\n").unwrap_err().starts_with("stdin line 2"));
-        assert!(stdin_documents("\n").is_err());
-    }
-
     fn scratch_dir(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("grebi_ingest_biostudies_{}_{}", name, std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    fn collect_stdin(text: &str) -> Result<Vec<(String, String)>, String> {
+        let mut out = Vec::new();
+        stdin_documents(text.as_bytes(), |source, doc| out.push((source.to_string(), doc["accno"].as_str().unwrap().to_string())))?;
+        Ok(out)
+    }
+
+    #[test]
+    fn stdin_is_one_document_or_one_per_line() {
+        let single = collect_stdin("{\n  \"accno\": \"S-BSST1\"\n}\n").unwrap();
+        assert_eq!(single, vec![("stdin".to_string(), "S-BSST1".to_string())]);
+
+        let lines = collect_stdin("\n{\"accno\":\"S-BSST1\"}\n\n{\"accno\":\"E-MTAB-1\"}\n").unwrap();
+        assert_eq!(lines.iter().map(|(_, a)| a.as_str()).collect::<Vec<_>>(), ["S-BSST1", "E-MTAB-1"]);
+        assert_eq!(lines[1].0, "stdin line 4");
+
+        assert!(collect_stdin("{\"accno\":\"S-BSST1\"}\n[1]\n").unwrap_err().starts_with("stdin line 2"));
+        assert!(collect_stdin("{\"accno\":\"S-BSST1\"}\n{oops\n").unwrap_err().starts_with("stdin line 2"));
+        assert!(collect_stdin("\n").is_err());
+        assert!(collect_stdin("[1, 2]\n").is_err());
+    }
+
+    /// Documents are handed over as they are read, not collected first.
+    #[test]
+    fn jsonl_is_streamed() {
+        let text = "{\"accno\":\"S-BSST1\"}\n{\"accno\":\"S-BSST2\"}\n".repeat(1000);
+        let mut seen = 0;
+        stdin_documents(text.as_bytes(), |_, _| seen += 1).unwrap();
+        assert_eq!(seen, 2000);
     }
 
     #[test]
