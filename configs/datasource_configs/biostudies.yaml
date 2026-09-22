@@ -2,14 +2,15 @@ id: BioStudies
 enabled: true
 description: "EMBL-EBI BioStudies study and collection metadata, excluding Europe PMC and linked submission files"
 download:
-  # This is the NFS mount of the public BioStudies FTP tree. Linking the tree
-  # avoids copying submission payloads into GrEBI's download area.
-  - dest: biostudies/fire
+  # A snapshot of every non-Europe-PMC study's PageTab JSON, one per line, made
+  # with dataload/00_download/biostudies_snapshot.py and published on the SPOT
+  # FTP area (as MGnify is). The BioStudies FTP tree is not NFS-mounted on the
+  # HPC and has no per-study index, and fetching ~100k studies from the API on
+  # every dataload is not on, so the pipeline never talks to BioStudies itself.
+  - dest: biostudies/biostudies.jsonl.gz
     sources:
-      - /nfs/ftp/public/biostudies/fire
+      - https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/biostudies.jsonl.gz
 ingests:
-  - globs: ["biostudies/fire"]
+  - globs: ["biostudies/biostudies.jsonl.gz"]
     memory: "4 GB"
-    command: '
-      grebi_ingest_biostudies
-          -- $GREBI_INGEST_FILENAME'
+    command: 'zcat $GREBI_INGEST_FILENAME | grebi_ingest_biostudies'

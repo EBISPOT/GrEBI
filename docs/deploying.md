@@ -160,6 +160,34 @@ available; a deliberate full refresh can disable the download task cache using
 `GREBI_NF_EXTRA_ARGS='-cache false'` with `download_local.sh`. Running the dataload
 alone does not refresh the catalogue; run the download stage first.
 
+### BioStudies study metadata
+
+[`biostudies.yaml`](../configs/datasource_configs/biostudies.yaml) downloads a
+snapshot of every non-Europe-PMC BioStudies study — one PageTab JSON document
+per line, gzipped — from the SPOT FTP area at
+`https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/biostudies.jsonl.gz`, and
+`grebi_ingest_biostudies` reads it from stdin. The pipeline itself never
+contacts BioStudies: the FTP tree is not NFS-mounted on the HPC and has no
+per-study index, and fetching ~100k studies from the API on every dataload is
+not reasonable.
+
+The snapshot is made by
+[`biostudies_snapshot.py`](../dataload/00_download/biostudies_snapshot.py),
+which enumerates studies through the search API (by collection, plus the
+accession prefixes of the uncollected `S-*` families; Europe PMC is excluded)
+and fetches each study's document with bounded concurrency into a scratch
+directory, so an interrupted run resumes. To refresh the snapshot, run it on
+the HPC as a batch job and copy the result to the FTP area:
+
+```bash
+python3 dataload/00_download/biostudies_snapshot.py \
+    --scratch /path/to/scratch biostudies.jsonl.gz
+```
+
+`S-EPMC*` submissions, `Files` payloads and the linked submission files are
+not part of the snapshot. The ingest still accepts individual PageTab files or
+an FTP-tree directory, which the golden tests use.
+
 ### PRIDE project metadata
 
 [`pride.yaml`](../configs/datasource_configs/pride.yaml) downloads the live

@@ -1,9 +1,11 @@
 //! BioStudies PageTab JSON metadata as GrEBI JSONL.
 //!
 //! The input may be individual PageTab JSON files, directories containing the
-//! BioStudies FTP tree, or a single JSON document on stdin. Directory traversal
-//! only selects each submission's accession-level JSON document; it does not
-//! enter `Files` directories and excludes the Europe PMC collection.
+//! BioStudies FTP tree, or stdin: either a single JSON document or JSONL, one
+//! document per line (the published snapshot, `zcat biostudies.jsonl.gz`).
+//! Directory traversal only selects each submission's accession-level JSON
+//! document; it does not enter `Files` directories and excludes the Europe PMC
+//! collection.
 
 use regex::Regex;
 use serde_json::{Map, Value};
@@ -344,6 +346,30 @@ fn load_document(path: &Path) -> Result<Map<String, Value>, String> {
     }
 }
 
+/// The documents on stdin: one pretty-printed PageTab document, or JSONL with
+/// one document per line. Unlike a file found by a tree walk, every line of the
+/// snapshot we publish ourselves must parse.
+fn stdin_documents(text: &str) -> Result<Vec<(String, Map<String, Value>)>, String> {
+    if let Ok(Value::Object(o)) = serde_json::from_str::<Value>(text) {
+        return Ok(vec![("stdin".to_string(), o)]);
+    }
+    let mut documents = Vec::new();
+    for (index, line) in text.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        match serde_json::from_str::<Value>(line) {
+            Ok(Value::Object(o)) => documents.push((format!("stdin line {}", index + 1), o)),
+            Ok(_) => return Err(format!("stdin line {}: expected a JSON object", index + 1)),
+            Err(e) => return Err(format!("stdin line {}: {}", index + 1, e)),
+        }
+    }
+    if documents.is_empty() {
+        return Err("stdin: expected a JSON object or JSONL".to_string());
+    }
+    Ok(documents)
+}
+
 fn main() {
     let paths: Vec<PathBuf> = std::env::args().skip(1).filter(|a| a != "--").map(PathBuf::from).collect();
     let mut out = BufWriter::new(io::stdout().lock());
@@ -367,9 +393,11 @@ fn main() {
     if paths.is_empty() {
         let mut text = String::new();
         io::stdin().read_to_string(&mut text).unwrap();
-        match serde_json::from_str::<Value>(&text) {
-            Ok(Value::Object(o)) => emit("stdin", &o, &mut out),
-            _ => { eprintln!("stdin: expected a JSON object"); std::process::exit(1); }
+        match stdin_documents(&text) {
+            Ok(documents) => for (source, document) in documents.iter() {
+                emit(source, document, &mut out);
+            },
+            Err(e) => { eprintln!("{}", e); std::process::exit(1); }
         }
     }
     for path in paths {
@@ -399,6 +427,21 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stdin_is_one_document_or_one_per_line() {
+        let single = stdin_documents("{\n  \"accno\": \"S-BSST1\"\n}\n").unwrap();
+        assert_eq!(single.len(), 1);
+        assert_eq!(single[0].1["accno"], "S-BSST1");
+
+        let lines = stdin_documents("{\"accno\":\"S-BSST1\"}\n\n{\"accno\":\"E-MTAB-1\"}\n").unwrap();
+        assert_eq!(lines.iter().map(|(_, d)| d["accno"].as_str().unwrap()).collect::<Vec<_>>(), ["S-BSST1", "E-MTAB-1"]);
+        assert_eq!(lines[1].0, "stdin line 3");
+
+        assert!(stdin_documents("{\"accno\":\"S-BSST1\"}\n[1]\n").unwrap_err().starts_with("stdin line 2"));
+        assert!(stdin_documents("{\"accno\":\"S-BSST1\"}\n{oops\n").unwrap_err().starts_with("stdin line 2"));
+        assert!(stdin_documents("\n").is_err());
+    }
 
     fn scratch_dir(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("grebi_ingest_biostudies_{}_{}", name, std::process::id()));
