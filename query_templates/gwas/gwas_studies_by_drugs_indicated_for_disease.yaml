@@ -112,5 +112,3 @@ examples:
       disease_id: mondo:0008903
 # Materialised over every disease under mondo:0000001, like the association
 # version; far fewer rows than that one, so the default budget suffices.
-materialise:
-  mode: full

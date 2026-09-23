@@ -160,10 +160,21 @@ public class GrebiQueryTemplatesRepo {
     // a duplicate id) is skipped with an error so the rest keep working: the
     // templates are edited in place on the server, and one broken file must not
     // take the API down. Only an unreadable directory fails the load.
+    // `materialise:` is `false` or a settings mapping, which no single bean type
+    // can take, so it is read through QueryTemplate.setMaterialiseSetting(Object).
+    static Yaml templateYaml() {
+        var options = new org.yaml.snakeyaml.LoaderOptions();
+        var constructor = new org.yaml.snakeyaml.constructor.Constructor(QueryTemplate.class, options);
+        var td = new org.yaml.snakeyaml.TypeDescription(QueryTemplate.class);
+        td.substituteProperty("materialise", Object.class, "getMaterialiseSetting", "setMaterialiseSetting");
+        constructor.addTypeDescription(td);
+        return new Yaml(constructor);
+    }
+
     static List<QueryTemplate> loadQueryTemplates(String directoryPath) throws IOException {
         List<QueryTemplate> templates = new ArrayList<>();
         Set<String> ids = new HashSet<>();
-        Yaml yaml = new Yaml();
+        Yaml yaml = templateYaml();
         Path rootDir = Path.of(directoryPath).toAbsolutePath().normalize();
 
         List<Path> templateFiles;
@@ -186,6 +197,7 @@ public class GrebiQueryTemplatesRepo {
             try (InputStream input = Files.newInputStream(file)) {
                 QueryTemplate qt = yaml.loadAs(input, QueryTemplate.class);
                 qt.id = templateId;
+                qt.materialised = qt.isMaterialised();
                 normaliseOntologyDatasourceNames(qt);
                 templates.add(qt);
                 logger.debug("Loaded query template {}", relative);

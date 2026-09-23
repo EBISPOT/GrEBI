@@ -20,7 +20,7 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 ///                     "<col>_name" TEXT  (display name; facet/sort target)
 ///   DatasourceList -> "<col>" TEXT[]
 ///   float          -> "<col>" double precision
-///   int            -> "<col>" bigint     (the counts_only _count histogram)
+///   int            -> "<col>" bigint
 ///   anything else  -> "<col>" TEXT       (string / EdgeId)
 ///
 /// plus row_number INT and payload BYTEA — the row's exact linked JSON, served

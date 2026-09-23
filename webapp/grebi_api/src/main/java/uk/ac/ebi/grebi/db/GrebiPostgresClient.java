@@ -1824,37 +1824,6 @@ public class GrebiPostgresClient {
         }
     }
 
-    /**
-     * Count-only serving: for a counts_only template the stored rows are a compact
-     * per-base-node histogram carrying `_count`; the total for a queried value is
-     * the sum of `_count` over the base nodes in its closure. Exact, because the
-     * materialised rows are DISTINCT and partitioned by base node.
-     */
-    public long sumMaterialisedParameterisedCounts(
-            String graph, MaterialisedBuild build, List<ClosureParam> params) {
-        if (!graph.matches("[a-zA-Z0-9_]+")) {
-            throw new IllegalArgumentException("Invalid graph name");
-        }
-        String tbl = "\"" + requireIdent(build.table) + "\"";
-        try (Connection conn = getConnection()) {
-            MatqWhere w = buildClosureWhere(conn, graph, build, params, null, null);
-            if (w.impossible) {
-                return 0;
-            }
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT COALESCE(SUM(\"_count\"), 0) FROM " + tbl + " WHERE " + w.sql())) {
-                bind(ps, w.binds());
-                try (ResultSet rs = ps.executeQuery()) {
-                    rs.next();
-                    return rs.getLong(1);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Materialised counts sum failed", e);
-            throw new RuntimeException(e);
-        }
-    }
-
     /** Strip the graph:-prefix Neo4j adds to nodeIds so materialised node columns
      *  match the live (resolve=false) shape. */
     @SuppressWarnings("unchecked")

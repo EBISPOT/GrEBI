@@ -35,3 +35,4 @@ examples:
   - title: psoriasis
     params:
       trait_id: mondo:0005083
+materialise: false

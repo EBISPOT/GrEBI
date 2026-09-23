@@ -95,8 +95,6 @@ result_columns:
     optional: true
   - column_id: edge_id
     column_type: EdgeId
-materialise:
-  mode: full
 examples:
   - title: lung
     params:

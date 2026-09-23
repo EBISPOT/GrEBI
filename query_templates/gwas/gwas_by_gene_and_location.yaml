@@ -103,5 +103,3 @@ examples:
     params:
       gene_id: hgnc:8923
       location_id: uberon:0000966
-materialise:
-  mode: full

@@ -27,8 +27,6 @@ result_columns:
     column_type: GraphNodeId
   - column_id: p_value
     column_type: float
-materialise:
-  mode: full
 examples:
   - title: psoriasis
     params:

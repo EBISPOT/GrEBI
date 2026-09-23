@@ -19,7 +19,7 @@ public class MaterialisedBuild {
 
     public String id;
     public String subgraph;
-    public String mode;    // full | counts_only
+    public String mode;    // "full" (a since-removed counts_only mode stored a histogram)
     public String table;   // matq_{sg}_{query}; computed once at materialise time
     public List<Column> columns;
     public List<Param> params;
@@ -60,11 +60,12 @@ public class MaterialisedBuild {
         if (!b.table.matches("[A-Za-z0-9_]+")) {
             return null;
         }
+        // A counts_only build (from before that mode was removed) stores a count
+        // histogram, not rows; serve such a template live instead.
+        if ("counts_only".equalsIgnoreCase(b.mode)) {
+            return null;
+        }
         return b;
-    }
-
-    public boolean isCountsOnly() {
-        return "counts_only".equalsIgnoreCase(mode == null ? "" : mode);
     }
 
     public boolean usesNodeIdClosure() {

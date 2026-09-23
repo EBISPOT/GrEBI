@@ -421,7 +421,7 @@ public class GrebiApi {
                     limits.validateText(searchText, "q");
 
                     // decided before the response writer is opened, so the error can still be written
-                    if ((build == null || build.isCountsOnly()) && cypher == null) {
+                    if (build == null && cypher == null) {
                         throw new IllegalStateException("Cypher service unavailable; cannot serve CSV for " + templateId);
                     }
 
@@ -434,7 +434,7 @@ public class GrebiApi {
                             httpRes.setStatus(200);
                             var writer = httpRes.getWriter();
 
-                            if (build != null && !build.isCountsOnly()) {
+                            if (build != null) {
                                 return java.util.concurrent.CompletableFuture.runAsync(() ->
                                         postgres.streamMaterialisedParameterisedCsv(graph, template, build, params, searchText, args.filters, sort, writer));
                             }
@@ -1042,8 +1042,7 @@ public class GrebiApi {
 
     /**
      * Serve a query template: from the Postgres closure path when a materialisation
-     * has been built for this graph, otherwise live via Cypher. counts_only
-     * templates serve data live but take their (flat) total from Postgres.
+     * has been built for this graph, otherwise live via Cypher.
      * `filters` (result column -> selected values) narrow the full materialised
      * path only; the other paths have no stored columns to filter on.
      */
@@ -1057,15 +1056,7 @@ public class GrebiApi {
                 ? findMaterialisedBuild(metadata, graph, "materialised_templates", template.id)
                 : null;
         if (build != null) {
-            if (build.isCountsOnly()) {
-                if (cypher == null) {
-                    throw new IllegalStateException("Cypher service unavailable for counts_only template " + template.id);
-                }
-                // Data is served live (no free-text narrow) and the flat total from Postgres.
-                long total = postgres.materialisedParameterisedCount(graph, template, build, params);
-                return cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page, total);
-            }
-            // Full materialised: closure filter + optional free-text + facet selections, with facets, from Postgres.
+            // Materialised: closure filter + optional free-text + facet selections, with facets, from Postgres.
             return postgres.runMaterialisedParameterisedPaginated(graph, template, build, params, searchText, filters, resolve, page);
         }
 

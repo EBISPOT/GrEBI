@@ -34,3 +34,4 @@ examples:
   - title: chronic obstructive pulmonary disease
     params:
       disease_id: "mondo:0005002"
+materialise: false

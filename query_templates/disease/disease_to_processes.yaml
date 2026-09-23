@@ -46,5 +46,3 @@ examples:
   - title: Huntington disease
     params:
       disease_id: mondo:0007739
-materialise:
-  mode: full

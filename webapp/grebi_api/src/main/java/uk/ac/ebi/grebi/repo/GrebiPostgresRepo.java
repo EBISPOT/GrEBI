@@ -372,20 +372,6 @@ public class GrebiPostgresRepo {
     }
 
     /**
-     * Exact serving-count for a counts_only materialised template: the summed
-     * per-base `_count` histogram over the closure (data is served live).
-     */
-    public long materialisedParameterisedCount(
-            String graph, QueryTemplate template, uk.ac.ebi.grebi.db.MaterialisedBuild build,
-            Map<String, List<String>> params) {
-        // Only the counts_only serving path needs a standalone count — full mode
-        // takes its total from the data page. The total is the summed per-base
-        // histogram over the closure.
-        return pgClient.sumMaterialisedParameterisedCounts(
-                graph, build, buildClosureParams(template, build, params));
-    }
-
-    /**
      * Stream a full-materialise parameterised template as CSV from Postgres,
      * paging through the closure-filtered rows. Same CSV shape as the live path.
      */

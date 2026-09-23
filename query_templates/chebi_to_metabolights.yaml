@@ -43,5 +43,3 @@ examples:
   - title: ATP
     params:
       chemical_id: chebi:15422
-materialise:
-  mode: full

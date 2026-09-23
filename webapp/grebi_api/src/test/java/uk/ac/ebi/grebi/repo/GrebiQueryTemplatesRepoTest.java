@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -168,5 +169,64 @@ class GrebiQueryTemplatesRepoTest {
     void fingerprintIsStableWhenNothingChanged(@TempDir Path dir) throws IOException {
         write(dir, "a.yaml", GOOD);
         assertEquals(GrebiQueryTemplatesRepo.fingerprint(dir), GrebiQueryTemplatesRepo.fingerprint(dir));
+    }
+
+    // ------------------------------------------------------------------
+    // materialise: materialised by default; `false` is the only opt-out.
+    // ------------------------------------------------------------------
+
+    private static final String PARAMETERISED = "title: T\nparams:\n  - param_id: x_id\n    param_type: SourceId\nresult_columns: []\n";
+
+    private static QueryTemplate loadOne(Path dir, String yaml) throws IOException {
+        write(dir, "t.yaml", yaml);
+        var loaded = GrebiQueryTemplatesRepo.loadQueryTemplates(dir.toString());
+        return loaded.isEmpty() ? null : loaded.get(0);
+    }
+
+    @Test
+    void aTemplateIsMaterialisedByDefault(@TempDir Path dir) throws IOException {
+        var t = loadOne(dir, PARAMETERISED);
+        assertTrue(t.materialised);
+        assertTrue(t.isParameterisedMaterialised());
+        assertNull(t.materialise);
+    }
+
+    @Test
+    void materialiseFalseOptsOut(@TempDir Path dir) throws IOException {
+        var t = loadOne(dir, PARAMETERISED + "materialise: false\n");
+        assertFalse(t.materialised);
+        assertFalse(t.isParameterisedMaterialised());
+        assertFalse(t.isStandaloneMaterialised());
+    }
+
+    @Test
+    void aSettingsBlockKeepsItMaterialised(@TempDir Path dir) throws IOException {
+        var t = loadOne(dir, PARAMETERISED + "materialise:\n  budget_rows: 20000000\n  allow_empty: true\n");
+        assertTrue(t.materialised);
+        assertEquals(20_000_000, t.materialise.budget_rows);
+        assertTrue(t.materialise.allow_empty);
+    }
+
+    @Test
+    void aStandaloneCypherBodyIsMaterialised(@TempDir Path dir) throws IOException {
+        var t = loadOne(dir, "title: T\nresult_columns: []\nmaterialise:\n  cypher: RETURN 1 AS a\n");
+        assertTrue(t.materialised);
+        assertTrue(t.isStandaloneMaterialised());
+    }
+
+    @Test
+    void noParamsAndNoCypherIsNotMaterialised(@TempDir Path dir) throws IOException {
+        var t = loadOne(dir, "title: T\nresult_columns: []\n");
+        assertFalse(t.materialised);
+        assertFalse(t.isStandaloneMaterialised());
+    }
+
+    @Test
+    void theRemovedModeSettingAndUnknownSettingsAreRejected(@TempDir Path dir) throws IOException {
+        // Rejected templates are skipped (and logged), not loaded half-understood.
+        assertNull(loadOne(dir, PARAMETERISED + "materialise:\n  mode: full\n"));
+        assertNull(loadOne(dir, PARAMETERISED + "materialise:\n  mode: counts_only\n"));
+        assertNull(loadOne(dir, PARAMETERISED + "materialise:\n  nonsense: 1\n"));
+        assertNull(loadOne(dir, PARAMETERISED + "materialise: true\n"));
     }
 }

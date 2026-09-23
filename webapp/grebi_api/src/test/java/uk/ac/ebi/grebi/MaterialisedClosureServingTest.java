@@ -33,11 +33,9 @@ class MaterialisedClosureServingTest {
 
     static final String GRAPH = "itclosure";
     static final String Q1_TABLE = "matq_" + GRAPH + "_q1";
-    static final String Q2_TABLE = "matq_" + GRAPH + "_q2";
     static final String Q3_TABLE = "matq_" + GRAPH + "_q3";
     static GrebiPostgresClient pg;
     static MaterialisedBuild q1;   // older build: curie arrays, && overlap
-    static MaterialisedBuild q2;   // counts_only histogram (curie arrays)
     static MaterialisedBuild q3;   // current build: node ids, closure_key=nid
 
     static boolean enabled() {
@@ -60,10 +58,6 @@ class MaterialisedClosureServingTest {
                 + "{\"column_id\":\"score\",\"column_type\":\"float\"},"
                 + "{\"column_id\":\"ds\",\"column_type\":\"DatasourceList\",\"facet\":true}],"
                 + "\"params\":[{\"param_id\":\"cell_id\",\"filters_column\":\"cell\",\"closure\":\"descendants\",\"param_type\":\"SourceId\"}]}");
-        q2 = buildFromJson("{\"id\":\"q2\",\"table\":\"" + Q2_TABLE + "\",\"mode\":\"counts_only\",\"columns\":["
-                + "{\"column_id\":\"cell\",\"column_type\":\"GraphNodeId\"},"
-                + "{\"column_id\":\"_count\",\"column_type\":\"int\"}],"
-                + "\"params\":[{\"param_id\":\"cell_id\",\"filters_column\":\"cell\",\"closure\":\"descendants\",\"param_type\":\"SourceId\"}]}");
         q3 = buildFromJson("{\"id\":\"q3\",\"table\":\"" + Q3_TABLE + "\",\"mode\":\"full\",\"closure_key\":\"nid\",\"columns\":["
                 + "{\"column_id\":\"cell\",\"column_type\":\"GraphNodeId\",\"facet\":true},"
                 + "{\"column_id\":\"trait\",\"column_type\":\"string\",\"facet\":true}],"
@@ -73,7 +67,6 @@ class MaterialisedClosureServingTest {
             st.execute("DROP TABLE IF EXISTS \"nodes_" + GRAPH + "\"");
             st.execute("DROP TABLE IF EXISTS \"edges_" + GRAPH + "\"");
             st.execute("DROP TABLE IF EXISTS \"" + Q1_TABLE + "\"");
-            st.execute("DROP TABLE IF EXISTS \"" + Q2_TABLE + "\"");
             st.execute("DROP TABLE IF EXISTS \"" + Q3_TABLE + "\"");
             st.execute("CREATE TABLE \"nodes_" + GRAPH + "\" (\"grebi:nodeId\" TEXT, \"grebi:sourceIds\" TEXT[])");
             st.execute("CREATE TABLE \"edges_" + GRAPH + "\" (\"grebi:type\" TEXT, \"grebi:fromNodeId\" TEXT, \"grebi:toNodeId\" TEXT)");
@@ -82,9 +75,6 @@ class MaterialisedClosureServingTest {
                     + " cell_id TEXT[] NOT NULL DEFAULT '{}', cell_name TEXT,"
                     + " trait TEXT, score double precision, ds TEXT[] NOT NULL DEFAULT '{}',"
                     + " payload BYTEA NOT NULL)");
-            st.execute("CREATE TABLE \"" + Q2_TABLE + "\" (row_number INT NOT NULL,"
-                    + " cell_id TEXT[] NOT NULL DEFAULT '{}', cell_name TEXT,"
-                    + " \"_count\" bigint, payload BYTEA NOT NULL)");
 
             // A <- B <- C <- D hierarchy (nodeId distinct from curie) + isolated X
             st.execute("INSERT INTO \"nodes_" + GRAPH + "\" VALUES " +
@@ -102,11 +92,6 @@ class MaterialisedClosureServingTest {
             insertQ1Row(st, 3, "C", "ex:C", "grp_C", "charlie", "NULL", "ARRAY['Y']");
             insertQ1Row(st, 4, "D", "ex:D", "grp_D", "delta", "2.0", "ARRAY['X']");
             insertQ1Row(st, 5, "X", "ex:X", "grp_X", "xray", "9.0", "ARRAY['Z']");
-            st.execute("INSERT INTO \"" + Q2_TABLE + "\" VALUES " +
-                    "(1, ARRAY['ex:A'], 'A', 10, convert_to('{}','UTF8'))," +
-                    "(2, ARRAY['ex:B'], 'B', 20, convert_to('{}','UTF8'))," +
-                    "(3, ARRAY['ex:C'], 'C', 30, convert_to('{}','UTF8'))," +
-                    "(4, ARRAY['ex:D'], 'D', 40, convert_to('{}','UTF8'))");
 
             // Current writer layout: the base node's bare id in cell_nid (no
             // curie array), matched by node id against the closure.
@@ -211,17 +196,6 @@ class MaterialisedClosureServingTest {
         var cell = (Map<String, Object>) res.results.get(0).get("cell");
         // graph: prefix stripped from the stored (payload) nodeId
         assertEquals("grp_A", cell.get("grebi:nodeId"));
-    }
-
-    @Test
-    void countsOnlySumsOverClosure() {
-        assumeTrue(enabled());
-        assertEquals(100, pg.sumMaterialisedParameterisedCounts(GRAPH, q2,
-                List.of(new ClosureParam("cell", "descendants", "ex:A"))));
-        assertEquals(90, pg.sumMaterialisedParameterisedCounts(GRAPH, q2,
-                List.of(new ClosureParam("cell", "descendants", "ex:B"))));
-        assertEquals(30, pg.sumMaterialisedParameterisedCounts(GRAPH, q2,
-                List.of(new ClosureParam("cell", "exact", "ex:C"))));
     }
 
     @Test

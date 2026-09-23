@@ -18,11 +18,43 @@ public class QueryTemplate {
     public List<ResultColumn> result_columns;
     public List<Example> examples;
 
-    // Optional materialisation capability. When present, this template is
-    // precomputed into Postgres at dataload and (for parameterised templates)
-    // served from Postgres with closure-at-query-time instead of live Cypher.
-    // See docs/materialise-query-templates.md.
+    // Materialisation settings. Every template is precomputed into Postgres at
+    // dataload (and, if parameterised, served from Postgres with the closure
+    // applied at query time) unless its YAML says `materialise: false`. The
+    // optional `materialise:` block carries settings only; it is null here when
+    // absent or false. See docs/materialise-query-templates.md.
     public Materialise materialise;
+
+    // Whether this template is materialised — false when it opts out, or has
+    // nothing to materialise (no params and no materialise.cypher). Derived by
+    // the loader; serialised for the UI.
+    public boolean materialised;
+
+    private transient boolean materialiseOptOut;
+
+    /**
+     * SnakeYAML entry point for `materialise:` (see GrebiQueryTemplatesRepo): the
+     * value is `false` (opt out), null/absent, or a settings mapping.
+     */
+    public void setMaterialiseSetting(Object value) {
+        if (value == null) {
+            materialise = null;
+            materialiseOptOut = false;
+        } else if (Boolean.FALSE.equals(value)) {
+            materialise = null;
+            materialiseOptOut = true;
+        } else if (value instanceof Map<?, ?> map) {
+            materialise = Materialise.fromMap(map);
+            materialiseOptOut = false;
+        } else {
+            throw new IllegalArgumentException(
+                    "materialise must be false or a settings mapping, not " + value);
+        }
+    }
+
+    public Object getMaterialiseSetting() {
+        return materialiseOptOut ? Boolean.FALSE : materialise;
+    }
 
     public static class Parameter {
         public String param_id;
@@ -60,15 +92,11 @@ public class QueryTemplate {
         // materialise query is derived from the fragments at dataload.
         public String cypher;
 
-        // full     -> store every result row; serve data + count from Postgres.
-        // counts_only -> store a compact per-base-node row count histogram; serve
-        //                the count from Postgres (summed over the closure) while
-        //                data rows are still served live via Cypher.
-        // Default: full.
-        public String mode;
-
         // Optional per-template override of the build-size row budget.
         public Integer budget_rows;
+
+        // A template that legitimately materialises no rows for a graph.
+        public Boolean allow_empty;
 
         // Restrict which subgraphs this (standalone) query runs for.
         public List<String> run_for_subgraphs;
@@ -76,26 +104,47 @@ public class QueryTemplate {
         // Display-only list of datasources this query draws on.
         public List<String> uses_datasources;
 
-        public String getMode() {
-            return (mode == null || mode.isBlank()) ? "full" : mode;
-        }
+        private static final java.util.Set<String> KEYS = java.util.Set.of(
+                "cypher", "budget_rows", "allow_empty", "run_for_subgraphs", "uses_datasources");
 
-        public boolean isCountsOnly() {
-            return "counts_only".equalsIgnoreCase(getMode());
+        @SuppressWarnings("unchecked")
+        static Materialise fromMap(Map<?, ?> map) {
+            for (Object key : map.keySet()) {
+                if ("mode".equals(key)) {
+                    throw new IllegalArgumentException("materialise.mode is no longer supported: "
+                            + "every template is materialised in full unless it sets materialise: false");
+                }
+                if (!KEYS.contains(key)) {
+                    throw new IllegalArgumentException("Unknown materialise setting: " + key);
+                }
+            }
+            var m = new Materialise();
+            m.cypher = (String) map.get("cypher");
+            m.budget_rows = map.get("budget_rows") == null ? null : ((Number) map.get("budget_rows")).intValue();
+            m.allow_empty = (Boolean) map.get("allow_empty");
+            m.run_for_subgraphs = (List<String>) map.get("run_for_subgraphs");
+            m.uses_datasources = (List<String>) map.get("uses_datasources");
+            return m;
         }
     }
 
+    private boolean hasParams() {
+        return params != null && !params.isEmpty();
+    }
+
+    /** Materialised unless opted out; needs params, or a standalone cypher body. */
     public boolean isMaterialised() {
-        return materialise != null;
+        return !materialiseOptOut
+                && (hasParams() || (materialise != null && materialise.cypher != null));
     }
 
-    /** Standalone materialised query (kind 2): a body with no parameters. */
+    /** Standalone materialised query: a cypher body with no parameters. */
     public boolean isStandaloneMaterialised() {
-        return materialise != null && (params == null || params.isEmpty());
+        return isMaterialised() && !hasParams();
     }
 
-    /** Materialised parameterised template (kind 3): derived from fragments. */
+    /** Materialised parameterised template: derived from fragments. */
     public boolean isParameterisedMaterialised() {
-        return materialise != null && params != null && !params.isEmpty();
+        return isMaterialised() && hasParams();
     }
 }

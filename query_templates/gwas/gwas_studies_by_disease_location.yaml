@@ -72,8 +72,6 @@ result_columns:
     column_type: string
   - column_id: genotyping_technology
     column_type: string
-materialise:
-  mode: full
 examples:
   - title: lung
     params:

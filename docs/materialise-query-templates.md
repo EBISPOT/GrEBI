@@ -351,8 +351,8 @@ UI:
 
 ## Implementation status
 
-Both stages are implemented. `materialised_queries/` is gone; a template opts into
-precomputation with a top-level `materialise:` block.
+Both stages are implemented. `materialised_queries/` is gone; every template is
+precomputed unless it opts out with `materialise: false`.
 
 ### Final YAML schema
 
@@ -363,7 +363,7 @@ description: ...
 graphs: [ebi_monarch_xspecies]     # (parameterised only; standalone uses run_for_subgraphs)
 topics: [...]
 
-# --- live parameterised (unchanged): fragments + params, served via Cypher ---
+# --- parameterised: fragments + params (materialised unless materialise: false) ---
 question: ...
 cypher_match_fragment: |- ...
 cypher_return_fragment: |- ...
@@ -379,7 +379,7 @@ materialise:
   run_for_subgraphs: [impc_x_gwas]  # optional; absent => every subgraph
   uses_datasources: [IMPC, GWAS]    # display only
 
-# --- materialised parameterised (kind 3): its own body doubles as the materialise query ---
+# --- parameterised: its own body doubles as the materialise query ---
 params:
   - param_id: cell_type_id
     param_name: Cell Type
@@ -387,10 +387,18 @@ params:
     values_under: 'cl:0000000'      # value space: this node or a broad_match descendant
   # values_with_type: 'hgnc:Gene'   # ...or: any node carrying this type label
   # (neither)                       # ...or: unconstrained
-materialise:
-  mode: full                # full (store rows) | counts_only (store per-base-node counts)
-  budget_rows: 15000000     # optional per-template row budget override
+materialise:                # optional settings block; absent = materialised with defaults
+  budget_rows: 15000000     # per-template row budget override
+  allow_empty: true         # a template that may legitimately build no rows
+
+# --- opting out: served live via Cypher, never precomputed ---
+materialise: false
 ```
+
+Every template is materialised unless it says `materialise: false`; there is no
+other mode (the old `mode:` key, including `counts_only`, is rejected). A
+template with no params and no `materialise.cypher` has nothing to materialise
+and must say `materialise: false`.
 
 Each SourceId parameter declares **only its value space** (`values_under` /
 `values_with_type` / neither). Everything else is derived
@@ -422,7 +430,7 @@ derived query is validated (no unbound `$params`; the derived filter column is a
 real result column) before it runs. A build-size budget gates parameterised
 templates (fail unless `GREBI_MATERIALISE_BUDGET_OVERRIDE=true`); standalone
 queries are budgeted only if they set `materialise.budget_rows`. Opt a template
-out entirely with `materialise: false`.
+out entirely with `materialise: false` — then it is served live via Cypher.
 
 ### Storage (typed per-query tables)
 
@@ -460,8 +468,7 @@ closure exactly when its clique ids overlap the closure's curies, so this is
 equivalent to the curie-array overlap older builds used (`closure_key` absent in
 their metadata; still served that way) without the ~360k-curie expansion an
 ontology root needed. Counts are `count(*)` over the filtered rows (flat, cheap).
-`counts_only` stores a per-base `_count` histogram and sums it over the closure
-(data served live). `GrebiApi.serveQueryTemplate` routes `/query/{id}` and `.csv`
+`GrebiApi.serveQueryTemplate` routes `/query/{id}` and `.csv`
 to Postgres when a build exists in `graph_metadata.materialised_templates`, else
 falls back to live Cypher.
 
@@ -480,28 +487,21 @@ two things the live Cypher path can't do cheaply over a streamed result:
   (`convert_from(payload,'UTF8') ILIKE %q%`), and is reflected in the facets,
   counts, paging and CSV.
 
-Both are served only from the full-materialise Postgres path; live and `counts_only`
-templates ignore `q` and return no facets. The `/queries` UI shows the facet
+Both are served only from the materialised Postgres path; live templates ignore
+`q` and return no facets. The `/queries` UI shows the facet
 breakdown and the filter box only for materialised templates.
 
 ### What is materialised
 
+Everything, by default. The API reports it per template as `materialised` (the
+UI shows the free-text filter on those); a template's rows come from Postgres
+once a dataload has built its table, and from live Cypher until then.
+
 - **Standalone** (`materialise.cypher`, browsable `/tables`): `hello_world_tester`,
   `impc_x_gwas`.
-- **Parameterised, full** (served from Postgres): the four rewritten roll-ups
-  (`gwas_by_cell_type`, `gwas_by_location`, `gwas_by_disease_location`,
-  `gwas_by_gene_and_cell_type`), `gwas_by_gene_and_disease`,
-  `gwas_by_gene_and_location`, `gwas_traits_reported_different_from_matched`,
-  `chebi_to_metabolights`, `phenotype_to_diseases`, and the five disease templates
-  (`disease_to_{processes,exposures,treatments,locations,phenotypes}`).
-- **Kept live** (documented, `materialise` absent): `disease_to_genes`,
-  `gene_to_diseases` (the two ~125 M-edge tables — Q4 above, flip to `counts_only`
-  or `full` once the codon size lands), `gwas_by_pathway` and
-  `gwas_by_drugs_indicated_for_disease` (the base node isn't carried to the result
-  and threading it through their `reactome:hasEvent*` / `CALL {}` subqueries needs a
-  larger rewrite than the mechanical one), `gwas_trait_to_mouse_models_via_embeddings`
-  (KNN special case) and `mouse_gene_to_opentargets` (a user-tunable `min_score`
-  filter that materialisation would fix at its default).
+- **Parameterised**: every other real template.
+- **`materialise: false`** (live): only test fixtures — `hello_world` and the
+  `test/test_gwas_*` templates.
 
 The four Appendix B roll-ups were rewritten to the canonical base-keyed form (single
 `biolink:broad_match` hop, `_root` enumeration dropped); the gwas gene templates were
@@ -514,7 +514,7 @@ given the behaviour-preserving `(gene:\`hgnc:Gene\`)` label.
   valid `filters_column`).
 - `webapp/.../MaterialisedClosureServingTest.java` — exercises the real
   `GrebiPostgresClient` closure serving against a live Postgres (descendants /
-  ancestors / exact, counts_only, unknown-node, text filter, prefix stripping).
+  ancestors / exact, unknown-node, text filter, prefix stripping).
   Skipped unless `GREBI_TEST_POSTGRES=true`.
 - `query_templates/test/test_ubergraph_subtypes.yaml` — a parameterised materialised
   template scoped to the `test_ubergraph` E2E subgraph (which has a real

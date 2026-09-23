@@ -75,5 +75,4 @@ examples:
 # Same base as disease_to_genes (see the sizing note there): ~60k non-CTD
 # curated edges plus a GWAS branch bounded by gwas_by_gene_and_disease's 3.8M.
 materialise:
-  mode: full
   budget_rows: 20000000

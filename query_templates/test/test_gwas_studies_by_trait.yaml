@@ -69,3 +69,4 @@ examples:
   - title: premature birth (a multi-trait study)
     params:
       trait_id: efo:0003917
+materialise: false

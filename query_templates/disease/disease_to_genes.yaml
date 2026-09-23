@@ -82,5 +82,4 @@ examples:
 # does); Disease_Mapped_To_Gene adds 30,542 and the GWAS branch is bounded by
 # gwas_by_gene_and_disease's 3.8M rows.
 materialise:
-  mode: full
   budget_rows: 20000000

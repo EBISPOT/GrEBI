@@ -136,5 +136,4 @@ examples:
 # live: the queried disease's own indications). Size unknown until the first
 # run, hence the generous budget.
 materialise:
-  mode: full
   budget_rows: 40000000

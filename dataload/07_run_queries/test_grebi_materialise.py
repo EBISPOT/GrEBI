@@ -19,19 +19,43 @@ class TestClassification(unittest.TestCase):
         with self.assertRaises(ValueError):
             gm.query_to_run(t)
 
-    def test_live_only(self):
-        t = {"title": "x", "cypher_match_fragment": "MATCH (n)"}
-        self.assertFalse(gm.is_materialised(t))
+    def test_materialised_by_default(self):
+        # No materialise key at all: materialised (parameterised) by default.
+        t = {"params": [{"param_id": "c_id", "param_type": "SourceId"}],
+             "cypher_match_fragment": "MATCH (c)-[:sourceId]->(:Id {id: $c_id})"}
+        self.assertTrue(gm.is_materialised(t))
+        self.assertTrue(gm.is_parameterised(t))
+        # An empty / null block is the same as none.
+        self.assertTrue(gm.is_materialised({**t, "materialise": None}))
+        self.assertTrue(gm.is_materialised({**t, "materialise": {}}))
+        self.assertTrue(gm.is_materialised({**t, "materialise": {"budget_rows": 5}}))
 
     def test_materialise_false_is_live(self):
-        # documented opt-out: `materialise: false` (or any non-mapping) means live
+        # the only opt-out
         self.assertFalse(gm.is_materialised({"params": [{"param_id": "x"}], "materialise": False}))
-        self.assertFalse(gm.is_materialised({"materialise": True}))
-        self.assertFalse(gm.is_materialised({"materialise": None}))
-        self.assertFalse(gm.is_materialised({}))
-        # and none of these crash the classifiers
-        self.assertFalse(gm.is_standalone({"materialise": True}))
+        self.assertFalse(gm.is_standalone({"materialise": False}))
         self.assertFalse(gm.is_parameterised({"materialise": False}))
+
+    def test_other_non_mapping_values_are_errors(self):
+        for bad in (True, "false", "full", 0):
+            with self.assertRaises(ValueError):
+                gm.is_materialised({"params": [{"param_id": "x"}], "materialise": bad})
+
+    def test_mode_is_no_longer_accepted(self):
+        for mode in ("full", "counts_only"):
+            with self.assertRaises(ValueError) as e:
+                gm.is_materialised({"params": [{"param_id": "x"}], "materialise": {"mode": mode}})
+            self.assertIn("materialise: false", str(e.exception))
+
+    def test_no_params_and_no_cypher_must_opt_out(self):
+        t = {"title": "x", "cypher_match_fragment": "MATCH (n)", "cypher_return_fragment": "RETURN count(n) AS n"}
+        self.assertTrue(gm.is_materialised(t))
+        self.assertFalse(gm.is_standalone(t))
+        self.assertFalse(gm.is_parameterised(t))
+        with self.assertRaises(ValueError) as e:
+            gm.query_to_run(t)
+        self.assertIn("materialise: false", str(e.exception))
+        self.assertFalse(gm.is_materialised({**t, "materialise": False}))
 
     def test_parameterised(self):
         t = {
@@ -301,24 +325,6 @@ class TestValueParamDefaults(unittest.TestCase):
         }
         with self.assertRaises(ValueError):
             gm.derive_materialise_query(t)
-
-
-class TestCountsOnly(unittest.TestCase):
-    def test_counts_only_histogram(self):
-        t = {
-            "params": [{"param_id": "gene_id", "param_type": "SourceId",
-                        "values_with_type": "hgnc:Gene"}],
-            "materialise": {"mode": "counts_only"},
-            "cypher_match_fragment":
-                "MATCH (gene:`hgnc:Gene`)-[:sourceId]->(:Id {id: $gene_id})\n"
-                "MATCH (gene)-[r]->(disease)",
-            "cypher_return_fragment":
-                "RETURN DISTINCT gene { .id } AS gene, disease { .id } AS disease",
-        }
-        q = gm.derive_materialise_query(t)
-        self.assertIn("WITH DISTINCT gene { .id } AS gene, disease { .id } AS disease", q)
-        self.assertIn("RETURN `gene`, count(*) AS _count", q)
-        self.assertNotIn("RETURN DISTINCT", q)
 
 
 class TestValidation(unittest.TestCase):

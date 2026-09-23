@@ -62,5 +62,3 @@ examples:
   - title: Parkinson disease
     params:
       disease_id: mondo:0005180
-materialise:
-  mode: full
