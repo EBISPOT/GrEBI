@@ -71,8 +71,8 @@ for file in template_files:
 
     template = yaml.safe_load(open(file))
 
-    # Only templates that opt into materialisation are precomputed. Live-only
-    # templates are served on demand via Cypher and skipped here.
+    # Every template is precomputed unless it opts out with materialise: false;
+    # those are served on demand via Cypher and skipped here.
     if not gm.is_materialised(template):
         continue
 
@@ -86,7 +86,7 @@ for file in template_files:
         raise
 
     start_time = datetime.now()
-    print(f"Running materialised query {query_id} ({gm.serving_metadata(template).get('kind')}, mode={gm.materialise_mode(template)})")
+    print(f"Running materialised query {query_id} ({gm.serving_metadata(template).get('kind')})")
     if os.environ.get('GREBI_DEBUG_QUERIES') == 'true':
         print(cypher)
 
@@ -109,7 +109,7 @@ for file in template_files:
     # Enforce the build-size budget so a new parameterised template can't silently
     # 10x the dataload. Standalone queries are hand-authored and were historically
     # unbudgeted, so only gate them if they opt in with an explicit budget_rows.
-    template_mat = template.get("materialise") or {}
+    template_mat = gm._settings(template)
     apply_budget = (not gm.is_standalone(template)) or (template_mat.get("budget_rows") is not None)
     budget = gm.budget_rows(template)
 
@@ -133,15 +133,15 @@ for file in template_files:
             print("WARNING: " + msg + " (continuing: GREBI_MATERIALISE_BUDGET_OVERRIDE=true)")
         else:
             raise RuntimeError(msg + " Set GREBI_MATERIALISE_BUDGET_OVERRIDE=true to "
-                               "override, raise materialise.budget_rows, or switch the "
-                               "template to mode: counts_only.")
+                               "override, raise materialise.budget_rows, or serve the "
+                               "template live with materialise: false.")
 
     # Assemble the per-query metadata. Keep title/description/uses_datasources at
     # the top level (the /tables UI + graph_metadata consumers read them there).
     # `table` + `columns` describe the typed storage table this query's rows go
     # into — computed once here; the pgcopy writer, loader and API all read them
     # from this metadata rather than re-deriving.
-    mat = template.get("materialise") or {}
+    mat = gm._settings(template)
     query_metadata = {
         "id": query_id,
         "subgraph": subgraph,

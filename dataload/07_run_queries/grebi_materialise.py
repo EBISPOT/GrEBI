@@ -2,20 +2,23 @@
 """
 Derivation of *materialise* Cypher queries from GrEBI query templates.
 
-A query template opts into materialisation with a top-level ``materialise:``
-block (see docs/materialise-query-templates.md). There are three kinds:
+Every query template is materialised — precomputed into Postgres at dataload —
+unless it opts out with ``materialise: false`` (see
+docs/materialise-query-templates.md). An optional ``materialise:`` block carries
+only settings (``budget_rows``, ``allow_empty``, ``run_for_subgraphs``,
+``uses_datasources``, and ``cypher`` for a standalone table). There are two kinds:
 
-1. **Live parameterised** (no ``materialise`` block) — served live, never
-   precomputed. Skipped here.
+1. **Standalone** (``materialise.cypher`` present, no ``params``) — the body *is*
+   the materialise query (this is the old ``materialised_queries/`` concept).
+   Run verbatim.
 
-2. **Standalone materialised** (``materialise.cypher`` present, no ``params``) —
-   the body *is* the materialise query (this is the old ``materialised_queries/``
-   concept). Run verbatim.
+2. **Parameterised** (``params``) — the template's own body doubles as the
+   materialise query with each SourceId parameter's Id anchor rewritten so the
+   base node ranges over the parameter's whole value space. No hand-written
+   second query.
 
-3. **Materialised parameterised** (``params`` + a ``materialise`` block) — the
-   template's own body doubles as the materialise query with each SourceId
-   parameter's Id anchor rewritten so the base node ranges over the parameter's
-   whole value space. No hand-written second query.
+A template with neither (no params, no ``materialise.cypher``) cannot be
+materialised and must say ``materialise: false``.
 
 Each SourceId parameter declares only its value space, one flat field:
 
@@ -80,16 +83,36 @@ def table_name(subgraph, query_id):
     return pg_identifier(f"matq_{subgraph}_{query_id}")
 
 
+def _settings(template):
+    """The `materialise:` settings block ({} when absent or false)."""
+    m = template.get("materialise")
+    return m if isinstance(m, dict) else {}
+
+
 def is_materialised(template):
-    # Only a `materialise:` *block* (mapping) opts in. `materialise: false` (or any
-    # non-mapping) means live — matching the documented opt-out.
-    return isinstance(template, dict) and isinstance(template.get("materialise"), dict)
+    """Materialised unless the template opts out with `materialise: false`.
+
+    Any other value must be absent, empty, or a settings mapping — anything else
+    (e.g. `materialise: true`, or a stray string) is a mistake, not an opt-out.
+    """
+    if not isinstance(template, dict):
+        return False
+    m = template.get("materialise")
+    if m is False:
+        return False
+    if m is not None and not isinstance(m, dict):
+        raise ValueError(
+            f"materialise must be false or a settings mapping, not {m!r}")
+    if "mode" in _settings(template):
+        raise ValueError(
+            "materialise.mode is no longer supported: every template is "
+            "materialised in full unless it sets materialise: false")
+    return True
 
 
 def is_standalone(template):
-    m = template.get("materialise") or {}
     params = template.get("params")
-    return is_materialised(template) and (not params) and m.get("cypher")
+    return is_materialised(template) and (not params) and bool(_settings(template).get("cypher"))
 
 
 def is_parameterised(template):
@@ -97,14 +120,8 @@ def is_parameterised(template):
     return is_materialised(template) and bool(params)
 
 
-def materialise_mode(template):
-    m = template.get("materialise") or {}
-    mode = m.get("mode")
-    return mode if mode else "full"
-
-
 def budget_rows(template):
-    m = template.get("materialise") or {}
+    m = _settings(template)
     b = m.get("budget_rows")
     return int(b) if b else DEFAULT_BUDGET_ROWS
 
@@ -115,7 +132,7 @@ def runs_for_subgraph(template, subgraph):
     Honours (in order): materialise.run_for_subgraphs (explicit allow-list) then
     the top-level `graphs` list. Absent both, runs for every subgraph.
     """
-    m = template.get("materialise") or {}
+    m = _settings(template)
     rfs = m.get("run_for_subgraphs")
     if rfs:
         return subgraph in rfs
@@ -339,19 +356,9 @@ def derive_materialise_match(template):
     return match
 
 
-def _base_columns(template):
-    """Result-column ids that the closure params filter (the base nodes)."""
-    cols = []
-    for p in closure_params(template):
-        col = filters_column(p)
-        if col not in cols:
-            cols.append(col)
-    return cols
-
-
 def _validate_materialise(template):
     """Fail fast on a mis-declared template (before we run the query)."""
-    m = template.get("materialise") or {}
+    m = _settings(template)
     if m.get("params"):
         raise ValueError(
             "materialise.params is no longer supported; declare the value space "
@@ -443,40 +450,13 @@ def warn_on_unrecognised_datasource_literals(template_id, cypher):
 
 
 def derive_materialise_query(template):
-    """Full derived Cypher for a parameterised materialised template.
-
-    mode=full        -> substituted match + the template's DISTINCT return.
-    mode=counts_only -> substituted match + a per-base-node row-count histogram
-                        (RETURN <base_col>, count(*) AS _count). Requires exactly
-                        one base column.
-    """
+    """Full derived Cypher for a parameterised template: the substituted match
+    plus the template's DISTINCT return."""
     _validate_materialise(template)
 
     match = derive_materialise_match(template).rstrip()
     ret = template["cypher_return_fragment"].strip()
-
-    if materialise_mode(template) == "counts_only":
-        bases = _base_columns(template)
-        if len(bases) != 1:
-            raise ValueError(
-                "counts_only requires exactly one SourceId parameter (base "
-                f"column); found {bases}"
-            )
-        base_col = bases[0]
-        # Turn the DISTINCT projection into an intermediate WITH, then group by the
-        # base column (a RETURN alias) and count the distinct result rows.
-        with_frag = re.sub(r"^\s*RETURN\s+DISTINCT\b", "WITH DISTINCT", ret, count=1)
-        if with_frag == ret:
-            raise ValueError(
-                "counts_only expects the return fragment to start with "
-                "'RETURN DISTINCT'"
-            )
-        query = (
-            match + "\n" + with_frag
-            + "\nRETURN `" + base_col + "`, count(*) AS _count"
-        )
-    else:
-        query = match + "\n" + ret
+    query = match + "\n" + ret
 
     _assert_no_unbound_params(template, query)
 
@@ -492,7 +472,7 @@ def standalone_query(template):
             f"standalone materialised query '{template.get('id')}' must declare "
             f"result_columns (they define its typed storage table)"
         )
-    cypher = (template.get("materialise") or {}).get("cypher")
+    cypher = _settings(template).get("cypher")
     warn_on_unrecognised_datasource_literals(template.get("id") or "<unknown>", cypher)
     return normalise_ontology_datasource_names(cypher)
 
@@ -503,23 +483,17 @@ def query_to_run(template):
         return standalone_query(template)
     if is_parameterised(template):
         return derive_materialise_query(template)
-    raise ValueError("template is not materialised")
+    raise ValueError(
+        "template has no params and no materialise.cypher, so there is nothing to "
+        "materialise; give it materialise.cypher or set materialise: false")
 
 
 def storage_columns(template):
-    """The logical columns of this query's storage table, recorded in metadata.
-
-    Full mode stores every result column (with its serving attributes); a
-    counts_only histogram stores only the base column(s) plus `_count`. The
-    physical (typed) schema is derived from these by the pgcopy writer.
+    """The logical columns of this query's storage table, recorded in metadata:
+    every result column with its serving attributes. The physical (typed) schema
+    is derived from these by the pgcopy writer.
     """
     cols = template.get("result_columns") or []
-    if is_parameterised(template) and materialise_mode(template) == "counts_only":
-        bases = set(_base_columns(template))
-        out = [{"column_id": c.get("column_id"), "column_type": c.get("column_type")}
-               for c in cols if c.get("column_id") in bases]
-        out.append({"column_id": "_count", "column_type": "int"})
-        return out
     out = []
     for c in cols:
         entry = {"column_id": c.get("column_id"), "column_type": c.get("column_type")}
@@ -548,7 +522,9 @@ def serving_metadata(template):
         })
     return {
         "kind": "parameterised",
-        "mode": materialise_mode(template),
+        # Kept for builds read by an older API, which distinguished a since-removed
+        # counts_only mode; every build is now full.
+        "mode": "full",
         "params": params_meta,
         # How serving matches a stored row's base against the queried closure:
         # by the base node's id ("<col>_nid" = ANY(closure node ids)). Builds

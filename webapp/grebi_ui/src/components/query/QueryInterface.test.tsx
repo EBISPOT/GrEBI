@@ -128,13 +128,13 @@ describe('QueryInterface', () => {
     }
   })
 
-  it('renders the sidebar and gives only fully materialised templates the free-text filter', async () => {
-    const { unmount } = renderInterface({ ...noParams, materialise: { mode: 'full' } }, '', <div>Side content</div>)
+  it('renders the sidebar and gives only materialised templates the free-text filter', async () => {
+    const { unmount } = renderInterface({ ...noParams, materialised: true }, '', <div>Side content</div>)
     expect(screen.getByText('Side content')).toBeInTheDocument()
     expect(await screen.findByPlaceholderText('Filter results…')).toBeInTheDocument()
     unmount()
 
-    renderInterface({ ...noParams, materialise: { mode: 'counts_only' } })
+    renderInterface({ ...noParams, materialised: false })
     await screen.findByRole('link', { name: 'Study one' })
     expect(screen.queryByPlaceholderText('Filter results…')).toBeNull()
   })

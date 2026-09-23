@@ -48,5 +48,3 @@ examples:
   - title: hepatocellular carcinoma
     params:
       disease_id: mondo:0007256
-materialise:
-  mode: full

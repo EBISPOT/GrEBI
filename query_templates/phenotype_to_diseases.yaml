@@ -50,5 +50,3 @@ examples:
   - title: Hepatomegaly
     params:
       phenotype_id: hp:0002240
-materialise:
-  mode: full

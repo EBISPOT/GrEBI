@@ -103,5 +103,3 @@ examples:
     params:
       gene_id: hgnc:7884
       disease_id: mondo:0004822
-materialise:
-  mode: full

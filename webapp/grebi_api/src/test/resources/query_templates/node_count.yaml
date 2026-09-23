@@ -13,3 +13,4 @@ cypher_count_fragment: |-
 result_columns:
   - column_id: nodes
     column_type: int
+materialise: false

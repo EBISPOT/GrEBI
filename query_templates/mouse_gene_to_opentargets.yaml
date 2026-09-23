@@ -54,6 +54,5 @@ examples:
 # xspecies build: 32.5M otar:targetId evidence edges before the score filter,
 # so the budget is set above that rather than to the (unknown) filtered count.
 materialise:
-  mode: full
   budget_rows: 40000000
   

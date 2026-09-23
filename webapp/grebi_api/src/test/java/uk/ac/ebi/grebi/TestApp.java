@@ -111,10 +111,7 @@ final class TestApp implements AutoCloseable {
                      "columns": [{"column_id": "trait", "column_type": "GraphNodeId", "facet": true},
                                  {"column_id": "snp", "column_type": "GraphNodeId"},
                                  {"column_id": "p_value", "column_type": "float"}],
-                     "params": [{"param_id": "trait_id", "filters_column": "trait", "closure": "descendants", "param_type": "SourceId"}]},
-                    {"id": "study_counts_by_trait", "table": "matq_g1_study_counts", "mode": "counts_only",
-                     "columns": [{"column_id": "study", "column_type": "GraphNodeId"}],
-                     "params": [{"param_id": "trait_id", "filters_column": "study", "closure": "exact", "param_type": "SourceId"}]}
+                     "params": [{"param_id": "trait_id", "filters_column": "trait", "closure": "descendants", "param_type": "SourceId"}]}
                   ]
                 }
                 """;

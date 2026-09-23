@@ -98,5 +98,3 @@ examples:
   - title: Type 2 diabetes (HbA1c, glucose, HOMA)
     params:
       disease_id: mondo:0005148
-materialise:
-  mode: full

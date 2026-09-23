@@ -501,22 +501,6 @@ public class GrebiCypherRepo {
         boolean resolve,
         Pageable pageable
         ) {
-        return runQueryFromTemplatePaginated(graph, template, params, resolve, pageable, null);
-    }
-
-    /**
-     * @param overrideCount if non-null, the total is taken from this value and the
-     *   (expensive) live count query is skipped. Used to serve a counts_only
-     *   materialised template's data live while its total comes from Postgres.
-     */
-    public Page<Map<String,Object>> runQueryFromTemplatePaginated(
-        String graph,
-        QueryTemplate template,
-        Map<String, List<String>> params,
-        boolean resolve,
-        Pageable pageable,
-        Long overrideCount
-        ) {
 
         var preparedQuery = prepareQuery(graph, template, params, pageable.getSort());
         var query = preparedQuery.query;
@@ -533,11 +517,9 @@ public class GrebiCypherRepo {
         // Run the data and (unbounded) count queries concurrently rather than
         // sequentially — for high-fan-out templates the count is as expensive as
         // the data query, so serialising them roughly doubled wall-clock latency.
-        // When overrideCount is supplied (counts_only serving) skip the count query.
         final String fCountQuery = countQuery;
         final Map<String, Object> fParamMap = paramMap;
         CompletableFuture<List<Map<String, Object>>> countFuture =
-            overrideCount != null ? null :
             CompletableFuture.supplyAsync(() -> {
                 try {
                     return cypherClient.query(graph, fCountQuery, fParamMap);
@@ -550,25 +532,20 @@ public class GrebiCypherRepo {
         try {
             records = cypherClient.query(graph, query, paramMap);
         } catch (IOException e) {
-            if (countFuture != null) countFuture.cancel(true);
+            countFuture.cancel(true);
             throw new RuntimeException("Failed to run query template", e);
         }
 
-        int count;
-        if (overrideCount != null) {
-            count = overrideCount.intValue();
-        } else {
-            List<Map<String, Object>> countRecords;
-            try {
-                countRecords = countFuture.join();
-            } catch (java.util.concurrent.CompletionException e) {
-                throw new RuntimeException("Failed to run count query", e.getCause());
-            }
-            if(countRecords.isEmpty() || countRecords.get(0).get("count") == null) {
-                throw new RuntimeException("Count query did not return a count");
-            }
-            count = ((Number) countRecords.get(0).get("count")).intValue();
+        List<Map<String, Object>> countRecords;
+        try {
+            countRecords = countFuture.join();
+        } catch (java.util.concurrent.CompletionException e) {
+            throw new RuntimeException("Failed to run count query", e.getCause());
         }
+        if(countRecords.isEmpty() || countRecords.get(0).get("count") == null) {
+            throw new RuntimeException("Count query did not return a count");
+        }
+        int count = ((Number) countRecords.get(0).get("count")).intValue();
         if(count == 0) {
             return new org.springframework.data.domain.PageImpl<>(List.of(), pageable, 0);
         }

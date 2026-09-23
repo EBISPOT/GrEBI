@@ -12,10 +12,13 @@ export interface QueryTemplate {
   params: Parameter[];
   result_columns: ResultColumn[];
   examples: Example[];
-  // Present when this template is precomputed into Postgres at dataload.
-  // Parameterised materialised templates are served transparently from the
-  // same /query/{id} endpoint (Postgres-backed instead of live Cypher).
+  // Materialisation settings, when the YAML has a `materialise:` block.
   materialise?: Materialise;
+  // Whether the template is precomputed into Postgres at dataload — the
+  // default; false when it opts out with `materialise: false`. Materialised
+  // parameterised templates are served transparently from the same
+  // /query/{id} endpoint (Postgres-backed instead of live Cypher).
+  materialised?: boolean;
 }
 
 export interface Parameter {
@@ -55,10 +58,12 @@ export interface Example {
     params: Record<string, any>;
 }
 
+// Settings only: every template is materialised unless its YAML says
+// `materialise: false` (see `materialised`).
 export interface Materialise {
   cypher?: string;
-  mode?: 'full' | 'counts_only';
   budget_rows?: number;
+  allow_empty?: boolean;
   run_for_subgraphs?: string[];
   uses_datasources?: string[];
 }

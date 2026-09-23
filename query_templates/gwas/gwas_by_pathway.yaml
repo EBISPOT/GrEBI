@@ -119,5 +119,4 @@ examples:
 # parents — so the budget is generous; the recorded num_results decides whether
 # it stays.
 materialise:
-  mode: full
   budget_rows: 40000000

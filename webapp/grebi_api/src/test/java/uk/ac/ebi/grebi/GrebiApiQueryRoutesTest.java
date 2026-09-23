@@ -41,12 +41,23 @@ class GrebiApiQueryRoutesTest {
     }
 
     @Test
+    void theListingSaysWhichTemplatesAreMaterialised() {
+        var byId = new java.util.HashMap<String, Boolean>();
+        for (var t : app.get("/api/v1/graphs/g1/query_templates").json().getAsJsonArray()) {
+            var o = t.getAsJsonObject();
+            byId.put(o.get("id").getAsString(), o.get("materialised").getAsBoolean());
+        }
+        // materialised by default; studies_by_trait and node_count opt out
+        assertEquals(Map.of("snps_by_trait_materialised", true, "studies_by_trait", false, "node_count", false), byId);
+    }
+
+    @Test
     void templatesAreListedPerGraphWithoutTheStandaloneQueries() {
         var g1 = app.get("/api/v1/graphs/g1/query_templates");
         assertEquals("no-cache", g1.header("cache-control"));
         // node_count has no graphs list, so it is offered on every graph; all_studies is a
         // standalone materialised query, browsed through /materialised_queries instead
-        assertEquals(List.of("node_count", "snps_by_trait_materialised", "studies_by_trait", "study_counts_by_trait"), ids(g1));
+        assertEquals(List.of("node_count", "snps_by_trait_materialised", "studies_by_trait"), ids(g1));
         assertEquals(List.of("node_count", "snps_by_trait_materialised"), ids(app.get("/api/v1/graphs/g2/query_templates")));
     }
 
@@ -132,19 +143,6 @@ class GrebiApiQueryRoutesTest {
         assertEquals(200, app.get("/api/v1/graphs/g2/query/snps_by_trait_materialised?trait_id=efo:1").status());
         verify(app.cypher).runQueryFromTemplatePaginated(eq("g2"), any(), eq(Map.of("trait_id", List.of("efo:1"))), eq(false), any());
         verify(app.postgres, never()).runMaterialisedParameterisedPaginated(any(), any(), any(), any(), any(), any(), anyBoolean(), any());
-    }
-
-    @Test
-    void aCountsOnlyTemplateTakesItsTotalFromPostgresAndItsRowsFromCypher() {
-        when(app.postgres.materialisedParameterisedCount(eq("g1"), any(), any(), any())).thenReturn(77L);
-        when(app.cypher.runQueryFromTemplatePaginated(eq("g1"), any(), any(), anyBoolean(), any(), eq(77L)))
-            .thenReturn(new PageImpl<>(List.of(TestApp.row("study", Map.of("id", "GCST1"))), PageRequest.of(0, 10), 77));
-
-        var body = app.get("/api/v1/graphs/g1/query/study_counts_by_trait?trait_id=mondo:0005083").json().getAsJsonObject();
-        assertEquals(77, body.get("totalElements").getAsInt());
-        assertEquals(1, body.getAsJsonArray("content").size());
-        verify(app.postgres).materialisedParameterisedCount(eq("g1"), argThat(t -> t.id.equals("study_counts_by_trait")),
-            argThat(b -> b.isCountsOnly()), eq(Map.of("trait_id", List.of("mondo:0005083"))));
     }
 
     @Test

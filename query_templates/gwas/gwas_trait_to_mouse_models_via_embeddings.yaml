@@ -118,5 +118,4 @@ examples:
 # Materialised at the parameter defaults (50 candidates, top 5 MP hits); the
 # Postgres path serves those defaults regardless of the numeric params passed.
 materialise:
-  mode: full
   budget_rows: 40000000

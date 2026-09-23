@@ -87,7 +87,7 @@ class GrebiMcpServerTest {
     void thereIsAToolPerParameterisedTemplatePlusTheFixedOnes() {
         var tools = client.listTools().tools().stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
         assertTrue(tools.keySet().containsAll(Set.of("search_nodes", "lookup_nodes", "get_node", "get_node_edge_counts", "list_node_edges", "get_edge",
-            "studies_by_trait", "snps_by_trait_materialised", "study_counts_by_trait", "node_count")), tools.keySet().toString());
+            "studies_by_trait", "snps_by_trait_materialised", "node_count")), tools.keySet().toString());
         assertFalse(tools.containsKey("all_studies"), "a standalone materialised query is a table, not a tool");
 
         var studies = tools.get("studies_by_trait");
@@ -348,7 +348,7 @@ class GrebiMcpServerTest {
         assertEquals(42, JsonParser.parseString(read("grebi://stats")).getAsJsonObject().getAsJsonObject("g1").get("num_nodes").getAsInt());
         assertEquals(2, JsonParser.parseString(read("grebi://topics")).getAsJsonArray().size());
         var templates = JsonParser.parseString(read("grebi://query_templates")).getAsJsonArray();
-        assertEquals(5, templates.size(), "every template, standalone queries included");
+        assertEquals(4, templates.size(), "every template, standalone queries included");
     }
 
     @Test

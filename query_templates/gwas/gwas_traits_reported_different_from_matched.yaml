@@ -54,5 +54,3 @@ examples:
   - title: blood metabolite level
     params:
       trait_id: oba:2050078
-materialise:
-  mode: full

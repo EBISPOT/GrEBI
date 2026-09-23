@@ -49,5 +49,3 @@ examples:
   - title: asthma
     params:
       disease_id: mondo:0004979
-materialise:
-  mode: full
