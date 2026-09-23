@@ -1,0 +1,102 @@
+title: GWAS associations for a disease and its related traits
+question: What GWAS [associations]{snp} are there for {disease_id}, its subtypes, and the [traits]{trait} that are about it, such as biomarker measurements?
+description: |-
+  GWAS Catalog associations for the disease and its subtypes, plus associations for
+  any trait that EFO says is about the disease or a subtype (`is_about`) — mostly
+  measurements that act as biomarkers or endophenotypes, e.g. LDL cholesterol for
+  coronary artery disease, amyloid-beta and p-tau for Alzheimer disease — and the
+  more specific traits under those. `relation` says which: `disease` or `is_about`;
+  `disease` is the queried disease or the subtype the row is about.
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - gwas_catalog
+cypher_match_fragment: |-
+  // base-keyed / closure-root form: disease is the base the row is about, the
+  // queried disease or one of its subtypes (broad_match is a full transitive
+  // closure, so one hop reaches every subtype). The trait is the disease
+  // itself, or anything EFO says is_about it and the traits under that.
+  MATCH (disease)-[:`biolink:broad_match`*0..1]->(disease_root)-[:sourceId]->(:Id {id: $disease_id})
+  CALL {
+    WITH disease
+    RETURN disease AS trait, 'disease' AS relation
+    UNION
+    WITH disease
+    MATCH (disease)<-[:`iao:is_about`|`oboinowl:is_about`]-(related)<-[:`biolink:broad_match`*0..1]-(trait)
+    RETURN trait, 'is_about' AS relation
+  }
+  WITH DISTINCT disease, trait, relation
+  MATCH (snp:`gwas:SNP`)-[assoc:`gwas:associated_with`]->(trait)
+  WITH
+      disease,
+      trait,
+      relation,
+      snp,
+      [id in assoc.`gwas:study` WHERE id =~ "GCST.*" | id][0] AS study_id,
+      assoc.`gwas:strongest_snp_risk_allele`[0] AS effect_allele,
+      assoc.`gwas:disease_trait`[0] AS reported_trait,
+      assoc.`gwas:p_value`[0] AS p_value,
+      assoc.`gwas:or_or_beta`[0] AS or_or_beta,
+      assoc.edge_id AS edge_id
+  MATCH
+      (study:`gwas:Study`)-[:sourceId]->(:Id { id: study_id })
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      disease { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(disease) } AS disease,
+      relation,
+      trait { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(trait) } AS trait,
+      snp { .id, .`grebi:nodeId`, .`grebi:name`,`grebi:type`: labels(snp) } AS snp,
+      effect_allele,
+      study_id AS study_accession,
+      replace(study.`gwas:pubmedid`[0], "pubmed:", "") AS pubmed_id,
+      reported_trait,
+      p_value,
+      or_or_beta,
+      edge_id
+cypher_count_fragment: |-
+  WITH DISTINCT disease, trait, relation, snp, study, or_or_beta, edge_id
+  RETURN count(*) AS count
+params:
+  - param_id: disease_id
+    param_name: Disease
+    param_type: SourceId
+    values_under: 'mondo:0000001'
+result_columns:
+  - column_id: disease
+    column_type: GraphNodeId
+    facet: true
+  - column_id: relation
+    column_type: string
+    facet: true
+  - column_id: trait
+    column_type: GraphNodeId
+    facet: true
+  - column_id: snp
+    column_type: GraphNodeId
+  - column_id: effect_allele
+    column_type: string
+  - column_id: study_accession
+    column_type: string
+  - column_id: p_value
+    column_type: string
+  - column_id: pubmed_id
+    column_type: PubmedId
+  - column_id: reported_trait
+    column_type: string
+  - column_id: or_or_beta
+    column_type: float
+    optional: true
+  - column_id: edge_id
+    column_type: EdgeId
+examples:
+  - title: Coronary artery disease (LDL cholesterol, fatty acids)
+    params:
+      disease_id: mondo:0005010
+  - title: Alzheimer disease (amyloid-beta, tau)
+    params:
+      disease_id: mondo:0004975
+  - title: Type 2 diabetes (HbA1c, glucose, HOMA)
+    params:
+      disease_id: mondo:0005148
+materialise:
+  mode: full
