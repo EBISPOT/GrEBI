@@ -424,9 +424,12 @@ def load_all(
     # --- GRAPH METADATA TABLE ---
     print("=== Loading graph metadata ===", flush=True)
     drop_meta = 'DROP TABLE IF EXISTS graph_metadata CASCADE;\n' if drop_existing else ""
+    # JSON, not JSONB: a jsonb value is capped at 256 MB and a subgraph's
+    # metadata (mostly the edges summary) has outgrown that. The API only ever
+    # reads the whole document and parses it itself, so nothing needs jsonb.
     create_meta = (
         f"{drop_meta}"
-        "CREATE TABLE graph_metadata (graph TEXT PRIMARY KEY, metadata JSONB NOT NULL);"
+        "CREATE TABLE graph_metadata (graph TEXT PRIMARY KEY, metadata JSON NOT NULL);"
     )
 
     metadata_files = sorted(glob.glob("*_metadata.json"))
