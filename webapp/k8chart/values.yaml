@@ -1,11 +1,36 @@
 
 imageTag: dev
 
-# The deployment serves everything from PostgreSQL (postgres.secret below): there
-# is no Neo4j in it. The dataload still builds a Neo4j database, to run the
-# query templates against when it materialises them, and publishes it on the FTP.
+# cypher-service (embedded Neo4j). The API serves everything from PostgreSQL
+# (postgres.secret below) and does not need it: what it adds is running a query
+# template that has no materialised table yet, which is how a new template is
+# tried out before a dataload has built it. Set enabled to false to deploy
+# without Neo4j; nothing below, down to importNfs, is used then.
+#
+# Memory sizing: the defaults suit dev's 64Gi worker; override smaller for prod's
+# ~31Gi worker. Total memory ~= heap + pageCacheMB + JVM overhead, and must fit
+# under `memory`.
+cypher:
+  enabled: true
+  memory: "38Gi"
+  heap: "8g"
+  pageCacheMB: "26000"
 
-# Read-only NFS mount the API reads the query templates from (the "current" data release).
+# Read-write local disk (per worker node) that the Neo4j store is copied onto and
+# served from.  The cypher-service is node-pinned (neo_worker_n) and its local disk
+# is used; a per-release PV claims it (see templates/local_volumes.yaml).
+local_disk: "2Ti"
+
+# Which HH worker node the cypher-service (Neo4j) pins to.  dev = 1, prod = 2.
+neo_worker_n: "1"
+
+# Pre-existing local PV to claim for the pinned worker. The default preserves
+# the live dev deployment; prod overrides this with a separately managed PV so
+# the legacy dev Helm release cannot delete prod storage during a future upgrade.
+localPvName: "worker-1-local-pv"
+
+# Read-only NFS release mount that data is copied FROM (the "current" data release):
+# the query templates the API reads, and the Neo4j store of the cypher-service.
 # Override importNfs.path per environment:
 #   dev  = /ifs/public/rw/ontoapps/grebi/current
 #   prod = /ifs/public/rw/ontoapps/grebi/prod/current

@@ -25,3 +25,20 @@ spec:
     port: 8080
   selector:
     app: {{ .Release.Name }}-frontend
+{{- if .Values.cypher.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-cypher-service
+  labels:
+    app: {{ .Release.Name }}-cypher-service
+spec:
+  ports:
+      - port: 8085
+        targetPort: 8085
+        name: http
+        protocol: TCP
+  selector:
+    app: {{ .Release.Name }}-cypher-service
+{{- end }}
