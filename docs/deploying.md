@@ -696,10 +696,10 @@ By default the chart looks for a secret named `<release-name>-postgres`. You can
 
 ```bash
 kubectl create secret generic grebi-postgres \
-  --from-literal=GREBI_POSTGRES_HOST=pgsql-hlvm-138 \
+  --from-literal=GREBI_POSTGRES_HOST='<host>' \
   --from-literal=GREBI_POSTGRES_PORT=5432 \
-  --from-literal=GREBI_POSTGRES_DB=spotefoexp \
-  --from-literal=GREBI_POSTGRES_USER=spot \
+  --from-literal=GREBI_POSTGRES_DB='<database>' \
+  --from-literal=GREBI_POSTGRES_USER='<user>' \
   --from-literal=GREBI_POSTGRES_PASSWORD='<password>' \
   --from-literal=GREBI_POSTGRES_SSLMODE=require
 ```

@@ -25,10 +25,11 @@ export NXF_CACHE_DIR=$GREBI_NOBACKUP/NXF_CACHE_DIR
 export NXF_SINGULARITY_CACHEDIR=$GREBI_NOBACKUP/NXF_SINGULARITY_CACHEDIR
 module load nextflow/24.10.3
 
-# External PostgreSQL connection
-export PGHOST=${PGHOST:-pgsql-hlvm-138}
+# External PostgreSQL connection. The host, database and password come from
+# the caller (the deployment's CI), not from this repository.
+export PGHOST=${PGHOST:?PGHOST must be set to the external PostgreSQL host}
 export PGPORT=${PGPORT:-5432}
-export PGDATABASE=${PGDATABASE:-spotefoexp}
+export PGDATABASE=${PGDATABASE:?PGDATABASE must be set to the external PostgreSQL database}
 export PGUSER=${PGUSER:-spot}
 # PGPASSWORD is set by the caller
 
