@@ -1,4 +1,0 @@
-# Replaced by cypher_service_deployment.yaml
-# The grebi_cypher_service embeds Neo4j databases in-process and/or
-# connects to remote Neo4j instances via bolt.  Subgraph names are
-# auto-discovered — no hardcoded subgraph1/subgraph2 values needed.

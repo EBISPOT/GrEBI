@@ -50,8 +50,6 @@ spec:
             - secretRef:
                 name: {{ $postgresSecretName }}
           env:
-            - name: GREBI_CYPHER_HOST
-              value: http://{{ .Release.Name }}-cypher-service:8085
             - name: GREBI_CONTEXT_PATH
               value: {{ .Values.contextPath }}
             # UseG1GC is set explicitly: the JVM only auto-selects it when it sees

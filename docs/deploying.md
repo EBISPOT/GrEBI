@@ -678,7 +678,7 @@ curl "http://localhost:8090/api/v1/normalise_curies?iris_or_curies=http://purl.u
 The dataload produces two main database artefacts used to run the GrEBI stack: Neo4j and PostgreSQL. Each database stores different views over the same data (simple JSON objects for nodes and edges), with different purposes:
 
 * Postgres is used by the backend to drive most of the API endpoints used by the website. It stores nodes and edges with minimal metadata, embedding vectors with pgvector, graph metadata, and compressed JSON blobs used to resolve full node and edge objects. It also drives the free text lexical search and holds an autocomplete list derived from all of the names in the graph.
-* Neo4j is used by the `grebi_cypher_service` to drive Cypher queries. It stores nodes and edges with minimal metadata.
+* Neo4j is what the dataload runs the query templates against, to materialise their results into PostgreSQL tables. It stores nodes and edges with minimal metadata. Serving does not need it: the API answers from PostgreSQL alone, and the Kubernetes deployment has no Neo4j. Given a `grebi_cypher_service` (`GREBI_CYPHER_HOST`, as in the all-in-one image), the API can also run a template that has no materialised table live, which is how new templates are developed.
 
 ### Kubernetes with managed PostgreSQL
 
