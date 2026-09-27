@@ -200,6 +200,19 @@ def create_indexes_for_subgraph(
     stmts.append(f'CREATE INDEX "idx_edges_{sg}_broad_match_from" ON "edges_{sg}" ("grebi:fromNodeId") '
                  f'INCLUDE ("grebi:toNodeId") '
                  f"WHERE \"grebi:type\" = 'biolink:broad_match';")
+    # Covering indexes for a node's edge counts, and for the facets and the
+    # by-type order of its edge lists (GrebiPostgresClient.getEdgeCounts,
+    # computeFacets). These read the type and datasources of EVERY edge of the
+    # node; from the plain nodeId btrees that is one random heap fetch per
+    # edge, and a hub has a great many: Alzheimer disease has a million
+    # incoming edges once the OpenTargets evidence is loaded, and counting
+    # them took minutes, warm or cold, against a second from the index.
+    # INCLUDE switches btree deduplication off, so these are ~105 bytes an
+    # edge (127GB each for 1.2 billion edges) where the plain ones are ~7.
+    stmts.append(f'CREATE INDEX "idx_edges_{sg}_toNodeId_type" ON "edges_{sg}" ("grebi:toNodeId", "grebi:type") '
+                 f'INCLUDE ("grebi:datasources");')
+    stmts.append(f'CREATE INDEX "idx_edges_{sg}_fromNodeId_type" ON "edges_{sg}" ("grebi:fromNodeId", "grebi:type") '
+                 f'INCLUDE ("grebi:datasources");')
 
     # Node indexes
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_nodeId" ON "nodes_{sg}" USING btree ("grebi:nodeId");')
