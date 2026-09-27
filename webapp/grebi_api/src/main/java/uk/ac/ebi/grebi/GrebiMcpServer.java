@@ -261,9 +261,9 @@ public class GrebiMcpServer {
         final GrebiMetadataRepo metadata,
         final Set<String> graphs,
         final GrebiQueryTemplatesRepo queryTemplates,
-        final NodeLookup lookup
+        final NodeLookup lookup,
+        final Map<String, Map<String, Object>> stats
     ) {
-        var stats = cypher != null ? cypher.getStats() : null;
 
         Gson gson = new Gson();
         ResourceLimits limits = ResourceLimits.get();
@@ -353,12 +353,19 @@ public class GrebiMcpServer {
             if (qt.isStandaloneMaterialised()) {
                 return;
             }
+            // no graphs list means the template runs on every graph; of those,
+            // the ones this instance can serve it on (it has a materialised
+            // table there, or there is a cypher service to run it live)
+            var templateGraphs = (qt.graphs == null ? graphs.stream() : qt.graphs.stream())
+                .filter(g -> !graphs.contains(g) || GrebiApi.isServable(cypher, metadata, g, qt))
+                .toList();
+            if (templateGraphs.isEmpty()) {
+                return;
+            }
             declaredGraphs.put(qt.id, qt.graphs);
 
             var paramProps = new LinkedHashMap<String, Object>();
-            // no graphs list means the template runs on every graph; no params list
-            // means a parameterless query (both keys are optional in the YAML)
-            var templateGraphs = qt.graphs == null ? graphs.stream().toList() : qt.graphs.stream().toList();
+            // no params list means a parameterless query (the key is optional in the YAML)
             var templateParams = qt.params == null ? List.<uk.ac.ebi.grebi.repo.QueryTemplate.Parameter>of() : qt.params;
 
             paramProps.put("graph", Map.of(

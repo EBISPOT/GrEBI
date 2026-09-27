@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
+import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 
 import java.util.Collection;
 import java.util.List;
@@ -253,22 +253,25 @@ class GrebiApiNodeRoutesTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void resolvingSingleEdgesNeedsTheCypherServiceAndABody() {
+    void singleEdgesAreResolvedFromPostgresGivenABody() {
         var path = "/api/v1/graphs/g1/nodes/" + ENC + "/resolve_single_edges";
-        try (var noCypher = TestApp.startWithoutCypher()) {
-            assertEquals("{}", noCypher.post(path, "[{\"direction\":\"incoming\",\"edgeType\":\"biolink:subclass_of\"}]").body());
-        }
         assertEquals("{}", app.post(path, "[]").body());
-        verify(app.cypher, never()).resolveSingleEdges(any(), any(), any());
+        verify(app.postgres, never()).resolveSingleEdges(any(), any(), any());
 
-        when(app.cypher.resolveSingleEdges(eq("g1"), eq(NODE), any()))
-            .thenReturn(Map.of("incoming|biolink:subclass_of", Map.of("grebi:nodeId", "efo:1")));
-        var res = app.post(path, "[{\"direction\":\"incoming\",\"edgeType\":\"biolink:subclass_of\"}]");
+        when(app.postgres.resolveSingleEdges(eq("g1"), eq(NODE), any()))
+            .thenReturn(Map.of("incoming::biolink:subclass_of", Map.of("grebi:nodeId", "efo:1")));
+        var body = "[{\"direction\":\"incoming\",\"edgeType\":\"biolink:subclass_of\"}]";
+        var res = app.post(path, body);
         assertEquals(200, res.status());
-        assertEquals("efo:1", res.json().getAsJsonObject().getAsJsonObject("incoming|biolink:subclass_of").get("grebi:nodeId").getAsString());
+        assertEquals("efo:1", res.json().getAsJsonObject().getAsJsonObject("incoming::biolink:subclass_of").get("grebi:nodeId").getAsString());
+        try (var noCypher = TestApp.startWithoutCypher()) {
+            when(noCypher.postgres.resolveSingleEdges(eq("g1"), eq(NODE), any()))
+                .thenReturn(Map.of("incoming::biolink:subclass_of", Map.of("grebi:nodeId", "efo:1")));
+            assertEquals(res.body(), noCypher.post(path, body).body(), "the cypher service plays no part");
+        }
         var items = ArgumentCaptor.forClass(List.class);
-        verify(app.cypher).resolveSingleEdges(eq("g1"), eq(NODE), items.capture());
-        var item = (GrebiCypherRepo.DirectionAndEdgeType) items.getValue().get(0);
+        verify(app.postgres).resolveSingleEdges(eq("g1"), eq(NODE), items.capture());
+        var item = (GrebiPostgresClient.DirectionAndEdgeType) items.getValue().get(0);
         assertEquals("incoming", item.direction);
         assertEquals("biolink:subclass_of", item.edgeType);
 

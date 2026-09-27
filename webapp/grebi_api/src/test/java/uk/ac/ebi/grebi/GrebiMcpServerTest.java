@@ -352,11 +352,19 @@ class GrebiMcpServerTest {
     }
 
     @Test
-    void withoutTheCypherServiceTheStatsResourceIsNull() {
+    void withoutTheCypherServiceThereAreStatsAndAToolPerTemplateWithAMaterialisedTable() {
         try (var noCypher = TestApp.startWithoutCypher()) {
             var c = connect(noCypher);
             try {
-                assertEquals("null", ((McpSchema.TextResourceContents) c.readResource(new McpSchema.ReadResourceRequest("grebi://stats")).contents().get(0)).text());
+                assertEquals(read("grebi://stats"), ((McpSchema.TextResourceContents) c.readResource(new McpSchema.ReadResourceRequest("grebi://stats")).contents().get(0)).text());
+
+                var tools = c.listTools().tools().stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
+                assertTrue(tools.containsKey("search_nodes"));
+                assertFalse(tools.containsKey("studies_by_trait"), "no table, so it could only be run live");
+                assertFalse(tools.containsKey("node_count"));
+                // offered on the graph the dataload built it for
+                assertEquals(List.of("g1"),
+                    ((Map<?, ?>) tools.get("snps_by_trait_materialised").inputSchema().properties().get("graph")).get("enum"));
             } finally {
                 c.close();
             }

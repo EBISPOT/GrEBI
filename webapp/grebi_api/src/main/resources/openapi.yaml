@@ -111,7 +111,7 @@ paths:
     get:
       tags: [Service]
       summary: Node and edge counts of every graph
-      description: 'From the Neo4j service. Without one the answer is `{"error": "cypher service is not available"}` with status 200.'
+      description: The nodes are counted in PostgreSQL; the edges are summed from the graph metadata.
       operationId: stats
       responses:
         "200":
@@ -511,7 +511,7 @@ paths:
     post:
       tags: [Nodes]
       summary: The node at the other end of edges a node has exactly one of
-      description: For each direction and edge type asked for (at most 100), the one node it leads to, keyed `direction::edgeType`. Pairs with more than one edge are left out. Needs the Neo4j service; without it the answer is `{}`.
+      description: For each direction and edge type asked for (at most 100), the one node it leads to, keyed `direction::edgeType`. Pairs with no such edge are left out.
       operationId: resolveSingleEdges
       requestBody:
         required: true

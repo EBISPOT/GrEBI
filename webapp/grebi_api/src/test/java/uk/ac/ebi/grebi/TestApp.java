@@ -62,12 +62,10 @@ final class TestApp implements AutoCloseable {
 
     private TestApp(boolean withCypher) {
         cypher = withCypher ? mock(GrebiCypherRepo.class) : null;
-        if (cypher != null) {
-            when(cypher.getStats()).thenReturn(Map.of("g1", Map.of("num_nodes", 42L, "num_edges", 7L)));
-        }
         pgClient = mock(GrebiPostgresClient.class);
         postgres = mock(GrebiPostgresRepo.class);
         when(postgres.getPgClient()).thenReturn(pgClient);
+        when(postgres.countNodes("g1")).thenReturn(42L);
         metadata = mock(GrebiMetadataRepo.class);
         when(metadata.getGraphs()).thenReturn(GRAPHS);
         // a fresh copy per call: some routes annotate the elements they return

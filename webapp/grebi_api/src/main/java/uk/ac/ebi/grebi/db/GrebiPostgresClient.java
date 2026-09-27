@@ -587,6 +587,79 @@ public class GrebiPostgresClient {
         return null;
     }
 
+    /** One direction and edge type of a node, as the graph view asks for them. */
+    public static class DirectionAndEdgeType {
+        public String direction;
+        public String edgeType;
+    }
+
+    /**
+     * The node at the other end of one edge of each (direction, edge type) of
+     * the node, keyed "direction::edgeType". The graph view asks this for the
+     * pairs it counted a single edge of, to show that node in place of a count.
+     * A pair with no such edge, or whose other end is not a node, is left out.
+     */
+    public Map<String, Map<String, Object>> resolveSingleEdges(String graph, String nodeId,
+                                                                List<DirectionAndEdgeType> items) {
+        Map<String, Map<String, Object>> result = new LinkedHashMap<>();
+        if (items == null || items.isEmpty()) return result;
+        try {
+            var ctx = dsl();
+            var edges = edgesTable(graph).as("e");
+            var nodes = nodesTable(graph).as("n");
+            var edgeType = field(name("e", "grebi:type"), String.class);
+            var otherId = field(name("n", "grebi:nodeId"), String.class);
+            var otherName = field(name("n", "grebi:name"), String.class);
+
+            for (String direction : List.of("incoming", "outgoing")) {
+                var types = items.stream()
+                        .filter(i -> direction.equals(i.direction) && i.edgeType != null)
+                        .map(i -> i.edgeType)
+                        .distinct()
+                        .toList();
+                if (types.isEmpty()) continue;
+
+                boolean incoming = direction.equals("incoming");
+                var thisEnd = field(name("e", incoming ? "grebi:toNodeId" : "grebi:fromNodeId"), String.class);
+                var otherEnd = field(name("e", incoming ? "grebi:fromNodeId" : "grebi:toNodeId"), String.class);
+
+                for (var record : ctx.select(edgeType, otherId, otherName)
+                        .distinctOn(edgeType)
+                        .from(edges)
+                        .join(nodes).on(otherId.eq(otherEnd))
+                        .where(thisEnd.eq(nodeId))
+                        .and(edgeType.in(types))
+                        .orderBy(edgeType)
+                        .fetch()) {
+                    Map<String, Object> node = new LinkedHashMap<>();
+                    node.put("grebi:nodeId", record.get(otherId));
+                    if (record.get(otherName) != null) {
+                        node.put("grebi:name", record.get(otherName));
+                    }
+                    result.put(direction + "::" + record.get(edgeType), node);
+                }
+            }
+            return result;
+        } catch (SQLException e) {
+            logger.error("Resolving single edges failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * The number of nodes in the graph, counted: about a second for the
+     * largest graph. (Edges are not counted this way: there are over a billion,
+     * and the graph metadata already holds their counts.)
+     */
+    public long countNodes(String graph) {
+        try {
+            return dsl().select(field("count(*)", Long.class)).from(nodesTable(graph)).fetchSingle().value1();
+        } catch (SQLException e) {
+            logger.error("Node count failed", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     private static List<String> toDatasourceList(Object raw) {
         if (raw instanceof String[] arr) return Arrays.asList(arr);
         if (raw instanceof Object[] arr) {

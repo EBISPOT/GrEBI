@@ -146,6 +146,15 @@ public class GrebiPostgresRepo {
         return result;
     }
 
+    public Map<String, Map<String, Object>> resolveSingleEdges(String graph, String nodeId,
+            List<GrebiPostgresClient.DirectionAndEdgeType> items) {
+        return pgClient.resolveSingleEdges(graph, nodeId, items);
+    }
+
+    public long countNodes(String graph) {
+        return pgClient.countNodes(graph);
+    }
+
     /**
      * Get a single edge by its ID.
      */

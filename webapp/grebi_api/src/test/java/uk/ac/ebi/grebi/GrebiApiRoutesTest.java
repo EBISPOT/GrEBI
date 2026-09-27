@@ -37,17 +37,17 @@ class GrebiApiRoutesTest {
     }
 
     @Test
-    void statsComeFromTheCypherService() {
+    void statsCountTheNodesAndSumTheEdgesOfTheGraphMetadata() {
         var stats = app.get("/api/v1/stats").json().getAsJsonObject();
         assertEquals(42, stats.getAsJsonObject("g1").get("num_nodes").getAsInt());
+        assertEquals(7 + 3 + 20, stats.getAsJsonObject("g1").get("num_edges").getAsInt());
+        assertEquals(0, stats.getAsJsonObject("g2").get("num_edges").getAsInt());
     }
 
     @Test
-    void statsSayWhenTheCypherServiceIsMissing() {
+    void statsDoNotNeedTheCypherService() {
         try (var noCypher = TestApp.startWithoutCypher()) {
-            var res = noCypher.get("/api/v1/stats");
-            assertEquals(200, res.status());
-            assertEquals("cypher service is not available", res.json().getAsJsonObject().get("error").getAsString());
+            assertEquals(app.get("/api/v1/stats").body(), noCypher.get("/api/v1/stats").body());
         }
     }
 

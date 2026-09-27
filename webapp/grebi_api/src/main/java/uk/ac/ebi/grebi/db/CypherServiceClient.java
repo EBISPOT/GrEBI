@@ -33,6 +33,12 @@ public class CypherServiceClient {
                 .build();
     }
 
+    /** Whether a cypher service has been configured (GREBI_CYPHER_HOST). It is optional. */
+    public static boolean isConfigured() {
+        var url = System.getenv("GREBI_CYPHER_HOST");
+        return url != null && !url.isBlank();
+    }
+
     public static String getCypherServiceUrl() {
         var url = System.getenv("GREBI_CYPHER_HOST");
         if (url != null) return url;

@@ -104,12 +104,22 @@ class GrebiApiQueryRoutesTest {
     }
 
     @Test
-    void aLiveTemplateWithoutTheCypherServiceIsA500WithAJsonError() {
+    void withoutTheCypherServiceOnlyTemplatesWithAMaterialisedTableAreOffered() {
         try (var noCypher = TestApp.startWithoutCypher()) {
-            var res = noCypher.get("/api/v1/graphs/g1/query/studies_by_trait?trait_id=x");
-            assertEquals(500, res.status());
-            assertEquals("Cypher service unavailable; cannot serve live query template studies_by_trait",
-                res.json().getAsJsonObject().get("error").getAsString());
+            // g1 has a table for snps_by_trait_materialised; g2 has none at all
+            assertEquals(List.of("snps_by_trait_materialised"), ids(noCypher.get("/api/v1/graphs/g1/query_templates")));
+            assertEquals(List.of(), ids(noCypher.get("/api/v1/graphs/g2/query_templates")));
+            assertEquals(200, noCypher.get("/api/v1/graphs/g1/query_templates/snps_by_trait_materialised").status());
+
+            var notBuilt = "Query template studies_by_trait has no materialised table in graph g1: "
+                + "the dataload has not built it, and there is no cypher service to run it live";
+            for (var path : List.of("query_templates/studies_by_trait", "query/studies_by_trait?trait_id=x")) {
+                var res = noCypher.get("/api/v1/graphs/g1/" + path);
+                assertEquals(404, res.status(), path);
+                assertEquals(notBuilt, res.json().getAsJsonObject().get("error").getAsString(), path);
+            }
+            // a materialised template, on a graph the dataload did not build it for
+            assertEquals(404, noCypher.get("/api/v1/graphs/g2/query/snps_by_trait_materialised?trait_id=x").status());
         }
     }
 
@@ -183,12 +193,12 @@ class GrebiApiQueryRoutesTest {
     }
 
     @Test
-    void csvExportWithoutTheCypherServiceFails() {
+    void csvExportOfATemplateWithoutATableNeedsTheCypherService() {
         try (var noCypher = TestApp.startWithoutCypher()) {
             var res = noCypher.get("/api/v1/graphs/g1/query/studies_by_trait.csv?trait_id=x");
-            assertEquals(500, res.status());
-            assertEquals("Cypher service unavailable; cannot serve CSV for studies_by_trait",
-                res.json().getAsJsonObject().get("error").getAsString());
+            assertEquals(404, res.status());
+            assertTrue(res.json().getAsJsonObject().get("error").getAsString()
+                .startsWith("Query template studies_by_trait has no materialised table in graph g1"));
         }
     }
 

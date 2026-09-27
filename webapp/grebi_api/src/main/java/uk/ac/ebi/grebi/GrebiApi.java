@@ -28,6 +28,8 @@ import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.springframework.data.domain.Sort;
 import uk.ac.ebi.grebi.GraphOrder;
+import uk.ac.ebi.grebi.db.CypherServiceClient;
+import uk.ac.ebi.grebi.db.GrebiPostgresClient;
 import uk.ac.ebi.grebi.repo.GrebiCypherRepo;
 import uk.ac.ebi.grebi.repo.QueryTemplate;
 import uk.ac.ebi.grebi.repo.GrebiQueryTemplatesRepo;
@@ -79,32 +81,38 @@ public class GrebiApi {
             }
         }
 
-        for(int i = 0; i < 5; ++ i) {
-            try {
-                cypher = new GrebiCypherRepo();
-                cypherGraphs = cypher.getGraphs();
-                if(!postgresGraphs.equals(cypherGraphs)) {
-                    cypher = null;
-                    throw new RuntimeException("PostgreSQL/cypher service do not seem to contain the same graphs. Found: "
-                            + String.join(",", postgresGraphs) + " for PostgreSQL and "
-                            + String.join(",", cypherGraphs) + " for cypher service"
-                    );
-                }
-            } catch (Throwable e) {
-                System.out.println("Could not get graphs from cypher service. Retrying in 10 seconds ("+ (4-i) + " attempts left)");
-                e.printStackTrace();
+        // Everything the API serves comes from PostgreSQL. A cypher service is
+        // optional: given one, templates that have no materialised table can
+        // still be run live (local development, the end to end tests).
+        if(CypherServiceClient.isConfigured()) {
+            for(int i = 0; i < 5 && cypher == null; ++ i) {
                 try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException interruptedException) {
-                    interruptedException.printStackTrace();
+                    var repo = new GrebiCypherRepo();
+                    cypherGraphs = repo.getGraphs();
+                    if(!postgresGraphs.equals(cypherGraphs)) {
+                        throw new RuntimeException("PostgreSQL/cypher service do not seem to contain the same graphs. Found: "
+                                + String.join(",", postgresGraphs) + " for PostgreSQL and "
+                                + String.join(",", cypherGraphs) + " for cypher service"
+                        );
+                    }
+                    cypher = repo;
+                } catch (Throwable e) {
+                    System.out.println("Could not get graphs from cypher service. Retrying in 10 seconds ("+ (4-i) + " attempts left)");
+                    e.printStackTrace();
+                    try {
+                        Thread.sleep(10000);
+                    } catch (InterruptedException interruptedException) {
+                        interruptedException.printStackTrace();
+                    }
                 }
             }
-        }
-
-        if(cypher == null) {
-            System.out.println("Cypher service is unavailable; some graph query API endpoints will be disabled");
+            if(cypher == null) {
+                System.out.println("Cypher service is unavailable; only materialised query templates will be served");
+            } else {
+                System.out.println("Cypher service is available");
+            }
         } else {
-            System.out.println("Cypher service is available");
+            System.out.println("No cypher service configured (GREBI_CYPHER_HOST); only materialised query templates will be served");
         }
 
         postgresGraphs = GraphOrder.orderedSet(postgresGraphs);
@@ -158,7 +166,7 @@ public class GrebiApi {
         final Map<String, EmbeddingServiceClient> embeddingClients,
         final Function<List<String>, List<String>> normaliser
     ) {
-        var stats = cypher != null ? cypher.getStats() : null;
+        var stats = graphStats(postgres, metadata, graphs);
 
         Gson gson = new Gson();
         ResourceLimits limits = ResourceLimits.get();
@@ -170,7 +178,7 @@ public class GrebiApi {
         final Map<String, String> summaryMetadataJson = new java.util.concurrent.ConcurrentHashMap<>();
 
         GrebiMcpServer mcpServer = new GrebiMcpServer(
-            cypher, postgres, metadata, graphs, queryTemplates, lookup
+            cypher, postgres, metadata, graphs, queryTemplates, lookup, stats
         );
 
         return Javalin.create(config -> {
@@ -215,11 +223,7 @@ public class GrebiApi {
                 })
                 .get("/api/v1/stats", ctx -> {
                     ctx.contentType("application/json");
-                    if(stats != null) {
-                        ctx.result(gson.toJson(stats));
-                    } else {
-                        ctx.result("{\"error\":\"cypher service is not available\"}");
-                    }
+                    ctx.result(gson.toJson(stats));
                 })
                 .get("/api/v1/topics", ctx -> {
                     ctx.contentType("application/json");
@@ -390,12 +394,14 @@ public class GrebiApi {
                             // standalone materialised queries are browsable tables
                             // (/materialised_queries), not interactive templates
                             .filter(qt -> !qt.isStandaloneMaterialised())
+                            // a template the dataload has not built yet is not offered
+                            .filter(qt -> isServable(cypher, metadata, graph, qt))
                             .collect(Collectors.toList())));
                 })
                 .get("/api/v1/graphs/{graph}/query_templates/{templateId}", ctx -> {
                     var graph = ctx.pathParam("graph");
                     var templateId = ctx.pathParam("templateId");
-                    var template = getQueryTemplateOrThrow(queryTemplates, graph, templateId);
+                    var template = getQueryTemplateOrThrow(queryTemplates, cypher, metadata, graph, templateId);
                     ctx.contentType("application/json");
                     ctx.header("cache-control", "no-cache");
                     ctx.result(gson.toJson(template));
@@ -403,7 +409,7 @@ public class GrebiApi {
                 .get("/api/v1/graphs/{graph}/query/{templateId}.csv", ctx -> {
                     var graph = ctx.pathParam("graph");
                     var templateId = ctx.pathParam("templateId");
-                    var template = getQueryTemplateOrThrow(queryTemplates, graph, templateId);
+                    var template = getQueryTemplateOrThrow(queryTemplates, cypher, metadata, graph, templateId);
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), template.result_columns.get(0).column_id);
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
 
@@ -419,11 +425,6 @@ public class GrebiApi {
                     // absent (the common case: a query with no free-text narrow).
                     var searchText = firstNonNull(ctx.queryParam("q"), ctx.queryParam("filter"));
                     limits.validateText(searchText, "q");
-
-                    // decided before the response writer is opened, so the error can still be written
-                    if (build == null && cypher == null) {
-                        throw new IllegalStateException("Cypher service unavailable; cannot serve CSV for " + templateId);
-                    }
 
                     ctx.future(() -> {
                         try {
@@ -448,7 +449,7 @@ public class GrebiApi {
                 .get("/api/v1/graphs/{graph}/query/{templateId}", ctx -> {
                     var graph = ctx.pathParam("graph");
                     var templateId = ctx.pathParam("templateId");
-                    var template = getQueryTemplateOrThrow(queryTemplates, graph, templateId);
+                    var template = getQueryTemplateOrThrow(queryTemplates, cypher, metadata, graph, templateId);
                     var sortBy = Objects.requireNonNullElse(ctx.queryParam("sortBy"), template.result_columns.get(0).column_id);
                     var sortDir = Objects.requireNonNullElse(ctx.queryParam("sortDir"), "asc");
                     var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"),
@@ -561,20 +562,16 @@ public class GrebiApi {
                 .post("/api/v1/graphs/{graph}/nodes/{nodeId}/resolve_single_edges", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
                     ctx.contentType("application/json");
-                    if (cypher == null) {
-                        ctx.result("{}");
-                        return;
-                    }
                     var bodyBytes = ctx.bodyAsBytes();
                     limits.validateRequestBody(bodyBytes);
                     var body = new String(bodyBytes, StandardCharsets.UTF_8);
-                    var items = gson.fromJson(body, GrebiCypherRepo.DirectionAndEdgeType[].class);
+                    var items = gson.fromJson(body, GrebiPostgresClient.DirectionAndEdgeType[].class);
                     if (items == null || items.length == 0) {
                         ctx.result("{}");
                         return;
                     }
                     limits.validateResolveSingleEdgesCount(items.length);
-                    var result = cypher.resolveSingleEdges(ctx.pathParam("graph"), nodeId, List.of(items));
+                    var result = postgres.resolveSingleEdges(ctx.pathParam("graph"), nodeId, List.of(items));
                     ctx.result(gson.toJson(result));
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/incoming_edges.csv", ctx -> edgeListCsv(ctx, postgres, "grebi:toNodeId", "incoming_edges"))
@@ -953,15 +950,71 @@ public class GrebiApi {
 
     private static QueryTemplate getQueryTemplateOrThrow(
         GrebiQueryTemplatesRepo queryTemplates,
+        GrebiCypherRepo cypher,
+        GrebiMetadataRepo metadata,
         String graph,
         String templateId
     ) {
-        return queryTemplates.getQueryTemplates().stream()
+        var template = queryTemplates.getQueryTemplates().stream()
             .filter(qt -> qt.id.equals(templateId) && (qt.graphs == null || qt.graphs.contains(graph)))
             .findFirst()
             .orElseThrow(() -> new NotFoundResponse(
                 "Query template " + templateId + " not found for graph " + graph
             ));
+        if (!isServable(cypher, metadata, graph, template)) {
+            throw new NotFoundResponse(notBuiltMessage(template, graph));
+        }
+        return template;
+    }
+
+    /**
+     * Whether this instance can serve the template on the graph. A template is
+     * served from the table the dataload materialised for it; one without a
+     * table (a template added since the last dataload, or `materialise: false`)
+     * can only be run live, which takes a cypher service.
+     */
+    static boolean isServable(GrebiCypherRepo cypher, GrebiMetadataRepo metadata, String graph, QueryTemplate template) {
+        return cypher != null
+            || (template.isParameterisedMaterialised()
+                && findMaterialisedBuild(metadata, graph, "materialised_templates", template.id) != null);
+    }
+
+    static String notBuiltMessage(QueryTemplate template, String graph) {
+        return "Query template " + template.id + " has no materialised table in graph " + graph
+            + ": the dataload has not built it, and there is no cypher service to run it live";
+    }
+
+    /**
+     * The node and edge counts of each graph, as /api/v1/stats serves them.
+     * Nodes are counted; edges are summed from the graph metadata, which holds
+     * the count of every (source types, edge type, target types, datasources).
+     */
+    static Map<String, Map<String, Object>> graphStats(
+            GrebiPostgresRepo postgres, GrebiMetadataRepo metadata, Set<String> graphs) {
+        Map<String, Map<String, Object>> stats = new LinkedHashMap<>();
+        for (String graph : graphs) {
+            long edges = 0;
+            var edgesEl = metadata.getMetadata(graph).get("edges");
+            if (edgesEl != null && edgesEl.isJsonObject()) {
+                for (var srcType : edgesEl.getAsJsonObject().entrySet()) {
+                    if (!srcType.getValue().isJsonObject()) continue;
+                    for (var edgeType : srcType.getValue().getAsJsonObject().entrySet()) {
+                        if (!edgeType.getValue().isJsonObject()) continue;
+                        for (var dstType : edgeType.getValue().getAsJsonObject().entrySet()) {
+                            if (!dstType.getValue().isJsonObject()) continue;
+                            for (var dsSig : dstType.getValue().getAsJsonObject().entrySet()) {
+                                edges += dsSig.getValue().getAsLong();
+                            }
+                        }
+                    }
+                }
+            }
+            Map<String, Object> graphStats = new LinkedHashMap<>();
+            graphStats.put("num_nodes", postgres.countNodes(graph));
+            graphStats.put("num_edges", edges);
+            stats.put(graph, graphStats);
+        }
+        return stats;
     }
 
     /** Query-string keys of a /query request that are neither template
@@ -1061,7 +1114,7 @@ public class GrebiApi {
         }
 
         if (cypher == null) {
-            throw new IllegalStateException("Cypher service unavailable; cannot serve live query template " + template.id);
+            throw new NotFoundResponse(notBuiltMessage(template, graph));
         }
         // Live path: free-text narrow (searchText) is not supported and is ignored.
         return cypher.runQueryFromTemplatePaginated(graph, template, params, resolve, page);
