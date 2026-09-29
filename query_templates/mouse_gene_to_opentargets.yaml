@@ -33,10 +33,13 @@ params:
 result_columns:
   - column_id: mouse_gene
     column_type: GraphNodeId
+    id_prefixes: ['mgi:', 'ensembl:', 'ncbigene:']
   - column_id: human_gene
     column_type: GraphNodeId
+    id_prefixes: ['hgnc:', 'ensembl:', 'ncbigene:']
   - column_id: disease
     column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'doid:', 'orpha:']
   - column_id: score
     column_type: float
 examples:

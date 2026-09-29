@@ -406,7 +406,7 @@ public class GrebiPostgresRepo {
 
         pgClient.streamMaterialisedParameterised(
                 graph, build, closureParams, searchText, filters, sortColumn, sortAsc,
-                row -> GrebiCypherRepo.writeCsvRow(template.result_columns, row, writer));
+                row -> GrebiCypherRepo.writeCsvRow(graph, template.result_columns, row, writer));
         writer.flush();
     }
 

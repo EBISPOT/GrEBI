@@ -28,8 +28,10 @@ params:
 result_columns:
   - column_id: disease
     column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'doid:', 'orpha:']
   - column_id: entity
     column_type: GraphNodeId
+    id_prefixes: ['uberon:', 'cl:', 'go:']
   - column_id: relationship
     column_type: string
     facet: true

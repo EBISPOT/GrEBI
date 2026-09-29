@@ -30,9 +30,11 @@ params:
 result_columns:
   - column_id: chemical
     column_type: GraphNodeId
+    id_prefixes: ['chebi:']
     facet: true
   - column_id: study
     column_type: GraphNodeId
+    id_prefixes: ['MTBLS']
 examples:
   - title: glucose
     params:

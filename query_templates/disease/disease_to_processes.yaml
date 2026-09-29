@@ -26,8 +26,10 @@ params:
 result_columns:
   - column_id: disease
     column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'doid:', 'orpha:']
   - column_id: process
     column_type: GraphNodeId
+    id_prefixes: ['go:', 'reactome:R-']
   - column_id: from_datasources
     column_type: DatasourceList
     facet: true

@@ -517,9 +517,9 @@ public class GrebiCypherRepo {
 
     /** Write one CSV row for the given result columns (must match {@link #csvHeader}).
      *  `record` is a row map of column_id -> value (node columns are node-object
-     *  maps with `id` and `grebi:name`). */
+     *  maps with `id`, `grebi:nodeId` and `grebi:name`). */
     @SuppressWarnings("unchecked")
-    public static void writeCsvRow(List<QueryTemplate.ResultColumn> columns,
+    public static void writeCsvRow(String graph, List<QueryTemplate.ResultColumn> columns,
                                    Map<String, Object> record, PrintWriter writer) {
         boolean first = true;
         for (QueryTemplate.ResultColumn column : columns) {
@@ -538,7 +538,8 @@ public class GrebiCypherRepo {
                     continue;
                 }
                 var sourceIds = (List<String>) value.get("id");
-                var nodeId = pickFavouriteSourceId(sourceIds);
+                var nodeId = pickSourceId(column.id_prefixes, sourceIds,
+                        bareNodeId(graph, Objects.toString(value.get("grebi:nodeId"), null)));
                 var names = (List<String>) value.get("grebi:name");
                 String nodeLabel = (names == null || names.isEmpty())
                         ? nodeId : Objects.toString(names.get(0), null);
@@ -570,7 +571,7 @@ public class GrebiCypherRepo {
         return CompletableFuture.runAsync(() -> {
             try {
                 cypherClient.streamQuery(graph, preparedQuery.query, preparedQuery.params,
-                        record -> writeCsvRow(columns, record, writer));
+                        record -> writeCsvRow(graph, columns, record, writer));
                 writer.flush();
             } catch (Exception e) {
                 writer.write("ERROR: " + e.getMessage() + "\n");
@@ -600,9 +601,13 @@ public class GrebiCypherRepo {
 
 
 
-    // TODO: move to config
-    //
-    private static final List<String> FAVOURITE_PREFIXES = List.of(
+    /**
+     * Identifier prefixes in order of preference, for a node whose column does
+     * not say what it is about (result_columns.id_prefixes) or that has none of
+     * the identifiers it asks for. The dataload names the nodes of the tables it
+     * publishes from the same list (grebi_shared, query_results.rs).
+     */
+    static final List<String> PREFERRED_ID_PREFIXES = List.of(
         "grebi:",
         "biolink:",
         "ro:",
@@ -621,25 +626,39 @@ public class GrebiCypherRepo {
         "MTBLC"
     );
 
-    private static String pickFavouriteSourceId(List<String> ids) {
-
-        if(ids == null || ids.isEmpty()) {
-            return null;
-        }
-
-        for(String prefix : FAVOURITE_PREFIXES) {
-            for(String id : ids) {
-                    if(id.startsWith(prefix)) {
+    /**
+     * The identifier a node is given in an export. A node stands for every
+     * identifier that was merged into it, so there is a choice: the first of its
+     * identifiers with the prefix the column wants most, then with the most
+     * preferred of the prefixes above or, when it has none of those, the node's
+     * own id. The names of a node are among its identifiers, and some
+     * identifiers come with a name attached ("chebi:16393 SPHINGOSINE");
+     * anything with a space in it is passed over.
+     */
+    static String pickSourceId(List<String> columnPrefixes, List<String> ids, String nodeId) {
+        if (ids != null) {
+            var wanted = new ArrayList<String>();
+            if (columnPrefixes != null) {
+                wanted.addAll(columnPrefixes);
+            }
+            wanted.addAll(PREFERRED_ID_PREFIXES);
+            for (String prefix : wanted) {
+                for (String id : ids) {
+                    if (id != null && id.startsWith(prefix) && id.chars().noneMatch(Character::isWhitespace)) {
                         return id;
                     }
                 }
             }
-        
-
-        return ids.get(0);
+        }
+        return nodeId;
     }
 
-
-
+    /** A node id as result rows have it, "<graph>:<node id>", without the graph. */
+    static String bareNodeId(String graph, String nodeId) {
+        if (nodeId != null && graph != null && nodeId.startsWith(graph + ":")) {
+            return nodeId.substring(graph.length() + 1);
+        }
+        return nodeId;
+    }
 
 }

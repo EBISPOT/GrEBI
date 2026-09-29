@@ -44,12 +44,15 @@ params:
 result_columns:
   - column_id: cell_type
     column_type: GraphNodeId
+    id_prefixes: ['cl:']
     facet: true
   - column_id: trait
     column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'oba:', 'hp:']
     facet: true
   - column_id: study
     column_type: GraphNodeId
+    id_prefixes: ['GCST']
   - column_id: study_accession
     column_type: string
   - column_id: reported_trait

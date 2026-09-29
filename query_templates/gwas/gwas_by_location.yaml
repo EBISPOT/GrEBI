@@ -60,16 +60,20 @@ params:
 result_columns:
   - column_id: location
     column_type: GraphNodeId
+    id_prefixes: ['uberon:', 'cl:']
     facet: true
   - column_id: trait
     column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'oba:', 'hp:']
     facet: true
   - column_id: snp
     column_type: GraphNodeId
+    id_prefixes: ['rs']
   - column_id: effect_allele
     column_type: string
   - column_id: gene
     column_type: GraphNodeId
+    id_prefixes: ['hgnc:', 'mgi:', 'ensembl:', 'ncbigene:']
     optional: true
   - column_id: study_accession
     column_type: string

@@ -79,6 +79,11 @@ public class QueryTemplate {
         // column (a GROUP BY over the closure-filtered rows). Only meaningful for
         // low-cardinality columns (datasource lists, node names, short strings).
         public Boolean facet;
+        // For a GraphNodeId column, the prefixes of the identifiers the column is
+        // about, most wanted first ("mondo:" for a disease). A node stands for all
+        // the identifiers merged into it; exports name it by the first of these it
+        // has (GrebiCypherRepo.pickSourceId), and so do the tables of a release.
+        public List<String> id_prefixes;
     }
     public static class Example {
         public String title;

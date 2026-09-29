@@ -103,6 +103,40 @@ class GrebiQueryTemplatesRepoTest {
         assertEquals(List.of("a", "c"), loaded.stream().map(t -> t.id).toList());
     }
 
+    /**
+     * The templates of this repository, which deployments serve: a key the API
+     * does not know makes it skip the template, so every one of them must load.
+     */
+    @Test
+    void everyTemplateOfTheRepositoryLoads() throws IOException {
+        Path templates = Path.of("..", "..", "query_templates");
+        org.junit.jupiter.api.Assumptions.assumeTrue(Files.isDirectory(templates), "run from a checkout of the repository");
+
+        long files;
+        try (var walk = Files.walk(templates)) {
+            files = walk.filter(f -> f.toString().endsWith(".yaml") && !f.getFileName().toString().startsWith("_")).count();
+        }
+        List<QueryTemplate> loaded = GrebiQueryTemplatesRepo.loadQueryTemplates(templates.toString());
+
+        assertEquals(files, loaded.size(), "a template was skipped; the log above says which and why");
+        var disease = loaded.stream().filter(t -> t.id.equals("disease_to_genes")).findFirst().orElseThrow()
+            .result_columns.get(0);
+        assertEquals("disease", disease.column_id);
+        assertEquals("mondo:", disease.id_prefixes.get(0), "a disease is named by its MONDO id");
+    }
+
+    @Test
+    void aNodeColumnCanSayWhichIdentifiersItIsAbout(@TempDir Path dir) throws IOException {
+        write(dir, "a.yaml", "title: Good\nquestion: q\ntopics: [t]\nresult_columns:\n"
+            + "  - column_id: disease\n    column_type: GraphNodeId\n    id_prefixes: ['mondo:', 'efo:']\n"
+            + "  - column_id: gene\n    column_type: GraphNodeId\n");
+
+        var columns = GrebiQueryTemplatesRepo.loadQueryTemplates(dir.toString()).get(0).result_columns;
+
+        assertEquals(List.of("mondo:", "efo:"), columns.get(0).id_prefixes);
+        assertNull(columns.get(1).id_prefixes);
+    }
+
     @Test
     void skipsMalformedYaml(@TempDir Path dir) throws IOException {
         write(dir, "a.yaml", GOOD);

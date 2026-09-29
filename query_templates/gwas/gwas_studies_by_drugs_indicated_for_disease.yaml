@@ -67,13 +67,17 @@ params:
 result_columns:
   - column_id: disease
     column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'doid:', 'orpha:']
     facet: true
   - column_id: trait
     column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'oba:', 'hp:']
   - column_id: drug
     column_type: GraphNodeId
+    id_prefixes: ['chebi:']
   - column_id: study
     column_type: GraphNodeId
+    id_prefixes: ['GCST']
   - column_id: study_accession
     column_type: string
   - column_id: reported_trait

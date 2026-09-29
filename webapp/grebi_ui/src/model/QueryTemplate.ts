@@ -50,6 +50,9 @@ export interface ResultColumn {
   optional?: boolean;
   // materialised serving returns a top-N value breakdown for this column
   facet?: boolean;
+  // for a node column, the prefixes of the identifiers it is about: exports
+  // name a node by the first of these it has
+  id_prefixes?: string[];
 }
 
 

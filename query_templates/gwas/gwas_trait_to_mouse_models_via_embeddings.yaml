@@ -77,16 +77,21 @@ params:
 result_columns:
   - column_id: trait
     column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'oba:', 'hp:']
   - column_id: mp_phenotype
     column_type: GraphNodeId
+    id_prefixes: ['mp:']
   - column_id: embedding_distance
     column_type: float
   - column_id: mouse_gene
     column_type: GraphNodeId
+    id_prefixes: ['mgi:', 'ensembl:', 'ncbigene:']
   - column_id: human_gene
     column_type: GraphNodeId
+    id_prefixes: ['hgnc:', 'ensembl:', 'ncbigene:']
   - column_id: snp
     column_type: GraphNodeId
+    id_prefixes: ['rs']
   - column_id: effect_allele
     column_type: string
     optional: true

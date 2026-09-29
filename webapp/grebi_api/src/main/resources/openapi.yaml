@@ -1295,6 +1295,10 @@ components:
               column_type: { type: string }
               optional: { type: boolean }
               facet: { type: boolean }
+              id_prefixes:
+                type: array
+                items: { type: string }
+                description: For a node column, the prefixes of the identifiers the column is about, most wanted first. Exports name a node by the first of these it has.
         examples:
           type: array
           items:
