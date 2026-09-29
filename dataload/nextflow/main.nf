@@ -27,7 +27,7 @@ include { create_postgres } from './processes/08_create_postgres/create_postgres
 include { populate_external_postgres } from './processes/08_create_postgres/populate_external_postgres'
 include { package_postgres } from './processes/08_create_postgres/package_postgres'
 include { run_materialised_queries } from './processes/07_run_queries/run_materialised_queries'
-include { results_to_csv } from './processes/07_run_queries/results_to_csv'
+include { make_download_tables } from './processes/07_run_queries/make_download_tables'
 include { link_results } from './processes/07_run_queries/link_results'
 include { add_query_metadatas_to_graph_metadata } from './processes/07_run_queries/add_query_metadatas_to_graph_metadata'
 include { test_query_templates } from './processes/09_integration_tests/test_query_templates'
@@ -353,7 +353,23 @@ workflow {
             sortPaths(result_files).collect { f -> [sg, f] }
         }
 
-    csv_results = results_to_csv(results_flat, Channel.value(params.out))
+    // Each query's metadata json, which names its storage table and its typed
+    // columns, keyed on [sg, query_id] via the filename ({qid}.json).
+    // queries.json is the per-subgraph list, not a per-query file.
+    mat_query_metas = run_materialised_queries.out.metadatas
+        .flatMap { sg, files ->
+            (files instanceof List ? files : [files])
+                .findAll { f -> f.simpleName != 'queries' }
+                .collect { f -> [[sg, f.simpleName], f] }
+        }
+
+    // The tables people download: [sg, {qid}.results.jsonl, {qid}.json]
+    download_tables_input = results_flat
+        .map { sg, f -> [[sg, f.simpleName], f] }
+        .combine(mat_query_metas, by: 0)
+        .map { key, results, meta -> [key[0], results, meta] }
+
+    make_download_tables(download_tables_input, Channel.value(params.out))
 
     // link_results needs [sg, results_file, entity_metadata, groups]
     link_results_input = results_flat
@@ -379,17 +395,8 @@ workflow {
     prepare_postgres_autocomplete(indexed.names_txt)
     // autocomplete_pgbin: [sg, autocomplete_pgbin]
 
-    // Pair each query's linked results with its metadata json (which names the
-    // storage table + typed columns), keyed on [sg, query_id] via filenames:
-    // {qid}.linked_results.jsonl / {qid}.json. queries.json is the per-subgraph
-    // list, not a per-query file.
-    mat_query_metas = run_materialised_queries.out.metadatas
-        .flatMap { sg, files ->
-            (files instanceof List ? files : [files])
-                .findAll { f -> f.simpleName != 'queries' }
-                .collect { f -> [[sg, f.simpleName], f] }
-        }
-
+    // Pair each query's linked results with its metadata json, keyed on
+    // [sg, query_id] via filenames: {qid}.linked_results.jsonl / {qid}.json.
     prepare_mat_queries_input = linked_results
         .map { sg, f -> [[sg, f.simpleName], f] }
         .combine(mat_query_metas, by: 0)

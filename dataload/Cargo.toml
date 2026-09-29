@@ -33,7 +33,7 @@ members = [
 	"06_create_neo_db/grebi_make_neo_csv",
 	"06_create_neo_db/grebi_make_neo_ids_csv",
 	"07_run_queries/grebi_link_results",
-	"07_run_queries/grebi_jsonl2csv",
+	"07_run_queries/grebi_make_download_tables",
 	"08_create_postgres/grebi_make_postgres_edges",
 	"08_create_postgres/grebi_make_postgres_nodes",
 	"08_create_postgres/grebi_make_postgres_blobs",

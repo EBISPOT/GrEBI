@@ -1,0 +1,7 @@
+gene_id,gene_label,snp_id,snp_label,trait_id,trait_label,study_accession,pubmed_id,p_value,or_or_beta,n_cases,from_datasources
+hgnc:620,APP,rs429358,,mondo:0004975,Alzheimer disease,GCST001,12345,1E-7,1.25,1200,GWAS;OLS.efo
+hgnc:620,APP,rs7412,,chebi:16393,sphingosine,GCST002,,3e-09,,,
+hgnc:620,APP,rs7412,,cl:0000084,T cell,GCST003,67890,0.05,0.135,15,GWAS
+hgnc:620,APP,rs1,,mondo:0004975,Alzheimer disease,GCST004,111,0.5,,,GWAS
+,,rs2,,mondo:0004975,Alzheimer disease,"He said ""no"", twice;
+then left",222,1,-0.5,0,

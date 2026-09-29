@@ -396,6 +396,20 @@ class TestServingMetadata(unittest.TestCase):
         self.assertEqual(gm.serving_metadata(t)["kind"], "standalone")
 
 
+class TestStorageColumns(unittest.TestCase):
+    def test_columns_carry_their_serving_attributes_and_nothing_else(self):
+        template = {"result_columns": [
+            {"column_id": "disease", "column_type": "GraphNodeId", "facet": True, "id_prefixes": ["mondo:", "efo:"]},
+            {"column_id": "or_or_beta", "column_type": "float", "optional": True, "note": "not for the metadata"},
+            {"column_id": "edge_id", "column_type": "EdgeId", "id_prefixes": []},
+        ]}
+        self.assertEqual(gm.storage_columns(template), [
+            {"column_id": "disease", "column_type": "GraphNodeId", "facet": True, "id_prefixes": ["mondo:", "efo:"]},
+            {"column_id": "or_or_beta", "column_type": "float", "optional": True},
+            {"column_id": "edge_id", "column_type": "EdgeId"},
+        ])
+
+
 class TestRunsForSubgraph(unittest.TestCase):
     def test_run_for_subgraphs_allowlist(self):
         t = {"materialise": {"cypher": "RETURN 1", "run_for_subgraphs": ["impc_x_gwas"]}}

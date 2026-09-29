@@ -26,7 +26,15 @@ mkdir -p $FTP_PATH
 
 cp -L $DATARELEASE_PATH/*.tar.xz $FTP_PATH/
 cp -L $DATARELEASE_PATH/*_metadata.json $FTP_PATH/
-cp -rL $DATARELEASE_PATH/query_results $FTP_PATH/
+
+# The tables of each graph, as CSV and as Parquet, and the list of them.
+# query_results/ also holds the rows they were made from, as JSON lines thirty
+# times their size; those stay behind.
+for GRAPH_DIR in $DATARELEASE_PATH/query_results/*/; do
+  GRAPH=$(basename $GRAPH_DIR)
+  mkdir -p $FTP_PATH/query_results/$GRAPH
+  cp -L $GRAPH_DIR/*.csv.gz $GRAPH_DIR/*.parquet $GRAPH_DIR/queries.json $FTP_PATH/query_results/$GRAPH/
+done
 
 echo "Copying $FTP_PATH to $LATEST_PATH"
 rm -rf $LATEST_PATH

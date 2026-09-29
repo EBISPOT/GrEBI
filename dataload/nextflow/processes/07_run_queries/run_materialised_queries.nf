@@ -13,7 +13,9 @@ process run_materialised_queries {
     val(neo_query_mem)
     val(out_dir)
 
-    publishDir "${out_dir}", overwrite: true
+    // Published under the graph: two graphs materialise the same templates,
+    // and side by side in one directory the second overwrote the first.
+    publishDir "${out_dir}/query_results/${subgraph}", overwrite: true, saveAs: { f -> f.replaceFirst('^query_results/', '') }
 
     output:
     tuple val(subgraph), path("query_results/queries.json"), emit: metadata

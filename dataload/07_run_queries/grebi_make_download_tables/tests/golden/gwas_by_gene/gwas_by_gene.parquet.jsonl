@@ -1,0 +1,5 @@
+{"gene_id":"hgnc:620","gene_label":"APP","snp_id":"rs429358","trait_id":"mondo:0004975","trait_label":"Alzheimer disease","study_accession":"GCST001","pubmed_id":"12345","p_value":1.0e-7,"or_or_beta":1.25,"n_cases":1200,"from_datasources":["GWAS","OLS.efo"]}
+{"gene_id":"hgnc:620","gene_label":"APP","snp_id":"rs7412","trait_id":"chebi:16393","trait_label":"sphingosine","study_accession":"GCST002","p_value":3.0e-9,"from_datasources":[]}
+{"gene_id":"hgnc:620","gene_label":"APP","snp_id":"rs7412","trait_id":"cl:0000084","trait_label":"T cell","study_accession":"GCST003","pubmed_id":"67890","p_value":0.05,"or_or_beta":0.135,"n_cases":15,"from_datasources":["GWAS"]}
+{"gene_id":"hgnc:620","gene_label":"APP","snp_id":"rs1","trait_id":"mondo:0004975","trait_label":"Alzheimer disease","study_accession":"GCST004","pubmed_id":"111","p_value":0.5,"from_datasources":["GWAS"]}
+{"snp_id":"rs2","trait_id":"mondo:0004975","trait_label":"Alzheimer disease","study_accession":"He said \"no\", twice;\nthen left","pubmed_id":"222","p_value":1.0,"or_or_beta":-0.5,"n_cases":0,"from_datasources":[]}

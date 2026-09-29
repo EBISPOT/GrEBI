@@ -3,6 +3,7 @@ use std::io::{self, BufRead, BufWriter, Write};
 
 use clap::Parser;
 use grebi_shared::pgcopy::PgCopyWriter;
+use grebi_shared::query_results::{self, as_f64, as_text, flatten_to_strings, Col, ColKind};
 use serde_json::Value;
 use sha1::{Digest, Sha1};
 
@@ -50,19 +51,6 @@ fn pg_identifier(name: &str) -> String {
     format!("{}_{}", &name[..PG_MAX_IDENTIFIER - 9], &digest[..8])
 }
 
-enum ColKind {
-    Node,       // -> _id TEXT[] + _name TEXT
-    TextArray,  // -> TEXT[]
-    Float,      // -> double precision
-    Int,        // -> bigint
-    Text,       // -> TEXT
-}
-
-struct Col {
-    id: String,
-    kind: ColKind,
-}
-
 fn main() {
     let args = Args::parse();
 
@@ -79,30 +67,9 @@ fn main() {
 
     // Result rows carry node ids as "<subgraph>:<nodeId>"; the nodes/edges
     // tables (which closure resolution runs against) use the bare nodeId.
-    let nid_prefix = metadata
-        .get("subgraph")
-        .and_then(|v| v.as_str())
-        .map(|s| format!("{}:", s))
-        .unwrap_or_default();
+    let nid_prefix = query_results::node_id_prefix(&metadata);
 
-    let cols: Vec<Col> = metadata
-        .get("columns")
-        .and_then(|v| v.as_array())
-        .expect("metadata json has no `columns`")
-        .iter()
-        .map(|c| {
-            let id = c.get("column_id").and_then(|v| v.as_str()).expect("column_id").to_string();
-            let ctype = c.get("column_type").and_then(|v| v.as_str()).unwrap_or("string");
-            let kind = match ctype {
-                "GraphNodeId" => ColKind::Node,
-                "DatasourceList" => ColKind::TextArray,
-                "float" => ColKind::Float,
-                "int" | "integer" => ColKind::Int,
-                _ => ColKind::Text,
-            };
-            Col { id, kind }
-        })
-        .collect();
+    let cols: Vec<Col> = query_results::columns(&metadata);
 
     // The GIN targets: each closure param's filter column (parameterised
     // templates only; standalone tables have no closure filter).
@@ -146,13 +113,13 @@ fn main() {
             let v = json.get(&col.id);
             match col.kind {
                 ColKind::Node => {
-                    match v.and_then(|v| v.get("grebi:nodeId")).and_then(|n| n.as_str()) {
-                        Some(nid) => pgw.write_text(nid.strip_prefix(nid_prefix.as_str()).unwrap_or(nid)),
+                    match query_results::node_id(v, &nid_prefix) {
+                        Some(nid) => pgw.write_text(nid),
                         None => pgw.write_null(),
                     }
-                    match v.and_then(|v| v.get("grebi:name")).map(flatten_to_strings) {
-                        Some(names) if !names.is_empty() => pgw.write_text(&names[0]),
-                        _ => pgw.write_null(),
+                    match query_results::node_name(v) {
+                        Some(name) => pgw.write_text(&name),
+                        None => pgw.write_null(),
                     }
                 }
                 ColKind::TextArray => {
@@ -224,32 +191,4 @@ fn write_indexes_sidecar(table: &str, filter_columns: &[String]) {
         .unwrap();
     }
     w.flush().unwrap();
-}
-
-fn flatten_to_strings(v: &Value) -> Vec<String> {
-    match v {
-        Value::String(s) => vec![s.clone()],
-        Value::Array(arr) => arr.iter().flat_map(flatten_to_strings).collect(),
-        Value::Null => vec![],
-        other => vec![serde_json::to_string(other).unwrap()],
-    }
-}
-
-fn as_f64(v: Option<&Value>) -> Option<f64> {
-    match v? {
-        Value::Number(n) => n.as_f64(),
-        Value::String(s) => s.parse::<f64>().ok(),
-        // a list-valued property that slipped through without [0] in the Cypher
-        Value::Array(arr) => arr.first().and_then(|el| as_f64(Some(el))),
-        _ => None,
-    }
-}
-
-fn as_text(v: Option<&Value>) -> Option<String> {
-    match v? {
-        Value::String(s) => Some(s.clone()),
-        Value::Null => None,
-        Value::Array(arr) => arr.first().and_then(|el| as_text(Some(el))),
-        other => Some(serde_json::to_string(other).unwrap().trim_matches('"').to_string()),
-    }
 }

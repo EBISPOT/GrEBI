@@ -58,6 +58,10 @@ yaml (cypher_query)
   metadata branch:
   run_queries.dockerpy metadata (queries.json)
   → add_query_metadatas_to_graph_metadata.py   graph_metadata['materialised_queries'] = [...]
+  download branch:
+  {id}.results.jsonl + {id}.json
+  → grebi_make_download_tables   query_results/{graph}/{id}.csv.gz and .parquet, the
+                                  files a release publishes and the Tables tab links to
 ```
 
 Key files: `dataload/07_run_queries/run_queries.dockerpy`,
@@ -450,6 +454,33 @@ recorded in the metadata, never re-derived). The physical schema is derived from
 
 The writer emits `.columns`/`.indexes` DDL sidecars alongside the pgbin (like the
 nodes/edges writers); `load_postgres.py` builds the tables and indexes from them.
+
+### Download tables (the files of a release)
+
+Every materialised query is also published whole, as `query_results/{graph}/{id}.csv.gz`
+and `query_results/{graph}/{id}.parquet` (`grebi_make_download_tables`, from the same
+`{id}.results.jsonl` and metadata as the Postgres table). The Tables tab of the UI
+links to them on the FTP and lists them from `/api/v1/graphs/{graph}/tables`.
+
+The files have the columns of the query's CSV export: a `GraphNodeId` column is
+`"<col>_id"` and `"<col>_label"`, and `EdgeId` columns are left out. The identifier
+is not the node id the Postgres table stores. A node stands for every identifier
+merged into it, and a node column says which it is about in its `id_prefixes`, most
+wanted first:
+
+```yaml
+result_columns:
+  - column_id: disease
+    column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'doid:', 'orpha:']
+```
+
+The node is named by the first of its identifiers with the first of those prefixes
+it has an identifier for; then by a list of preferred prefixes shared with the API
+(`PREFERRED_ID_PREFIXES`); then by its node id. Without `id_prefixes` a disease that
+is also a phenotype comes out as its HP id, `hp:` being preferred to `mondo:` in that
+list: in the Sept 2026 build that was 37–85% of the rows of a disease column. The
+API's CSV export of a query names nodes by the same rule.
 
 ### Serving (closure-at-query-time, metadata-driven)
 

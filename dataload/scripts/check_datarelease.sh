@@ -43,3 +43,16 @@ if [ ! -d "$DATARELEASE_PATH/query_results" ]; then
   echo "query_results/ not found in $DATARELEASE_PATH"
   exit 1
 fi
+# The tables are published per graph, each as CSV and as Parquet
+for SUBGRAPH in "${SUBGRAPHS[@]}"; do
+  if [ ! -f "$DATARELEASE_PATH/query_results/$SUBGRAPH/queries.json" ]; then
+    echo "query_results/$SUBGRAPH/queries.json not found in $DATARELEASE_PATH"
+    exit 1
+  fi
+  for CSV in "$DATARELEASE_PATH"/query_results/$SUBGRAPH/*.csv.gz; do
+    if [ ! -f "${CSV%.csv.gz}.parquet" ]; then
+      echo "${CSV%.csv.gz}.parquet not found: every table is published as CSV and as Parquet"
+      exit 1
+    fi
+  done
+done

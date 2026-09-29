@@ -501,6 +501,10 @@ def storage_columns(template):
             entry["optional"] = True
         if c.get("facet"):
             entry["facet"] = True
+        # which identifiers a node column is about: the download tables name
+        # its nodes by them (the Postgres table keeps the node id)
+        if c.get("id_prefixes"):
+            entry["id_prefixes"] = list(c["id_prefixes"])
         out.append(entry)
     return out
 
