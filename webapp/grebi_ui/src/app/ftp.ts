@@ -3,7 +3,7 @@
  * copies a release into a dated folder and into latest/: per graph a Neo4j
  * archive and a metadata file, the whole release as one archive (the
  * standalone Postgres archive only when the dataload packages it), and the
- * materialised query results as gzipped CSV.
+ * materialised tables of each graph as gzipped CSV and as Parquet.
  */
 export const FTP_BASE = (process.env.REACT_APP_FTP_BASE || "https://ftp.ebi.ac.uk/pub/databases/spot/kg").replace(/\/+$/, "");
 export const LATEST_RELEASE = `${FTP_BASE}/latest`;
@@ -31,10 +31,10 @@ export function releaseFiles(graph: string): ReleaseFile[] {
       format: "JSON",
     },
     {
-      description: "Materialised query results of the release, one gzipped CSV per query",
-      file: "query_results/",
-      url: `${LATEST_RELEASE}/query_results/`,
-      format: "Directory of CSV, gzipped",
+      description: `Materialised tables of ${graph}: the whole results of its queries, each as gzipped CSV and as Parquet`,
+      file: `query_results/${graph}/`,
+      url: `${LATEST_RELEASE}/query_results/${graph}/`,
+      format: "Directory of CSV (gzipped) and Parquet",
     },
     {
       description: "PostgreSQL database of every graph in the release: all properties of all nodes and edges, the search indexes and the materialised tables (published when the dataload packages it separately)",
@@ -51,7 +51,12 @@ export function releaseFiles(graph: string): ReleaseFile[] {
   ];
 }
 
-/** The gzipped CSV of a materialised query's results in the latest release. */
-export function materialisedQueryCsvUrl(queryId: string): string {
-  return `${LATEST_RELEASE}/query_results/${queryId}.results.csv.gz`;
+export type TableFormat = "csv" | "parquet";
+
+/**
+ * A materialised table of a graph in the latest release. Two graphs can
+ * materialise the same query, so a table is a file of its graph's folder.
+ */
+export function tableFileUrl(graph: string, tableId: string, format: TableFormat): string {
+  return `${LATEST_RELEASE}/query_results/${graph}/${tableId}.${format === "csv" ? "csv.gz" : "parquet"}`;
 }

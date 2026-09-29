@@ -49,8 +49,9 @@ describe('EbiTablesPage', () => {
 })
 
 describe('EbiTablesPage download', () => {
-  it('links to the whole table as CSV on the FTP', () => {
+  it('links to the whole table as CSV and as Parquet on the FTP', () => {
     renderPage()
-    expect(screen.getByRole('link', { name: /Download the whole table as CSV/ })).toHaveAttribute('href', expect.stringMatching(/\/latest\/query_results\/.+\.results\.csv\.gz$/))
+    expect(screen.getByRole('link', { name: /Download the whole table as CSV/ })).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/latest/query_results/g1/mq1.csv.gz')
+    expect(screen.getByRole('link', { name: /as Parquet/ })).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/latest/query_results/g1/mq1.parquet')
   })
 })

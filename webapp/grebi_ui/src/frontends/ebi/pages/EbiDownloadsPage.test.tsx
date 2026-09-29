@@ -29,7 +29,7 @@ describe('EbiDownloadsPage', () => {
     renderPage()
     const rows = screen.getAllByRole('row').slice(1)
     expect(rows.map((r) => within(r).getByRole('link').textContent)).toEqual([
-      'g1_neo4j.tar.xz', 'g1_metadata.json', 'query_results/', 'postgres.tar.xz', 'release.tar.xz',
+      'g1_neo4j.tar.xz', 'g1_metadata.json', 'query_results/g1/', 'postgres.tar.xz', 'release.tar.xz',
     ])
     expect(within(rows[0]).getByRole('link')).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/latest/g1_neo4j.tar.xz')
     expect(screen.getByRole('link', { name: 'latest/' })).toHaveAttribute('href', 'https://ftp.ebi.ac.uk/pub/databases/spot/kg/latest/')

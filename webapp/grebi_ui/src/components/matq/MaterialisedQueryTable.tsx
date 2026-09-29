@@ -1,100 +1,94 @@
 import { useState, useEffect, Fragment } from "react";
-import GraphMetadata from "../../model/GraphMetadata"
-import MaterialisedQuery from "../../model/MaterialisedQuery";
+import MaterialisedTable from "../../model/MaterialisedTable";
 import LocalDataTable from "../datatable/LocalDataTable"
 import { get } from "../../app/api";
-import { Box, Button, CircularProgress, Link, Stack } from "@mui/material";
-import { Download, Info } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { CircularProgress } from "@mui/material";
+import { Download } from "@mui/icons-material";
+import { Link } from "react-router-dom";
 import ErrorMessage from "../ErrorMessage";
-import { materialisedQueryCsvUrl } from "../../app/ftp";
+import { tableFileUrl, TableFormat } from "../../app/ftp";
 
+/** Where a table is looked at: the query it is the results of, or its own page. */
+function pageOf(table:MaterialisedTable):string {
+    return table.kind === "standalone"
+        ? `/graphs/${table.graph}/tables/${table.id}`
+        : `/graphs/${table.graph}/queries/${table.id}`
+}
 
+function DownloadLink({ table, format, label }:{ table:MaterialisedTable, format:TableFormat, label:string }) {
+    return <a className="link-default inline-flex items-center gap-1 mr-4 whitespace-nowrap"
+            href={tableFileUrl(table.graph, table.id, format)}
+            target="_blank" rel="noopener noreferrer">
+        <Download fontSize="small" /> {label}
+    </a>
+}
+
+// The rows come by table id from the API. None of the columns is sortable:
+// LocalDataTable keeps a sort state but does not sort its rows.
 const cols= [
     {
         id:"id",
-        name:"Query ID",
-        selector:(row:any,key:string)=> {
+        name:"Table",
+        selector:(row:MaterialisedTable)=> {
             return <Fragment>
-                <code>{row[key]}</code> <Link className="link-default" target="_blank" href={`https://github.com/EBISPOT/GrEBI/blob/dev/query_templates/${row[key]}.yaml`}>
-<span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Info style={{ fontSize: '1em' }} /></span>
-                </Link>
+                <Link className="link-default" to={pageOf(row)}><code>{row.id}</code></Link>
+                {row.title && <div className="text-sm text-gray-700">{row.title}</div>}
                 </Fragment>
         },
-        sortable:true
+        sortable:false
     },
     {
-        id:"description",
-        name:"Description",
-        selector:(row:any,key:string)=>row[key],
-        sortable:true
+        id:"num_rows",
+        name:"Rows",
+        selector:(row:MaterialisedTable)=> row.num_rows === undefined ? "" : row.num_rows.toLocaleString("en-GB"),
+        sortable:false
     },
     {
-        id:"updated",
-        name:"Updated",
-        selector:(row:any,key:string)=>row["end_time"],
-        sortable:true
+        id:"columns",
+        name:"Columns",
+        selector:(row:MaterialisedTable)=> <span className="text-sm text-gray-700">{row.columns.join(", ")}</span>,
+        sortable:false
     },
     {
         id:"download",
-        name:"",
-        selector:(row:any,key:string)=> <Link target="_blank" rel="noopener noreferrer" href={materialisedQueryCsvUrl(row["id"])} onClick={(e) => e.stopPropagation()}><Button><Box
-  display="flex"
-  alignItems="center"
->
-                  <Download /> CSV
-                </Box></Button></Link>,
+        name:"Download",
+        selector:(row:MaterialisedTable)=> <Fragment>
+                <DownloadLink table={row} format="csv" label="CSV" />
+                <DownloadLink table={row} format="parquet" label="Parquet" />
+            </Fragment>,
         sortable:false
     }
 ];
 
 
+/** The materialised tables of a graph, or of every graph, with their files in the latest release. */
 export default function MaterialisedQueryTable({
     graph
 }:{
     graph?:string|undefined
 }) {
 
-
-  let [matQs, setMatQs] = useState<MaterialisedQuery[]|null>(null);
-  let [graphMetadata, setGraphMetadata] = useState<any|null>(null);
+  let [tables, setTables] = useState<MaterialisedTable[]|null>(null);
   let [error, setError] = useState<any>(null);
-  const navigate = useNavigate();
 
     useEffect(() => {
         setError(null);
-        get<MaterialisedQuery[]>(graph ? `api/v1/graphs/${graph}/materialised_queries` : `api/v1/materialised_queries`).then(r => setMatQs(r)).catch(setError);
-    }, [graph]);
-
-    useEffect(() => {
-        if(graph)
-            get<GraphMetadata>(`api/v1/graphs/${graph}`).then(r => setGraphMetadata(r)).catch(setError);
+        get<MaterialisedTable[]>(graph ? `api/v1/graphs/${graph}/tables` : `api/v1/tables`).then(r => setTables(r)).catch(setError);
     }, [graph]);
 
     if(error) {
         return <ErrorMessage what="The tables" error={error} />
     }
 
-    if(!matQs) {
-        return <CircularProgress />
-    }
-
-    if(graph && !graphMetadata) {
+    if(!tables) {
         return <CircularProgress />
     }
 
     return <LocalDataTable
-                    data={matQs} 
+                    data={tables}
                     addColumnsFromData={false}
                     defaultSelector={(row,key)=>row[key]}
                     columns={cols}
-                    onSelectRow={(row) => {
-                        const rowGraph = row["graph"] || graph;
-                        if (!rowGraph) {
-                            return;
-                        }
-                        navigate(`/graphs/${rowGraph}/tables/${row["id"]}`)
-                    }}
                     />
 
 }
