@@ -1471,6 +1471,23 @@ public class GrebiPostgresClient {
         }
     }
 
+    /**
+     * The number of rows of a materialised table. Its rows are numbered from 1
+     * in row_number, which is indexed, so the highest number is the count
+     * without reading the table.
+     */
+    public long countMaterialisedRows(MaterialisedBuild build) {
+        try {
+            var highest = dsl().select(max(field(name("row_number"), Integer.class)))
+                    .from(table(name(requireIdent(build.table))))
+                    .fetchSingle().value1();
+            return highest == null ? 0 : highest;
+        } catch (SQLException e) {
+            logger.error("Counting the rows of {} failed", build.table, e);
+            throw new RuntimeException(e);
+        }
+    }
+
     /** Browse a standalone materialised query's table (the /tables UI). */
     public MatQueryResult searchMaterialisedQueryResults(
             MaterialisedBuild build, String searchText,

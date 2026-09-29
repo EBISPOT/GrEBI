@@ -146,6 +146,27 @@ public class GrebiPostgresRepo {
         return result;
     }
 
+    private final Map<String, Long> materialisedRowCounts = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * The number of rows of a materialised table, or null when it cannot be
+     * counted (the metadata names a table the database does not have). Counted
+     * once: the tables do not change while the API is up.
+     */
+    public Long countMaterialisedRows(uk.ac.ebi.grebi.db.MaterialisedBuild build) {
+        var known = materialisedRowCounts.get(build.table);
+        if (known != null) {
+            return known;
+        }
+        try {
+            long counted = pgClient.countMaterialisedRows(build);
+            materialisedRowCounts.put(build.table, counted);
+            return counted;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     public Map<String, Map<String, Object>> resolveSingleEdges(String graph, String nodeId,
             List<GrebiPostgresClient.DirectionAndEdgeType> items) {
         return pgClient.resolveSingleEdges(graph, nodeId, items);

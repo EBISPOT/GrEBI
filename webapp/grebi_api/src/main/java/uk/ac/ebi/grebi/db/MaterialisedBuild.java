@@ -68,6 +68,26 @@ public class MaterialisedBuild {
         return b;
     }
 
+    /**
+     * The columns of the table as a release publishes it (and as the CSV export
+     * of the query has them): an identifier and a label for a node, no edge ids.
+     */
+    public List<String> fileColumns() {
+        List<String> names = new java.util.ArrayList<>();
+        for (var c : columns) {
+            if (c.column_id == null || "EdgeId".equals(c.column_type) || "EdgeProps".equals(c.column_type)) {
+                continue;
+            }
+            if ("GraphNodeId".equals(c.column_type)) {
+                names.add(c.column_id + "_id");
+                names.add(c.column_id + "_label");
+            } else {
+                names.add(c.column_id);
+            }
+        }
+        return names;
+    }
+
     public boolean usesNodeIdClosure() {
         return "nid".equalsIgnoreCase(closure_key == null ? "" : closure_key);
     }

@@ -203,6 +203,42 @@ class GrebiApiQueryRoutesTest {
     }
 
     @Test
+    void theTablesOfAGraphAreItsMaterialisedTemplatesAndQueriesWithTheColumnsOfTheirFiles() {
+        when(app.postgres.countMaterialisedRows(argThat(b -> b != null && "matq_g1_snps_by_trait".equals(b.table)))).thenReturn(1200L);
+        when(app.postgres.countMaterialisedRows(argThat(b -> b != null && "matq_g1_all_studies".equals(b.table)))).thenReturn(null);
+
+        var res = app.get("/api/v1/graphs/g1/tables");
+        assertEquals(200, res.status());
+        var tables = res.json().getAsJsonArray();
+        assertEquals(List.of("all_studies", "snps_by_trait_materialised"), ids(res));
+
+        var template = tables.get(1).getAsJsonObject();
+        assertEquals("g1", template.get("graph").getAsString());
+        assertEquals("parameterised", template.get("kind").getAsString());
+        assertEquals(1200, template.get("num_rows").getAsInt());
+        assertEquals("[\"trait_id\",\"trait_label\",\"snp_id\",\"snp_label\",\"p_value\"]", template.get("columns").toString(),
+            "a node is an identifier and a label");
+
+        var standalone = tables.get(0).getAsJsonObject();
+        assertEquals("standalone", standalone.get("kind").getAsString());
+        assertFalse(standalone.has("num_rows"), "a table that cannot be counted is still listed");
+    }
+
+    @Test
+    void theTablesOfEveryGraphSayWhichGraphTheyAreFrom() {
+        var all = app.get("/api/v1/tables").json().getAsJsonArray();
+        assertEquals(2, all.size(), "g2 has none");
+        for (var table : all) {
+            assertEquals("g1", table.getAsJsonObject().get("graph").getAsString());
+        }
+        assertEquals("[]", app.get("/api/v1/graphs/g2/tables").body());
+
+        var unknown = app.get("/api/v1/graphs/nope/tables");
+        assertEquals(404, unknown.status());
+        assertEquals("Unknown graph nope", unknown.json().getAsJsonObject().get("error").getAsString());
+    }
+
+    @Test
     void materialisedQueriesAreListedAcrossGraphsAndPerGraph() {
         var all = app.get("/api/v1/materialised_queries").json().getAsJsonArray();
         assertEquals(1, all.size());

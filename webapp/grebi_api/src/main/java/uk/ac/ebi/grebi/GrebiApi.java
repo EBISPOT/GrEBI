@@ -330,6 +330,22 @@ public class GrebiApi {
                     result.put("edge_counts_by_type", edgesByType);
                     ctx.result(gson.toJson(result));
                 })
+                .get("/api/v1/tables", ctx -> {
+                    List<Map<String, Object>> tables = new ArrayList<>();
+                    for (String graph : graphs) {
+                        tables.addAll(materialisedTables(postgres, metadata, graph));
+                    }
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(tables));
+                })
+                .get("/api/v1/graphs/{graph}/tables", ctx -> {
+                    var graph = ctx.pathParam("graph");
+                    if (!graphs.contains(graph)) {
+                        throw new NotFoundResponse("Unknown graph " + graph);
+                    }
+                    ctx.contentType("application/json");
+                    ctx.result(gson.toJson(materialisedTables(postgres, metadata, graph)));
+                })
                 .get("/api/v1/materialised_queries", ctx -> {
                     List<JsonElement> all_matqs = new ArrayList<>();
                     for(String graph : metadata.getGraphs()) {
@@ -982,6 +998,48 @@ public class GrebiApi {
     static String notBuiltMessage(QueryTemplate template, String graph) {
         return "Query template " + template.id + " has no materialised table in graph " + graph
             + ": the dataload has not built it, and there is no cypher service to run it live";
+    }
+
+    /**
+     * The materialised tables of a graph: the whole results of its query
+     * templates and of its standalone materialised queries, as the dataload
+     * recorded them in the graph metadata. A release publishes each of them as
+     * files, with the columns listed here.
+     */
+    static List<Map<String, Object>> materialisedTables(
+            GrebiPostgresRepo postgres, GrebiMetadataRepo metadata, String graph) {
+        List<Map<String, Object>> tables = new ArrayList<>();
+        var md = metadata.getMetadata(graph);
+        for (String key : List.of("materialised_templates", "materialised_queries")) {
+            var el = md.get(key);
+            if (el == null || !el.isJsonArray()) {
+                continue;
+            }
+            for (var entry : el.getAsJsonArray()) {
+                var build = uk.ac.ebi.grebi.db.MaterialisedBuild.fromMetadata(entry);
+                if (build == null || build.id == null) {
+                    continue;
+                }
+                Map<String, Object> table = new LinkedHashMap<>();
+                table.put("id", build.id);
+                table.put("graph", graph);
+                for (String text : List.of("title", "description")) {
+                    var value = entry.getAsJsonObject().get(text);
+                    if (value != null && value.isJsonPrimitive()) {
+                        table.put(text, value.getAsString());
+                    }
+                }
+                table.put("kind", key.equals("materialised_templates") ? "parameterised" : "standalone");
+                table.put("columns", build.fileColumns());
+                var rows = postgres.countMaterialisedRows(build);
+                if (rows != null) {
+                    table.put("num_rows", rows);
+                }
+                tables.add(table);
+            }
+        }
+        tables.sort(java.util.Comparator.comparing(t -> (String) t.get("id")));
+        return tables;
     }
 
     /**

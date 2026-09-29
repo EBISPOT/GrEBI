@@ -50,7 +50,7 @@ tags:
   - name: Queries
     description: Query templates, the pre-built questions of a graph, run live or from their materialised tables.
   - name: Tables
-    description: Materialised queries, whole result tables built with the graph.
+    description: Materialised tables, the whole results of queries, built with the graph and published with each release.
   - name: MCP
     description: The Model Context Protocol server at `/api/v1/mcp`, for LLM agents.
 
@@ -190,6 +190,41 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/GraphStats" }
 
+  /api/v1/tables:
+    get:
+      tags: [Tables]
+      summary: The materialised tables of every graph
+      description: |
+        The whole results of the query templates and of the standalone materialised queries,
+        built with each graph. A release publishes each table as gzipped CSV and as Parquet, at
+        `query_results/{graph}/{id}.csv.gz` and `query_results/{graph}/{id}.parquet`.
+      operationId: tables
+      responses:
+        "200":
+          description: Each table with the `graph` it belongs to, in the order of the graphs and then by `id`.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Table" }
+  /api/v1/graphs/{graph}/tables:
+    parameters:
+      - $ref: "#/components/parameters/graph"
+    get:
+      tags: [Tables]
+      summary: The materialised tables of a graph
+      description: As `/api/v1/tables`, for one graph.
+      operationId: graphTables
+      responses:
+        "200":
+          description: The tables by `id`, empty when the graph has none.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Table" }
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/materialised_queries:
     get:
       tags: [Tables]
@@ -1309,6 +1344,24 @@ components:
                 type: object
                 additionalProperties: { type: string }
       required: [id]
+    Table:
+      type: object
+      description: A materialised table, as a release publishes it.
+      properties:
+        id: { type: string, description: The id of the query template or materialised query the table is the result of. }
+        graph: { type: string }
+        title: { type: string }
+        description: { type: string }
+        kind:
+          type: string
+          enum: [parameterised, standalone]
+          description: "`parameterised`: the results of a query template over everything its parameters can take. `standalone`: a materialised query with no parameters."
+        columns:
+          type: array
+          description: The columns of the published files. A node is two columns, its identifier (`_id`) and its name (`_label`).
+          items: { type: string }
+        num_rows: { type: integer, description: Left out when the table cannot be counted. }
+      required: [id, graph, kind, columns]
     MaterialisedQuery:
       type: object
       properties:
