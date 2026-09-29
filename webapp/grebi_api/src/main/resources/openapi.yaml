@@ -370,7 +370,11 @@ paths:
     get:
       tags: [Queries]
       summary: Run a query template and stream every row as CSV
-      description: The same parameters and narrowing as running the template, without paging; the whole result streams as a file.
+      description: |
+        The same parameters and narrowing as running the template, without paging; the whole result
+        streams as a file. The columns and cells are those of the table a release publishes for the
+        template: a node is two columns, its identifier (`_id`, chosen by the column's `id_prefixes`)
+        and its name (`_label`); a list is its elements joined with `;`; edge ids are left out.
       operationId: runQueryCsv
       parameters:
         - name: q
@@ -381,7 +385,7 @@ paths:
         - $ref: "#/components/parameters/sortDir"
       responses:
         "200":
-          description: The rows, one per line, with the template's column ids as the header.
+          description: The rows, one per line, under a header of the column names.
           content:
             text/csv:
               schema: { type: string }

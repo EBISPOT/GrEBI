@@ -546,11 +546,22 @@ public class GrebiCypherRepo {
                 writer.write("\"" + (nodeId == null ? "" : nodeId.replace("\"", "\"\"")) + "\",");
                 writer.write("\"" + (nodeLabel == null ? "" : nodeLabel.replace("\"", "\"\"")) + "\"");
             } else {
-                String raw = Objects.toString(normalizeResultValue(column, record.get(column.column_id)), "");
+                String raw = csvCell(normalizeResultValue(column, record.get(column.column_id)));
                 writer.write("\"" + raw.replace("\"", "\"\"") + "\"");
             }
         }
         writer.write("\n");
+    }
+
+    /**
+     * A value as the text of a CSV cell. A list is its elements joined with
+     * ";", as the tables of a release have them, not Java's "[a, b]".
+     */
+    static String csvCell(Object value) {
+        if (value instanceof Collection<?> elements) {
+            return elements.stream().map(e -> Objects.toString(e, "")).collect(Collectors.joining(";"));
+        }
+        return Objects.toString(value, "");
     }
 
     public CompletableFuture<Void> runQueryFromTemplateStreamed(

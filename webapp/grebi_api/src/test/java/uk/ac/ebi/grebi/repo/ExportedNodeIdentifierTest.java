@@ -63,7 +63,8 @@ class ExportedNodeIdentifierTest {
         var phenotype = column("phenotype", "GraphNodeId");
         phenotype.id_prefixes = List.of("hp:");
         var trait = column("trait", "GraphNodeId");
-        var columns = List.of(disease, phenotype, trait, column("p_value", "float"), column("edge_id", "EdgeId"));
+        var columns = List.of(disease, phenotype, trait, column("p_value", "float"),
+            column("from_datasources", "DatasourceList"), column("edge_id", "EdgeId"));
 
         Map<String, Object> node = new LinkedHashMap<>();
         node.put("id", T2D);
@@ -78,14 +79,26 @@ class ExportedNodeIdentifierTest {
         row.put("phenotype", node);
         row.put("trait", unnamed);
         row.put("p_value", "1E-7");
+        row.put("from_datasources", List.of("GWAS", "OLS.efo"));
         row.put("edge_id", "g1:abc");
 
-        assertEquals(List.of("disease_id", "disease_label", "phenotype_id", "phenotype_label", "trait_id", "trait_label", "p_value"),
+        assertEquals(List.of("disease_id", "disease_label", "phenotype_id", "phenotype_label", "trait_id", "trait_label",
+                "p_value", "from_datasources"),
             GrebiCypherRepo.csvHeader(columns));
         var out = new StringWriter();
         GrebiCypherRepo.writeCsvRow("g1", columns, row, new PrintWriter(out, true));
         assertEquals("\"mondo:0005148\",\"type 2 diabetes mellitus\",\"hp:0005978\",\"type 2 diabetes mellitus\","
-            + "\"go:0070527\",\"go:0070527\",\"1.0E-7\"\n", out.toString());
+            + "\"go:0070527\",\"go:0070527\",\"1.0E-7\",\"GWAS;OLS.efo\"\n", out.toString());
+    }
+
+    @Test
+    void aListIsACellOfItsElementsJoinedWithSemicolonsAsInTheTablesOfARelease() {
+        assertEquals("GWAS;OLS.efo", GrebiCypherRepo.csvCell(List.of("GWAS", "OLS.efo")));
+        assertEquals("GWAS", GrebiCypherRepo.csvCell(List.of("GWAS")));
+        assertEquals("", GrebiCypherRepo.csvCell(List.of()));
+        assertEquals("", GrebiCypherRepo.csvCell(null));
+        assertEquals("0.5", GrebiCypherRepo.csvCell(0.5));
+        assertEquals("psoriasis", GrebiCypherRepo.csvCell("psoriasis"));
     }
 
     private static QueryTemplate.ResultColumn column(String id, String type) {
