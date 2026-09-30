@@ -188,6 +188,26 @@ python3 dataload/00_download/biostudies_snapshot.py \
 not part of the snapshot. The ingest still accepts individual PageTab files or
 an FTP-tree directory, which the golden tests use.
 
+### EGA study metadata (for the Multiomic Explorer)
+
+GrEBI has no EGA datasource: this snapshot sits beside the others on the SPOT
+FTP area for the [Multiomic Explorer](https://gitlab.ebi.ac.uk/spot/multiomic-explorer),
+which reads it from
+`https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/ega_studies.jsonl.gz`.
+
+EGA publishes no dump of its metadata, but its
+[metadata API](https://metadata.ega-archive.org/) lists every study in one
+request when asked for a page larger than the archive, so
+[`ega_snapshot.py`](../dataload/00_download/ega_snapshot.py) makes that one
+request (never a crawl), refuses a page that comes back full, keeps the
+released, current studies, and writes them one per line, sorted by accession.
+To refresh it:
+
+```bash
+python3 dataload/00_download/ega_snapshot.py ega_studies.jsonl.gz
+srun -p datamover --time 0:30:0 cp ega_studies.jsonl.gz /nfs/ftp/public/databases/spot/kg/data/
+```
+
 ### PRIDE project metadata
 
 [`pride.yaml`](../configs/datasource_configs/pride.yaml) downloads the live
