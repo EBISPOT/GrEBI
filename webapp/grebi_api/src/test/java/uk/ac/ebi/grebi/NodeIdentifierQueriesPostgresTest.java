@@ -52,7 +52,8 @@ class NodeIdentifierQueriesPostgresTest {
             st.execute("CREATE INDEX ON " + TABLE + " USING gin (\"grebi:sourceIds\")");
             // A GWAS study and a Metabolights study, named by their titles; a
             // disease merged with a gene, under the gene's id; two EFO terms;
-            // and a taxon whose canonical id is its biolink name.
+            // a taxon whose canonical id is its biolink name; and a nameless
+            // piece of evidence, as two thirds of the real nodes are.
             st.execute("INSERT INTO " + TABLE + " VALUES "
                     + "('GCST1', 'Efficiently controlling for case-control imbalance', ARRAY['gwas:Study'], ARRAY['GWAS'], ARRAY['GCST1'], 'GCST1', NULL),"
                     + "('MTBLS1', 'A metabolomic study of urinary changes', ARRAY['metabolights:Study'], ARRAY['Metabolights'], ARRAY['MTBLS1'], 'MTBLS1', NULL),"
@@ -60,7 +61,8 @@ class NodeIdentifierQueriesPostgresTest {
                     + "   ARRAY['ensembl:ENSG1','mondo:0005148','omim:125853','hgnc:9204'], 'ensembl:ENSG1', 'ENSG1'),"
                     + "('efo:0004318', 'smoking behavior', ARRAY['biolink:PhenotypicFeature'], ARRAY['OLS.efo'], ARRAY['efo:0004318'], 'efo:0004318', 'EFO:0004318'),"
                     + "('efo:0005671', 'smoking behaviour trait', ARRAY['biolink:PhenotypicFeature'], ARRAY['OLS.efo','GWAS'], ARRAY['efo:0005671'], 'efo:0005671', 'EFO:0005671'),"
-                    + "('biolink:Human', 'Homo sapiens', ARRAY['biolink:OrganismTaxon'], ARRAY['OLS.ncbitaxon'], ARRAY['biolink:Human','ncbitaxon:9606'], 'biolink:Human', NULL)");
+                    + "('biolink:Human', 'Homo sapiens', ARRAY['biolink:OrganismTaxon'], ARRAY['OLS.ncbitaxon'], ARRAY['biolink:Human','ncbitaxon:9606'], 'biolink:Human', NULL),"
+                    + "('otar:ev1', NULL, ARRAY['otar:Evidence'], ARRAY['OpenTargets'], ARRAY['otar:ev1'], 'otar:ev1', NULL)");
             st.execute("ANALYZE " + TABLE);
         }
     }
@@ -195,8 +197,20 @@ class NodeIdentifierQueriesPostgresTest {
         assertEquals(Map.of("biolink:PhenotypicFeature", 2L), efo.facets.get("grebi:type"));
 
         var everything = pg.searchNodes(GRAPH, null, null, false, 0, 10);
-        assertEquals(6, everything.results.size());
+        assertEquals(7, everything.results.size());
+        assertEquals("otar:ev1", nodeIds(everything).get(6), "a nameless node sorts after every named one");
         assertTrue(everything.facets.isEmpty(), "no facets for the unfiltered listing");
+    }
+
+    @Test
+    void aNamelessNodeHasNoNameAndMatchesNoText() {
+        var evidence = pg.searchNodes(GRAPH, null, filters("grebi:sourceIds", "otar:ev1"), false, 0, 10);
+        assertEquals(List.of("otar:ev1"), nodeIds(evidence));
+        assertNull(evidence.results.get(0).get("grebi:name"));
+        assertEquals(0, pg.searchNodes(GRAPH, "ev", filters("grebi:datasources", "OpenTargets"), false, 0, 10).totalCount);
+        var looked = pg.lookupNodes(GRAPH, List.of("otar:ev1"), null, 10);
+        assertEquals(List.of("otar:ev1"), nodeIds(looked));
+        assertNull(looked.get(0).get("grebi:name"));
     }
 
     @Test

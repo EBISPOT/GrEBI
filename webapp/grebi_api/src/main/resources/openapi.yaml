@@ -403,7 +403,7 @@ paths:
       tags: [Nodes]
       summary: List nodes by property
       description: |
-        Nodes matching every filter given, in name order. A filter is a query parameter named after
+        Nodes matching every filter given, in name order, nameless nodes last. A filter is a query parameter named after
         a node column: `grebi:type`, `grebi:datasources` and `grebi:sourceIds` match any of the
         values given, `grebi:nodeId`, `grebi:name` and `grebi:curie` match exactly, and a leading
         `-` turns an array filter into an exclusion. `grebi:curie` is the node's canonical CURIE:

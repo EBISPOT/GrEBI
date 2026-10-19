@@ -220,6 +220,10 @@ def create_indexes_for_subgraph(
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_grebi_curie" ON "nodes_{sg}" USING btree ("grebi:curie");')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_name" ON "nodes_{sg}" USING btree ("grebi:name");')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_name_trgm" ON "nodes_{sg}" USING gin ("grebi:name" gin_trgm_ops);')
+    # The lookup's opt-in name match is lower("grebi:name") = ANY(...), which
+    # only an index on that expression serves; without it the match scanned
+    # the table and timed out.
+    stmts.append(f'CREATE INDEX "idx_nodes_{sg}_name_lower" ON "nodes_{sg}" USING btree (lower("grebi:name"));')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_type_gin" ON "nodes_{sg}" USING gin ("grebi:type");')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_datasources_gin" ON "nodes_{sg}" USING gin ("grebi:datasources");')
     stmts.append(f'CREATE INDEX "idx_nodes_{sg}_sourceIds_gin" ON "nodes_{sg}" USING gin ("grebi:sourceIds");')
@@ -250,14 +254,26 @@ def create_indexes_for_subgraph(
         with open(f"{table}.indexes") as f:
             stmts.extend(line.strip() for line in f if line.strip())
 
-    print(f"  Creating {len(stmts)} indexes for {sg}...", flush=True)
-    t0 = time.time()
     tables = [
         f'"edges_{sg}"',
         f'"nodes_{sg}"',
         f'"blobs_{sg}"',
         f'"autocomplete_{sg}"',
     ] + [f'"{table}"' for table in matq_tables]
+    run_index_statements(sg, stmts, tables, psql_base, parallel_workers, maintenance_work_mem)
+
+
+def run_index_statements(
+    sg: str,
+    stmts: list[str],
+    tables: list[str],
+    psql_base: list[str] | None,
+    parallel_workers: int,
+    maintenance_work_mem: str,
+):
+    """Run index statements one by one, with the parallel and memory settings asked for."""
+    print(f"  Creating {len(stmts)} indexes for {sg}...", flush=True)
+    t0 = time.time()
 
     if parallel_workers > 0:
         print(f"  Setting parallel_workers={parallel_workers} on {len(tables)} tables for {sg}", flush=True)
@@ -286,6 +302,76 @@ def create_indexes_for_subgraph(
 
     elapsed = time.time() - t0
     print(f"  Indexes for {sg} created in {elapsed:.1f}s", flush=True)
+
+
+# A listing in name order is served by walking the name index and filtering
+# each row, which finds a type's or datasource's members at once when they have
+# names. Two thirds of the nodes have none, and when a group has (almost) no
+# named member the walk passes every named node in the graph before reaching
+# the nameless tail. Such a group, if it is large enough to be slow and small
+# enough for an index to be worth it, gets a partial name index, which the
+# planner takes for exactly the filter the API renders:
+#   "grebi:type" @> ARRAY['<type>']::text[]
+PARTIAL_NAME_INDEX_MIN_NODES = 100_000   # under this the API reads the matches whole
+PARTIAL_NAME_INDEX_MAX_SHARE = 0.2       # above this the members are everywhere anyway
+PARTIAL_NAME_INDEX_MAX_NAMED = 100       # this many named members and the walk finds them
+
+
+def sql_literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def nameless_groups(sg: str, metadata: dict, psql_base: list[str] | None) -> list[tuple[str, str, int]]:
+    """
+    The (column, value, node count) of each type and datasource whose nodes
+    are many and all but nameless, from the metadata's counts and a probe of
+    the loaded table that stops at the first few named members.
+    """
+    total = float(psql_query(f"SELECT reltuples FROM pg_class WHERE relname = 'nodes_{sg}'", psql_base)[0])
+    by_column = {
+        "grebi:type": {t: int(v.get("count", 0)) for t, v in (metadata.get("types") or {}).items()},
+        "grebi:datasources": {d: int(c) for d, c in (metadata.get("node_counts_by_datasource") or {}).items()},
+    }
+    groups = []
+    for column, counts in by_column.items():
+        for value, count in sorted(counts.items()):
+            if not PARTIAL_NAME_INDEX_MIN_NODES <= count <= PARTIAL_NAME_INDEX_MAX_SHARE * total:
+                continue
+            named = psql_query(
+                f'SELECT count(*) FROM (SELECT 1 FROM "nodes_{sg}" WHERE "{column}" @> ARRAY[{sql_literal(value)}]::text[]'
+                f' AND "grebi:name" IS NOT NULL LIMIT {PARTIAL_NAME_INDEX_MAX_NAMED}) named',
+                psql_base,
+            )
+            if int(named[0]) < PARTIAL_NAME_INDEX_MAX_NAMED:
+                groups.append((column, value, count))
+    return groups
+
+
+def create_partial_name_indexes(
+    sg: str,
+    psql_base: list[str] | None = None,
+    parallel_workers: int = 0,
+    maintenance_work_mem: str = "",
+):
+    """A partial name index for each large, nameless type and datasource of the subgraph."""
+    metadata_file = f"{sg}_metadata.json"
+    if not os.path.exists(metadata_file):
+        print(f"  No {metadata_file}: no partial name indexes for {sg}", flush=True)
+        return
+    with open(metadata_file) as f:
+        metadata = json.load(f)
+    groups = nameless_groups(sg, metadata, psql_base)
+    print(f"  {len(groups)} nameless types/datasources get a partial name index for {sg}: "
+          + ", ".join(f"{value} ({count})" for _, value, count in groups), flush=True)
+    stmts = []
+    for i, (column, value, count) in enumerate(groups, 1):
+        kind = "type" if column == "grebi:type" else "datasource"
+        name = f"idx_nodes_{sg}_name_{kind}{i}"
+        stmts.append(f'CREATE INDEX "{name}" ON "nodes_{sg}" USING btree ("grebi:name")'
+                     f' WHERE "{column}" @> ARRAY[{sql_literal(value)}]::text[];')
+        stmts.append(f'COMMENT ON INDEX "{name}" IS {sql_literal(f"name order of the {count} nodes with {column} {value}, all nameless")};')
+    if stmts:
+        run_index_statements(sg, stmts, [f'"nodes_{sg}"'], psql_base, parallel_workers, maintenance_work_mem)
 
 
 def report_gene_disease_sizing(sg: str, psql_base: list[str] | None = None):
@@ -425,6 +511,14 @@ def load_all(
             f'ANALYZE "autocomplete_{sg}";',
         ] + [f'ANALYZE "{table}";' for table in discover_matq_tables(sg)])
         run_psql(analyze_stmts, f"analyze_{sg}", psql_base)
+
+        # --- PARTIAL NAME INDEXES for the big nameless types and datasources ---
+        create_partial_name_indexes(
+            sg,
+            psql_base,
+            parallel_workers=parallel_workers,
+            maintenance_work_mem=maintenance_work_mem,
+        )
 
         # --- SIZING REPORT (local build only; too heavy for a shared server) ---
         # disease_to_genes / gene_to_diseases are still served live because their

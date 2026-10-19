@@ -100,8 +100,15 @@ fn write_node_row(
     // grebi:nodeId TEXT
     pgw.write_text(json.get("grebi:nodeId").and_then(|v| v.as_str()).unwrap_or(""));
 
-    // grebi:name TEXT
-    pgw.write_text(&extract_first_string(json.get("grebi:name")));
+    // grebi:name TEXT, NULL for a node without one. Two thirds of the nodes
+    // have no name (OpenTargets evidence above all); stored as '' they came
+    // first in every listing in name order, forty million of them before the
+    // first named node, and a listing of a type had to be filtered past them
+    // all. NULL sorts last, so the named nodes lead and are found at once.
+    match first_string(json.get("grebi:name")) {
+        Some(name) => pgw.write_text(&name),
+        None => pgw.write_null(),
+    }
 
     // grebi:type TEXT[]
     write_json_as_text_array(json.get("grebi:type"), pgw);
@@ -131,26 +138,28 @@ fn write_node_row(
     }
 }
 
+/// The first plain string among the values, or none: an empty string counts
+/// as none, and so does a reified value whose inner value is not a string (a
+/// translation, which carries its language).
+fn first_string(v: Option<&Value>) -> Option<String> {
+    let found = match v {
+        Some(Value::String(s)) => Some(s.clone()),
+        Some(Value::Array(arr)) => arr.iter().find_map(|el| match el {
+            Value::String(s) => Some(s.clone()),
+            Value::Object(obj) => match obj.get("grebi:value") {
+                Some(Value::String(s)) => Some(s.clone()),
+                _ => None,
+            },
+            _ => None,
+        }),
+        _ => None,
+    };
+    found.filter(|s| !s.is_empty())
+}
+
+/// The first string among the values, or "" when there is none.
 fn extract_first_string(v: Option<&Value>) -> String {
-    match v {
-        None => String::new(),
-        Some(Value::String(s)) => s.clone(),
-        Some(Value::Array(arr)) => {
-            for el in arr {
-                match el {
-                    Value::String(s) => return s.clone(),
-                    Value::Object(obj) => {
-                        if let Some(Value::String(s)) = obj.get("grebi:value") {
-                            return s.clone();
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            String::new()
-        }
-        _ => String::new(),
-    }
+    first_string(v).unwrap_or_default()
 }
 
 fn write_json_as_text_array(v: Option<&Value>, pgw: &mut PgCopyWriter<BufWriter<File>>) {
@@ -216,5 +225,15 @@ mod tests {
         ]"#).unwrap();
         assert_eq!(extract_first_string(Some(&only_translated)), "");
         assert_eq!(extract_first_string(None), "");
+    }
+
+    /// A node without a name has none, not an empty one: the column is NULL,
+    /// which sorts after every name.
+    #[test]
+    fn a_missing_or_empty_name_is_none() {
+        assert_eq!(first_string(None), None);
+        assert_eq!(first_string(Some(&Value::String(String::new()))), None);
+        assert_eq!(first_string(Some(&serde_json::from_str::<Value>(r#"[""]"#).unwrap())), None);
+        assert_eq!(first_string(Some(&serde_json::from_str::<Value>(r#"["Gene A"]"#).unwrap())), Some("Gene A".to_string()));
     }
 }
