@@ -386,7 +386,7 @@ public class GrebiPostgresClient {
             boolean unfiltered = conditions.isEmpty();
 
             // Fast estimated count — avoids COUNT(*) full scan
-            long totalCount = estimateRowCount(ctx, tbl, conditions, graph, unfiltered);
+            long totalCount = estimateRowCount(ctx, tbl, conditions, "edges_" + graph, unfiltered);
             boolean cheapFacets = totalCount < 100_000;
 
             var rowJson = field("row_to_json({0})", String.class, tbl);
@@ -430,9 +430,8 @@ public class GrebiPostgresClient {
     }
 
     private long estimateRowCount(DSLContext ctx, Table<?> tbl, List<Condition> conditions,
-                                   String graph, boolean unfiltered) {
+                                   String tableName, boolean unfiltered) {
         if (unfiltered) {
-            var tableName = "edges_" + graph;
             return ctx.select(field("reltuples::bigint", Long.class))
                     .from(table("pg_class"))
                     .where(field("relname").eq(tableName))
@@ -1014,69 +1013,108 @@ public class GrebiPostgresClient {
         return result;
     }
 
+    // --- Node references, and the identifiers that name nodes ---
+
+    private static final Field<String> NODE_ID = field(name("grebi:nodeId"), String.class);
+    private static final Field<String> NODE_NAME = field(name("grebi:name"), String.class);
+    private static final Field<Object> NODE_TYPES = field(name("grebi:type"));
+    private static final Field<Object> NODE_DATASOURCES = field(name("grebi:datasources"));
+    private static final Field<Object> NODE_SOURCE_IDS = field(name("grebi:sourceIds"));
+    private static final Field<String> NODE_CURIE = field(name("grebi:curie"), String.class);
+    private static final Field<String> NODE_OLS_CURIE = field(name("ols:curie"), String.class);
+
+    /**
+     * The columns a node reference is made of, as the listings, the search and
+     * the lookup return it. ols:curie rides along so that a filter on it can
+     * be applied to a set of references too; it is not part of the reference.
+     */
+    private static final Field<?>[] NODE_REF_FIELDS = {
+            NODE_ID, NODE_NAME, NODE_TYPES, NODE_DATASOURCES, NODE_SOURCE_IDS, NODE_CURIE, NODE_OLS_CURIE
+    };
+
+    private static Map<String, Object> nodeRef(org.jooq.Record record) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("grebi:nodeId", record.get(NODE_ID));
+        row.put("grebi:name", record.get(NODE_NAME));
+        row.put("grebi:type", toDatasourceList(record.get(NODE_TYPES)));
+        row.put("grebi:datasources", toDatasourceList(record.get(NODE_DATASOURCES)));
+        row.put("grebi:sourceIds", toDatasourceList(record.get(NODE_SOURCE_IDS)));
+        row.put("grebi:curie", record.get(NODE_CURIE));
+        return row;
+    }
+
+    /** The values as one bound text array, for = ANY and for unnest. */
+    private static Field<String[]> textArray(Collection<String> values) {
+        return val(values.toArray(new String[0]));
+    }
+
+    /**
+     * The nodes whose source ids include any of the identifiers, by one GIN
+     * probe per identifier. One overlap (&&) with the whole array would ask
+     * the same, but the column has no element statistics, so the planner
+     * prices every value at 0.5% of the table and, past a few dozen values,
+     * leaves the index for a sequential scan. Probed one at a time, each value
+     * is an index lookup however many there are. Distinct, since one node may
+     * carry several of the identifiers.
+     */
+    private static Select<org.jooq.Record> nodesBySourceIds(Table<?> tbl, Field<String[]> ids) {
+        var probe = unnest(ids).as("probe", "id");
+        return selectDistinct(NODE_REF_FIELDS)
+                .from(probe)
+                .join(tbl).on(condition("{0} @> ARRAY[{1}]::text[]", NODE_SOURCE_IDS, probe.field("id")));
+    }
+
+    /** The nodes the condition picks; meant for one a btree index answers. */
+    private static Select<org.jooq.Record> nodesWhere(Table<?> tbl, Condition condition) {
+        return selectDistinct(NODE_REF_FIELDS).from(tbl).where(condition);
+    }
+
     // --- Bulk identifier lookup ---
 
     /**
-     * The nodes any of the identifiers name, by source id, node id or curie, and
-     * by name when lower-cased names are given too. The identifiers are matched
-     * exactly as given, so the caller passes every form it wants found. At most
-     * limit rows, in node id order, so that the cut-off is deterministic.
+     * The nodes any of the identifiers name, by source id, node id or curie,
+     * and by name when lower-cased names are given too. The identifiers are
+     * matched exactly as given, so the caller passes every form it wants
+     * found. At most limit rows, in node id order, so that the cut-off is
+     * deterministic.
+     *
+     * Each kind of match is its own index-driven query, and UNION joins them.
+     * ORed into one WHERE under the ORDER BY and LIMIT, they made the planner
+     * walk the node id index in order and filter every row: the whole table
+     * for every lookup (#87). The name match has no index to use and scans
+     * the table, which is why it is opt-in.
      */
     public List<Map<String, Object>> lookupNodes(String graph, Collection<String> identifiers,
                                                  Collection<String> lowerNames, int limit) {
-        if (!graph.matches("[a-zA-Z0-9_]+")) {
-            throw new IllegalArgumentException("Invalid graph name");
-        }
+        var tbl = nodesTable(graph);
         boolean byId = identifiers != null && !identifiers.isEmpty();
         boolean byName = lowerNames != null && !lowerNames.isEmpty();
         if (!byId && !byName) {
             return List.of();
         }
-
-        var clauses = new ArrayList<String>();
+        Select<org.jooq.Record> matched = null;
         if (byId) {
-            clauses.add("\"grebi:sourceIds\" && ?");
-            clauses.add("\"grebi:nodeId\" = ANY(?)");
-            clauses.add("\"grebi:curie\" = ANY(?)");
+            var ids = textArray(identifiers);
+            matched = nodesBySourceIds(tbl, ids)
+                    .union(nodesWhere(tbl, NODE_ID.eq(any(ids))))
+                    .union(nodesWhere(tbl, NODE_CURIE.eq(any(ids))));
         }
         if (byName) {
-            clauses.add("lower(\"grebi:name\") = ANY(?)");
+            var named = nodesWhere(tbl, lower(NODE_NAME).eq(any(textArray(lowerNames))));
+            matched = matched == null ? named : matched.union(named);
         }
-        String sql = "SELECT \"grebi:nodeId\", \"grebi:name\", \"grebi:type\", \"grebi:datasources\", \"grebi:sourceIds\", \"grebi:curie\""
-                + " FROM \"nodes_" + graph + "\" WHERE " + String.join(" OR ", clauses)
-                + " ORDER BY \"grebi:nodeId\" LIMIT ?";
-
-        List<Map<String, Object>> rows = new ArrayList<>();
-        try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            int p = 1;
-            if (byId) {
-                var ids = conn.createArrayOf("text", identifiers.toArray(new String[0]));
-                ps.setArray(p++, ids);
-                ps.setArray(p++, ids);
-                ps.setArray(p++, ids);
+        var matches = matched.asTable("matches");
+        try {
+            List<Map<String, Object>> rows = new ArrayList<>();
+            for (var record : dsl().select(matches.fields()).from(matches)
+                    .orderBy(matches.field(NODE_ID)).limit(limit).fetch()) {
+                rows.add(nodeRef(record));
             }
-            if (byName) {
-                ps.setArray(p++, conn.createArrayOf("text", lowerNames.toArray(new String[0])));
-            }
-            ps.setInt(p, limit);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("grebi:nodeId", rs.getString(1));
-                    row.put("grebi:name", rs.getString(2));
-                    row.put("grebi:type", toDatasourceList(rs.getArray(3)));
-                    row.put("grebi:datasources", toDatasourceList(rs.getArray(4)));
-                    row.put("grebi:sourceIds", toDatasourceList(rs.getArray(5)));
-                    row.put("grebi:curie", rs.getString(6));
-                    rows.add(row);
-                }
-            }
+            return rows;
         } catch (SQLException e) {
             logger.error("Identifier lookup failed for graph {}", graph, e);
             throw new RuntimeException(e);
         }
-        return rows;
     }
 
     // --- Autocomplete ---
@@ -1202,46 +1240,31 @@ public class GrebiPostgresClient {
                 field(name("grebi:nodeId")), GREBI_FROM_NODE_ID, edgesTable(graph), GREBI_TYPE, GREBI_TO_NODE_ID, rootsArray);
     }
 
-    private static boolean hasSingleFilterValue(Map<String, List<String>> filters, String key) {
+    /** The node filters that name nodes outright, the one with the tightest index first. */
+    private static final List<String> NODE_IDENTIFIER_FILTERS = List.of(
+            "grebi:nodeId", "grebi:curie", "ols:curie", "grebi:sourceIds");
+
+    /**
+     * The filter a search starts from: the first identifier filter with a
+     * value, or null when there is none. An identifier filter names its nodes
+     * outright, so a search with one begins from those few nodes and applies
+     * everything else to them.
+     */
+    private static String seedFilter(Map<String, List<String>> filters) {
         if (filters == null) {
-            return false;
+            return null;
         }
-        var values = filters.get(key);
-        return values != null && values.size() == 1 && values.get(0) != null && !values.get(0).isBlank();
+        for (var key : NODE_IDENTIFIER_FILTERS) {
+            var values = filters.get(key);
+            if (values != null && !values.isEmpty()) {
+                return key;
+            }
+        }
+        return null;
     }
 
-    private static boolean isExactIdentifierLookup(Map<String, List<String>> filters) {
-        if (filters == null || filters.size() != 1) {
-            return false;
-        }
-        return hasSingleFilterValue(filters, "grebi:sourceIds")
-                || hasSingleFilterValue(filters, "grebi:nodeId")
-                || hasSingleFilterValue(filters, "ols:curie")
-                || hasSingleFilterValue(filters, "grebi:curie");
-    }
-
-    private List<Map<String, Object>> fetchExactIdentifierLookup(
-            DSLContext ctx,
-            SelectConditionStep<Record6<String, String, Object, Object, Object, String>> select,
-            int offset,
-            int limit) {
-        var sql = "WITH filtered AS MATERIALIZED (" +
-                select.getSQL(ParamType.INLINED) +
-                ") SELECT * FROM filtered LIMIT " + limit + " OFFSET " + offset;
-
-        List<Map<String, Object>> results = new ArrayList<>();
-        for (var record : ctx.fetch(sql)) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("grebi:nodeId", record.get("grebi:nodeId", String.class));
-            row.put("grebi:name", record.get("grebi:name", String.class));
-            row.put("grebi:type", toDatasourceList(record.get("grebi:type")));
-            row.put("grebi:datasources", toDatasourceList(record.get("grebi:datasources")));
-            row.put("grebi:sourceIds", toDatasourceList(record.get("grebi:sourceIds")));
-            row.put("grebi:curie", record.get("grebi:curie", String.class));
-            results.add(row);
-        }
-        return results;
-    }
+    /** Under this many matches the facets are computed, and the total is counted rather than estimated. */
+    private static final long CHEAP_NODE_FACETS_BELOW = 100_000;
 
     /**
      * Nodes matching the text and filters. The text matches the name by
@@ -1251,6 +1274,13 @@ public class GrebiPostgresClient {
      * filter repeats, "-" exclusions, the identifier columns, and
      * {@link #BROAD_MATCH_FILTER}, which keeps only the node a CURIE names and
      * its broad_match descendants.
+     *
+     * The total is a count whenever the matches are few enough to read: a
+     * search seeded by an identifier filter reads them all, and under 100,000
+     * expected matches the facets read them anyway, so the page query reads
+     * and counts them too. Above that, and for the unfiltered listing, the
+     * total is the planner's estimate, which the identifier and name columns
+     * have no statistics to inform (#88, #89).
      */
     public NodeQueryResult searchNodes(String graph, String q,
                                         Map<String, List<String>> filters,
@@ -1259,121 +1289,157 @@ public class GrebiPostgresClient {
         try {
             var ctx = dsl();
             var tbl = nodesTable(graph);
-            var conditions = buildNodeConditions(filters);
-            var nameField = field(name("grebi:name"), String.class);
-            var nodeIdField = field(name("grebi:nodeId"), String.class);
+            boolean hasText = q != null && !q.isBlank();
+            Condition textCondition = null;
+            if (hasText) {
+                // Both forms are ILIKE, which the trigram index serves; the
+                // whole-name match used to be lower(name) = text, which no
+                // index does, so it walked the name index and timed out.
+                textCondition = exactMatch
+                        ? NODE_NAME.likeIgnoreCase(escapeLike(q.trim()))
+                        : NODE_NAME.likeIgnoreCase("%" + escapeLike(q) + "%");
+            }
+            SortField<?> order = hasText && !exactMatch
+                    ? field("similarity({0}, {1})", Double.class, NODE_NAME, val(q)).desc()
+                    : NODE_NAME.asc();
 
+            Condition closureCondition = null;
             List<String> closureRoots;
             try (Connection conn = getConnection()) {
                 closureRoots = broadMatchRoots(conn, graph, filters);
             }
             if (closureRoots != null) {
                 if (closureRoots.isEmpty()) {
-                    return new NodeQueryResult(List.of(), 0, Map.of());
+                    return new NodeQueryResult(List.of(), 0, emptyFacets());
                 }
-                conditions.add(broadMatchCondition(graph, closureRoots));
+                closureCondition = broadMatchCondition(graph, closureRoots);
             }
 
-            if (q != null && !q.isBlank()) {
-                if (exactMatch) {
-                    conditions.add(lower(nameField).eq(q.trim().toLowerCase()));
-                } else {
-                    conditions.add(nameField.likeIgnoreCase("%" + escapeLike(q) + "%"));
-                }
+            var seedFilter = seedFilter(filters);
+            if (seedFilter != null) {
+                return searchNodesFromSeed(ctx, tbl, seedFilter, filters, textCondition, closureCondition,
+                        order, offset, limit);
             }
 
+            var conditions = buildNodeConditions(filters);
+            if (closureCondition != null) {
+                conditions.add(closureCondition);
+            }
+            if (textCondition != null) {
+                conditions.add(textCondition);
+            }
             boolean unfiltered = conditions.isEmpty();
-            long totalCount;
-            if (closureRoots != null) {
-                // A closure bounds the matches (an ontology root is ~40k node
-                // ids, probed by index), so the exact count is cheap, and the
-                // planner's estimate of the closure join is far off.
-                totalCount = ctx.select(count()).from(tbl).where(conditions).fetchSingle().value1();
-            } else if (unfiltered) {
-                totalCount = ctx.select(field("reltuples::bigint", Long.class))
-                        .from(table("pg_class"))
-                        .where(field("relname").eq("nodes_" + graph))
-                        .fetchOptional()
-                        .map(r -> r.value1())
-                        .orElse(0L);
-            } else {
-                try {
-                    var countQuery = ctx.selectOne().from(tbl).where(conditions);
-                    String sql = countQuery.getSQL(ParamType.INLINED);
-                    var result = ctx.fetchOne("EXPLAIN (FORMAT JSON) " + sql);
-                    String json = result.get(0, String.class);
-                    var arr = gson.fromJson(json, JsonArray.class);
-                    totalCount = arr.get(0).getAsJsonObject()
-                            .getAsJsonObject("Plan")
-                            .get("Plan Rows").getAsLong();
-                } catch (Exception e) {
-                    logger.warn("EXPLAIN estimate failed for nodes, falling back to COUNT", e);
-                    totalCount = ctx.select(count()).from(tbl).where(conditions).fetchSingle().value1();
+            // A closure bounds the matches (an ontology root is ~40k node
+            // ids, probed by index), so the exact count is cheap, and the
+            // planner's estimate of the closure join is far off.
+            long total = closureCondition != null
+                    ? ctx.select(count()).from(tbl).where(conditions).fetchSingle().value1()
+                    : estimateRowCount(ctx, tbl, conditions, "nodes_" + graph, unfiltered);
+            boolean counted = !unfiltered && total < CHEAP_NODE_FACETS_BELOW;
+
+            List<Map<String, Object>> results = new ArrayList<>();
+            if (counted) {
+                // Few enough matches to read: materialise them first, so that
+                // their predicates get the index scan they deserve, then count,
+                // order and page them from there. Ordered and limited directly,
+                // the planner walks the name index filtering row by row until
+                // the page is full, which is the whole table when matches are
+                // rare; a count(*) window did not stop it, as it priced the
+                // window as streaming and limited it early.
+                var matched = name("matched").asMaterialized(select(NODE_REF_FIELDS).from(tbl).where(conditions));
+                var totalField = field(selectCount().from(matched)).as("_total");
+                var fields = new ArrayList<SelectFieldOrAsterisk>(Arrays.asList(NODE_REF_FIELDS));
+                fields.add(totalField);
+                var page = ctx.with(matched).select(fields).from(matched)
+                        .orderBy(order).limit(limit).offset(offset).fetch();
+                for (var record : page) {
+                    total = record.get(totalField);
+                    results.add(nodeRef(record));
                 }
-            }
-
-            var typeField = field(name("grebi:type"));
-            var dsField = field(name("grebi:datasources"));
-            var srcField = field(name("grebi:sourceIds"));
-            // grebi:curie is derived for every node (the compact CURIE of its id,
-            // or the id itself when no prefix matches), so it is the pipeline-wide
-            // identifier that replaces the OLS-only ols:curie. Expose it directly.
-            // (Requires graphs reloaded since the grebi:curie column was added.)
-            var curieField = field(name("grebi:curie"), String.class);
-
-            var select = ctx.select(nodeIdField, nameField, typeField, dsField, srcField, curieField)
-                    .from(tbl)
-                    .where(conditions);
-
-            boolean exactIdentifierLookup = (q == null || q.isBlank()) && isExactIdentifierLookup(filters);
-
-            List<Map<String, Object>> results;
-            if (q != null && !q.isBlank()) {
-                results = new ArrayList<>();
-                var ordered = exactMatch
-                        ? select.orderBy(nameField.asc())
-                        : select.orderBy(field("similarity({0}, {1})", Double.class, nameField, val(q)).desc());
-                for (var record : ordered.limit(limit).offset(offset).fetch()) {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("grebi:nodeId", record.get(nodeIdField));
-                    row.put("grebi:name", record.get(nameField));
-                    row.put("grebi:type", toDatasourceList(record.get(typeField)));
-                    row.put("grebi:datasources", toDatasourceList(record.get(dsField)));
-                    row.put("grebi:sourceIds", toDatasourceList(record.get(srcField)));
-                    row.put("grebi:curie", record.get(curieField));
-                    results.add(row);
+                if (page.isEmpty()) {
+                    // an empty page carries no count: nothing matched, or the page is past the end
+                    total = offset == 0 ? 0 : ctx.with(matched).selectCount().from(matched).fetchSingle().value1();
                 }
-            } else if (exactIdentifierLookup) {
-                // PostgreSQL can still choose a seq scan for `WHERE identifier = ... LIMIT 1`
-                // if it predicts an early hit. Wrapping the exact-match subquery in a
-                // MATERIALIZED CTE forces the identifier predicate to run first and reliably
-                // uses the selective index for sourceIds/nodeId/curie lookups.
-                results = fetchExactIdentifierLookup(ctx, select, offset, limit);
             } else {
-                results = new ArrayList<>();
-                for (var record : select.orderBy(nameField.asc()).limit(limit).offset(offset).fetch()) {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("grebi:nodeId", record.get(nodeIdField));
-                    row.put("grebi:name", record.get(nameField));
-                    row.put("grebi:type", toDatasourceList(record.get(typeField)));
-                    row.put("grebi:datasources", toDatasourceList(record.get(dsField)));
-                    row.put("grebi:sourceIds", toDatasourceList(record.get(srcField)));
-                    row.put("grebi:curie", record.get(curieField));
-                    results.add(row);
+                for (var record : ctx.select(NODE_REF_FIELDS).from(tbl).where(conditions)
+                        .orderBy(order).limit(limit).offset(offset).fetch()) {
+                    results.add(nodeRef(record));
                 }
             }
 
             Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
-            boolean cheapFacets = totalCount < 100_000;
-            if (cheapFacets && !unfiltered) {
-                facets = computeFacets(ctx, tbl, conditions, NODE_FACET_FIELDS, ALLOWED_NODE_ARRAY_COLUMNS);
+            if (!unfiltered && total < CHEAP_NODE_FACETS_BELOW) {
+                facets = total == 0 ? emptyFacets()
+                        : computeFacets(ctx, tbl, conditions, NODE_FACET_FIELDS, ALLOWED_NODE_ARRAY_COLUMNS);
             }
-
-            return new NodeQueryResult(results, totalCount, facets);
+            return new NodeQueryResult(results, total, facets);
         } catch (SQLException e) {
             logger.error("Node search failed", e);
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * A search seeded by an identifier filter: the nodes its values name, one
+     * index probe each, then the other filters and the text applied to those.
+     * The set is read whole, a few nodes per identifier at most, so the total,
+     * the page and the facets are exact and no plan can stray from the index.
+     */
+    private NodeQueryResult searchNodesFromSeed(DSLContext ctx, Table<?> tbl, String seedFilter,
+                                                Map<String, List<String>> filters, Condition textCondition,
+                                                Condition closureCondition, SortField<?> order,
+                                                int offset, int limit) {
+        var values = textArray(filters.get(seedFilter));
+        var seed = name("seed").asMaterialized(seedFilter.equals("grebi:sourceIds")
+                ? nodesBySourceIds(tbl, values)
+                : nodesWhere(tbl, field(name(seedFilter), String.class).eq(any(values))));
+        var rest = new LinkedHashMap<>(filters);
+        rest.remove(seedFilter);
+        var conditions = buildNodeConditions(rest);
+        if (textCondition != null) {
+            conditions.add(textCondition);
+        }
+        if (closureCondition != null) {
+            conditions.add(closureCondition);
+        }
+
+        List<Map<String, Object>> all = new ArrayList<>();
+        for (var record : ctx.with(seed).select(NODE_REF_FIELDS).from(seed)
+                .where(conditions).orderBy(order).fetch()) {
+            all.add(nodeRef(record));
+        }
+        var page = offset >= all.size()
+                ? List.<Map<String, Object>>of()
+                : all.subList(offset, Math.min(all.size(), offset + limit));
+        return new NodeQueryResult(new ArrayList<>(page), all.size(), facetsOf(all));
+    }
+
+    private static Map<String, Map<String, Long>> emptyFacets() {
+        Map<String, Map<String, Long>> facets = new LinkedHashMap<>();
+        for (var facetField : NODE_FACET_FIELDS) {
+            facets.put(facetField, new LinkedHashMap<>());
+        }
+        return facets;
+    }
+
+    /** The facets of node references in hand: each value's count, the most frequent first, then by name. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Map<String, Long>> facetsOf(List<Map<String, Object>> rows) {
+        var facets = emptyFacets();
+        for (var facetField : NODE_FACET_FIELDS) {
+            Map<String, Long> counts = new HashMap<>();
+            for (var row : rows) {
+                for (var value : (List<String>) row.get(facetField)) {
+                    counts.merge(value, 1L, Long::sum);
+                }
+            }
+            var ordered = facets.get(facetField);
+            counts.entrySet().stream()
+                    .sorted(Map.Entry.<String, Long>comparingByValue().reversed()
+                            .thenComparing(Map.Entry.comparingByKey()))
+                    .forEach(e -> ordered.put(e.getKey(), e.getValue()));
+        }
+        return facets;
     }
 
     public static class NodeQueryResult {

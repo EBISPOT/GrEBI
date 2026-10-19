@@ -22,7 +22,11 @@ info:
     **Paging.** Paged endpoints take `page` (from 0) and `size` (10 by default, 100 at most, never
     more than 10,000 rows deep) and answer with `content`, `totalElements`, `totalPages`, `number`
     and `numberOfElements`; searches add `facetFieldToCounts`. Edge lists carry the count as
-    `total` instead.
+    `total` instead. `totalElements` is a count whenever the matches are few enough to read: always
+    with an identifier filter (`grebi:sourceIds`, `grebi:nodeId`, `grebi:curie`, `ols:curie`) or
+    a whole-name match, and otherwise while fewer than 100,000 nodes are expected to match, which
+    is also when `facetFieldToCounts` is filled. Beyond that, and for an unfiltered listing, it is
+    the database's estimate.
 
     **Errors** are `{"error": "..."}` with the status: 400 for a bad parameter, 404 for something
     unknown, 413 for a request body over 1 MB, 429 beyond 300 requests a minute from one client,
@@ -402,9 +406,10 @@ paths:
         Nodes matching every filter given, in name order. A filter is a query parameter named after
         a node column: `grebi:type`, `grebi:datasources` and `grebi:sourceIds` match any of the
         values given, `grebi:nodeId`, `grebi:name` and `grebi:curie` match exactly, and a leading
-        `-` turns an array filter into an exclusion. `biolink:broad_match` keeps the node a CURIE
-        names and its broad_match descendants. The counts of types and datasources come back
-        as facets while fewer than 100,000 nodes match.
+        `-` turns an array filter into an exclusion. `grebi:curie` is the node's canonical CURIE:
+        an identifier merged into a node under another id is found through `grebi:sourceIds`.
+        `biolink:broad_match` keeps the node a CURIE names and its broad_match descendants. The
+        counts of types and datasources come back as facets while fewer than 100,000 nodes match.
       operationId: listNodes
       parameters:
         - $ref: "#/components/parameters/nodeTypeFilter"
@@ -748,7 +753,9 @@ paths:
       description: |
         Nodes whose name contains the text, best similarity first; with `exactMatch` the whole
         name, ignoring case, in name order. The node filters narrow the search, and the counts of
-        types and datasources come back as facets while fewer than 100,000 nodes match.
+        types and datasources come back as facets while fewer than 100,000 nodes match. An
+        identifier is not a name: a node is found by accession or CURIE through the `grebi:sourceIds`
+        filter of the node listing, or through the lookup.
       operationId: searchNodes
       parameters:
         - name: q
@@ -1070,7 +1077,7 @@ components:
     nodeCurieFilter:
       name: grebi:curie
       in: query
-      description: Only the node with this CURIE.
+      description: Only the node whose canonical CURIE this is; an identifier merged into a node under another id is found through `grebi:sourceIds`.
       schema: { type: string }
     nodeBroadMatchFilter:
       name: biolink:broad_match

@@ -76,7 +76,7 @@ All paginated endpoints return:
 | Field | Type | Description |
 |-------|------|-------------|
 | `content` | array | The result rows for the current page |
-| `totalElements` | integer | Total number of matching results |
+| `totalElements` | integer | How many results match in all: a count, except that an unfiltered node listing, or one expected to match over 100,000 nodes, reports the database's estimate |
 | `totalPages` | integer | Number of pages at the current page size |
 | `number` | integer | Zero-based current page number |
 | `numberOfElements` | integer | Number of rows in this page |

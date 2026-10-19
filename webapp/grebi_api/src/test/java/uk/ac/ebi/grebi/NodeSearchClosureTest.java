@@ -119,7 +119,7 @@ class NodeSearchClosureTest {
         var res = pg.searchNodes(GRAPH, "anemia", Map.of(BROAD_MATCH, List.of("mondo:9999999")), false, 0, 10);
         assertEquals(List.of(), res.results);
         assertEquals(0, res.totalCount);
-        assertEquals(Map.of(), res.facets);
+        assertEquals(Map.of("grebi:type", Map.of(), "grebi:datasources", Map.of()), res.facets, "the facets of an empty search list the facet fields, as any other empty search does");
         // a blank value names nothing either
         assertEquals(0, pg.searchNodes(GRAPH, "anemia", Map.of(BROAD_MATCH, List.of(" ")), false, 0, 10).totalCount);
     }
