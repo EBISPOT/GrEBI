@@ -399,7 +399,7 @@ export default function SeachInterface(opts:{ graph:string }
             {results.length > 0 ? (
               <div>
                 {results.map((graphNode: GraphNode) => {
-                  let nodeType = graphNode.extractType()
+                  let nodeTypes = graphNode.extractTypes()
                   let score = searchScores.get(graphNode.getNodeId())
                   return (
                     <div className="my-5">
@@ -417,9 +417,9 @@ export default function SeachInterface(opts:{ graph:string }
                             {(score * 100).toFixed(1)}%
                           </span>
                         )}
-                      { nodeType &&
-                      <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px',marginRight:'12px'}}>{nodeType.longName}</span>
-                    }
+                      { nodeTypes.map((nodeType) =>
+                      <span key={nodeType.shortName} style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px',marginRight:'12px'}}>{nodeType.longName}</span>
+                    )}
             <DatasourceTags dss={graphNode.getDatasources()} linked />
                     </div>
                     <CollapsingIdList ids={graphNode.getSourceIds()} />

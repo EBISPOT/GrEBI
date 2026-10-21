@@ -402,7 +402,8 @@ paths:
         Nodes matching every filter given, in name order. A filter is a query parameter named after
         a node column: `grebi:type`, `grebi:datasources` and `grebi:sourceIds` match any of the
         values given, `grebi:nodeId`, `grebi:name` and `grebi:curie` match exactly, and a leading
-        `-` turns an array filter into an exclusion. The counts of types and datasources come back
+        `-` turns an array filter into an exclusion. `biolink:broad_match` keeps the node a CURIE
+        names and its broad_match descendants. The counts of types and datasources come back
         as facets while fewer than 100,000 nodes match.
       operationId: listNodes
       parameters:
@@ -410,6 +411,7 @@ paths:
         - $ref: "#/components/parameters/nodeDatasourcesFilter"
         - $ref: "#/components/parameters/nodeSourceIdsFilter"
         - $ref: "#/components/parameters/nodeCurieFilter"
+        - $ref: "#/components/parameters/nodeBroadMatchFilter"
         - $ref: "#/components/parameters/nodeDatasourcesExclusion"
         - $ref: "#/components/parameters/nodeTypeExclusion"
         - $ref: "#/components/parameters/resolveNodes"
@@ -761,6 +763,7 @@ paths:
         - $ref: "#/components/parameters/nodeTypeFilter"
         - $ref: "#/components/parameters/nodeDatasourcesFilter"
         - $ref: "#/components/parameters/nodeSourceIdsFilter"
+        - $ref: "#/components/parameters/nodeBroadMatchFilter"
         - $ref: "#/components/parameters/nodeDatasourcesExclusion"
         - $ref: "#/components/parameters/nodeTypeExclusion"
         - $ref: "#/components/parameters/resolveNodes"
@@ -795,6 +798,7 @@ paths:
         - $ref: "#/components/parameters/nodeTypeFilter"
         - $ref: "#/components/parameters/nodeDatasourcesFilter"
         - $ref: "#/components/parameters/nodeSourceIdsFilter"
+        - $ref: "#/components/parameters/nodeBroadMatchFilter"
         - $ref: "#/components/parameters/nodeDatasourcesExclusion"
         - $ref: "#/components/parameters/nodeTypeExclusion"
       responses:
@@ -877,6 +881,7 @@ paths:
         - $ref: "#/components/parameters/lang"
         - $ref: "#/components/parameters/nodeTypeFilter"
         - $ref: "#/components/parameters/nodeDatasourcesFilter"
+        - $ref: "#/components/parameters/nodeBroadMatchFilter"
         - $ref: "#/components/parameters/nodeDatasourcesExclusion"
         - $ref: "#/components/parameters/nodeTypeExclusion"
         - $ref: "#/components/parameters/page"
@@ -1067,6 +1072,14 @@ components:
       in: query
       description: Only the node with this CURIE.
       schema: { type: string }
+    nodeBroadMatchFilter:
+      name: biolink:broad_match
+      in: query
+      description: |
+        Only the node this CURIE names and its `biolink:broad_match` descendants, so
+        `mondo:0000001` keeps diseases only; repeatable, uniting the closures.
+      schema: { type: string }
+      example: mondo:0000001
     nodeDatasourcesExclusion:
       name: -grebi:datasources
       in: query

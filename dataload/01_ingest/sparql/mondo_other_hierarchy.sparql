@@ -1,0 +1,72 @@
+# MONDO's otherHierarchy cross-references to HP: the phenotype term that is the
+# same clinical concept as a disease (anemia, MONDO:0002280, and Anemia,
+# HP:0001903). MONDO records them as hasDbXrefs whose axiom is annotated
+# oboInOwl:source "MONDO:otherHierarchy", not as equivalences, so nothing
+# downstream of MONDO treats them as mappings. One row per live (non-obsolete)
+# MONDO class and HP target.
+#
+# Left out, because the rows become identifiers and clique merging is
+# transitive: targets that are not HP (the NCIT ones are MONDO:equivalentTo or
+# MONDO:relatedTo, which say what they are themselves; a HGNC gene or a MeSH
+# symptom is not the disease), and any class or target that is not in a
+# one-to-one pair. Two diseases pointing at the same HP term (osteomyelitis and
+# chronic recurrent multifocal osteomyelitis, HP:0002754) would otherwise become
+# one disease, and one disease with two HP targets (glutaric aciduria) would
+# fuse the two phenotypes.
+#
+# Run by the MONDO.otherHierarchy datasource (configs/datasource_configs/
+# mondo_other_hierarchy.yaml) with `om query`; the id and target columns become
+# the node's id and its mondo:otherHierarchy identifier.
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX oboInOwl: <http://www.geneontology.org/formats/oboInOwl#>
+
+SELECT ?id ?target
+WHERE {
+  {
+    SELECT ?cls ?tgt
+    WHERE {
+      ?ax a owl:Axiom ;
+          owl:annotatedSource ?cls ;
+          owl:annotatedProperty oboInOwl:hasDbXref ;
+          owl:annotatedTarget ?tgt ;
+          oboInOwl:source "MONDO:otherHierarchy" .
+      FILTER(isLITERAL(?tgt) && STRSTARTS(STR(?tgt), "HP:"))
+      FILTER NOT EXISTS { ?cls owl:deprecated true }
+    }
+    GROUP BY ?cls ?tgt
+  }
+  # one-to-one pairs only: the class has this one HP target ...
+  {
+    SELECT ?cls (COUNT(DISTINCT ?t) AS ?targetsOfClass)
+    WHERE {
+      ?a a owl:Axiom ;
+         owl:annotatedSource ?cls ;
+         owl:annotatedProperty oboInOwl:hasDbXref ;
+         owl:annotatedTarget ?t ;
+         oboInOwl:source "MONDO:otherHierarchy" .
+      FILTER(isLITERAL(?t) && STRSTARTS(STR(?t), "HP:"))
+      FILTER NOT EXISTS { ?cls owl:deprecated true }
+    }
+    GROUP BY ?cls
+  }
+  # ... and the target has this one live class
+  {
+    SELECT ?tgt (COUNT(DISTINCT ?c) AS ?classesOfTarget)
+    WHERE {
+      ?b a owl:Axiom ;
+         owl:annotatedSource ?c ;
+         owl:annotatedProperty oboInOwl:hasDbXref ;
+         owl:annotatedTarget ?tgt ;
+         oboInOwl:source "MONDO:otherHierarchy" .
+      FILTER(isLITERAL(?tgt) && STRSTARTS(STR(?tgt), "HP:"))
+      FILTER NOT EXISTS { ?c owl:deprecated true }
+    }
+    GROUP BY ?tgt
+  }
+  FILTER(?targetsOfClass = 1 && ?classesOfTarget = 1)
+  # the CURIE MONDO declares for the class; the IRI only if it has none
+  OPTIONAL { ?cls oboInOwl:id ?oboId }
+  BIND(COALESCE(?oboId, STR(?cls)) AS ?id)
+  BIND(STR(?tgt) AS ?target)
+}
+ORDER BY ?id ?target

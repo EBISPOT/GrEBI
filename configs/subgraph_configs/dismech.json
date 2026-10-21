@@ -21,6 +21,7 @@
     "impc:humanGeneAccId",
     "monarch:iri",
     "skos:exactMatch",
+    "mondo:otherHierarchy",
     "ncit:P368",
     "ncit:C98965",
     "dcterms:identifier",
@@ -165,6 +166,7 @@
   "datasource_configs": [
     "./configs/datasource_configs/ols/ols_mondo.yaml",
     "./configs/datasource_configs/ols/ols_hp.yaml",
+    "./configs/datasource_configs/mondo_other_hierarchy.yaml",
     "./configs/datasource_configs/ols/ols_uberon.yaml",
     "./configs/datasource_configs/ols/embeddings__llama-embed-nemotron-8b/ols_mondo_embeddings__llama-embed-nemotron-8b.yaml",
     "./configs/datasource_configs/ols/embeddings__llama-embed-nemotron-8b/ols_hp_embeddings__llama-embed-nemotron-8b.yaml",

@@ -11,6 +11,7 @@ config['datasource_configs'] = [
     "./configs/datasource_configs/ols/ols_efo.yaml",
     "./configs/datasource_configs/ols/ols_mp.yaml",
     "./configs/datasource_configs/ols/ols_hp.yaml",
+    "./configs/datasource_configs/mondo_other_hierarchy.yaml",
     "./configs/datasource_configs/ols/ols_go.yaml",
     "./configs/datasource_configs/ols/ols_ro.yaml",
     "./configs/datasource_configs/ols/ols_iao.yaml",
@@ -40,6 +41,10 @@ config['datasource_configs'] = [
     "./configs/datasource_configs/ols/ols_ecto.yaml",
     "./configs/datasource_configs/mondo_efo.yaml"
 ]
+
+# MONDO's disease-to-HP-phenotype xrefs (the MONDO.otherHierarchy datasource)
+# are identifiers here, so a disease and its phenotype become one node
+config['identifier_props'].insert(config['identifier_props'].index('skos:exactMatch') + 1, 'mondo:otherHierarchy')
 
 if __name__ == '__main__':
     import json

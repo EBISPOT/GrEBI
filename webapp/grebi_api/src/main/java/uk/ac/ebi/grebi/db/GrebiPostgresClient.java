@@ -59,6 +59,15 @@ public class GrebiPostgresClient {
 
     private static final List<String> NODE_FACET_FIELDS = List.of("grebi:type", "grebi:datasources");
 
+    /**
+     * The node filter that narrows a search to a closure: the node a CURIE
+     * names and its `biolink:broad_match` descendants, which is the value space
+     * a query template declares with values_under (so the autosuggest of a
+     * disease parameter sends `biolink:broad_match=mondo:0000001`). Repeated,
+     * the closures are united.
+     */
+    public static final String BROAD_MATCH_FILTER = "biolink:broad_match";
+
     private static final Field<String> GREBI_TYPE = field(name("grebi:type"), String.class);
     private static final Field<String> GREBI_FROM_NODE_ID = field(name("grebi:fromNodeId"), String.class);
     private static final Field<String> GREBI_TO_NODE_ID = field(name("grebi:toNodeId"), String.class);
@@ -763,8 +772,9 @@ public class GrebiPostgresClient {
     /**
      * The nodes nearest the vector, among those matching the filters: the
      * array columns (grebi:type, grebi:datasources, grebi:sourceIds) as
-     * alternatives when a filter repeats, and "-" exclusions, as in the node
-     * search. Other filter keys are ignored.
+     * alternatives when a filter repeats, "-" exclusions, and
+     * {@link #BROAD_MATCH_FILTER} closures, as in the node search. Other
+     * filter keys are ignored.
      */
     public List<VectorSearchResult> searchByVector(String graph, String embeddingModel,
                                                     float[] queryVector, int limit,
@@ -801,6 +811,20 @@ public class GrebiPostgresClient {
             var tbl = nodesTable(graph);
             var nodeIdField = field(name("grebi:nodeId"), String.class);
             var nameField = field(name("grebi:name"), String.class);
+
+            List<String> closureRoots = broadMatchRoots(conn, graph, filters);
+            if (closureRoots != null) {
+                if (closureRoots.isEmpty()) {
+                    return List.of();
+                }
+                // the closure as in broadMatchCondition, with the roots bound twice
+                where.append(" AND \"grebi:nodeId\" IN (SELECT \"grebi:fromNodeId\" FROM ").append(dsl().render(edgesTable(graph)))
+                        .append(" WHERE \"grebi:type\" = 'biolink:broad_match' AND \"grebi:toNodeId\" = ANY(?::text[])")
+                        .append(" UNION SELECT unnest(?::text[]))");
+                var roots = closureRoots.toArray(new String[0]);
+                arrayParams.add(roots);
+                arrayParams.add(roots);
+            }
 
             // Use raw SQL for the cosine distance operator since jOOQ doesn't natively support <=>
             String sql = "SELECT \"grebi:nodeId\", \"grebi:name\", " +
@@ -1130,6 +1154,54 @@ public class GrebiPostgresClient {
         return conditions;
     }
 
+    /**
+     * The roots of a {@link #BROAD_MATCH_FILTER}: the ids of the nodes its
+     * CURIEs name. Empty when none names a node of the graph, so the search
+     * matches nothing; null when the filters have no such key.
+     */
+    private List<String> broadMatchRoots(Connection conn, String graph,
+                                         Map<String, List<String>> filters) throws SQLException {
+        if (filters == null) {
+            return null;
+        }
+        var curies = filters.get(BROAD_MATCH_FILTER);
+        if (curies == null || curies.isEmpty()) {
+            return null;
+        }
+        var wanted = curies.stream()
+                .filter(c -> c != null && !c.isBlank())
+                .map(String::trim)
+                .toArray(String[]::new);
+        List<String> roots = new ArrayList<>();
+        if (wanted.length == 0) {
+            return roots;
+        }
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT \"grebi:nodeId\" FROM " + dsl().render(nodesTable(graph)) + " WHERE \"grebi:sourceIds\" && ?")) {
+            ps.setArray(1, conn.createArrayOf("text", wanted));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) roots.add(rs.getString(1));
+            }
+        }
+        return roots;
+    }
+
+    /**
+     * The closure of the roots as a condition on the node id: the roots and
+     * their broad_match descendants (a single hop: broad_match is a full
+     * transitive closure). The closure is computed inside the query from the
+     * handful of root ids, so an ontology root's ~40k descendants never leave
+     * Postgres; with a name search the planner hash-joins them to the trigram
+     * hits (~25ms), and without one it walks the partial broad_match index
+     * (~0.2s), never the name index.
+     */
+    private Condition broadMatchCondition(String graph, List<String> roots) {
+        var rootsArray = val(roots.toArray(new String[0]));
+        return condition(
+                "{0} IN (SELECT {1} FROM {2} WHERE {3} = 'biolink:broad_match' AND {4} = ANY({5}) UNION SELECT unnest({5}))",
+                field(name("grebi:nodeId")), GREBI_FROM_NODE_ID, edgesTable(graph), GREBI_TYPE, GREBI_TO_NODE_ID, rootsArray);
+    }
+
     private static boolean hasSingleFilterValue(Map<String, List<String>> filters, String key) {
         if (filters == null) {
             return false;
@@ -1174,7 +1246,11 @@ public class GrebiPostgresClient {
     /**
      * Nodes matching the text and filters. The text matches the name by
      * containment, best similarity first, or, with exactMatch, the whole name
-     * ignoring case, in name order.
+     * ignoring case, in name order. The filters are the array columns
+     * (grebi:type, grebi:datasources, grebi:sourceIds) as alternatives when a
+     * filter repeats, "-" exclusions, the identifier columns, and
+     * {@link #BROAD_MATCH_FILTER}, which keeps only the node a CURIE names and
+     * its broad_match descendants.
      */
     public NodeQueryResult searchNodes(String graph, String q,
                                         Map<String, List<String>> filters,
@@ -1185,6 +1261,18 @@ public class GrebiPostgresClient {
             var tbl = nodesTable(graph);
             var conditions = buildNodeConditions(filters);
             var nameField = field(name("grebi:name"), String.class);
+            var nodeIdField = field(name("grebi:nodeId"), String.class);
+
+            List<String> closureRoots;
+            try (Connection conn = getConnection()) {
+                closureRoots = broadMatchRoots(conn, graph, filters);
+            }
+            if (closureRoots != null) {
+                if (closureRoots.isEmpty()) {
+                    return new NodeQueryResult(List.of(), 0, Map.of());
+                }
+                conditions.add(broadMatchCondition(graph, closureRoots));
+            }
 
             if (q != null && !q.isBlank()) {
                 if (exactMatch) {
@@ -1196,7 +1284,12 @@ public class GrebiPostgresClient {
 
             boolean unfiltered = conditions.isEmpty();
             long totalCount;
-            if (unfiltered) {
+            if (closureRoots != null) {
+                // A closure bounds the matches (an ontology root is ~40k node
+                // ids, probed by index), so the exact count is cheap, and the
+                // planner's estimate of the closure join is far off.
+                totalCount = ctx.select(count()).from(tbl).where(conditions).fetchSingle().value1();
+            } else if (unfiltered) {
                 totalCount = ctx.select(field("reltuples::bigint", Long.class))
                         .from(table("pg_class"))
                         .where(field("relname").eq("nodes_" + graph))
@@ -1219,7 +1312,6 @@ public class GrebiPostgresClient {
                 }
             }
 
-            var nodeIdField = field(name("grebi:nodeId"), String.class);
             var typeField = field(name("grebi:type"));
             var dsField = field(name("grebi:datasources"));
             var srcField = field(name("grebi:sourceIds"));

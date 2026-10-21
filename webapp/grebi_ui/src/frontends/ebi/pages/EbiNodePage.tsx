@@ -142,7 +142,7 @@ export default function EbiNodePage() {
         <SearchBox graph={graph} availableModels={availableModels} selectedModel={selectedModel} onModelChange={setSelectedModel} />
         <div className="relative text-center pb-5">
         <Typography variant="h5">{node.getName(lang)} {
-          node.extractType()?.longName && <span style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{node.extractType()?.longName}</span>}</Typography>
+          node.extractTypes().map((type) => <span key={type.shortName} style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{type.longName}</span>)}</Typography>
         {/* a node with labels in several languages can be read in any of them */}
         {node.getLanguages().length > 1 &&
           <div className="absolute right-0 top-0">

@@ -324,6 +324,11 @@ class GrebiApiNodeRoutesTest {
         app.get("/api/v1/graphs/g1/search?q=psoriasis&resolve=false");
         verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psoriasis"), eq(Map.of()), eq(false), eq(false), any());
 
+        // the closure filter a values_under parameter's autosuggest sends reaches the search as a filter
+        app.get("/api/v1/graphs/g1/search?q=psoriasis&resolve=false&size=5&biolink:broad_match=mondo:0000001");
+        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psoriasis"),
+            eq(Map.of(GrebiPostgresClient.BROAD_MATCH_FILTER, List.of("mondo:0000001"))), eq(false), eq(false), any());
+
         when(app.postgres.autocomplete("g1", "pso")).thenReturn(List.of("psoriasis", "psoriatic arthritis"));
         assertEquals(List.of("psoriasis", "psoriatic arthritis"),
             TestApp.GSON.fromJson(app.get("/api/v1/graphs/g1/suggest?q=pso").body(), List.class));

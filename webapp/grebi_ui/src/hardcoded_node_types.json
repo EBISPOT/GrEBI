@@ -42,6 +42,14 @@
   },
   {
     "types": [
+      "biolink:PhenotypicFeature"
+    ],
+    "longName": "Phenotype",
+    "shortName": "Phenotype",
+    "bgColor": "rgb(253, 186, 116)"
+  },
+  {
+    "types": [
       "gwas:SNP"
     ],
     "longName": "SNP",
@@ -70,7 +78,8 @@
     ],
     "longName": "Ontology Class",
     "shortName": "Class",
-    "bgColor": "rgb(103, 232, 249)"
+    "bgColor": "rgb(103, 232, 249)",
+    "generic": true
   },
   {
     "types": [
@@ -78,7 +87,8 @@
     ],
     "longName": "Ontology Property",
     "shortName": "Property",
-    "bgColor": "rgb(203, 213, 225)"
+    "bgColor": "rgb(203, 213, 225)",
+    "generic": true
   },
   {
     "types": [
@@ -86,7 +96,8 @@
     ],
     "longName": "Ontology Individual",
     "shortName": "Individual",
-    "bgColor": "rgb(103, 232, 249)"
+    "bgColor": "rgb(103, 232, 249)",
+    "generic": true
   },
   {
     "types": [

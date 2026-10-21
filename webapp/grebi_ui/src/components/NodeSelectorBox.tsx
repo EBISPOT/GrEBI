@@ -171,17 +171,19 @@ export default function NodeSelectorBox({
             <div className="spinner-default w-7 h-7 absolute right-3 top-2.5 z-10" />
           )}
 
-          {/* Suggestions dropdown */}
+          {/* Suggestions dropdown. It sits above whatever follows the box on the
+              page: a results table's page-size select and CSV button are z-20
+              and z-10, and would otherwise show through the list. */}
           <ul
             className={
               query !== "" && (isFocused || suggestions.length > 0)
-                ? "list-none bg-white text-neutral-dark border-2 border-neutral-dark shadow-input rounded-b-md w-full absolute left-0 top-12 z-10"
+                ? "list-none bg-white text-neutral-dark border-2 border-neutral-dark shadow-input rounded-b-md w-full absolute left-0 top-12 z-50"
                 : "hidden"
             }
           >
             {suggestions.map((entry, i) => {
               const name = entry.getName();
-              const type = entry.extractType();
+              const types = entry.extractTypes();
               return (
                 <li
                   key={entry.getId().value}
@@ -194,7 +196,7 @@ export default function NodeSelectorBox({
                   <div className="flex justify-between">
                     <div className="truncate flex-auto" title={name}>
                       {name}
-                      {type && <NodeTypeChip type={type} />}
+                      {types.map((type) => <NodeTypeChip key={type.shortName} type={type} />)}
                     </div>
                     <div className="truncate flex-initial ml-2 text-right">
                       <DatasourceTags dss={entry.getDatasources()} />

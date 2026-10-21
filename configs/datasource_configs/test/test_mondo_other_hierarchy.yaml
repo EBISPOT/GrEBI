@@ -1,0 +1,16 @@
+id: MONDO.otherHierarchy
+enabled: true
+description: "Test datasource: a tiny MONDO (tests/data/test_mondo_other_hierarchy/mondo_tiny.ofn) with one otherHierarchy xref of each kind, run through the production MONDO.otherHierarchy ingest (configs/datasource_configs/mondo_other_hierarchy.yaml)"
+download:
+  - dest: test_mondo_other_hierarchy/mondo_tiny.ofn
+    sources:
+      - tests/data/test_mondo_other_hierarchy/mondo_tiny.ofn
+ingests:
+  # The same command as the production datasource, over the fixture.
+  - globs: ["test_mondo_other_hierarchy/mondo_tiny.ofn"]
+    command: '
+      om query -i $GREBI_INGEST_FILENAME
+        --query $GREBI_DATALOAD_HOME/01_ingest/sparql/mondo_other_hierarchy.sparql
+        -f tsv |
+      tail -n +2 |
+      grebi_tsv2jsonl --tsv-columns id,mondo:otherHierarchy'

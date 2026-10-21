@@ -1,0 +1,15 @@
+{"id": "mondo:0002280", "label": "anemia", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "hp:0001903", "label": "Anemia", "category": ["ols:Class", "biolink:PhenotypicFeature"]}
+{"id": "doid:2355", "label": "anemia", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0000129", "label": "glutaric aciduria", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "hp:0003150", "label": "Glutaric aciduria", "category": ["ols:Class", "biolink:PhenotypicFeature"]}
+{"id": "hp:0003530", "label": "Elevated circulating glutaric acid concentration", "category": ["ols:Class", "biolink:PhenotypicFeature"]}
+{"id": "mondo:0005246", "label": "osteomyelitis", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0009813", "label": "chronic recurrent multifocal osteomyelitis", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "hp:0002754", "label": "Osteomyelitis", "category": ["ols:Class", "biolink:PhenotypicFeature"]}
+{"id": "mondo:0000088", "label": "precocious puberty", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "ncit:C79704", "label": "Precocious Puberty", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0016142", "label": "qualitative or quantitative defects of beta-sarcoglycan", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "hgnc:10806", "label": "SGCB", "category": ["biolink:Gene"]}
+{"id": "hp:0003570", "label": "Molybdenum cofactor deficiency", "category": ["ols:Class", "biolink:PhenotypicFeature"]}
+{"id": "hp:0100327", "label": "Cow milk allergy", "category": ["ols:Class", "biolink:PhenotypicFeature"]}

@@ -32,6 +32,11 @@ describe('NodeRefLink', () => {
     expect(screen.getByRole('link')).toHaveTextContent(/^BRCA2$/)
   })
 
+  it('chips each display type of a node that has several', () => {
+    renderLink({ 'grebi:nodeId': 'n', 'grebi:name': ['anemia'], 'grebi:type': ['ols:Class', 'biolink:Disease', 'biolink:PhenotypicFeature'] }, true)
+    expect(screen.getByRole('link')).toHaveTextContent('anemiaDiseasePhenotype')
+  })
+
   it('omits the chip for an unknown type even when asked', () => {
     renderLink({ 'grebi:nodeId': 'n', 'grebi:name': ['evidence'], 'grebi:type': ['otar:Evidence'] }, true)
     expect(screen.getByRole('link')).toHaveTextContent(/^evidence$/)

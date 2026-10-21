@@ -542,7 +542,11 @@ public class GrebiMcpServer {
         ));
         searchNodesProps.put("filters", Map.of(
             "type", "object",
-            "description", "Optional node field filters. Values may be a string or an array of strings."
+            "description", "Optional node filters: grebi:type, grebi:datasources or grebi:sourceIds (any of the values); "
+                + "-grebi:type or -grebi:datasources to leave nodes out; grebi:curie or grebi:nodeId for one node; "
+                + "biolink:broad_match for the node a CURIE names and its broad_match descendants "
+                + "(biolink:broad_match: mondo:0000001 searches diseases only). "
+                + "Values may be a string or an array of strings."
         ));
         searchNodesProps.put("pageNum", Map.of(
             "type", "integer",

@@ -216,7 +216,7 @@ export default function SearchBox({
   let jumpToEntityElements = jumpTo
     .map((entry: GraphNode, i: number): SearchBoxEntry => {
           let name = entry.getName();
-          let type = entry.extractType()
+          let types = entry.extractTypes()
           return {
             linkUrl: entry.getLinkUrl(graph),
             li: (
@@ -239,7 +239,7 @@ export default function SearchBox({
                  
                     <div className="truncate flex-auto" title={name}>
                       {name}
-                      {type && <NodeTypeChip type={type} />}
+                      {types.map((type) => <NodeTypeChip key={type.shortName} type={type} />)}
                     </div>
                     
                     <div className="truncate flex-initial ml-2 text-right">

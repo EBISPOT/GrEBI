@@ -1,0 +1,31 @@
+# MONDO's otherHierarchy cross-references: the HP phenotype term that is the same
+# clinical concept as a MONDO disease (anemia the disease, mondo:0002280, and
+# Anemia the phenotypic feature, hp:0001903). MONDO keeps these as hasDbXrefs
+# whose axiom is annotated oboInOwl:source "MONDO:otherHierarchy" rather than as
+# equivalences, so neither OLS nor the SSSOM mapping sets surface them. This
+# ingest pulls them out of mondo.owl with owlmake's SPARQL (the query is
+# dataload/01_ingest/sparql/mondo_other_hierarchy.sparql) and emits one node per
+# live MONDO class and HP target, with the HP id under mondo:otherHierarchy. A
+# graph that loads this datasource adds that property to its identifier_props
+# (see configs/subgraph_configs/src/dismech.py), so the disease and the
+# phenotype clique-merge into one node. Only HP targets: the NCIT, HGNC and MeSH
+# xrefs that carry the same annotation are not the disease (see the query).
+id: MONDO.otherHierarchy
+enabled: true
+description: "MONDO's otherHierarchy cross-references from diseases to the HP phenotype terms that are the same clinical concept, merged into one node"
+download:
+  - dest: mondo_other_hierarchy/mondo.owl
+    sources:
+      - http://purl.obolibrary.org/obo/mondo.owl
+ingests:
+  - globs: ["mondo_other_hierarchy/mondo.owl"]
+    # om parses the whole of mondo.owl (~3.5 GB resident)
+    memory: "8 GB"
+    # om writes the SPARQL variables as the header (?id, ?target), so it is
+    # dropped and the columns named here
+    command: '
+      om query -i $GREBI_INGEST_FILENAME
+        --query $GREBI_DATALOAD_HOME/01_ingest/sparql/mondo_other_hierarchy.sparql
+        -f tsv |
+      tail -n +2 |
+      grebi_tsv2jsonl --tsv-columns id,mondo:otherHierarchy'

@@ -130,6 +130,22 @@ describe('QueryQuestion (interactive)', () => {
     expect(items.map((li) => li.textContent)).toEqual(['psoriasisDiseaseMONDO', 'psoriatic arthritisDiseaseMONDO'])
   })
 
+  it('sends the closure filter of a values_under parameter and chips every display type', async () => {
+    const anemia = {
+      'grebi:nodeId': 'n-anemia', 'grebi:curie': 'mondo:0002280', 'grebi:name': ['anemia'],
+      'grebi:type': ['ols:Class', 'biolink:Disease', 'biolink:PhenotypicFeature'], 'grebi:datasources': ['MONDO'],
+    }
+    api.getPaginated.mockImplementation(async () => new Page(0, 1, 1, 1, [anemia], new Map()))
+    const template = { ...diseaseTemplate, params: [{ ...diseaseTemplate.params[0], values_with_type: undefined, values_under: 'mondo:0000001' }] }
+    renderQuestion({ template })
+    typeInto(screen.getByPlaceholderText('psoriasis'), 'anemia')
+    await tick(300)
+    const qs = new URLSearchParams(api.getPaginated.mock.calls[0][0].split('?')[1])
+    expect(qs.get('biolink:broad_match')).toBe('mondo:0000001')
+    expect(qs.get('grebi:type')).toBeNull()
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['anemiaDiseasePhenotypeMONDO'])
+  })
+
   it('selecting a suggestion fills the parameter, reports it and navigates to the query', async () => {
     const { onAllParamsFilled } = renderQuestion()
     const input = screen.getByPlaceholderText('psoriasis')

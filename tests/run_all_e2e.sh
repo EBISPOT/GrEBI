@@ -55,6 +55,11 @@ SUBGRAPHS=(
     test_pride
     # Atlas TPM summaries: configurable cutoff, anatomy links and provenance.
     test_expression_atlas
+    # MONDO otherHierarchy: a tiny MONDO's annotated disease-to-phenotype xrefs
+    # pulled out with owlmake's SPARQL and clique-merged as identifiers, with
+    # stand-in terms showing which pairs merge and which are left apart.
+    # Regenerate expected output as for test_gwas above.
+    test_mondo_other_hierarchy
 )
 
 FAILED=()

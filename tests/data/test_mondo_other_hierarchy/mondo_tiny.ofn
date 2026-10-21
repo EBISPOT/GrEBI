@@ -1,0 +1,68 @@
+Prefix(:=<http://purl.obolibrary.org/obo/>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Prefix(oboInOwl:=<http://www.geneontology.org/formats/oboInOwl#>)
+
+Ontology(<http://purl.obolibrary.org/obo/mondo.owl>
+
+  Declaration(Class(:MONDO_0002280))
+  Declaration(Class(:MONDO_0000129))
+  Declaration(Class(:MONDO_0000088))
+  Declaration(Class(:MONDO_0016142))
+  Declaration(Class(:MONDO_0000063))
+  Declaration(Class(:MONDO_0000796))
+  Declaration(Class(:MONDO_0005246))
+  Declaration(Class(:MONDO_0009813))
+  Declaration(AnnotationProperty(oboInOwl:hasDbXref))
+  Declaration(AnnotationProperty(oboInOwl:source))
+  Declaration(AnnotationProperty(oboInOwl:id))
+  Declaration(AnnotationProperty(oboInOwl:consider))
+
+  # anemia: the disease and the HP phenotype are the same clinical concept
+  # (merged); its plain DOID xref carries no otherHierarchy annotation (ignored)
+  AnnotationAssertion(rdfs:label :MONDO_0002280 "anemia")
+  AnnotationAssertion(oboInOwl:id :MONDO_0002280 "MONDO:0002280")
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:otherHierarchy") oboInOwl:hasDbXref :MONDO_0002280 "HP:0001903")
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:equivalentTo") oboInOwl:hasDbXref :MONDO_0002280 "DOID:2355")
+
+  # glutaric aciduria: two HP targets, so neither is taken (the phenotypes
+  # would fuse)
+  AnnotationAssertion(rdfs:label :MONDO_0000129 "glutaric aciduria")
+  AnnotationAssertion(oboInOwl:id :MONDO_0000129 "MONDO:0000129")
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:otherHierarchy") oboInOwl:hasDbXref :MONDO_0000129 "HP:0003150")
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:otherHierarchy") oboInOwl:hasDbXref :MONDO_0000129 "HP:0003530")
+
+  # osteomyelitis and its subtype both point at HP:0002754: neither is taken
+  # (the two diseases would become one)
+  AnnotationAssertion(rdfs:label :MONDO_0005246 "osteomyelitis")
+  AnnotationAssertion(oboInOwl:id :MONDO_0005246 "MONDO:0005246")
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:otherHierarchy") oboInOwl:hasDbXref :MONDO_0005246 "HP:0002754")
+  AnnotationAssertion(rdfs:label :MONDO_0009813 "chronic recurrent multifocal osteomyelitis")
+  AnnotationAssertion(oboInOwl:id :MONDO_0009813 "MONDO:0009813")
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:otherHierarchy") oboInOwl:hasDbXref :MONDO_0009813 "HP:0002754")
+
+  # precocious puberty: an NCIT target (not HP, so not an identifier here;
+  # its MONDO:equivalentTo is what MONDO's own skos:exactMatch carries)
+  AnnotationAssertion(rdfs:label :MONDO_0000088 "precocious puberty")
+  AnnotationAssertion(oboInOwl:id :MONDO_0000088 "MONDO:0000088")
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:otherHierarchy") Annotation(oboInOwl:source "MONDO:equivalentTo") oboInOwl:hasDbXref :MONDO_0000088 "NCIT:C79704")
+
+  # a gene target (not the disease; left out)
+  AnnotationAssertion(rdfs:label :MONDO_0016142 "qualitative or quantitative defects of beta-sarcoglycan")
+  AnnotationAssertion(oboInOwl:id :MONDO_0016142 "MONDO:0016142")
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:otherHierarchy") oboInOwl:hasDbXref :MONDO_0016142 "HGNC:10806")
+
+  # an obsolete class keeps its xref (left out: deprecated)
+  AnnotationAssertion(rdfs:label :MONDO_0000063 "obsolete molybdenum cofactor deficiency")
+  AnnotationAssertion(oboInOwl:id :MONDO_0000063 "MONDO:0000063")
+  AnnotationAssertion(owl:deprecated :MONDO_0000063 "true"^^xsd:boolean)
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:otherHierarchy") oboInOwl:hasDbXref :MONDO_0000063 "HP:0003570")
+
+  # an obsolete class whose otherHierarchy annotation is on a `consider`, not
+  # an xref (left out: wrong property, and deprecated)
+  AnnotationAssertion(rdfs:label :MONDO_0000796 "obsolete cow milk allergy")
+  AnnotationAssertion(oboInOwl:id :MONDO_0000796 "MONDO:0000796")
+  AnnotationAssertion(owl:deprecated :MONDO_0000796 "true"^^xsd:boolean)
+  AnnotationAssertion(Annotation(oboInOwl:source "MONDO:otherHierarchy") oboInOwl:consider :MONDO_0000796 "HP:0100327")
+)

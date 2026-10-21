@@ -525,7 +525,7 @@ export default function QueryQuestion({
                 >
                   {state.suggestions.map((entry, si) => {
                     const name = entry.getName();
-                    const type = entry.extractType();
+                    const types = entry.extractTypes();
                     return (
                       <li
                         key={entry.getId().value}
@@ -538,7 +538,7 @@ export default function QueryQuestion({
                         <div className="flex justify-between">
                           <div className="truncate flex-auto" title={name}>
                             {name}
-                            {type && <NodeTypeChip type={type} />}
+                            {types.map((type) => <NodeTypeChip key={type.shortName} type={type} />)}
                           </div>
                           <div className="truncate flex-initial ml-2 text-right">
                             <DatasourceTags dss={entry.getDatasources()} />

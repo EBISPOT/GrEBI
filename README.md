@@ -29,6 +29,7 @@ There are nine test subgraphs, each exercising a different aspect of the pipelin
 | `test_gwas` | Ingests a few real GWAS Catalog rows covering the packed `MAPPED_GENE` / `MAPPED_TRAIT` column formats |
 | `test_reactome` | Ingests a few real Reactome dump objects and checks a DOID-annotated disease clique-merges into the ontology term |
 | `test_primekg` | Ingests a few real PrimeKG rows and checks their unpadded MONDO/HPO/GO/UBERON ids land on the ontology terms |
+| `test_mondo_other_hierarchy` | Pulls MONDO's `otherHierarchy` disease-to-phenotype xrefs out of a tiny MONDO with owlmake and checks the one-to-one pairs merge into one node |
 
 The UI also has unit tests (Vitest and Testing Library) that run in a few seconds without any data:
 

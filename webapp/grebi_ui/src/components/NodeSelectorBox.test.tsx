@@ -79,6 +79,21 @@ describe('NodeSelectorBox', () => {
     expect(screen.queryByRole('listitem')).toBeNull()
   })
 
+  it('chips every display type of a hit and keeps the list above the page below', async () => {
+    const anemia = {
+      'grebi:nodeId': 'n-anemia', 'grebi:curie': 'mondo:0002280', 'grebi:name': ['anemia'],
+      'grebi:type': ['ols:Class', 'biolink:Disease', 'biolink:PhenotypicFeature'], 'grebi:datasources': ['MONDO'],
+    }
+    api.getPaginated.mockImplementation(async () => new Page(0, 1, 1, 1, [anemia], new Map()))
+    const { input } = renderBox()
+    fireEvent.focus(input())
+    fireEvent.change(input(), { target: { value: 'anemia' } })
+    await tick(300)
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['anemiaDiseasePhenotypeMONDO'])
+    // a results table's controls are z-10 and z-20; the list must paint over them
+    expect(screen.getByRole('list')).toHaveClass('z-50')
+  })
+
   it('collapses rapid typing into one request for the latest text', async () => {
     const { input } = renderBox()
     fireEvent.change(input(), { target: { value: 'p' } })

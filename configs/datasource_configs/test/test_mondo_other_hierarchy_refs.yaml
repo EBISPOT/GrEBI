@@ -1,0 +1,14 @@
+id: DiseaseAndPhenotypeTerms
+enabled: true
+description: "Test datasource: minimal stand-ins for the MONDO diseases, HP phenotypes, NCIT term and HGNC gene the fixture's xrefs name, so the expected output shows which of them become one node"
+download:
+  - dest: test_mondo_other_hierarchy/reference_terms.jsonl
+    sources:
+      - tests/data/test_mondo_other_hierarchy/reference_terms.jsonl
+ingests:
+  - globs: ["test_mondo_other_hierarchy/reference_terms.jsonl"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename category:grebi:type
+          --json-inject-key-prefix ols:'

@@ -76,26 +76,34 @@ export default class GraphNodeRef {
     }
 
 
-    extractType():{longName:string,shortName:string}|undefined {
+    /**
+     * The display types of the node: every known type it carries, in the
+     * order of the hardcoded list, each name once. The generic ontology
+     * types (class, property, individual) only stand in when nothing more
+     * specific matched, so a disease that is also an ontology class is a
+     * disease, and a disease that is also a phenotype is both.
+     */
+    extractTypes():{longName:string,shortName:string}[] {
 
         let types:string[] = PropVal.arrFrom(this.props['grebi:type']).map(t => t.value)
 
-        let bestIndex = -1
-        let bestType:any = undefined
+        let matched = hardcodedNodeTypes.filter(known => known.types.some(t => types.indexOf(t) !== -1))
+        let specific = matched.filter(known => !known.generic)
+        let chosen = specific.length > 0 ? specific : matched
 
-        for(let ourType of types) {
-            for(let i = 0; i < hardcodedNodeTypes.length; i++) {
-                let knownType = hardcodedNodeTypes[i]
-                if(knownType.types.indexOf(ourType) !== -1) {
-                    if(bestIndex === -1 || i < bestIndex) {
-                        bestIndex = i
-                        bestType = knownType
-                    }
-                }
+        let seen = new Set<string>()
+        return chosen.filter(known => {
+            if(seen.has(known.shortName)) {
+                return false
             }
-        }
+            seen.add(known.shortName)
+            return true
+        })
+    }
 
-        return bestType
+    /** The first of the node's display types, where only one can be shown. */
+    extractType():{longName:string,shortName:string}|undefined {
+        return this.extractTypes()[0]
     }
 
 }

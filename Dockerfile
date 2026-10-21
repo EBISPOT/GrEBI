@@ -101,13 +101,14 @@ RUN mvn -B clean package -DskipTests
 # Downloaded as a release binary from owlmake's GitHub releases (a portable glibc
 # binary that runs on the UBI9 runtime) — no owlmake build needed. Pinned to a
 # tag for reproducible builds; the pinned release must support the flags
-# build_ubergraph.nf passes (-i, --graph-prefix, --offline, -o). Override with
-# --build-arg OWLMAKE_RELEASE=vX.Y.Z (or =latest).
+# build_ubergraph.nf passes (`om ubergraph -i --graph-prefix --offline -o`) and
+# the ones the MONDO.otherHierarchy ingest passes (`om query -i --query -f tsv`).
+# Override with --build-arg OWLMAKE_RELEASE=vX.Y.Z (or =latest).
 #
 # Arch: the release ships per-arch assets (amd64|arm64), so each per-arch GrEBI
 # build fetches the `om` matching its own machine.
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest AS om-dl
-ARG OWLMAKE_RELEASE=v0.1.0
+ARG OWLMAKE_RELEASE=v0.4.20
 RUN microdnf install -y --setopt=install_weak_deps=0 curl-minimal && microdnf clean all
 RUN case "$(uname -m)" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; *) echo "unsupported architecture $(uname -m)" >&2; exit 1 ;; esac; \
     base="https://github.com/EBISPOT/owlmake/releases"; \

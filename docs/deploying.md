@@ -325,6 +325,8 @@ GrEBI normalises all identifiers using the [Bioregistry](https://bioregistry.io/
 
 Each JSON object should have one or more identifier defined using one of the properties in `identifier_props`, configurable by graph; `id` is conventionally used, but the `ebi_monarch_xspecies` graph also adds `skos:exactMatch` and `semapv:crossSpeciesExactMatch` in its config file [ebi_monarch_xspecies.json](https://github.com/EBISPOT/GrEBI/blob/dev/configs/subgraph_configs/ebi_monarch_xspecies.json). All JSON objects which have any identifiers in common, after identifier normalisation, will be merged into the same graph node.
 
+A datasource can exist only to supply identifiers. MONDO says that a disease and an HP phenotype are the same clinical concept (anemia, `mondo:0002280`, and Anemia, `hp:0001903`) with a `hasDbXref` whose axiom is annotated `oboInOwl:source "MONDO:otherHierarchy"`, which is neither an equivalence nor a mapping anything else emits. The `MONDO.otherHierarchy` datasource ([mondo_other_hierarchy.yaml](https://github.com/EBISPOT/GrEBI/blob/dev/configs/datasource_configs/mondo_other_hierarchy.yaml)) pulls those xrefs out of `mondo.owl` with owlmake's SPARQL and emits one node per pair with the HP id under `mondo:otherHierarchy`, which the graphs that load it add to their `identifier_props`, so the disease and the phenotype become one node. It keeps only the one-to-one pairs: because merging is transitive, one HP term shared by two diseases would fuse the diseases.
+
 Additional cliques to be merged can be defined in the graph config under `additional_equivalence_groups`. For example, the `ebi_monarch_xspecies` graph defines:
 
   "additional_equivalence_groups": [

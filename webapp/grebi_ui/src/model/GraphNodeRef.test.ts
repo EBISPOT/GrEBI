@@ -41,6 +41,18 @@ describe('GraphNodeRef', () => {
   it('has no display type for unknown types', () => {
     expect(node({ 'grebi:type': ['otar:Evidence'] }).extractType()).toBeUndefined()
     expect(node({}).extractType()).toBeUndefined()
+    expect(node({ 'grebi:type': ['otar:Evidence'] }).extractTypes()).toEqual([])
+  })
+
+  it('lists every display type, generic ontology types only when nothing else matched', () => {
+    const shortNames = (types: string[]) => node({ 'grebi:type': types }).extractTypes().map((t) => t.shortName)
+    // anemia is a disease and a phenotype at once, and an ontology class besides
+    expect(shortNames(['ols:Class', 'biolink:PhenotypicFeature', 'biolink:Disease'])).toEqual(['Disease', 'Phenotype'])
+    expect(shortNames(['biolink:PhenotypicFeature'])).toEqual(['Phenotype'])
+    // a bare ontology term is shown as a class
+    expect(shortNames(['ols:Class'])).toEqual(['Class'])
+    // a name appears once however many of its types the node carries
+    expect(shortNames(['impc:MouseGene', 'biolink:Gene'])).toEqual(['Gene'])
   })
 
   it('refuses to wrap nothing', () => {
