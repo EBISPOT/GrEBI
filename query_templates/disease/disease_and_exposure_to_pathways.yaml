@@ -1,0 +1,106 @@
+title: Reactome pathways for a disease due to an exposure
+description: Pathways whose curated disease variants Reactome annotates with a disease that DisMech says an environmental exposure contributes to (ECTO -> MONDO -> Reactome).
+question: What [molecular pathways]{pathway} are associated with {disease_id} due to {exposure_id}?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - reactome
+  - dismech
+  - ecto
+cypher_match_fragment: |-
+  // closure-root form for both parameters: specific_exposure / specific_disease
+  // are the bases the row is about — the queried node or one of its subclasses
+  // via the precomputed broad_match closure (one hop: it is a full closure).
+  MATCH (specific_exposure)-[:`biolink:broad_match`*0..1]->(exposure)-[:sourceId]->(:Id {id: $exposure_id})
+  WITH DISTINCT specific_exposure
+  // DisMech: the exposure (ECTO) contributes to the disease (MONDO).
+  MATCH (specific_exposure)-[contributes:`biolink:contributes_to`]->(specific_disease)
+  WITH DISTINCT specific_exposure, contributes, specific_disease
+  MATCH (specific_disease)-[:`biolink:broad_match`*0..1]->(disease)-[:sourceId]->(:Id {id: $disease_id})
+  WITH DISTINCT specific_exposure, contributes, specific_disease
+  // Reactome annotates its disease variants (mutant proteins, fusions, the
+  // complexes and sets they form) and disease reactions with the disease. Drugs
+  // are annotated with the disease they treat, not a mechanism, so they are
+  // left out; a pathway annotated directly is reached through its reactions.
+  MATCH (specific_disease)<-[annotation:`reactome:disease`]-(reactome_entity)
+  WHERE NOT 'reactome:Drug' IN labels(reactome_entity)
+    AND NOT 'reactome:Pathway' IN labels(reactome_entity)
+  // Climb from the variant, through any set or complex it belongs to, to the
+  // reactions it takes part in (*0 keeps a reaction that is annotated itself).
+  MATCH (reactome_entity)<-[:(`reactome:input`|`reactome:output`|`reactome:physicalEntity`|`reactome:regulator`|`reactome:catalystActivity`|`reactome:regulatedBy`|`reactome:hasComponent`|`reactome:hasMember`|`reactome:hasCandidate`|`reactome:repeatedUnit`)*0..6]-(reaction:`reactome:ReactionLikeEvent`)
+  WITH DISTINCT specific_exposure, contributes, specific_disease, annotation, reactome_entity, reaction
+  // The human pathway the reaction sits in: one hasEvent hop, not the whole
+  // roll-up (which would end at "Disease" for every row). Species-agnostic
+  // entities also appear in the inferred orthologue pathways, hence R-HSA.
+  MATCH (reaction)<-[:`reactome:hasEvent`]-(pathway:`reactome:Pathway`)
+  WHERE any(i IN pathway.id WHERE i STARTS WITH 'reactome:R-HSA-')
+cypher_return_fragment: |-
+  RETURN DISTINCT
+      specific_exposure { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(specific_exposure) } AS exposure,
+      specific_disease { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(specific_disease) } AS disease,
+      pathway { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(pathway) } AS pathway,
+      reactome_entity { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(reactome_entity) } AS reactome_entity,
+      reaction { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(reaction) } AS reaction,
+      contributes.`dismech:supporting_text`[0] AS exposure_evidence,
+      CASE WHEN contributes.`dismech:publications`[0] STARTS WITH 'pubmed:'
+           THEN replace(contributes.`dismech:publications`[0], 'pubmed:', '') END AS exposure_pubmed_id,
+      contributes.`grebi:datasources` + annotation.`grebi:datasources` AS from_datasources,
+      annotation.edge_id AS edge_id
+cypher_count_fragment: |-
+  WITH DISTINCT specific_exposure, specific_disease, pathway, reactome_entity, reaction, contributes, annotation
+  RETURN count(*) AS count
+params:
+  - param_id: disease_id
+    param_name: Disease
+    param_type: SourceId
+    values_under: 'mondo:0000001'
+  - param_id: exposure_id
+    param_name: Exposure
+    param_type: SourceId
+    values_under: 'exo:0000002'
+result_columns:
+  - column_id: exposure
+    column_type: GraphNodeId
+    id_prefixes: ['ecto:', 'exo:', 'efo:']
+    facet: true
+  - column_id: disease
+    column_type: GraphNodeId
+    id_prefixes: ['mondo:', 'efo:', 'doid:', 'orpha:']
+    facet: true
+  - column_id: pathway
+    column_type: GraphNodeId
+    id_prefixes: ['reactome:R-']
+    facet: true
+  - column_id: reactome_entity
+    column_type: GraphNodeId
+    id_prefixes: ['reactome:R-']
+  - column_id: reaction
+    column_type: GraphNodeId
+    id_prefixes: ['reactome:R-']
+  - column_id: exposure_evidence
+    column_type: string
+    optional: true
+  - column_id: exposure_pubmed_id
+    column_type: PubmedId
+    optional: true
+  - column_id: from_datasources
+    column_type: DatasourceList
+    facet: true
+  - column_id: edge_id
+    column_type: EdgeId
+examples:
+  - title: lung cancer due to tobacco smoking
+    params:
+      disease_id: mondo:0008903
+      exposure_id: ecto:6000029
+  - title: hepatocellular carcinoma due to aflatoxin
+    params:
+      disease_id: mondo:0007256
+      exposure_id: ecto:0001108
+  - title: head and neck squamous cell carcinoma due to ethanol
+    params:
+      disease_id: mondo:0010150
+      exposure_id: ecto:9000027
+# Sized on the Sept 2026 xspecies build: DisMech links 29 ECTO exposures to 34
+# diseases (65 edges); 9 of those diseases carry Reactome disease annotations,
+# giving 1,879 rows over 13 exposure-disease pairs and 67 pathways, in ~2 s.

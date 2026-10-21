@@ -43,6 +43,11 @@ topics:
     type: Resource
     description: Reactome is a free, open-source, curated and peer-reviewed pathway database. Our goal is to provide intuitive bioinformatics tools for the visualization, interpretation and analysis of pathway knowledge to support basic research, genome analysis, modeling, systems biology and education. 
     url: https://reactome.org/
+  - id: ecto
+    name: ECTO
+    type: Ontology
+    description: The Environmental Conditions, Treatments and Exposures Ontology (ECTO) describes exposures to environmental stressors, from chemicals and radiation to behaviours such as smoking, as classes that can be linked to the diseases they contribute to.
+    url: https://obofoundry.org/ontology/ecto.html
   - id: cl
     name: Cell Ontology
     type: Ontology
