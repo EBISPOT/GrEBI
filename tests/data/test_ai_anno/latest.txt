@@ -1,0 +1,5 @@
+tests/data/test_ai_anno/cohorts/2026-Oct-19/gwas_catalog_annotations.tsv
+tests/data/test_ai_anno/diseases/2026-Oct-20/biostudies_annotations.tsv
+tests/data/test_ai_anno/expose/2026-Oct-19/gwas_annotations.tsv
+tests/data/test_ai_anno/expose/2026-Oct-19/metabolights_annotations.tsv
+tests/data/test_ai_anno/expose/2026-Oct-19/pride_annotations.tsv

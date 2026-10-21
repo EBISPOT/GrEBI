@@ -1,0 +1,27 @@
+id: AI_anno
+enabled: true
+description: "Test datasource: a manifest of five small ai_anno annotation tables in the published layout (tests/data/test_ai_anno/), run through the production AI_anno discovery and ingest"
+download_manifests:
+  - dest: ai_anno/downloads.json
+    sources:
+      - tests/data/test_ai_anno/latest.txt
+    command: >-
+      python3 "$GREBI_DATALOAD_HOME/00_download/ai_anno.py"
+      -- "$GREBI_DOWNLOAD_FILENAME"
+ingests:
+  - globs: ["ai_anno/*/*_annotations.tsv.gz", "ai_anno/*/*_annotations.tsv"]
+    download_manifest: ai_anno/downloads.json
+    # the table's project and name come from its path (ai_anno/<project>/<table>);
+    # the per-table options line the record ids up with the nodes GrEBI has
+    # One subshell, so the whole of it (not just its last statement) is what
+    # the pipeline reads as the node stream: the edges, then a typed node for
+    # each record whose row says what it is.
+    command: '
+      ( P=$(basename "$(dirname "$GREBI_INGEST_FILENAME")");
+        gzip -dcf "$GREBI_INGEST_FILENAME" |
+          grebi_tsv2jsonl --tsv-ignore-empty-fields |
+          grebi_transform_jsonl --json-remove-keys record_type --json-inject-key-prefix ai_anno: --json-inject-field ai_anno:project=$P |
+          grebi_nodes2edges --from-field id --to-field ai_anno:mapping_iri --edge-type-field ai_anno:column --edge-type-prefix ai_anno:;
+        gzip -dcf "$GREBI_INGEST_FILENAME" |
+          grebi_tsv2jsonl --tsv-ignore-empty-fields |
+          grebi_transform_jsonl --json-require-keys record_type --json-select-keys id,record_type --json-rename record_type:grebi:type )'

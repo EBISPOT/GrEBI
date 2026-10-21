@@ -40,6 +40,18 @@ impl Entry {
     fn into_json(self) -> Map<String, Value> {
         let mut node = Map::new();
         node.insert("id".into(), Value::String(self.id.clone()));
+        // the entry's Bioregistry CURIE (the id is the bare accession), so a
+        // datasource that names it by CURIE (metabolights:MTBLS1) lands on
+        // this node; and a chemical is the ChEBI entity it cross references
+        // (MetaboLights builds its chemicals from ChEBI), so it merges into
+        // the ChEBI node
+        let mut identifiers = vec![Value::String(format!("metabolights:{}", self.id))];
+        if self.id.starts_with("MTBLC") {
+            identifiers.extend(self.refs.iter()
+                .filter(|r| r.as_str().and_then(|s| s.get(..6)).map_or(false, |p| p.eq_ignore_ascii_case("chebi:")))
+                .cloned());
+        }
+        node.insert("dcterms:identifier".into(), Value::Array(identifiers));
         node.insert("grebi:name".into(), text_or_null(self.name));
         node.insert("grebi:description".into(), text_or_null(self.description));
         node.insert("metabolights:ref".into(), Value::Array(self.refs.clone()));

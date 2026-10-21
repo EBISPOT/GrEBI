@@ -1,0 +1,4 @@
+id	column	value	mapping_iri	mapping_label	mapping_reason	extraction_model	record_type
+biostudies:E-AFMX-5	diseases	colorectal adenocarcinoma	http://purl.obolibrary.org/obo/MONDO_0005008	colorectal adenocarcinoma	"exact match: ""Colorectal Adenocarcinoma"""	input	
+biostudies:E-AFMX-5	diseases	chronic myelogenous leukemia K562	http://purl.obolibrary.org/obo/MONDO_0011996	chronic myeloid leukemia	Chronic myelogenous leukemia (K562 is the cell line) is chronic myeloid leukemia.	input	
+biostudies:S-BSST2	diseases	IP_AKAP1_WT			no_candidates	input	

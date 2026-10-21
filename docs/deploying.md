@@ -160,157 +160,6 @@ available; a deliberate full refresh can disable the download task cache using
 `GREBI_NF_EXTRA_ARGS='-cache false'` with `download_local.sh`. Running the dataload
 alone does not refresh the catalogue; run the download stage first.
 
-### BioStudies study metadata
-
-[`biostudies.yaml`](../configs/datasource_configs/biostudies.yaml) downloads a
-snapshot of every non-Europe-PMC BioStudies study — one PageTab JSON document
-per line, gzipped — from the SPOT FTP area at
-`https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/biostudies.jsonl.gz`, and
-`grebi_ingest_biostudies` reads it from stdin. The pipeline itself never
-contacts BioStudies: the FTP tree is not NFS-mounted on the HPC and has no
-per-study index, and fetching ~100k studies from the API on every dataload is
-not reasonable.
-
-The snapshot is made by
-[`biostudies_snapshot.py`](../dataload/00_download/biostudies_snapshot.py),
-which enumerates studies through the search API (by collection, plus the
-accession prefixes of the uncollected `S-*` families; Europe PMC is excluded)
-and fetches each study's document with bounded concurrency into a scratch
-directory, so an interrupted run resumes. To refresh the snapshot, run it on
-the HPC as a batch job and copy the result to the FTP area:
-
-```bash
-python3 dataload/00_download/biostudies_snapshot.py \
-    --scratch /path/to/scratch biostudies.jsonl.gz
-```
-
-`S-EPMC*` submissions, `Files` payloads and the linked submission files are
-not part of the snapshot. The ingest still accepts individual PageTab files or
-an FTP-tree directory, which the golden tests use.
-
-### EGA study metadata (for the Multiomic Explorer)
-
-GrEBI has no EGA datasource: this snapshot sits beside the others on the SPOT
-FTP area for the [Multiomic Explorer](https://gitlab.ebi.ac.uk/spot/multiomic-explorer),
-which reads it from
-`https://ftp.ebi.ac.uk/pub/databases/spot/kg/data/ega_studies.jsonl.gz`.
-
-EGA publishes no dump of its metadata, but its
-[metadata API](https://metadata.ega-archive.org/) lists every study in one
-request when asked for a page larger than the archive, so
-[`ega_snapshot.py`](../dataload/00_download/ega_snapshot.py) makes that one
-request (never a crawl), refuses a page that comes back full, keeps the
-released, current studies, and writes them one per line, sorted by accession.
-To refresh it:
-
-```bash
-python3 dataload/00_download/ega_snapshot.py ega_studies.jsonl.gz
-srun -p datamover --time 0:30:0 cp ega_studies.jsonl.gz /nfs/ftp/public/databases/spot/kg/data/
-```
-
-### PRIDE project metadata
-
-[`pride.yaml`](../configs/datasource_configs/pride.yaml) downloads the live
-[PRIDE v3 bulk project export](https://www.ebi.ac.uk/pride/ws/archive/v3/projects/all)
-during the normal download stage, saving it as `pride/projects.json` within the
-subgraph's download directory. No manually uploaded FTP snapshot is required.
-As with other downloads, a successful download is reused on Nextflow resume;
-it is not refreshed on every ingest.
-
-The streaming ingest reads that local export without making API requests.
-It includes public PXD, legacy PRD and affinity-proteomics PAD projects, their
-descriptions, protocols, dates, dataset aliases, contributors, ontology
-annotations and publication/other-omics references. Dataset DOIs are aliases;
-publication DOIs are references, so papers are not merged into their datasets.
-Raw files, file inventories, peptide/protein results, download counts and
-contact email fields are excluded. Empty, malformed, truncated and duplicate-project
-exports fail the ingest.
-
-PRIDE is included in `ebi_monarch` and `ebi_monarch_xspecies`. To download and
-build it on its own locally:
-
-```bash
-GREBI_SUBGRAPHS=pride bash dataload/scripts/download_local.sh
-GREBI_SUBGRAPHS=pride bash dataload/scripts/dataload_local.sh
-```
-
-Run the offline fixture through the full pipeline with
-`bash tests/run_e2e.sh test_pride`, and the ingest's own tests (golden cases
-recorded from the export plus unit tests) with
-`cd dataload && cargo test -p grebi_ingest_pride`.
-
-### Expression Atlas gene expression in anatomy
-
-[`expression_atlas.yaml`](../configs/datasource_configs/expression_atlas.yaml)
-defines the bulk baseline RNA-seq subset across species. The download stage
-reads the current `experiments.json` FTP catalogue and automatically discovers
-all studies classified as `RNASEQ_MRNA_BASELINE`; no accession/file list is
-maintained in GrEBI. Catalogue and data downloads try
-`/nfs/ftp/public/databases/microarray/data/atlas/` first, then the corresponding
-HTTPS URL on `ftp.ebi.ac.uk`. Only the gene TPM
-table, assay-group configuration XML and condensed SDRF are downloaded per
-study. No API, raw reads, linked files, differential results, co-expression,
-proteomics, transcript tables or individual-cell matrices are used. Single-cell
-cell-type markers are not part of this ingest.
-
-The parser, `grebi_ingest_expression_atlas`, is offline and streams one gene
-row at a time. The required `--min-median-tpm 0.5` argument is in the datasource
-YAML's ingest command, not a default in the binary. An observation is included only when its median is **strictly
-greater than** that cutoff. For a five-number summary, the third value is the
-median; scalar summaries are also supported. Zero and missing values do not
-produce expression assertions. Changing the YAML argument changes the ingest
-task inputs/command; use the usual Nextflow resume mechanism to rebuild affected
-outputs. Rebuild the runtime image when changing the parser itself.
-
-Assay groups are joined to sample annotations using the configuration's assay
-IDs. Every contributing assay must have the same single mapped organism-part
-identifier and taxon. Mixed tissues, missing/ambiguous mappings and cell-type
-identifiers in the organism-part field are excluded. Groups annotated with
-disease, cell lines, non-wild-type genotypes, treatment or infection are excluded
-unless the relevant fields explicitly identify recognised normal/control
-values. This is a conservative metadata filter: absent disease/treatment fields
-are allowed for Atlas baseline studies, but do not constitute proof of health.
-It does not infer tissue expression from a cell line's tissue of origin.
-
-The output contains Ensembl gene nodes, lightweight mapped anatomy nodes
-(including plant anatomy), study provenance nodes, and `biolink:expressed_in`
-relationships. Model-organism aliases are included for unambiguous WormBase,
-FlyBase and TAIR locus IDs. `biolink:in_taxon` links to existing taxonomy nodes.
-Repeated gene/anatomy pairs are consolidated within a study and merged by the
-normal GrEBI pipeline across studies. Expression evidence retains the study,
-assay group, median TPM and available age/developmental/sex/genotype/growth
-context. Each observation is one JSON string in the **gene node's**
-`expression_atlas:evidence`, explicitly including gene, anatomy and taxon,
-so values and their contexts stay paired when evidence arrays are merged.
-Only the common cutoff is on the expression edge: study-specific edge properties
-would prevent GrEBI's complete-value deduplication and create parallel edges.
-Measurements are not averaged across studies. Study nodes remain even when
-all their expression results are filtered out. Per-study inclusion/exclusion
-counts are written to stderr.
-
-This means *expression observed in a qualifying anatomical sample group*, not
-tissue specificity, universal expression, or evidence of absence elsewhere.
-
-Included in `ebi_monarch` and `ebi_monarch_xspecies`, or build standalone:
-
-```bash
-GREBI_SUBGRAPHS=expression_atlas bash dataload/scripts/download_local.sh
-GREBI_SUBGRAPHS=expression_atlas bash dataload/scripts/dataload_local.sh
-(cd dataload && cargo test -p grebi_ingest_expression_atlas)
-python3 -m unittest discover -s tests -p 'test_expression_atlas_download.py'
-bash tests/run_e2e.sh test_expression_atlas
-```
-
-Discovery is in the download stage, not ingestion. The catalogue selector is
-`dataload/00_download/expression_atlas.py`; it selects the three required file
-types per baseline study and rejects empty, malformed or duplicate catalogues.
-The generated `expression_atlas/downloads.json` records the selected files and
-also constrains the ingest, so studies removed or reclassified upstream are not
-retained merely because their old files are cached. The expression threshold
-remains solely in the YAML ingest command. Source files are live FTP exports,
-not an immutable release snapshot. Discovery refreshes on resume, while
-successful individual downloads are reused, as for other datasources.
-
 ## The GrEBI datamodel
 
 Data to load into GrEBI should be structured as JSON objects, one per line. Each JSON line represents a node, and its properties are the properties on the node.
@@ -404,20 +253,23 @@ All options are optional; no options = passthrough.
 | `--json_inject_type <TYPE>` | Inject a `grebi:type` field with the given value. |
 | `--json_inject_key_prefix <PREFIX>` | Prefix all property keys (except `id` and keys already containing `:`) with this string. Defaults to empty. |
 | `--json_inject_value_prefix <KEY:PREFIX>` | Prefix all values of the given key with the given string. Can be specified multiple times. |
+| `--json_require_keys <KEYS>` | Comma-separated keys a record must have; records missing any of them are dropped. |
 | `--json_de_nest_field <FIELD.SUBFIELD>` | Extract a nested field from object values. The subfield becomes the `grebi:value` and remaining fields become `grebi:properties`. Can be specified multiple times. |
 | `--json_select_by_value <KEY:VALUE>` | Only output records where the given key has the given string value. Can be specified multiple times; all conditions must match. |
 | `--json_inject_hashid` | Flag. Add a `grebi:hashId` field containing a SHA-1 hash of the entire JSON object. |
+| `--json_inject_field <KEY=VALUE>` | Add a constant field to every record, the value as a one-element array (a datasource's own provenance, say). The key is taken as given, not prefixed. Can be specified multiple times. |
 
 #### Behaviour
 
-1. Each line of input is parsed as a JSON object.
+1. Each line of input is parsed as a JSON object; a record missing a `--json_require_keys` key is discarded.
 2. If `--json_select_by_value` is specified, records not matching all conditions are discarded.
 3. If `--json_inject_type` is specified, a `grebi:type` array is added.
 4. Keys are filtered by `--json_select_keys` or `--json_remove_keys`.
 5. Non-`id` keys without a `:` are prefixed with `--json_inject_key_prefix`.
 6. Values are mapped: `--json_inject_value_prefix` prepends strings; `--json_de_nest_field` restructures nested objects.
-7. If `--json_inject_hashid` is set, a SHA-1 hash is computed and stored.
-8. Key renames from `--json_rename` are applied last.
+7. Constant fields from `--json_inject_field` are added.
+8. If `--json_inject_hashid` is set, a SHA-1 hash is computed and stored.
+9. Key renames from `--json_rename` are applied last.
 
 ### `grebi_rdf2jsonl`
 
@@ -590,17 +442,20 @@ If the from or to fields contain arrays, the Cartesian product of all (from × t
 
 ```
 cat input.jsonl | grebi_nodes2edges --from_field <FIELD> --to_field <FIELD> --edge_type <TYPE> > output.jsonl
+cat input.jsonl | grebi_nodes2edges --from_field <FIELD> --to_field <FIELD> --edge_type_field <FIELD> [--edge_type_prefix <PREFIX>] > output.jsonl
 ```
 
 #### Options
 
-All three options are required.
+The from and to fields are required, and so is one of `--edge_type` and `--edge_type_field`.
 
 | Option | Description |
 |---|---|
 | `--from_field <FIELD>` | The field to use as the edge source (`id` in the output). |
 | `--to_field <FIELD>` | The field to use as the edge target (`grebi:value` in the output). |
-| `--edge_type <TYPE>` | The edge type (property name in the output) |
+| `--edge_type <TYPE>` | The edge type (property name in the output) of every record. |
+| `--edge_type_field <FIELD>` | Take each record's edge type from this field instead (its first value, if an array): a long table with a predicate column, such as ai_anno's `column`. The field is not carried as metadata. |
+| `--edge_type_prefix <PREFIX>` | Put before the type read from `--edge_type_field`, e.g. `ai_anno:`. Defaults to empty. |
 
 #### Behaviour
 
@@ -608,7 +463,8 @@ All three options are required.
 2. The from and to fields are extracted. If either is an array, all combinations are generated.
 3. For each (from, to) pair, an output record is written with:
    - `id` set to the from value
-   - A key named after `--edge_type` containing `grebi:value` (the to value) and `grebi:properties` (all remaining fields from the input).
+   - A key named after the edge type containing `grebi:value` (the to value) and `grebi:properties` (all remaining fields from the input).
+4. A record without a from field, a to field or (with `--edge_type_field`) a type is skipped, not an edge; the count is reported on stderr. With `grebi_tsv2jsonl --tsv-ignore-empty-fields` in front, that is how a table's rows with an empty target column (an item mapped to nothing) make no edge.
 
 ### `grebi_unwind`
 

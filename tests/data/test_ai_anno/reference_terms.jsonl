@@ -1,0 +1,12 @@
+{"id": "biostudies:E-AFMX-5", "label": "Transcription profiling of human cell lines", "category": ["biostudies:Study"]}
+{"id": "biostudies:S-BSST2", "label": "A study with an unmappable disease value", "category": ["biostudies:Study"]}
+{"id": "pride.project:PXD000001", "label": "A proteomics project", "category": ["pride:Project"]}
+{"id": "MTBLS1", "dcterms:identifier": ["metabolights:MTBLS1"], "label": "A metabolomics study", "category": ["metabolights:Study"]}
+{"id": "GCST000187", "label": "A GWAS Catalog study", "category": ["gwas:Study"], "gwas:pubmedid": ["pmid:29121268"]}
+{"id": "mondo:0005008", "label": "colorectal adenocarcinoma", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "mondo:0011996", "label": "chronic myeloid leukemia", "category": ["ols:Class", "biolink:Disease"]}
+{"id": "ncbitaxon:1718", "label": "Corynebacterium glutamicum", "category": ["ols:Class", "biolink:OrganismTaxon"]}
+{"id": "ncbitaxon:9606", "label": "Homo sapiens", "category": ["ols:Class", "biolink:OrganismTaxon"]}
+{"id": "ecto:9000188", "label": "exposure to lithium(1+)", "category": ["ols:Class"]}
+{"id": "ecto:9000281", "label": "exposure to DDT", "category": ["ols:Class"]}
+{"id": "coho:0001292", "label": "Brigham and Women's Rheumatoid Arthritis Sequential Study", "category": ["ols:Class"]}

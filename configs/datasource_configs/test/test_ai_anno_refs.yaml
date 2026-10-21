@@ -1,0 +1,14 @@
+id: AnnotatedRecordsAndTerms
+enabled: true
+description: "Test datasource: minimal stand-ins for the BioStudies, PRIDE, MetaboLights and GWAS Catalog records the fixture annotates and the terms their mappings name, so the expected output shows the annotation edges"
+download:
+  - dest: test_ai_anno/reference_terms.jsonl
+    sources:
+      - tests/data/test_ai_anno/reference_terms.jsonl
+ingests:
+  - globs: ["test_ai_anno/reference_terms.jsonl"]
+    command: '
+      cat $GREBI_INGEST_FILENAME |
+      grebi_transform_jsonl
+          --json-rename category:grebi:type
+          --json-rename label:grebi:name'

@@ -211,6 +211,7 @@
     "./configs/datasource_configs/metabolights.yaml",
     "./configs/datasource_configs/biostudies.yaml",
     "./configs/datasource_configs/pride.yaml",
+    "./configs/datasource_configs/ai_anno.yaml",
     "./configs/datasource_configs/expression_atlas.yaml",
     "./configs/datasource_configs/mondo_efo.yaml",
     "./configs/datasource_configs/ctd.yaml",

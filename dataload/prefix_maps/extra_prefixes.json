@@ -193,7 +193,7 @@
 "MONDO_":"mondo:", 
 "REACT:":"reactome:", 
 "http://id.nlm.nih.gov/mesh/2024/":"mesh:", 
-"http://purl.obolibrary.org/obo/MEDGENCUI_":"medgen:"
+"http://purl.obolibrary.org/obo/MEDGENCUI_":"medgen:",
+"http://www.ebi.ac.uk/coho/COHO_":"coho:",
+"COHO:":"coho:"
 }
-
-

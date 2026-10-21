@@ -1,0 +1,3 @@
+id	column	value	mapping_iri	mapping_label	mapping_reason	extraction_model	record_type
+metabolights:MTBLS1	organisms	Homo sapiens	http://purl.obolibrary.org/obo/NCBITaxon_9606	Homo sapiens	"exact match: ""Homo sapiens"""	vertex/gemini-3.1-pro-preview	
+metabolights:MTBLS1	exposures	lithium	http://purl.obolibrary.org/obo/ECTO_9000188	exposure to lithium(1+)	The study treats cells with lithium; the active component is the lithium ion.	vertex/gemini-3.1-pro-preview	

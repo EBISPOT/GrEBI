@@ -36,7 +36,17 @@ struct Args {
     json_select_by_value:Option<Vec<String>>,
 
     #[arg(long, action)]
-    json_inject_hashid:bool
+    json_inject_hashid:bool,
+
+    /// key=value: add this constant field to every line, the value as a
+    /// one-element array (e.g. a datasource's own provenance)
+    #[arg(long)]
+    json_inject_field:Option<Vec<String>>,
+
+    /// Comma-separated keys a line must have to be written; a line missing
+    /// any of them is dropped
+    #[arg(long)]
+    json_require_keys:Option<String>
 
 }
 
@@ -106,6 +116,19 @@ fn main() {
         }
     }
 
+    let require_keys:Vec<String> = match args.json_require_keys {
+        Some(keys) => keys.split(',').map(|s| s.to_string()).collect(),
+        None => Vec::new()
+    };
+
+    let mut inject_fields:Vec<(String,String)> = Vec::new();
+    if args.json_inject_field.is_some() {
+        for arg in args.json_inject_field.unwrap() {
+            let delim = arg.find('=').expect("--json-inject-field takes key=value");
+            inject_fields.push((arg[0..delim].to_string(), arg[delim+1..].to_string()));
+        }
+    }
+
     loop {
 
         let mut line:Vec<u8> = Vec::new();
@@ -116,6 +139,10 @@ fn main() {
         }
 
         let json:serde_json::Map<String,Value> = serde_json::from_slice(&line).unwrap();
+
+        if require_keys.iter().any(|k| !json.contains_key(k)) {
+            continue;
+        }
 
         if !select_by_value.is_empty() {
             let mut matches = true;
@@ -166,6 +193,10 @@ fn main() {
             out_json.insert(new_k, new_v);
         }
 
+
+        for (k, v) in inject_fields.iter() {
+            out_json.insert(k.clone(), json!([v]));
+        }
 
         if args.json_inject_hashid {
             let buf = Value::Object(out_json.clone()).to_string().as_bytes().to_vec();

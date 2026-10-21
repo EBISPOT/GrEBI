@@ -1,0 +1,2 @@
+id	column	value	mapping_iri	mapping_label	mapping_reason	extraction_model	record_type
+pubmed:29121268	exposures	DDT	http://purl.obolibrary.org/obo/ECTO_9000281	exposure to DDT	"exact match: ""exposure to DDT"""	vertex/gemini-3.1-pro-preview	biolink:Publication

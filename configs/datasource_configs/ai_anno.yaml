@@ -1,0 +1,51 @@
+# ai_anno's LLM annotations of free-text study metadata: the diseases,
+# exposures, organisms and cohorts its projects extract from BioStudies, PRIDE,
+# MetaboLights and GWAS Catalog records and map to MONDO, ECTO, NCBITaxon and
+# COHO terms. Every project publishes the same long table, one row per record
+# and mapped item (id, column, value, mapping_iri, mapping_label,
+# mapping_reason, extraction_model, record_type), under
+# https://ftp.ebi.ac.uk/pub/databases/spot/ai_anno/<project>/<release>/, and
+# latest.txt lists every table of each project's latest release: the catalogue
+# dataload/00_download/ai_anno.py turns into the download list, so a new table
+# or project is picked up without editing this file.
+#
+# The ingest is the generic tabular-edge pipeline (as for CTD), with nothing
+# specific to a table: each row is an edge from the record to the term, typed
+# ai_anno:<column> after the row's own column, with the row's other cells
+# (value, mapping_label, mapping_reason, extraction_model) and the project as
+# the edge's properties, so a new column is a new edge type. Rows mapped to
+# nothing (an empty mapping_iri) make no edge. The ids are Bioregistry CURIEs
+# (biostudies:E-AFMX-5, pride.project:PXD000001, metabolights:MTBLS1,
+# pubmed:29121268; GWAS Catalog accessions, which have no prefix, bare), the
+# identifiers those resources' own ingests give their nodes, so the edges land
+# on them. A row with a record_type also gives its record that type: the
+# publication-keyed tables say biolink:Publication (a GWAS publication reports
+# several studies, so its annotation is not any one study's), and GWAS studies
+# reach those publications through gwas:pubmedid.
+id: AI_anno
+enabled: true
+description: "LLM-extracted diseases, exposures, organisms and cohorts of BioStudies, PRIDE, MetaboLights and GWAS Catalog records, mapped to ontology terms by ai_anno"
+download_manifests:
+  - dest: ai_anno/downloads.json
+    sources:
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ai_anno/latest.txt
+    command: >-
+      python3 "$GREBI_DATALOAD_HOME/00_download/ai_anno.py"
+      -- "$GREBI_DOWNLOAD_FILENAME"
+ingests:
+  - globs: ["ai_anno/*/*_annotations.tsv.gz", "ai_anno/*/*_annotations.tsv"]
+    download_manifest: ai_anno/downloads.json
+    # the table's project and name come from its path (ai_anno/<project>/<table>);
+    # the per-table options line the record ids up with the nodes GrEBI has
+    # One subshell, so the whole of it (not just its last statement) is what
+    # the pipeline reads as the node stream: the edges, then a typed node for
+    # each record whose row says what it is.
+    command: '
+      ( P=$(basename "$(dirname "$GREBI_INGEST_FILENAME")");
+        gzip -dcf "$GREBI_INGEST_FILENAME" |
+          grebi_tsv2jsonl --tsv-ignore-empty-fields |
+          grebi_transform_jsonl --json-remove-keys record_type --json-inject-key-prefix ai_anno: --json-inject-field ai_anno:project=$P |
+          grebi_nodes2edges --from-field id --to-field ai_anno:mapping_iri --edge-type-field ai_anno:column --edge-type-prefix ai_anno:;
+        gzip -dcf "$GREBI_INGEST_FILENAME" |
+          grebi_tsv2jsonl --tsv-ignore-empty-fields |
+          grebi_transform_jsonl --json-require-keys record_type --json-select-keys id,record_type --json-rename record_type:grebi:type )'

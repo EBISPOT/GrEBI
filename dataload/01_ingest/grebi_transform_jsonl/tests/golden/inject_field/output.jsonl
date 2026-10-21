@@ -1,0 +1,2 @@
+{"id":["pmid:29121268"],"ai_anno:column":["exposures"],"ai_anno:mapping_iri":["ecto:9000188"],"ai_anno:extraction_model":["vertex/gemini-3.1-pro-preview"],"ai_anno:project":["expose"]}
+{"id":["pmid:29229094"],"ai_anno:column":["organisms"],"ai_anno:mapping_iri":["ncbitaxon:9606"],"ai_anno:project":["expose"]}

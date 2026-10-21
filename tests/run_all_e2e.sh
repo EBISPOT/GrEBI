@@ -60,6 +60,11 @@ SUBGRAPHS=(
     # stand-in terms showing which pairs merge and which are left apart.
     # Regenerate expected output as for test_gwas above.
     test_mondo_other_hierarchy
+    # ai_anno: annotation tables discovered from a latest.txt manifest and
+    # ingested as provenance-carrying edges from study records (and the
+    # publications GWAS studies cite) to ontology terms. Regenerate expected
+    # output as for test_gwas above.
+    test_ai_anno
 )
 
 FAILED=()

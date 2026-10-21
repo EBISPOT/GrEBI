@@ -1,0 +1,2 @@
+{"id":["29121268"],"column":["exposures"],"mapping_iri":["ecto:9000188"],"extraction_model":["vertex/gemini-3.1-pro-preview"]}
+{"id":["29229094"],"column":["organisms"],"mapping_iri":["ncbitaxon:9606"]}

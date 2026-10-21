@@ -1,0 +1,2 @@
+{"id":"E-AFMX-5","ai_anno:diseases":{"grebi:value":"mondo:0005008","grebi:properties":{"value":["colorectal adenocarcinoma"],"mapping_reason":["exact match"],"project":["diseases"]}}}
+{"id":"MTBLS1","ai_anno:organisms":{"grebi:value":"ncbitaxon:9606","grebi:properties":{"value":["Homo sapiens"],"project":["expose"]}}}

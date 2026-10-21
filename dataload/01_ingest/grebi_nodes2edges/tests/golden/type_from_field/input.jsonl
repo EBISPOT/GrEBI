@@ -1,0 +1,4 @@
+{"id":["E-AFMX-5"],"column":["diseases"],"value":["colorectal adenocarcinoma"],"mapping_iri":["mondo:0005008"],"mapping_reason":["exact match"],"project":["diseases"]}
+{"id":["S-BSST2"],"column":["diseases"],"value":["IP_AKAP1_WT"],"mapping_reason":["no_candidates"],"project":["diseases"]}
+{"id":["MTBLS1"],"column":["organisms"],"value":["Homo sapiens"],"mapping_iri":["ncbitaxon:9606"],"project":["expose"]}
+{"id":["MTBLS1"],"value":["lithium"],"mapping_iri":["ecto:9000188"],"project":["expose"]}

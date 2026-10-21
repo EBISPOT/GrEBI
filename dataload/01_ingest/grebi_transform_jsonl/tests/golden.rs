@@ -33,3 +33,23 @@ fn filters_lines_by_value_and_injects_a_type() {
         .args(["--json-select-by-value", "kind:gene", "--json-inject-type", "biolink:Gene", "--json-remove-keys", "junk,kind"])
         .run();
 }
+
+/// A constant field on every line (a project's provenance), a prefix on the
+/// id values, and the key prefix leaving id alone.
+#[test]
+fn injects_a_constant_field_and_prefixes_id_values() {
+    case("inject_field")
+        .args(["--json-inject-key-prefix", "ai_anno:", "--json-inject-value-prefix", "id:pmid:",
+               "--json-inject-field", "ai_anno:project=expose"])
+        .run();
+}
+
+/// Only the lines that have every required key are written: here, a typed
+/// node for each row that says what its record is, and nothing for the rest.
+#[test]
+fn writes_only_the_lines_with_the_required_keys() {
+    case("require_keys")
+        .args(["--json-require-keys", "record_type", "--json-select-keys", "id,record_type",
+               "--json-rename", "record_type:grebi:type"])
+        .run();
+}
