@@ -25,6 +25,8 @@ An instance serves several graphs, and each graph has its own query templates: t
 
 A template tool answers a page at a time: with the template's own parameters it takes `sortBy` and `sortDir` for the order, and `pageNum` and `pageSize` (at most 100) for the page, and returns `rows` with `totalNumRows`, `totalNumPages`, `pageNum` and `pageSize`. Tool calls share the API's limits: text arguments of at most 4,096 characters and 300 calls a minute from one client.
 
+The node tools keep their answers to a size an agent can read. `search_nodes` and `lookup_nodes` answer with lightweight hits, a node's id, name, types, datasources and source ids, unless `resolve` is true; a full node, from them or from `get_node`, has every property cut to its first `maxValues` values (20 unless the call says otherwise, at most 500), and `grebi:truncated` maps each cut property to the number of values it has in all; its embedding vectors are left out. A hub node such as a well-studied gene has tens of thousands of values, 20 MB of JSON whole; its relationships are available in full, a page at a time, from `list_node_edges`.
+
 ## What the server offers
 
 <mcp-reference />

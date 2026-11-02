@@ -169,6 +169,38 @@ public class GrebiMcpServer {
     }
 
     /** An identifier list argument: an array of strings, or one string with an identifier per line. */
+    /** How many values of a property a full node keeps unless the call says otherwise. */
+    static final int DEFAULT_MAX_VALUES = 20;
+
+    /** The most values per property a call may ask for: 500 keep the largest hub nodes under a few megabytes. */
+    static final int MAX_MAX_VALUES = 500;
+
+    private static int getMaxValuesArg(Map<String, Object> args) {
+        int maxValues = getIntArg(args, "maxValues", DEFAULT_MAX_VALUES);
+        if (maxValues < 1 || maxValues > MAX_MAX_VALUES) {
+            throw new IllegalArgumentException("maxValues must be between 1 and " + MAX_MAX_VALUES);
+        }
+        return maxValues;
+    }
+
+    /** The lookup's answer with each resolved node abridged. */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> abridgeLookup(Map<String, Object> answer, int maxValues) {
+        var abridged = new LinkedHashMap<>(answer);
+        var results = new ArrayList<Map<String, Object>>();
+        for (var entry : (List<Map<String, Object>>) answer.get("results")) {
+            var nodes = new ArrayList<Map<String, Object>>();
+            for (var node : (List<Map<String, Object>>) entry.get("nodes")) {
+                nodes.add(Abridgement.abridge(node, maxValues));
+            }
+            var copy = new LinkedHashMap<>(entry);
+            copy.put("nodes", nodes);
+            results.add(copy);
+        }
+        abridged.put("results", results);
+        return abridged;
+    }
+
     private static List<String> getIdsArg(Gson gson, Map<String, Object> args, String key) {
         var raw = args.get(key);
         if (raw == null) {
@@ -519,6 +551,18 @@ public class GrebiMcpServer {
         var edgeOutputSchema = requireObjectOutputSchema("edge");
         var countsOutputSchema = requireObjectOutputSchema("counts");
 
+        // A full node is cut to this many values per property unless the call
+        // says otherwise: a hub node runs to tens of thousands of values and
+        // tens of megabytes, which no MCP client can take (#91).
+        var maxValuesProp = Map.<String, Object>of(
+            "type", "integer",
+            "minimum", 1,
+            "maximum", MAX_MAX_VALUES,
+            "description", "Values kept per property of a full node (default " + DEFAULT_MAX_VALUES + "). A property with more "
+                + "is cut to its first values, and " + Abridgement.TRUNCATED + " maps each cut property to its full number "
+                + "of values; embedding vectors are left out. list_node_edges pages through a node's relationships in full."
+        );
+
         var searchNodesProps = new LinkedHashMap<String, Object>();
         searchNodesProps.put("graph", Map.of(
             "enum", graphEnum,
@@ -530,8 +574,10 @@ public class GrebiMcpServer {
         ));
         searchNodesProps.put("resolve", Map.of(
             "type", "boolean",
-            "description", "Whether to resolve lightweight hits to full node blobs"
+            "description", "Return full nodes instead of lightweight hits (off by default). A hit has the node's id, name, "
+                + "types, datasources and source ids; a full node has every property, cut to maxValues values each."
         ));
+        searchNodesProps.put("maxValues", maxValuesProp);
         searchNodesProps.put("exactMatch", Map.of(
             "type", "boolean",
             "description", "Match the whole name (ignoring case) instead of searching by similarity"
@@ -574,7 +620,8 @@ public class GrebiMcpServer {
                 validateGraph(graphs, graph);
 
                 var q = getStringArg(request.arguments(), "q", null);
-                var resolve = getBooleanArg(request.arguments(), "resolve", true);
+                var resolve = getBooleanArg(request.arguments(), "resolve", false);
+                var maxValues = getMaxValuesArg(request.arguments());
                 var exactMatch = getBooleanArg(request.arguments(), "exactMatch", false);
                 var lang = getStringArg(request.arguments(), "lang", null);
                 var pageNum = getIntArg(request.arguments(), "pageNum", 0);
@@ -585,7 +632,9 @@ public class GrebiMcpServer {
 
                 var page = limits.pageRequest(pageNum, pageSize);
                 var nodes = postgres.searchNodesPaginated(graph, q, filters, exactMatch, resolve, page);
-                var result = pagedResult(resolve ? nodes.map(node -> Languages.localise(node, lang)) : nodes);
+                var result = pagedResult(resolve
+                    ? nodes.map(node -> Abridgement.abridge(Languages.localise(node, lang), maxValues))
+                    : nodes);
                 return toolResult(gson, result, pagedRowsOutputSchema);
             }
         ));
@@ -607,8 +656,9 @@ public class GrebiMcpServer {
         ));
         lookupProps.put("resolve", Map.of(
             "type", "boolean",
-            "description", "Return full node blobs instead of lightweight hits (off by default)"
+            "description", "Return full nodes instead of lightweight hits (off by default), cut to maxValues values per property"
         ));
+        lookupProps.put("maxValues", maxValuesProp);
         lookupProps.put("lang", Map.of(
             "type", "string",
             "description", "Language of the resolved nodes' labels (e.g. fr): that language first, English as the fallback, other languages dropped."
@@ -649,8 +699,12 @@ public class GrebiMcpServer {
                 var ids = getIdsArg(gson, request.arguments(), "ids");
                 var matchNames = getBooleanArg(request.arguments(), "matchNames", false);
                 var resolve = getBooleanArg(request.arguments(), "resolve", false);
+                var maxValues = getMaxValuesArg(request.arguments());
                 var lang = getStringArg(request.arguments(), "lang", null);
                 var result = lookup.lookup(graph, ids, matchNames, resolve, lang);
+                if (resolve) {
+                    result = abridgeLookup(result, maxValues);
+                }
                 return toolResult(gson, result, lookupOutputSchema);
             }
         ));
@@ -668,11 +722,13 @@ public class GrebiMcpServer {
             "type", "string",
             "description", "Language of the node's labels (e.g. fr): that language first, English as the fallback, other languages dropped. The node lists the languages it has in grebi:languages."
         ));
+        getNodeProps.put("maxValues", maxValuesProp);
 
         tools.add(new McpServerFeatures.AsyncToolSpecification(
             McpSchema.Tool.builder()
                 .name("get_node")
-                .description("Resolve a specific node by its node ID.")
+                .description("A node by its node ID, with every property cut to maxValues values; "
+                    + Abridgement.TRUNCATED + " says which were cut and how many values they have in all.")
                 .inputSchema(buildInputSchema(getNodeProps, List.of("graph", "nodeId")))
                 .outputSchema(nodeOutputSchema)
                 .build(),
@@ -691,7 +747,8 @@ public class GrebiMcpServer {
                 }
 
                 var lang = getStringArg(request.arguments(), "lang", null);
-                return toolResult(gson, Map.of("node", Languages.localise(node, lang)), nodeOutputSchema);
+                var maxValues = getMaxValuesArg(request.arguments());
+                return toolResult(gson, Map.of("node", Abridgement.abridge(Languages.localise(node, lang), maxValues)), nodeOutputSchema);
             }
         ));
 
