@@ -45,6 +45,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # The image carries the hash of the Dockerfile.base it was built from, so
+      # that e2e_tests.yml can tell whether the published base is the one its
+      # ref would build, and pull it instead of building.
+      - name: Fingerprint Dockerfile.base
+        id: fingerprint
+        run: echo "sha=$(sha256sum Dockerfile.base | cut -c1-64)" >> "$GITHUB_OUTPUT"
+
       - name: Build and push grebi_base (${{ matrix.arch }}) by digest
         id: build
         uses: docker/build-push-action@v5
@@ -52,6 +59,9 @@ jobs:
           context: .
           file: Dockerfile.base
           platforms: ${{ matrix.platform }}
+          labels: |
+            uk.ac.ebi.grebi.dockerfile_base=${{ steps.fingerprint.outputs.sha }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha,scope=base-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=base-${{ matrix.arch }}
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true

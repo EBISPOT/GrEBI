@@ -48,13 +48,28 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
           docker system prune -af
 
-      # Build grebi_base from THIS ref's Dockerfile.base so changes to it (system
-      # packages, PostgreSQL/pgvector, /etc/passwd perms, etc.) are exercised by
-      # the PR. The published grebi_base:dev is only rebuilt by base.yml on
-      # dev/stable pushes, so without this the combined image would build FROM a
-      # stale base and Dockerfile.base changes would go untested.
-      - name: Build base image
-        run: docker build -f Dockerfile.base -t ghcr.io/ebispot/grebi_base:dev .
+      # The combined image builds FROM grebi_base. base.yml publishes it from
+      # Dockerfile.base on dev/stable pushes, stamped with that file's hash, so
+      # when this ref's Dockerfile.base is the one the published image was built
+      # from, the image is pulled. Otherwise (a change to Dockerfile.base, or a
+      # base published before the stamp) it is built here so the change is
+      # exercised. Building it fetches from eight upstreams (EPEL, pgdg,
+      # NodeSource, Docker, Caddy, Corretto, Apache, the EBI FTP), and one of
+      # them being down failed four E2E runs in a row in Oct-Nov 2026.
+      - name: Base image
+        run: |
+          image=ghcr.io/ebispot/grebi_base:dev
+          want=$(sha256sum Dockerfile.base | cut -c1-64)
+          have=
+          if docker pull -q "$image" > /dev/null 2>&1; then
+            have=$(docker image inspect "$image" --format '{{ index .Config.Labels "uk.ac.ebi.grebi.dockerfile_base" }}')
+          fi
+          if [ "$have" = "$want" ]; then
+            echo "The published $image was built from this Dockerfile.base ($want): using it"
+          else
+            echo "The published $image was built from Dockerfile.base ${have:-(unstamped or absent)}, this ref has $want: building it"
+            docker build -f Dockerfile.base -t "$image" .
+          fi
 
       - name: Build combined image
         run: docker build -t ghcr.io/ebispot/grebi_combined:dev .

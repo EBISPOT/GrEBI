@@ -69,19 +69,19 @@ RUN pip3 install --no-cache-dir \
 # ---- Java 21 (Amazon Corretto tarball) ----
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then JAVA_ARCH="x64"; else JAVA_ARCH="aarch64"; fi && \
-    curl -L https://corretto.aws/downloads/resources/21.0.6.7.1/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH}.tar.gz | tar -C /opt -xzf - && \
+    curl -fSL --retry 5 --retry-all-errors --retry-delay 10 --max-time 600 https://corretto.aws/downloads/resources/21.0.6.7.1/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH}.tar.gz | tar -C /opt -xzf - && \
     ln -s /opt/amazon-corretto-21.0.6.7.1-linux-${JAVA_ARCH} /opt/java
 ENV JAVA_HOME="/opt/java"
 ENV PATH="$PATH:/opt/java/bin"
 
 # ---- Maven ----
 RUN mkdir -p /opt/maven && \
-    curl https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz | tar -xz --strip-components=1 -C /opt/maven
+    curl -fSL --retry 5 --retry-all-errors --retry-delay 10 --max-time 600 https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz | tar -xz --strip-components=1 -C /opt/maven
 ENV PATH="$PATH:/opt/maven/bin"
 
 # ---- Neo4j 2026.05.0 ----
 RUN mkdir /opt/neo4j && \
-    curl https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2026.05.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j && \
+    curl -fSL --retry 5 --retry-all-errors --retry-delay 10 --max-time 600 https://ftp.ebi.ac.uk/pub/databases/spot/mirror/neo4j-community-2026.05.0-unix.tar.gz | tar -xz --strip-components=1 -C /opt/neo4j && \
     echo "dbms.security.auth_enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
     echo "dbms.usage_report.enabled=false" >> /opt/neo4j/conf/neo4j.conf && \
     echo "db.recovery.fail_on_missing_files=false" >> /opt/neo4j/conf/neo4j.conf && \
