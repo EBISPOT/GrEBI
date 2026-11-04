@@ -39,6 +39,27 @@ spec:
               readOnly: true
           ports:
             - containerPort: 8090
+          # The JVM takes a minute or two to serve (Postgres pool, graph
+          # metadata, the example edge-count prewarm). Without these probes a
+          # rollout marked the new pod Ready the moment its container started
+          # and killed the old one in the same breath, so the site answered
+          # nothing for the whole warm-up (seen on 2026-11-04). The startup
+          # probe gives it five minutes; readiness then keeps traffic off a
+          # replica that stops answering. No liveness probe: with one replica
+          # a long GC pause must not become a restart.
+          startupProbe:
+            httpGet:
+              path: {{ .Values.contextPath }}/api/v1/graphs
+              port: 8090
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.contextPath }}/api/v1/graphs
+              port: 8090
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           resources:
             requests:
               memory: 8Gi
