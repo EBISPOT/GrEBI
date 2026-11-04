@@ -5,7 +5,7 @@ download:
   - dest: ols/edam.json.gz
     sources:
       - /nfs/production/parkinso/spot/ols4/dev2/out/ontology_jsons/edam.json.gz
-      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/dev/latest/ontology_jsons/edam.json.gz
+      - https://ftp.ebi.ac.uk/pub/databases/spot/ols/latest/ontology_jsons/edam.json.gz
 ingests:
   - globs: ["ols/edam.json.gz"]
     command: '
