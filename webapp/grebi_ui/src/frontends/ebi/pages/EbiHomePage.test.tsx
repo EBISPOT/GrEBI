@@ -93,6 +93,12 @@ describe('EbiHomePage', () => {
     expect(screen.getAllByTitle('Graph info')[0].closest('a')).toHaveAttribute('href', '/graphs/g1')
   })
 
+  it('shows the MCP endpoint of this instance, from its API URL', async () => {
+    renderHome()
+    await screen.findByText('Graph One')
+    expect(screen.getByText('http://localhost:3000/api/v1/mcp')).toBeInTheDocument()
+  })
+
   it('selecting another graph retargets the search box and questions without leaving the page', async () => {
     renderHome()
     await screen.findByText('Graph One')

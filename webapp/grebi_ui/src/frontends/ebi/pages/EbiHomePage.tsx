@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { siteUrl } from "../../../app/instance";
+import { apiUrl, siteUrl } from "../../../app/instance";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import React, { Fragment } from "react";
 import { List, ListItem, MenuItem, Select, IconButton, Skeleton } from "@mui/material";
@@ -17,6 +17,11 @@ import ErrorMessage from "../../../components/ErrorMessage";
 
 function buildNodeCacheKey(graph: string, sourceId: string): string {
   return `${graph}::${sourceId}`;
+}
+
+/** The MCP server of this instance: /api/v1/mcp on its API, as an absolute URL. */
+function mcpEndpoint(): string {
+  return new URL(apiUrl() + "api/v1/mcp", window.location.href).href;
 }
 
 export default function EbiHomePage() {
@@ -178,7 +183,7 @@ function selectGraph(sg: string) {
                     GrEBI enables researchers and their LLM agents to search and explore biomedical knowledge graphs derived from <Link className="link-default" to="https://www.ebi.ac.uk/services/">EMBL-EBI databases</Link>, the <Link className="link-default" to="https://monarchinitiative.org/">MONARCH Initiative</Link>, <Link className="link-default" to="https://dismech.monarchinitiative.org/">DisMech</Link>, <Link className="link-default" to="https://robokop.renci.org/api-docs/docs/automat/robokop-kg">ROBOKOP</Link>, <Link className="link-default" to="https://www.ebi.ac.uk/ols4">OLS</Link>, <Link className="link-default" to="https://github.com/INCATools/ubergraph">UberGraph</Link>, and many other sources. For more information see the <Link className="link-default" to="https://github.com/EBISPOT/GrEBI">GrEBI GitHub repository</Link>.
                     <br />
                     <br />
-                    MCP endpoint (Streamable HTTP): <code className="text-sm text-blue-600">https://wwwdev.ebi.ac.uk/kg/api/v1/mcp</code>
+                    MCP endpoint (Streamable HTTP): <code className="text-sm text-blue-600">{mcpEndpoint()}</code>
                   </p>
                 </div>
                 {graphs.length > 0 && (
