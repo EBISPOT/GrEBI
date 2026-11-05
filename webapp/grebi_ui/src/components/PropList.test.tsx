@@ -41,10 +41,11 @@ describe('PropList', () => {
     expect(screen.getByText(/1e-8/)).toBeInTheDocument()
   })
 
-  it('hides internal keys', () => {
+  it('hides internal keys and the OLS bookkeeping', () => {
     const { container } = renderList({
       _refs: ['secret-refs'], 'grebi:edgeId': ['secret-edge'], 'grebi:fromNodeId': ['secret-from'],
       'grebi:toNodeId': ['secret-to'], 'grebi:nodeId': ['secret-node'], from: ['secret-f'], to: ['secret-t'],
+      'ols:definitionProperty': ['secret-def'], 'ols:isPreferredRoot': ['secret-root'],
       'grebi:name': ['visible'],
     })
     expect(container.textContent).not.toContain('secret')

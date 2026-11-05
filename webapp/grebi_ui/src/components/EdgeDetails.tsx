@@ -9,6 +9,7 @@ import PropList from "./PropList";
 import LoadingOverlay from "./LoadingOverlay";
 import ErrorMessage from "./ErrorMessage";
 import { DatasourceTags } from "./DatasourceTag";
+import { isHiddenProp } from "../model/hiddenProps";
 
 /** The page of an edge, which the edge dialog links to. */
 export function edgePageUrl(graph: string, edgeId: string): string {
@@ -65,10 +66,9 @@ export default function EdgeDetails({ graph, edgeId, onLoaded }: { graph: string
   const edgeType = edge["grebi:type"];
   const datasources: string[] = Array.isArray(edge["grebi:datasources"]) ? edge["grebi:datasources"] : [];
 
-  // every property except the structure PropList hides anyway
   const propsMap: { [key: string]: PropVal[] } = {};
   for (const key of Object.keys(edge)) {
-    if (["_refs", "from", "to", "grebi:edgeId", "grebi:fromNodeId", "grebi:toNodeId", "grebi:nodeId"].includes(key)) {
+    if (isHiddenProp(key)) {
       continue;
     }
     propsMap[key] = PropVal.arrFrom(edge[key]);

@@ -3,6 +3,7 @@ import encodeNodeId from "../encodeNodeId";
 import GraphNodeRef from "./GraphNodeRef";
 import PropVal from "./PropVal";
 import Refs from "./Refs";
+import { isHiddenProp } from "./hiddenProps";
 
 export default class GraphNode extends GraphNodeRef {
 
@@ -69,8 +70,7 @@ export default class GraphNode extends GraphNodeRef {
         })
         keys = sortOrder.concat(keys)
         for(let k of keys) {
-            //if( (k.startsWith('grebi:') || k === '_refs') && k !== 'grebi:type') {
-            if(k === '_refs') {
+            if(isHiddenProp(k)) {
                 continue;
             }
             res_props[k] = PropVal.arrFrom(this.props[k])

@@ -15,6 +15,7 @@ import LoadingOverlay from "../LoadingOverlay";
 import ErrorMessage from "../ErrorMessage";
 import EdgeMetadataDialog from "../query/EdgeMetadataDialog";
 import { Info } from "@mui/icons-material";
+import { isHiddenProp } from "../../model/hiddenProps";
 
 export interface EdgesState {
     total:number,
@@ -85,7 +86,7 @@ export default function EdgesList(params:{
                 facetFieldToCounts: facets,
                 propertyColumns:
                     Object.keys(facets)
-                        .filter(k => k !== 'grebi:datasources')
+                        .filter(k => k !== 'grebi:datasources' && !isHiddenProp(k))
                         .filter(k => Object.entries(facets[k] || {}).length > 0)
             };
             if(onEdgesLoaded)

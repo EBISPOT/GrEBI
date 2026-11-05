@@ -53,11 +53,11 @@ describe('GraphNode', () => {
     expect(() => new GraphNode({ 'grebi:nodeId': 'x' }).getRefs()).toThrow('No refs in node')
   })
 
-  it('lists props with name, synonym, description and displayType first and _refs left out', () => {
-    const p = new GraphNode(props).getProps()
+  it('lists props with name, synonym, description and displayType first, the hidden ones left out', () => {
+    const p = new GraphNode({ ...props, 'ols:isPreferredRoot': [{ 'grebi:datasources': ['OLS.mondo'], 'grebi:value': 'false' }] }).getProps()
     expect(Object.keys(p)).toEqual([
       'grebi:name', 'grebi:synonym', 'grebi:description', 'grebi:displayType',
-      'grebi:nodeId', 'grebi:sourceIds', 'grebi:type', 'ro:0002200',
+      'grebi:sourceIds', 'grebi:type', 'ro:0002200',
     ])
     expect(p['grebi:name'].map(v => v.value)).toEqual(['psoriasis', 'Psoriasis'])
     expect(p['grebi:displayType'].map(v => v.value)).toEqual(['Disease'])

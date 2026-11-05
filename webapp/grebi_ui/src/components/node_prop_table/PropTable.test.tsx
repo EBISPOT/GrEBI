@@ -7,6 +7,8 @@ import { makeNode } from './testNode'
 const node = makeNode({
   'grebi:datasources': ['OLS.mondo', 'UberGraph'],
   'grebi:synonym': [{ 'grebi:datasources': ['UberGraph'], 'grebi:value': 'psoriasis vulgaris' }],
+  'ols:definitionProperty': [{ 'grebi:datasources': ['OLS.mondo'], 'grebi:value': 'iao:0000115' }],
+  'ols:isPreferredRoot': [{ 'grebi:datasources': ['OLS.mondo'], 'grebi:value': 'false' }],
   id: 'should-not-show',
 })
 
@@ -23,6 +25,9 @@ describe('PropTable', () => {
     expect(container.textContent).not.toContain('psoriasis vulgaris')
     expect(container.textContent).not.toContain('should-not-show')
     expect(screen.queryByText('Synonym')).toBeNull()
+    // the OLS bookkeeping is never shown
+    expect(container.textContent).not.toContain('iao:0000115')
+    expect(screen.queryByText('ols:isPreferredRoot')).toBeNull()
   })
 
   it('reveals the values of a datasource once it is enabled, tagging rows by source', () => {

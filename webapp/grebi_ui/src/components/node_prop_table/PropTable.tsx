@@ -25,7 +25,6 @@ export default function PropTable(params:{
     let props = node.getProps();
 
     let propkeys = Object.keys(props)
-    propkeys = propkeys.filter(k => k !== 'id')
 
     return <div>
       <div className="pb-3">
