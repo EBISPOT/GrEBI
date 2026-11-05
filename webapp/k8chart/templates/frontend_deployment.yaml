@@ -36,6 +36,14 @@ spec:
               cpu: 0.5
           ports:
             - containerPort: 8080
+          # the container builds the bundle on start, for minutes: a pod takes
+          # traffic, and replaces the old one, only once the bundle is there
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.contextPath }}/bundle.js
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 90
           env:
             - name: REACT_APP_ENV
               value: ebi

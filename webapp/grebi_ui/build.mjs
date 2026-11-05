@@ -129,7 +129,9 @@ fs.writeFileSync(
 );
 
 ///
-/// Build bundle.js (esbuild)
+/// Build bundle.js (esbuild). The widgets script follows once it is done:
+/// two esbuild builds at once overran the frontend pod's memory and left it
+/// without a bundle.
 ///
 console.log("### Building bundle.js");
 
@@ -157,7 +159,7 @@ const resolveExternalPlugin = {
   },
 };
 
-build({
+await build({
   entryPoints: [`src/index_${process.env.GREBI_FRONTEND}.tsx`],
   bundle: true,
   platform: "browser",
@@ -181,7 +183,7 @@ build({
 ///
 console.log("### Building widgets.js");
 
-build({
+await build({
   entryPoints: ["src/widgets/index.tsx"],
   bundle: true,
   platform: "browser",

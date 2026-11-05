@@ -4,6 +4,6 @@ cd /opt/grebi_ui
 
 echo Building frontend. REACT_APP_ENV: $REACT_APP_ENV
 
-npm run build
+npm run build || { echo "The frontend build failed; not serving" >&2; exit 1; }
 
 caddy run --config ./Caddyfile
