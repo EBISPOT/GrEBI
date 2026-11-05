@@ -401,6 +401,7 @@ public class GrebiMcpServer {
             var templateParams = qt.params == null ? List.<uk.ac.ebi.grebi.repo.QueryTemplate.Parameter>of() : qt.params;
 
             paramProps.put("graph", Map.of(
+                "type", "string",
                 "enum", templateGraphs
             ));
 
@@ -412,9 +413,11 @@ public class GrebiMcpServer {
             }
 
             paramProps.put("sortBy", Map.of(
+                "type", "string",
                 "enum", qt.result_columns.stream().filter(c -> !c.column_type.equalsIgnoreCase("EdgeId")).map(c -> c.column_id).toList()
             ));
             paramProps.put("sortDir", Map.of(
+                "type", "string",
                 "enum", List.of("asc", "desc")
             ));
             paramProps.put("pageNum",  Map.of(
@@ -465,6 +468,8 @@ public class GrebiMcpServer {
             tools.add(new McpServerFeatures.AsyncToolSpecification(
                 McpSchema.Tool.builder()
                     .name(qt.id)
+                    .title(qt.title)
+                    .annotations(readOnly(qt.title))
                     // a template without a description is described by its title alone
                     .description(qt.description == null || qt.description.isBlank() ? qt.title : qt.title + ": " + qt.description)
                     .inputSchema(inputSchema)
@@ -565,6 +570,7 @@ public class GrebiMcpServer {
 
         var searchNodesProps = new LinkedHashMap<String, Object>();
         searchNodesProps.put("graph", Map.of(
+            "type", "string",
             "enum", graphEnum,
             "description", "Graph to search"
         ));
@@ -609,6 +615,8 @@ public class GrebiMcpServer {
         tools.add(new McpServerFeatures.AsyncToolSpecification(
             McpSchema.Tool.builder()
                 .name("search_nodes")
+                .title("Search nodes")
+                .annotations(readOnly("Search nodes"))
                 .description("Search for nodes in a graph by text and optional filters.")
                 .inputSchema(buildInputSchema(searchNodesProps, List.of("graph")))
                 .outputSchema(pagedRowsOutputSchema)
@@ -641,6 +649,7 @@ public class GrebiMcpServer {
 
         var lookupProps = new LinkedHashMap<String, Object>();
         lookupProps.put("graph", Map.of(
+            "type", "string",
             "enum", graphEnum,
             "description", "Graph to look the identifiers up in"
         ));
@@ -687,6 +696,8 @@ public class GrebiMcpServer {
         tools.add(new McpServerFeatures.AsyncToolSpecification(
             McpSchema.Tool.builder()
                 .name("lookup_nodes")
+                .title("Look up identifiers")
+                .annotations(readOnly("Look up identifiers"))
                 .description("Look up many identifiers at once: the node each CURIE, IRI or accession names, and which identifiers name nothing. Prefix case does not matter and IRIs are compacted to the graph's CURIEs.")
                 .inputSchema(buildInputSchema(lookupProps, List.of("graph", "ids")))
                 .outputSchema(lookupOutputSchema)
@@ -711,6 +722,7 @@ public class GrebiMcpServer {
 
         var getNodeProps = new LinkedHashMap<String, Object>();
         getNodeProps.put("graph", Map.of(
+            "type", "string",
             "enum", graphEnum,
             "description", "Graph containing the node"
         ));
@@ -727,6 +739,8 @@ public class GrebiMcpServer {
         tools.add(new McpServerFeatures.AsyncToolSpecification(
             McpSchema.Tool.builder()
                 .name("get_node")
+                .title("Get a node")
+                .annotations(readOnly("Get a node"))
                 .description("A node by its node ID, with every property cut to maxValues values; "
                     + Abridgement.TRUNCATED + " says which were cut and how many values they have in all.")
                 .inputSchema(buildInputSchema(getNodeProps, List.of("graph", "nodeId")))
@@ -754,6 +768,7 @@ public class GrebiMcpServer {
 
         var edgeCountsProps = new LinkedHashMap<String, Object>();
         edgeCountsProps.put("graph", Map.of(
+            "type", "string",
             "enum", graphEnum,
             "description", "Graph containing the node"
         ));
@@ -762,6 +777,7 @@ public class GrebiMcpServer {
             "description", "Node identifier without Base64 encoding"
         ));
         edgeCountsProps.put("direction", Map.of(
+            "type", "string",
             "enum", List.of("both", "incoming", "outgoing"),
             "description", "Which edge-count direction to return"
         ));
@@ -769,6 +785,8 @@ public class GrebiMcpServer {
         tools.add(new McpServerFeatures.AsyncToolSpecification(
             McpSchema.Tool.builder()
                 .name("get_node_edge_counts")
+                .title("Count a node's edges")
+                .annotations(readOnly("Count a node's edges"))
                 .description("Get incoming and/or outgoing edge counts for a node, grouped by edge type and datasource.")
                 .inputSchema(buildInputSchema(edgeCountsProps, List.of("graph", "nodeId")))
                 .outputSchema(countsOutputSchema)
@@ -798,6 +816,7 @@ public class GrebiMcpServer {
 
         var listNodeEdgesProps = new LinkedHashMap<String, Object>();
         listNodeEdgesProps.put("graph", Map.of(
+            "type", "string",
             "enum", graphEnum,
             "description", "Graph containing the node"
         ));
@@ -806,6 +825,7 @@ public class GrebiMcpServer {
             "description", "Node identifier without Base64 encoding"
         ));
         listNodeEdgesProps.put("direction", Map.of(
+            "type", "string",
             "enum", List.of("incoming", "outgoing"),
             "description", "Which side of the node to traverse"
         ));
@@ -822,6 +842,7 @@ public class GrebiMcpServer {
             "description", "Field to sort by"
         ));
         listNodeEdgesProps.put("sortDir", Map.of(
+            "type", "string",
             "enum", List.of("asc", "desc"),
             "description", "Sort direction"
         ));
@@ -840,6 +861,8 @@ public class GrebiMcpServer {
         tools.add(new McpServerFeatures.AsyncToolSpecification(
             McpSchema.Tool.builder()
                 .name("list_node_edges")
+                .title("List a node's edges")
+                .annotations(readOnly("List a node's edges"))
                 .description("List incoming or outgoing edges for a node, with optional filters and lightweight edge-ref mode.")
                 .inputSchema(buildInputSchema(listNodeEdgesProps, List.of("graph", "nodeId", "direction")))
                 .outputSchema(pagedRowsOutputSchema)
@@ -885,6 +908,7 @@ public class GrebiMcpServer {
 
         var getEdgeProps = new LinkedHashMap<String, Object>();
         getEdgeProps.put("graph", Map.of(
+            "type", "string",
             "enum", graphEnum,
             "description", "Graph containing the edge"
         ));
@@ -896,6 +920,8 @@ public class GrebiMcpServer {
         tools.add(new McpServerFeatures.AsyncToolSpecification(
             McpSchema.Tool.builder()
                 .name("get_edge")
+                .title("Get an edge")
+                .annotations(readOnly("Get an edge"))
                 .description("Resolve a specific edge by its edge ID.")
                 .inputSchema(buildInputSchema(getEdgeProps, List.of("graph", "edgeId")))
                 .outputSchema(edgeOutputSchema)
@@ -950,6 +976,15 @@ public class GrebiMcpServer {
      * template's id and the graphs the template names; without "graphs" it runs
      * on any graph the instance serves.
      */
+    /**
+     * The annotations of every tool: each reads the graph and changes nothing,
+     * answers the same for the same arguments, and reaches nothing outside the
+     * graph; clients and tool directories read these before offering a tool.
+     */
+    private static McpSchema.ToolAnnotations readOnly(String title) {
+        return new McpSchema.ToolAnnotations(title, true, false, true, false, null);
+    }
+
     public Map<String, Object> catalogue() {
         return catalogue;
     }

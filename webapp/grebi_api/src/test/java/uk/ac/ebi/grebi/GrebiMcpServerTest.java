@@ -84,6 +84,28 @@ class GrebiMcpServerTest {
     }
 
     @Test
+    void everyToolIsAnnotatedReadOnlyWithATitleAndEveryParameterHasAType() {
+        var tools = client.listTools().tools();
+        assertFalse(tools.isEmpty());
+        for (var tool : tools) {
+            var annotations = tool.annotations();
+            assertNotNull(annotations, tool.name() + " has annotations");
+            assertEquals(Boolean.TRUE, annotations.readOnlyHint(), tool.name() + " is read-only");
+            assertEquals(Boolean.FALSE, annotations.destructiveHint(), tool.name() + " destroys nothing");
+            assertEquals(Boolean.TRUE, annotations.idempotentHint(), tool.name());
+            assertEquals(Boolean.FALSE, annotations.openWorldHint(), tool.name());
+            assertTrue(annotations.title() != null && !annotations.title().isBlank(), tool.name() + " has a title");
+            assertEquals(annotations.title(), tool.title(), tool.name() + " carries its title as the tool's too");
+            tool.inputSchema().properties().forEach((param, schema) ->
+                assertNotNull(((Map<?, ?>) schema).get("type"), tool.name() + "." + param + " has a type"));
+        }
+        var byName = tools.stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
+        assertEquals("GWAS studies annotated with a trait", byName.get("studies_by_trait").title(), "a template tool is titled as the template");
+        assertEquals("Search nodes", byName.get("search_nodes").title());
+        assertEquals(Map.of("type", "string", "enum", List.of("asc", "desc")), byName.get("studies_by_trait").inputSchema().properties().get("sortDir"));
+    }
+
+    @Test
     void thereIsAToolPerParameterisedTemplatePlusTheFixedOnes() {
         var tools = client.listTools().tools().stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
         assertTrue(tools.keySet().containsAll(Set.of("search_nodes", "lookup_nodes", "get_node", "get_node_edge_counts", "list_node_edges", "get_edge",
