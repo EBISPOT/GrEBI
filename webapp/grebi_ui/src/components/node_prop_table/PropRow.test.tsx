@@ -28,6 +28,12 @@ describe('PropRow', () => {
     expect(screen.queryByText(/value-two/)).toBeNull()
   })
 
+  it('is a label and a value of the grid', () => {
+    const { container } = renderRow([pv('value-one', 'OLS.mondo')], ['OLS.mondo'])
+    expect(container.querySelector('dt')).toHaveTextContent('Name')
+    expect(container.querySelector('dd')).toHaveTextContent('value-one')
+  })
+
   it('omits datasource tags when only one datasource is enabled', () => {
     const { container } = renderRow([pv('value-two', 'UberGraph'), pv('value-one', 'OLS.mondo')], ['UberGraph'])
     expect(screen.getByText('Name')).toBeInTheDocument()
@@ -46,5 +52,23 @@ describe('PropRow', () => {
     expect(tags(container)).toEqual(['mondo', 'GWAS'])
     // the group with the longer datasource-set key comes first
     expect(container.textContent).toMatch(/Name[\s\S]*mondo[\s\S]*value-two[\s\S]*GWAS[\s\S]*value-one/)
+  })
+
+  it('keeps the label when a group has several values or a long one', () => {
+    const { container, unmount } = renderRow([pv('x', 'GWAS'), pv('y', 'GWAS'), pv('z', 'UberGraph')], datasources)
+    expect(screen.getByText('Name')).toBeInTheDocument()
+    // 'UberGraph' is the longer set key, so its group comes first
+    expect(tags(container)).toEqual(['UberGraph', 'GWAS'])
+    expect(container.textContent).toMatch(/UberGraph[\s\S]*z[\s\S]*GWAS[\s\S]*x; y/)
+    unmount()
+
+    renderRow([pv('a'.repeat(60), 'GWAS'), pv('short', 'UberGraph')], datasources)
+    expect(screen.getByText('Name')).toBeInTheDocument()
+  })
+
+  it('resolves the label and linked values through the node refs', () => {
+    renderRow([pv('hp:0000001', 'OLS.mondo')], ['OLS.mondo'], 'ro:0002200')
+    expect(screen.getByText('has phenotype')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'All' })).toHaveAttribute('href', '/graphs/g/nodes/aHA6MDAwMDAwMQ')
   })
 })

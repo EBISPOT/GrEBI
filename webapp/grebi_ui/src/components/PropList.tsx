@@ -1,7 +1,7 @@
-import React, { Fragment } from "react";
-import { Grid } from "@mui/material";
+import React from "react";
 import PropVals from "./node_prop_table/PropVals";
 import PropLabel from "./node_prop_table/PropLabel";
+import { PropGrid, PropGridRow } from "./node_prop_table/PropGrid";
 import PropVal from "../model/PropVal";
 import Refs from "../model/Refs";
 
@@ -25,24 +25,12 @@ export default function PropList(params: {
   let propKeys = Object.keys(props).filter((k) => !HIDDEN_KEYS.has(k));
 
   return (
-    <Grid container spacing={1} direction="row">
+    <PropGrid>
       {propKeys.map((key) => (
-        <Fragment key={key}>
-          <Grid
-            item
-            xs={12}
-            style={{ overflow: "hidden", padding: "8px" }}
-            className="bg-gradient-to-r from-neutral-light to-white rounded-lg"
-          >
-            <PropLabel prop={key} refs={refs} />
-          </Grid>
-          <Grid item xs={12} style={{ padding: "8px" }}>
-            <div className="pl-2 mb-2">
-              <PropVals graph={graph} refs={refs} values={props[key]} />
-            </div>
-          </Grid>
-        </Fragment>
+        <PropGridRow key={key} label={<PropLabel prop={key} refs={refs} />}>
+          <PropVals graph={graph} refs={refs} values={props[key]} />
+        </PropGridRow>
       ))}
-    </Grid>
+    </PropGrid>
   );
 }
