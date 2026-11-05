@@ -1,5 +1,6 @@
 
 import { Close, KeyboardArrowDown } from "@mui/icons-material";
+import { apiUrl } from "../app/instance";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getPaginated } from "../app/api";
@@ -116,7 +117,7 @@ export default function SeachInterface(opts:{ graph:string }
   csvParams.delete("model");
   for (const ds of datasourceFacetselected) csvParams.append("grebi:datasources", ds);
   for (const t of typeFacetSelected) csvParams.append("grebi:type", t);
-  const csvHref = `${process.env.REACT_APP_APIURL}api/v1/graphs/${graph}/search.csv?${csvParams}`;
+  const csvHref = `${apiUrl()}api/v1/graphs/${graph}/search.csv?${csvParams}`;
 
   useEffect(() => {
 

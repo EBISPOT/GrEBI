@@ -1,3 +1,4 @@
+import { apiUrl as instanceApiUrl } from "./instance";
 
 type ReqParams = {[k:string]:(string|string[])}|undefined 
 
@@ -52,7 +53,7 @@ export async function request(
   init?: RequestInit | undefined,
   apiUrl?: string
 ): Promise<any> {
-  const url = (apiUrl || process.env.REACT_APP_APIURL) + path;
+  const url = (apiUrl || instanceApiUrl()) + path;
   const message = `Loading ${url}`
   console.log(message)
   console.time(message)

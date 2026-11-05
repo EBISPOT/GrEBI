@@ -19,9 +19,15 @@ import React from "react";
 export default function QueryInterface({
     graph,
     queryTemplate,
-    sidebar
+    sidebar,
+    showSource = true,
+    showInputs = true
 }:{
-    graph:string, queryTemplate:QueryTemplate, sidebar?:React.ReactNode
+    graph:string, queryTemplate:QueryTemplate, sidebar?:React.ReactNode,
+    // the tabs of generated code and the Cypher query; a widget leaves them out
+    showSource?:boolean,
+    // the inputs form; a widget given every parameter shows the results alone
+    showInputs?:boolean
 }) {
 
     // memoised: a fresh [] each render would re-run the query-string effect forever
@@ -108,22 +114,26 @@ return (
 
     {error && <ErrorMessage what="The query's inputs" error={error} />}
 
+    {(showSource || sidebar) && (
     <div className="flex gap-4 items-stretch mb-4">
-      <div className="flex-1 min-w-0 flex flex-col">
-        <TabbedSourceView tabs={sourceTabs} />
-      </div>
+      {showSource && (
+        <div className="flex-1 min-w-0 flex flex-col">
+          <TabbedSourceView tabs={sourceTabs} />
+        </div>
+      )}
       {sidebar && (
-        <div className="flex-shrink-0 bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-y-auto" style={{ width: 350 }}>
+        <div className={`${showSource ? "flex-shrink-0" : "w-full"} bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-y-auto`} style={showSource ? { width: 350 } : undefined}>
           {sidebar}
         </div>
       )}
     </div>
+    )}
 
     <Box
       component="form"
     >
 
-        {params && params.length > 0 &&
+        {showInputs && params && params.length > 0 &&
         <Fragment>
         <Typography variant="h5" gutterBottom>
         Inputs

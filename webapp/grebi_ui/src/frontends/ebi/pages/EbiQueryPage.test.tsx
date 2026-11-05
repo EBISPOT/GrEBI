@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import EbiQueryPage from './EbiQueryPage'
+import { EmbeddedContext } from '../../../app/embedded'
 
 vi.mock('../../../app/api', async (importOriginal) => {
   const mod: any = await importOriginal()
@@ -36,12 +37,14 @@ function LocationDisplay() {
   return <div data-testid="location">{loc.pathname + loc.search}</div>
 }
 
-function renderPage(search = '') {
+function renderPage(search = '', embedded = false) {
   return render(
     <MemoryRouter initialEntries={[`/graphs/g1/queries/q1${search}`]}>
-      <Routes>
-        <Route path="/graphs/:graph/queries/:queryid" element={<><EbiQueryPage /><LocationDisplay /></>} />
-      </Routes>
+      <EmbeddedContext.Provider value={embedded}>
+        <Routes>
+          <Route path="/graphs/:graph/queries/:queryid" element={<><EbiQueryPage /><LocationDisplay /></>} />
+        </Routes>
+      </EmbeddedContext.Provider>
     </MemoryRouter>
   )
 }
@@ -116,6 +119,37 @@ describe('EbiQueryPage', () => {
     }
     fireEvent.click(screen.getByRole('button', { name: 'Cypher Query' }))
     expect(document.querySelector('pre.bg-slate-900')!.textContent).toContain('MATCH (g:Gene {symbol: $gene_symbol})')
+  })
+})
+
+describe('EbiQueryPage in a widget', () => {
+  const queryCalls = () => mockedGetPaginated.mock.calls.filter((c) => String(c[0]).includes('/query/'))
+
+  it('shows the results alone when every parameter is given, without breadcrumbs or code', async () => {
+    renderPage('?gene_symbol=BRCA1', true)
+    expect(await screen.findByRole('heading', { name: 'Diseases associated with a gene' })).toBeInTheDocument()
+    await waitFor(() => expect(queryCalls()).toHaveLength(1))
+    expect((queryCalls()[0][1] as URLSearchParams).get('gene_symbol')).toBe('BRCA1')
+    expect(screen.getByRole('heading', { name: 'Results' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Inputs' })).toBeNull()
+    expect(screen.queryByText('Examples')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'cURL' })).toBeNull()
+    expect(screen.queryByLabelText('breadcrumb')).toBeNull()
+  })
+
+  it('shows the inputs and the examples when a parameter is missing', async () => {
+    renderPage('', true)
+    expect(await screen.findByRole('heading', { name: 'Inputs' })).toBeInTheDocument()
+    expect(screen.getByText('Examples')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'cURL' })).toBeNull()
+    expect(queryCalls()).toHaveLength(0)
+  })
+
+  it('shows the inputs on request even with every parameter given', async () => {
+    renderPage('?gene_symbol=BRCA1&inputs=true', true)
+    expect(await screen.findByRole('heading', { name: 'Inputs' })).toBeInTheDocument()
+    expect(screen.getByDisplayValue('BRCA1')).toBeInTheDocument()
+    await waitFor(() => expect(queryCalls()).toHaveLength(1))
   })
 })
 

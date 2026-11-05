@@ -1,7 +1,7 @@
 
 # Using GrEBI
 
-There are four main ways to use GrEBI. First, you can visually [navigate the graph](#navigating-the-graph) and [perform queries](#running-queries) using the GrEBI user interface. Secondly, GrEBI provides a [REST API](#using-the-grebi-api) for use from scripts (we have tested Python and R, but any language with a HTTP client will work). Thirdly, GrEBI can be used as an [MCP server](#using-the-grebi-mcp-server) to enable LLM agents e.g. Claude, OpenAI to perform queries on your behalf. Finally, we provide [materialised tables](#materialised-tables) of a selection of large and expensive graph queries as CSV exports on the EBI FTP, so that the results can be interpreted using simple tabular tools.
+There are four main ways to use GrEBI. First, you can visually [navigate the graph](#navigating-the-graph) and [perform queries](#running-queries) using the GrEBI user interface. Secondly, GrEBI provides a [REST API](#using-the-grebi-api) for use from scripts (we have tested Python and R, but any language with a HTTP client will work). Thirdly, GrEBI can be used as an [MCP server](#using-the-grebi-mcp-server) to enable LLM agents e.g. Claude, OpenAI to perform queries on your behalf. Finally, we provide [materialised tables](#materialised-tables) of a selection of large and expensive graph queries as CSV exports on the EBI FTP, so that the results can be interpreted using simple tabular tools. GrEBI's pages can also be embedded in your own website as [widgets](#embedding-widgets).
 
 ## Navigating the graph
 

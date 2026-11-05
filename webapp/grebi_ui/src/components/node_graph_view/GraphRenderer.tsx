@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import Graph from "graphology";
 import Sigma from "sigma";
 import { downloadAsImage } from "@sigma/export-image";
@@ -197,6 +197,8 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
   onLeaveNode,
 }: GraphRendererProps, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // sigma draws with WebGL; without it the view says so instead of failing
+  const [webglMissing, setWebglMissing] = useState(false);
   const sigmaRef = useRef<Sigma | null>(null);
   const graphRef = useRef<Graph | null>(null);
 
@@ -315,39 +317,51 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
     // First render: create sigma
     graphRef.current = graph;
 
-    const sigma = new Sigma(graph, containerRef.current, {
-      allowInvalidContainer: true,
-      renderLabels: true,
-      renderEdgeLabels: true,
-      enableEdgeEvents: false,
-      defaultEdgeType: "curvedArrow",
-      edgeProgramClasses: {
-        arrow: BigArrowProgram,
-        curvedArrow: CurvedArrowProgram,
-      },
-      labelFont: "'Inter', 'Helvetica Neue', Arial, sans-serif",
-      labelSize: 14,
-      labelWeight: "500",
-      labelColor: { attribute: "labelColor", color: "#333" },
-      edgeLabelFont: "'Inter', 'Helvetica Neue', Arial, sans-serif",
-      edgeLabelSize: 11,
-      edgeLabelColor: { color: "#888" },
-      defaultDrawEdgeLabel: edgeLabelDrawer,
-      labelDensity: 2,
-      labelRenderedSizeThreshold: 1,
-      stagePadding: 60,
-      minEdgeThickness: 1,
-      zoomDuration: 200,
-      minCameraRatio: 1,
-      autoRescale: true,
-      autoCenter: true,
-      itemSizesReference: "positions",
-      defaultDrawNodeLabel: drawNodeLabel,
-      defaultDrawNodeHover: drawNodeHover,
-      nodeHoverProgramClasses: {
-        circle: NoOpNodeHoverProgram,
-      },
-    });
+    if (!webglAvailable()) {
+      setWebglMissing(true);
+      return;
+    }
+
+    let sigma: Sigma;
+    try {
+      sigma = new Sigma(graph, containerRef.current, {
+        allowInvalidContainer: true,
+        renderLabels: true,
+        renderEdgeLabels: true,
+        enableEdgeEvents: false,
+        defaultEdgeType: "curvedArrow",
+        edgeProgramClasses: {
+          arrow: BigArrowProgram,
+          curvedArrow: CurvedArrowProgram,
+        },
+        labelFont: "'Inter', 'Helvetica Neue', Arial, sans-serif",
+        labelSize: 14,
+        labelWeight: "500",
+        labelColor: { attribute: "labelColor", color: "#333" },
+        edgeLabelFont: "'Inter', 'Helvetica Neue', Arial, sans-serif",
+        edgeLabelSize: 11,
+        edgeLabelColor: { color: "#888" },
+        defaultDrawEdgeLabel: edgeLabelDrawer,
+        labelDensity: 2,
+        labelRenderedSizeThreshold: 1,
+        stagePadding: 60,
+        minEdgeThickness: 1,
+        zoomDuration: 200,
+        minCameraRatio: 1,
+        autoRescale: true,
+        autoCenter: true,
+        itemSizesReference: "positions",
+        defaultDrawNodeLabel: drawNodeLabel,
+        defaultDrawNodeHover: drawNodeHover,
+        nodeHoverProgramClasses: {
+          circle: NoOpNodeHoverProgram,
+        },
+      });
+    } catch (e) {
+      console.warn("The graph view could not start", e);
+      setWebglMissing(true);
+      return;
+    }
 
     sigmaRef.current = sigma;
 
@@ -457,21 +471,36 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
     };
   }, []);
 
+  const boxStyle = {
+    width: "100%",
+    height: "100%",
+    background: "#fafafa",
+    borderRadius: "8px",
+    border: "1px solid #e0e0e0",
+  };
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
-      <div
-        ref={containerRef}
-        style={{
-          width: "100%",
-          height: "100%",
-          background: "#fafafa",
-          borderRadius: "8px",
-          border: "1px solid #e0e0e0",
-        }}
-      />
+      {webglMissing ? (
+        <div role="note" className="flex items-center justify-center text-center text-sm text-neutral-dark px-6" style={boxStyle}>
+          The graph view is not available: this browser does not provide WebGL.
+        </div>
+      ) : (
+        <div ref={containerRef} style={boxStyle} />
+      )}
     </div>
   );
 });
+
+/** Whether the browser gives the page a WebGL context, which sigma draws with. */
+export function webglAvailable(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(canvas.getContext("webgl2") || canvas.getContext("webgl"));
+  } catch (e) {
+    return false;
+  }
+}
 
 /**
  * Custom label renderer: draw count labels inside the circle,

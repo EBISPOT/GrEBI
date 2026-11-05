@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, Fragment } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { IconButton } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
+import { Close as CloseIcon } from "@mui/icons-material";
 
 import { getPaginated } from "../app/api";
 import { joinSearchParams, randomString } from "../app/util";

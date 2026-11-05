@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { apiUrl } from "../../app/instance";
 import { externalLinkForId } from "../../db_links/dbLinks";
 import { Link } from "react-router-dom";
 import { getPaginated } from "../../app/api";
@@ -302,7 +303,7 @@ export default function ResultsTable({ graph, queryId, params, resultColumns, ma
 
       {error && <ErrorMessage what="The results" error={error} />}
 
-      <a href={process.env.REACT_APP_APIURL + `api/v1/graphs/${graph}/query/${queryId}.csv?` + narrowedParams().toString()}>
+      <a href={apiUrl() + `api/v1/graphs/${graph}/query/${queryId}.csv?` + narrowedParams().toString()}>
       <button
         className="
           absolute top-2 right-4 z-10

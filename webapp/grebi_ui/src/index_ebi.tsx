@@ -2,6 +2,10 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import EbiApp from "./frontends/ebi/EbiApp";
 import reportWebVitals from "./reportWebVitals";
+import { defineGrebiWidgets } from "./widgets/elements";
+
+// the <grebi-…> elements of widgets.js, so that the docs can show them live
+defineGrebiWidgets();
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

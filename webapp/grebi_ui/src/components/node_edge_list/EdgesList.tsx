@@ -1,5 +1,6 @@
 
 import React, { Fragment, useEffect, useState, useMemo } from "react";
+import { apiUrl } from "../../app/instance";
 import {useNavigate} from "react-router-dom";
 import NodeRefLink from "./NodeRefLink";
 import { getPaginated } from "../../app/api";
@@ -55,7 +56,7 @@ export default function EdgesList(params:{
         ...(edgesState && dsEnabled!==null ?
                 difference(edgesState.datasources, dsEnabled).map(ds => ['-grebi:datasources', ds]) : [])
     ]
-    const csvHref = `${process.env.REACT_APP_APIURL}api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/${endpoint}.csv?${new URLSearchParams(listParams())}`
+    const csvHref = `${apiUrl()}api/v1/graphs/${graph}/nodes/${node.getEncodedNodeId()}/${endpoint}.csv?${new URLSearchParams(listParams())}`
 
     useEffect(() => {
         async function getEdges() {

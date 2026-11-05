@@ -1,4 +1,5 @@
 import React from "react";
+import { siteUrl } from "../app/instance";
 import { Link } from "react-router-dom";
 import urlJoin from "url-join";
 
@@ -14,7 +15,7 @@ export default function ApiLinks({
       <div>
         <Link to={apiUrl} target="_blank" rel="noopener noreferrer">
           <img
-            src={urlJoin((process.env.PUBLIC_URL || "/"), "/json.svg")}
+            src={urlJoin(siteUrl(), "/json.svg")}
             width={45}
             alt="JSON document"
           />
@@ -23,7 +24,7 @@ export default function ApiLinks({
       {/* <div>
         <Link to={betaApiUrl} target="_blank" rel="noopener noreferrer">
           <img
-            src={urlJoin((process.env.PUBLIC_URL || "/"), "/jsonbeta.svg")}
+            src={urlJoin(siteUrl(), "/jsonbeta.svg")}
             width={45}
             alt="JSON beta document"
           />

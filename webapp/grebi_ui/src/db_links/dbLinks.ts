@@ -1,4 +1,5 @@
 import raw from "./db_links.json";
+import { siteUrl } from "../app/instance";
 
 /** Where an identifier or datasource lives on the web. */
 export interface ExternalLink {
@@ -29,7 +30,7 @@ const idPatterns = new Map<string, RegExp | null>();
 
 /** The URL of an icon file, under the site's public URL. */
 export function dbIconUrl(icon: string): string {
-  return (process.env.PUBLIC_URL || "/").replace(/\/+$/, "") + "/db_icons/" + icon;
+  return siteUrl().replace(/\/+$/, "") + "/db_icons/" + icon;
 }
 
 function fill(template: string, placeholder: string, value: string): string {

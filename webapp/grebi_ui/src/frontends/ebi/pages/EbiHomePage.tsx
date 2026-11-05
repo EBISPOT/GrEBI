@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { siteUrl } from "../../../app/instance";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import React, { Fragment } from "react";
 import { List, ListItem, MenuItem, Select, IconButton, Skeleton } from "@mui/material";
@@ -283,13 +284,13 @@ function selectGraph(sg: string) {
               </div>
               <div className="flex items-center gap-12 mt-8 mb-4">
                 <a target="_blank" href="https://www.ebi.ac.uk/">
-                  <img style={{ width: "100px" }} src={urlJoin((process.env.PUBLIC_URL || "/"), "/ebi.png")} alt="EMBL-EBI" />
+                  <img style={{ width: "100px" }} src={urlJoin(siteUrl(), "/ebi.png")} alt="EMBL-EBI" />
                 </a>
                 <a target="_blank" href="https://monarchinitiative.org/">
-                  <img style={{ width: "100px" }} src={urlJoin((process.env.PUBLIC_URL || "/"), "/monarch.png")} alt="MONARCH Initiative" />
+                  <img style={{ width: "100px" }} src={urlJoin(siteUrl(), "/monarch.png")} alt="MONARCH Initiative" />
                 </a>
                 <a target="_blank" href="https://mousephenotype.org/">
-                  <img style={{ width: "100px" }} src={urlJoin((process.env.PUBLIC_URL || "/"), "/impc.svg")} alt="International Mouse Phenotyping Consortium (IMPC)" />
+                  <img style={{ width: "100px" }} src={urlJoin(siteUrl(), "/impc.svg")} alt="International Mouse Phenotyping Consortium (IMPC)" />
                 </a>
               </div>
             </Fragment>

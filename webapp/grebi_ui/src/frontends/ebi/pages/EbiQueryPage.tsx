@@ -12,6 +12,7 @@ import QueryQuestion from "../../../components/query/QueryQuestion";
 import InputBadge from "../../../components/query/InputBadge";
 import OutputBadge from "../../../components/query/OutputBadge";
 import ErrorMessage from "../../../components/ErrorMessage";
+import { useEmbedded } from "../../../app/embedded";
 
 export default function EbiQueriesPage() {
 
@@ -22,6 +23,15 @@ export default function EbiQueriesPage() {
 
   const [queryTemplate, setQueryTemplate] = useState<QueryTemplate|undefined>(undefined)
   const [error, setError] = useState<any>(null)
+  const embedded = useEmbedded()
+
+  // Inside a widget given every parameter the results stand alone: the widget
+  // is the answer. The inputs appear when a parameter is missing, or on request
+  // with inputs=true. The site always shows them, with the generated code.
+  const everyParamGiven = !!queryTemplate && (queryTemplate.params || []).every(
+    (p) => (searchParams.get(p.param_id) ?? p.param_default ?? "") !== ""
+  )
+  const showInputs = !embedded || searchParams.get("inputs") === "true" || !everyParamGiven
 
     useEffect(() => {
         setError(null)
@@ -53,7 +63,7 @@ export default function EbiQueriesPage() {
 
           { queryTemplate &&
             <div>
-              <Typography variant="h4" sx={{ mt: 3 }}>{addLinksToText(queryTemplate.title, graph)}</Typography>
+              <Typography variant={embedded ? "h5" : "h4"} sx={{ mt: 3 }}>{addLinksToText(queryTemplate.title, graph)}</Typography>
               <p className="text-lg text-neutral-dark mt-6 mb-6">
                   {(queryTemplate.question || "").split(/(\[[^\]]+\]\{[^}]+\}|\{[^}]+\})/).map((part, i) => {
                     let mRef = part.match(/^\[([^\]]+)\]\{(.+)\}$/);
@@ -67,8 +77,8 @@ export default function EbiQueriesPage() {
                     return part;
                   })}
               </p>
-              <QueryInterface graph={graph} queryTemplate={queryTemplate} sidebar={
-                queryTemplate.examples && queryTemplate.examples.length > 0 ? (
+              <QueryInterface graph={graph} queryTemplate={queryTemplate} showSource={!embedded} showInputs={showInputs} sidebar={
+                showInputs && queryTemplate.examples && queryTemplate.examples.length > 0 ? (
                   <div>
                     <Typography variant="subtitle2" className="text-gray-500 mb-2">Examples</Typography>
                     <div className="flex flex-col gap-2 mt-2">

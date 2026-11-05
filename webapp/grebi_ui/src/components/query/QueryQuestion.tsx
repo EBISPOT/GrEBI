@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, Fragment, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { IconButton } from "@mui/material";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import { PlayArrow as PlayArrowIcon } from "@mui/icons-material";
 
 import { getPaginated } from "../../app/api";
 import { joinSearchParams, randomString } from "../../app/util";

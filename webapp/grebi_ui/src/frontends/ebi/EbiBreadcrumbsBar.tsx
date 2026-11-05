@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useEmbedded } from "../../app/embedded";
 import Breadcrumbs, { BreadcrumbsEntry } from "../../components/Breadcrumbs";
 
 export default function EbiBreadcrumbsBar({
@@ -10,11 +11,16 @@ export default function EbiBreadcrumbsBar({
 }) {
   const loc = useLocation();
   const navigate = useNavigate();
+  const embedded = useEmbedded();
 
   function setGraph(sg: string) {
     const { pathname, search, hash } = loc;
     const newPath = pathname.replace(/graphs\/[^/]+/, `graphs/${sg}`);
     navigate(`${newPath}${search}${hash}`);
+  }
+
+  if (embedded) {
+    return null;
   }
 
   return (

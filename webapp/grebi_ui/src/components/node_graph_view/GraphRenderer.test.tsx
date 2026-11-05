@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen } from '@testing-library/react'
 import GraphRenderer from './GraphRenderer'
 import { GraphLayout } from './graphLayout'
 
 // sigma needs WebGL, which jsdom does not have: the module even throws at import
 // time. Replace it with a fake that records the graph, settings and handlers.
-const { sigmaInstances } = vi.hoisted(() => ({ sigmaInstances: [] as any[] }))
+const { sigmaInstances, sigmaFails } = vi.hoisted(() => ({ sigmaInstances: [] as any[], sigmaFails: { value: false } }))
 
 vi.mock('sigma', () => {
   class FakeSigma {
@@ -17,6 +17,7 @@ vi.mock('sigma', () => {
     refresh = vi.fn()
     kill = vi.fn()
     constructor(graph: any, container: HTMLElement, settings: Record<string, any>) {
+      if (sigmaFails.value) throw new Error('WebGL context could not be created')
       this.graph = graph
       this.container = container
       this.settings = { ...settings }
@@ -112,8 +113,33 @@ function renderGraph(overrides: Partial<React.ComponentProps<typeof GraphRendere
 const edgeBetween = (graph: any, source: string, target: string, label: string) =>
   graph.edges().find((e: string) => graph.source(e) === source && graph.target(e) === target && graph.getEdgeAttribute(e, 'label') === label)
 
+// jsdom has no canvas contexts; the renderer checks for WebGL before starting sigma
+let getContext: any
 beforeEach(() => {
   sigmaInstances.length = 0
+  sigmaFails.value = false
+  getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => ({}) as any)
+})
+afterEach(() => {
+  getContext.mockRestore()
+})
+
+describe('GraphRenderer without WebGL', () => {
+  it('says the graph view is not available instead of starting sigma', () => {
+    getContext.mockImplementation(() => null)
+    renderGraph()
+    expect(screen.getByRole('note')).toHaveTextContent('The graph view is not available: this browser does not provide WebGL.')
+    expect(sigmaInstances).toHaveLength(0)
+  })
+
+  it('says so too when sigma cannot start', () => {
+    sigmaFails.value = true
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    renderGraph()
+    expect(screen.getByRole('note')).toBeInTheDocument()
+    expect(warn).toHaveBeenCalledWith('The graph view could not start', expect.any(Error))
+    warn.mockRestore()
+  })
 })
 
 describe('GraphRenderer', () => {

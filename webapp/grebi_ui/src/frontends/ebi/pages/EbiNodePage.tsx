@@ -1,12 +1,13 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { siteUrl } from "../../../app/instance";
 import {
   Link,
   useNavigate,
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { Helmet } from 'react-helmet'
+import PageHead from "../../../components/PageHead";
 import React from "react";
 import EbiBreadcrumbsBar from "../EbiBreadcrumbsBar";
 import { FormatListBulleted, CallReceived, CallMade, Share, AutoAwesome, Link as LinkIcon } from "@mui/icons-material";
@@ -28,6 +29,7 @@ import getNodeLinksTabs, { LinksTab } from "../../../components/getNodeLinksTabs
 import NodeSimilarList from "../../../components/NodeSimilarList";
 import LanguagePicker from "../../../components/LanguagePicker";
 import { useEmbeddingModels } from "../../../app/useEmbeddingModels";
+import { useEmbedded } from "../../../app/embedded";
 
 
 export default function EbiNodePage() {
@@ -39,7 +41,12 @@ export default function EbiNodePage() {
 
   let [node, setNode] = useState<GraphNode|null>(null);
   let [error, setError] = useState<any>(null);
-  const tab = searchParams.get("tab") || "graph";
+  const embedded = useEmbedded();
+  // Inside a widget the graph view is a widget of its own (<grebi-graph>, which
+  // asks for tab=graph, as the graph view's own links do): tab=graph is then
+  // the graph alone, and the tabs of <grebi-node> leave the graph out.
+  const graphOnly = embedded && searchParams.get("tab") === "graph";
+  const tab = searchParams.get("tab") || (embedded ? "properties" : "graph");
   // the link tabs this kind of node has (see getNodeLinksTabs); the Links tab appears when there are any
   const [linksTabs, setLinksTabs] = useState<LinksTab[]>([]);
 
@@ -69,7 +76,7 @@ export default function EbiNodePage() {
   const onNavigateToNode = useCallback((target: { getEncodedNodeId(): string }, options: { newTab: boolean }) => {
     const url = `/graphs/${graph}/nodes/${target.getEncodedNodeId()}?tab=graph`;
     if (options.newTab) {
-      window.open((process.env.PUBLIC_URL || "").replace(/\/+$/, "") + url, "_blank", "noopener");
+      window.open(siteUrl().replace(/\/+$/, "") + url, "_blank", "noopener");
     } else {
       navigate(url);
     }
@@ -119,11 +126,11 @@ export default function EbiNodePage() {
         ) : [])
 
       ]} />
-        <Helmet>
+        <PageHead>
           <meta charSet="utf-8" />
           {node && <title>{node.getName(lang)}</title>}
           {node && <meta name="description" content={node.getDescription(lang)}/>}
-        </Helmet>
+        </PageHead>
         { node == null && error == null && <LoadingOverlay message="Loading node..." /> }
         { error &&
       <main className="container mx-auto px-4 pt-1">
@@ -139,7 +146,8 @@ export default function EbiNodePage() {
       </main>}
         {node !== null && !error &&
       <main className="container mx-auto px-4 pt-1">
-        <SearchBox graph={graph} availableModels={availableModels} selectedModel={selectedModel} onModelChange={setSelectedModel} />
+        {!graphOnly &&
+          <SearchBox graph={graph} availableModels={availableModels} selectedModel={selectedModel} onModelChange={setSelectedModel} />}
         <div className="relative text-center pb-5">
         <Typography variant="h5">{node.getName(lang)} {
           node.extractTypes().map((type) => <span key={type.shortName} style={{textTransform:'uppercase', fontVariant:'small-caps',fontWeight:'bold',fontSize:'small',verticalAlign:'middle',marginLeft:'12px'}}>{type.longName}</span>)}</Typography>
@@ -150,6 +158,10 @@ export default function EbiNodePage() {
           </div>}
         </div>
 
+        {graphOnly &&
+         <GraphView graph={graph} node={node} exploration={exploration} onExplorationChange={onExplorationChange} onNavigateToNode={onNavigateToNode} />}
+
+        {!graphOnly && <>
         <div style={{width:'90%'}} className="mx-auto">
                     <Grid container spacing={0.5} direction="row" alignItems={"center"} justifyContent={"center"} className="pb-5">
               {orderSourceIds(node.getSourceIds().map(id => id.value)).map(id => <Grid item key={id}>
@@ -162,7 +174,7 @@ export default function EbiNodePage() {
         <Grid container spacing={1} direction="column">
             <Grid item xs={2}>
           <Tabs centered orientation="horizontal" value={tab} aria-label="basic tabs example" className="border-green justify-center" sx={{ borderBottom: 1, borderColor: 'divider' }} onChange={(e, tab) => setParam("tab", tab)}>
-            <Tab label="Graph" icon={<Share/>} value="graph" />
+            {!embedded && <Tab label="Graph" icon={<Share/>} value="graph" />}
             <Tab label="Property View" icon={<FormatListBulleted/>} value="properties" />
             <Tab label="Edges In" icon={<CallReceived/>} value="edges_in" />
             <Tab label="Edges Out" icon={<CallMade/>} value="edges_out" />
@@ -191,6 +203,7 @@ export default function EbiNodePage() {
         </TabPanel>}
         </Grid>
         </Grid>
+        </>}
       </main>}
 
     </div>

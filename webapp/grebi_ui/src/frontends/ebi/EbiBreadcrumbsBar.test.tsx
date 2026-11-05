@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import EbiBreadcrumbsBar from './EbiBreadcrumbsBar'
+import { EmbeddedContext } from '../../app/embedded'
 
 vi.mock('../../app/api', () => ({ get: vi.fn() }))
 import { get } from '../../app/api'
@@ -56,6 +57,18 @@ describe('EbiBreadcrumbsBar', () => {
     // the picker sits after the "Graphs" link and before the remaining crumbs
     const items = Array.from(screen.getByLabelText('breadcrumb').querySelectorAll('li.MuiBreadcrumbs-li'))
     expect(items.findIndex((li) => li.contains(picker))).toBe(2)
+  })
+
+  it('is left out inside a widget', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/graphs/g1/nodes/x']}>
+        <EmbeddedContext.Provider value={true}>
+          <EbiBreadcrumbsBar graph="g1" entries={entries} />
+        </EmbeddedContext.Provider>
+      </MemoryRouter>
+    )
+    expect(container).toBeEmptyDOMElement()
+    expect(mockedGet).not.toHaveBeenCalled()
   })
 
   it('picking another graph navigates to the same page for that graph, keeping query and hash', async () => {

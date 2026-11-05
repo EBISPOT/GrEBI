@@ -175,6 +175,31 @@ build({
 });
 
 ///
+/// Build widgets.js: the script other websites include for the <grebi-…>
+/// elements (src/widgets). The same pages as the bundle, with their own copy
+/// of everything, as a script that runs on its own on another page.
+///
+console.log("### Building widgets.js");
+
+build({
+  entryPoints: ["src/widgets/index.tsx"],
+  bundle: true,
+  platform: "browser",
+  format: "iife",
+  outfile: "dist/widgets.js",
+  define,
+  plugins: [resolveExternalPlugin],
+  logLevel: "info",
+  sourcemap: "linked",
+
+  ...(process.env.GREBI_MINIFY === "true"
+    ? {
+        minify: true,
+      }
+    : {}),
+});
+
+///
 /// Build styles.css (tailwind)
 ///
 console.log("### Building styles.css");
@@ -189,6 +214,13 @@ postcss()
   })
   .then((result) => {
     fs.writeFileSync(`./dist/styles.css`, result.css);
+    // The widgets (src/widgets) load the same stylesheet inside a shadow root,
+    // where the element is :host, not :root, and the body's font is the host's.
+    fs.writeFileSync(
+      `./dist/widgets.css`,
+      result.css.replace(/:root\b/g, ":host") +
+        `\n:host{display:block;font-family:"IBM Plex Sans",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;color:#000;background:#fff;}\n`
+    );
   });
 
 ///

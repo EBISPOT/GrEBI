@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { IconButton } from '@mui/material';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { ContentCopy as ContentCopyIcon } from "@mui/icons-material";
 import prismjs from "prismjs";
 import "prismjs/components/prism-cypher";
 import "prismjs/components/prism-python";

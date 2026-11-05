@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import encodeNodeId from '../../../encodeNodeId'
 import EbiNodePage from './EbiNodePage'
+import { EmbeddedContext } from '../../../app/embedded'
 
 vi.mock('../../../app/api', async (importOriginal) => {
   const mod: any = await importOriginal()
@@ -251,5 +252,42 @@ describe('EbiNodePage', () => {
     renderPage()
     await screen.findByText('A skin disease')
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Similar' })).toBeInTheDocument())
+  })
+})
+
+describe('EbiNodePage in a widget', () => {
+  function renderEmbedded(search = '') {
+    return render(
+      <MemoryRouter initialEntries={[`/graphs/g1/nodes/${encodeNodeId(nodeId)}${search}`]}>
+        <EmbeddedContext.Provider value={true}>
+          <Routes>
+            <Route path="/graphs/:graph/nodes/:nodeId" element={<><EbiNodePage /><LocationDisplay /></>} />
+          </Routes>
+        </EmbeddedContext.Provider>
+      </MemoryRouter>
+    )
+  }
+
+  it('opens on the property view, with the other tabs but not the graph, and no breadcrumbs', async () => {
+    renderEmbedded()
+    expect(await screen.findByRole('heading', { name: /psoriasis/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Property View', selected: true })).toBeInTheDocument()
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Property View', 'Edges In', 'Edges Out'])
+    expect(screen.queryByTestId('graph-view')).toBeNull()
+    expect(screen.queryByLabelText('breadcrumb')).toBeNull()
+    expect(screen.getByText('A skin disease')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/Search for knowledge/)).toBeInTheDocument()
+  })
+
+  it('shows the graph view alone for tab=graph, as the graph widget asks', async () => {
+    renderEmbedded('?tab=graph')
+    expect(await screen.findByRole('heading', { name: /psoriasis/ })).toBeInTheDocument()
+    expect(screen.getByTestId('graph-view')).toHaveTextContent('g1:psoriasis')
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.queryByText('A skin disease')).toBeNull()
+    expect(screen.queryByPlaceholderText(/Search for knowledge/)).toBeNull()
+    // the graph's own navigation keeps to the graph view
+    fireEvent.click(screen.getByText('go child'))
+    expect(screen.getByTestId('location')).toHaveTextContent(`/graphs/g1/nodes/${encodeNodeId('mondo:1')}?tab=graph`)
   })
 })

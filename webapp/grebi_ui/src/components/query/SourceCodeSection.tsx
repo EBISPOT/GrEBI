@@ -1,8 +1,8 @@
 import { Fragment, useMemo, useState } from 'react';
 import { Box, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import CloseIcon from '@mui/icons-material/Close';
+import { OpenInNew as OpenInNewIcon } from "@mui/icons-material";
+import { ContentCopy as ContentCopyIcon } from "@mui/icons-material";
+import { Close as CloseIcon } from "@mui/icons-material";
 
 import prismjs from "prismjs";
 import "prismjs/components/prism-cypher";

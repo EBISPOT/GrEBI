@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { siteUrl } from "../../../app/instance";
 import { Link, useLocation } from "react-router-dom";
 import DocsSidebar from "../components/DocsSidebar";
 import DocsContent from "../components/DocsContent";
@@ -30,7 +31,7 @@ export default function DocsPage() {
   const contentRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const base = (process.env.PUBLIC_URL || "").replace(/\/+$/, "");
+    const base = siteUrl().replace(/\/+$/, "");
     fetch(`${base}/docs-manifest.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);

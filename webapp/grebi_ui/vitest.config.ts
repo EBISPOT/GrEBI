@@ -1,9 +1,21 @@
 import { defineConfig } from 'vitest/config'
+import { createRequire } from 'module'
+
+const require = createRequire(import.meta.url)
 
 // Unit tests for the UI: components render in jsdom against mocked API calls.
 // Run with `npm test`; CI runs them in .github/workflows/ui_tests.yml.
 export default defineConfig({
   esbuild: { jsx: 'automatic' },
+  resolve: {
+    // MUI's CommonJS build (the one Node loads here) requires emotion's
+    // CommonJS build; the sources must get the same copy, or a CacheProvider
+    // (the widgets') is a different React context from the one MUI reads.
+    alias: {
+      '@emotion/react': require.resolve('@emotion/react'),
+      '@emotion/cache': require.resolve('@emotion/cache'),
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,

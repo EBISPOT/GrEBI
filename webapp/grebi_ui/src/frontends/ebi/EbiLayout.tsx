@@ -2,11 +2,11 @@ import { Outlet, useLocation, Link } from "react-router-dom";
 import urlJoin from "url-join";
 import { Helmet } from "react-helmet";
 import { Stack } from "@mui/material";
-import DownloadIcon from "@mui/icons-material/Download";
-import TravelExplore from "@mui/icons-material/TravelExplore";
-import Apps from "@mui/icons-material/Apps";
+import { Download as DownloadIcon } from "@mui/icons-material";
+import { TravelExplore } from "@mui/icons-material";
+import { Apps } from "@mui/icons-material";
 import { ManageSearch, TableChart, MenuBook } from "@mui/icons-material";
-import GitHubIcon from "@mui/icons-material/GitHub";
+import { GitHub as GitHubIcon } from "@mui/icons-material";
 import useEffectiveGraph from "./useEffectiveGraph";
 import { RouteErrorBoundary } from "../../components/ErrorBoundary";
 

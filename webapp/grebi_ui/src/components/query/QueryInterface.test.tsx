@@ -128,6 +128,33 @@ describe('QueryInterface', () => {
     }
   })
 
+  it('leaves out the code tabs when asked, keeping the inputs and the results', async () => {
+    render(
+      <MemoryRouter initialEntries={['/graphs/g/queries/genes_on_chromosome?chrom=7']}>
+        <QueryInterface graph="g" queryTemplate={textTemplate} showSource={false} />
+      </MemoryRouter>
+    )
+    for (const tab of ['cURL', 'Python', 'R', 'Cypher Query']) {
+      expect(screen.queryByRole('button', { name: tab })).toBeNull()
+    }
+    expect(screen.getByText('Inputs')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Study one' })).toBeInTheDocument()
+  })
+
+  it('leaves out the inputs when asked, still running the query from the query string', async () => {
+    render(
+      <MemoryRouter initialEntries={['/graphs/g/queries/genes_on_chromosome?chrom=7']}>
+        <QueryInterface graph="g" queryTemplate={textTemplate} showSource={false} showInputs={false} sidebar={<div>Side content</div>} />
+      </MemoryRouter>
+    )
+    expect(screen.queryByText('Inputs')).toBeNull()
+    expect(screen.queryByDisplayValue('7')).toBeNull()
+    // the sidebar alone takes the full width
+    expect(screen.getByText('Side content').parentElement).toHaveClass('w-full')
+    expect(await screen.findByRole('link', { name: 'Study one' })).toBeInTheDocument()
+    expect(queryCalls()[0][1].get('chrom')).toBe('7')
+  })
+
   it('renders the sidebar and gives only materialised templates the free-text filter', async () => {
     const { unmount } = renderInterface({ ...noParams, materialised: true }, '', <div>Side content</div>)
     expect(screen.getByText('Side content')).toBeInTheDocument()

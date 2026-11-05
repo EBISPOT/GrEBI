@@ -53,9 +53,25 @@ jobs:
       # A process.env read the build left in place throws "process is not
       # defined" in the browser and takes the whole app down; the build must
       # have replaced every one, set or not (comments excepted).
-      - name: The bundle reads nothing from process.env at runtime
+      - name: The bundle and the widgets script read nothing from process.env at runtime
         run: |
-          if grep -v '^ *//' dist/bundle.js | grep -q 'process\.env\.'; then
-            grep -n 'process\.env\.' dist/bundle.js | grep -v '^[0-9]*: *//' | head
-            exit 1
-          fi
+          for f in dist/bundle.js dist/widgets.js; do
+            if grep -v '^ *//' "$f" | grep -q 'process\.env\.'; then
+              grep -n 'process\.env\.' "$f" | grep -v '^[0-9]*: *//' | head
+              exit 1
+            fi
+          done
+
+      # A deep import of an icon (@mui/icons-material/X) is the CommonJS build
+      # and brings a second copy of MUI into the bundle, with React contexts of
+      # its own: the widgets' dialogs then escape their shadow root (see
+      # src/widgets/GrebiWidget.tsx). Icons are imported by name instead.
+      - name: The bundle holds one copy of MUI
+        run: |
+          for f in dist/bundle.js dist/widgets.js; do
+            if grep -q 'node_modules/@mui/material/node/' "$f"; then
+              echo "$f bundles the CommonJS build of @mui/material as well as the ES one:"
+              grep -o 'node_modules/@mui/icons-material/[A-Za-z]*\.js' "$f" | sort -u | head
+              exit 1
+            fi
+          done

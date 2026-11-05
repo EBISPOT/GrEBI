@@ -29,6 +29,9 @@ yarn-error.log*
 dist/index.html
 dist/bundle.js
 dist/bundle.js.map
+dist/widgets.js
+dist/widgets.js.map
+dist/widgets.css
 dist/styles.css
 dist/docs-manifest.json
 
