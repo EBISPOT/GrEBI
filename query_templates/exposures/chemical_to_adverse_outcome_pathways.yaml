@@ -1,0 +1,64 @@
+title: Adverse outcome pathways triggered by a chemical
+description: AOP-Wiki adverse outcome pathways whose stressors include the chemical, with the adverse outcome each pathway leads to (ChEBI -> AOP-Wiki stressor -> pathway -> adverse outcome).
+question: Which [adverse outcome pathways]{aop} list {chemical_id} as a stressor, and what [adverse outcome]{adverse_outcome} do they lead to?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - exposures
+  - chebi
+  - aopwiki
+cypher_match_fragment: |-
+  MATCH (chemical)-[:sourceId]->(:Id { id: $chemical_id })
+  MATCH (stressor)-[:`http://aopkb.org/aop_ontology#has_chemical_entity`]->(chemical)
+  // AOP-Wiki states "this pathway has stressor X" with the NCIt concept for
+  // stressor as the predicate.
+  MATCH (aop:`http://aopkb.org/aop_ontology#AdverseOutcomePathway`)-[:`ncit:C54571`]->(stressor)
+  OPTIONAL MATCH (aop)-[:`http://aopkb.org/aop_ontology#has_adverse_outcome`]->(adverse_outcome)
+cypher_return_fragment: |-
+  RETURN DISTINCT
+    chemical { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(chemical) } AS chemical,
+    aop { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(aop) } AS aop,
+    aop.`dc:Title`[0] AS aop_title,
+    aop.`ncit:C25688`[0] AS aop_status,
+    adverse_outcome { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(adverse_outcome) } AS adverse_outcome,
+    adverse_outcome.`dc:Title`[0] AS adverse_outcome_title
+cypher_count_fragment: |-
+  WITH DISTINCT chemical, aop, adverse_outcome
+  RETURN count(*) AS count
+params:
+  - param_id: chemical_id
+    param_name: Chemical
+    param_type: SourceId
+    values_with_type: 'biolink:ChemicalEntity'
+result_columns:
+  - column_id: chemical
+    column_type: GraphNodeId
+    id_prefixes: ['chebi:']
+  - column_id: aop
+    column_type: GraphNodeId
+    id_prefixes: ['aop:']
+  - column_id: aop_title
+    column_type: string
+  - column_id: aop_status
+    column_type: string
+    optional: true
+  - column_id: adverse_outcome
+    column_type: GraphNodeId
+    id_prefixes: ['aop.events:']
+    optional: true
+  - column_id: adverse_outcome_title
+    column_type: string
+    optional: true
+examples:
+  - title: cadmium
+    params:
+      chemical_id: chebi:22977
+  - title: lead
+    params:
+      chemical_id: chebi:25016
+  - title: bisphenol A
+    params:
+      chemical_id: chebi:33216
+  - title: atrazine
+    params:
+      chemical_id: chebi:15930

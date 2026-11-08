@@ -1,0 +1,58 @@
+title: MetaboLights studies for an environmental exposure
+description: Metabolomics studies in MetaboLights that reference the chemical an ECTO exposure is to (its stimulus), or a more specific form of it (ECTO -> ChEBI -> MetaboLights).
+question: What [MetaboLights studies]{study} involve the [chemical]{chemical} that {exposure_id} is an exposure to?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - exposures
+  - ecto
+  - metabolights
+  - metabolomics
+cypher_match_fragment: |-
+  MATCH (exposure)-[:sourceId]->(:Id { id: $exposure_id })
+  // Only the stimulus edges ECTO itself asserts: UberGraph also materialises
+  // the same relation for every ChEBI ancestor of the stimulus (phenols,
+  // molecular entity...), which would pull in every study of every phenol.
+  MATCH (exposure)-[stimulus:`ro:has_exposure_stimulus`]->(stimulus_chemical:`biolink:ChemicalEntity`)
+  WHERE "OLS.ecto" IN stimulus.`grebi:datasources`
+  WITH DISTINCT exposure, stimulus_chemical
+  // A study referencing the stimulus or a subclass of it (lead nitrate for
+  // lead); one broad_match hop is the full transitive closure.
+  MATCH (study:`metabolights:Study`)-[:`metabolights:ref`]->(chemical:`biolink:ChemicalEntity`)-[:`biolink:broad_match`*0..1]->(stimulus_chemical)
+cypher_return_fragment: |-
+  RETURN DISTINCT
+    exposure { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(exposure) } AS exposure,
+    chemical { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(chemical) } AS chemical,
+    study { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(study) } AS study
+cypher_count_fragment: |-
+  WITH DISTINCT exposure, chemical, study
+  RETURN count(*) AS count
+params:
+  - param_id: exposure_id
+    param_name: Exposure (ECTO term)
+    param_type: SourceId
+    values_under: 'ecto:0000231'
+result_columns:
+  - column_id: exposure
+    column_type: GraphNodeId
+    id_prefixes: ['ecto:']
+  - column_id: chemical
+    column_type: GraphNodeId
+    id_prefixes: ['chebi:']
+    facet: true
+  - column_id: study
+    column_type: GraphNodeId
+    id_prefixes: ['MTBLS']
+examples:
+  - title: exposure to nicotine
+    params:
+      exposure_id: ecto:9000250
+  - title: exposure to bisphenol A
+    params:
+      exposure_id: ecto:9000057
+  - title: exposure to arsenic
+    params:
+      exposure_id: ecto:9000032
+  - title: exposure to glyphosate
+    params:
+      exposure_id: ecto:9002138

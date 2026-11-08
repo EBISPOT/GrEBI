@@ -45,3 +45,9 @@ examples:
   - title: ATP
     params:
       chemical_id: chebi:15422
+  - title: bisphenol A
+    params:
+      chemical_id: chebi:33216
+  - title: nicotine
+    params:
+      chemical_id: chebi:18723

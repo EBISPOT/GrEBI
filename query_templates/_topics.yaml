@@ -62,5 +62,15 @@ topics:
     name: Quality Control
     type: Domain
     description: QC queries using the KG to identify potential data issues or inconsistencies in ontologies or content.
-
-
+  - id: exposures
+    name: Exposures
+    type: Domain
+  - id: aopwiki
+    name: AOP-Wiki
+    type: Resource
+    description: The Adverse Outcome Pathway Wiki (AOP-Wiki) is the OECD's collaborative knowledge base of adverse outcome pathways, which link a molecular initiating event through key events to an adverse outcome, together with the stressors known to trigger them.
+    url: https://aopwiki.org/
+  - id: hett_pesticides
+    name: Pesticide registers
+    type: Resource
+    description: Registers of pesticide products and approved active substances (the APPRIL product register and the EU and Great Britain approved active substance lists), loaded for the Human Ecosystems Transversal Theme.

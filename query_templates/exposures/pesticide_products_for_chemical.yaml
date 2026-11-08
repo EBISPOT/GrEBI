@@ -1,0 +1,78 @@
+title: Pesticide products and approved active substances containing a chemical
+description: Registered pesticide products whose active ingredients include the chemical (the APPRIL product register) and its entries in the EU and Great Britain approved active substance lists; the pesticide datasets of the Human Ecosystems Transversal Theme.
+question: Which [pesticide products]{product} and [approved active substances]{substance} contain {chemical_id}?
+graphs:
+  - ebi_monarch_xspecies
+topics:
+  - exposures
+  - chebi
+  - hett_pesticides
+cypher_match_fragment: |-
+  MATCH (chemical)-[:sourceId]->(:Id { id: $chemical_id })
+  // The EU and GB registers link an active substance to its chemical by CAS
+  // number; every APPRIL product links to its active ingredients.
+  OPTIONAL MATCH (substance:`hett:AgroSubstance`)-[:`CAS Number`]->(chemical)
+  OPTIONAL MATCH (product:`hett:PesticideProduct`)-[:`hett:hasActiveIngredient`]->(chemical)
+  WITH chemical, substance, product
+  WHERE substance IS NOT NULL OR product IS NOT NULL
+cypher_return_fragment: |-
+  RETURN DISTINCT
+    chemical { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(chemical) } AS chemical,
+    product { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(product) } AS product,
+    product.COMPANY_NAME[0] AS company,
+    product.STATUS_DESC[0] AS product_status,
+    product.PESTICIDE_TYPE[0] AS product_type,
+    substance { .id, .`grebi:nodeId`, .`grebi:name`, `grebi:type`: labels(substance) } AS substance,
+    substance.Category[0] AS gb_category,
+    substance.`Status under Reg EC No 11072009`[0] AS eu_status,
+    substance.`ADI mgkg bwd`[0] AS eu_acceptable_daily_intake
+cypher_count_fragment: |-
+  WITH DISTINCT chemical, substance, product
+  RETURN count(*) AS count
+params:
+  - param_id: chemical_id
+    param_name: Chemical
+    param_type: SourceId
+    values_with_type: 'biolink:ChemicalEntity'
+result_columns:
+  - column_id: chemical
+    column_type: GraphNodeId
+    id_prefixes: ['chebi:']
+  - column_id: product
+    column_type: GraphNodeId
+    id_prefixes: ['appril:']
+    optional: true
+  - column_id: company
+    column_type: string
+    optional: true
+  - column_id: product_status
+    column_type: string
+    optional: true
+  - column_id: product_type
+    column_type: string
+    optional: true
+  - column_id: substance
+    column_type: GraphNodeId
+    optional: true
+  - column_id: gb_category
+    column_type: string
+    optional: true
+  - column_id: eu_status
+    column_type: string
+    optional: true
+  - column_id: eu_acceptable_daily_intake
+    column_type: string
+    optional: true
+examples:
+  - title: glyphosate
+    params:
+      chemical_id: chebi:27744
+  - title: malathion
+    params:
+      chemical_id: chebi:6651
+  - title: atrazine
+    params:
+      chemical_id: chebi:15930
+  - title: 2,4-D
+    params:
+      chemical_id: chebi:28854

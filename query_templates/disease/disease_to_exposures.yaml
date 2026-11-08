@@ -44,3 +44,9 @@ examples:
   - title: hepatocellular carcinoma
     params:
       disease_id: mondo:0007256
+  - title: chronic obstructive pulmonary disease
+    params:
+      disease_id: mondo:0005002
+  - title: Parkinson disease
+    params:
+      disease_id: mondo:0005180
