@@ -27,12 +27,17 @@ spec:
             capabilities:
               drop:
                 - ALL
+          # The bundle build on start peaks close to 1Gi (esbuild for bundle.js
+          # and widgets.js, then the styles): at a 1Gi limit the pod was
+          # OOM-killed mid-build, twice in a row on dev on 2026-11-08, and the
+          # UI answered 500 until a retry got through. Measured at 2Gi: ~900Mi
+          # peak, ready in 35 s.
           resources:
             requests:
-              memory: 1Gi
+              memory: 2Gi
               cpu: 0.25
             limits:
-              memory: 1Gi
+              memory: 2Gi
               cpu: 0.5
           ports:
             - containerPort: 8080
