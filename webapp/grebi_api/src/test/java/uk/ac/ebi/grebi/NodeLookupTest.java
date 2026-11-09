@@ -118,6 +118,29 @@ class NodeLookupTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void resolvedHitsAreAbridgedWhenTheLookupSaysHowFar() {
+        var hub = row("mondo:0005083", "psoriasis", List.of("mondo:0005083"));
+        var blobless = row("mondo:1", "a hit with no node", List.of("mondo:1", "x:1", "x:2"));
+        when(postgres.lookupNodes(eq("g1"), any(), isNull(), anyInt())).thenReturn(List.of(hub, blobless));
+        when(postgres.getPgClient()).thenReturn(pgClient);
+        when(pgClient.fetchBlobs(eq("g1"), any())).thenReturn(Map.of("mondo:0005083", AbridgementTest.blob(AbridgementTest.translatedHub(30))));
+
+        var answer = lookup.lookup("g1", List.of("mondo:0005083", "mondo:1"), false, true, "fr", 2, false);
+
+        var results = (List<Map<String, Object>>) answer.get("results");
+        var node = ((List<Map<String, Object>>) results.get(0).get("nodes")).get(0);
+        assertEquals(2, ((List<Object>) node.get("biolink:interacts_with")).size());
+        assertEquals(30, ((Map<String, Object>) node.get(Abridgement.TRUNCATED)).get("biolink:interacts_with"));
+        assertEquals(2, ((List<Object>) node.get("grebi:name")).size(), "French first, English as the fallback");
+        // the hit that resolves to nothing is cut like a node
+        var row = ((List<Map<String, Object>>) results.get(1).get("nodes")).get(0);
+        assertEquals(List.of("mondo:1", "x:1"), row.get("grebi:sourceIds"));
+        verify(pgClient).fetchBlobs("g1", Set.of("mondo:0005083", "mondo:1"));
+        verify(pgClient, never()).resolveToMap(any(), any());
+    }
+
+    @Test
     void hittingTheRowLimitIsReported() {
         var rows = new ArrayList<Map<String, Object>>();
         for (int i = 0; i <= NodeLookup.ROWS_PER_ID; i++) {

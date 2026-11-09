@@ -86,6 +86,8 @@ describe('SearchInterface', () => {
     expect(p.get('page')).toBe('0')
     expect(p.get('size')).toBe('10')
     expect(p.getAll('facet')).toEqual(['grebi:datasources', 'grebi:type'])
+    // the hits' nodes are asked for abridged, as the node pages ask for theirs
+    expect(p.get('maxValues')).toBe('100')
     expect(screen.queryByText('Search results loading...')).toBeNull()
   })
 
@@ -159,6 +161,7 @@ describe('SearchInterface', () => {
     expect(p.get('page')).toBe('0')
     expect(p.get('size')).toBe('10')
     expect(p.get('resolve')).toBe('true')
+    expect(p.get('maxValues')).toBe('100')
     expect(searchCalls()).toHaveLength(0)
     // the facets come from the nearest candidates, and narrow the next request
     expect(screen.getByText('Filter results')).toBeInTheDocument()

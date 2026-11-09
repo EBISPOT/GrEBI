@@ -98,6 +98,81 @@ class GrebiApiNodeRoutesTest {
         assertEquals("Node not found", missing.json().getAsJsonObject().get("error").getAsString());
     }
 
+    /** The hits of a search whose nodes are a hub node and a small one, stored as blobs. */
+    void stubASearchWithAHubNodeAmongItsHits() {
+        var hits = List.of(TestApp.row("grebi:nodeId", NODE, "grebi:name", "psoriasis"), TestApp.row("grebi:nodeId", "mondo:1", "grebi:name", "plaque psoriasis"));
+        when(app.postgres.searchNodesPaginated(eq("g1"), any(), any(), anyBoolean(), eq(false), any()))
+            .thenReturn(TestApp.facetedPage(hits, Map.of("grebi:type", Map.of("biolink:Disease", 2L)), 2));
+        when(app.pgClient.fetchBlobs(eq("g1"), any())).thenReturn(Map.of(
+            NODE, AbridgementTest.blob(AbridgementTest.translatedHub(30)),
+            "mondo:1", AbridgementTest.blob(TestApp.row("grebi:nodeId", "mondo:1", "grebi:name", List.of("plaque psoriasis"), "grebi:description", List.of("A kind of psoriasis")))));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void searchResultsAreAbridgedWhenMaxValuesIsAsked() {
+        stubASearchWithAHubNodeAmongItsHits();
+
+        var res = app.get("/api/v1/graphs/g1/search?q=psor&maxValues=5&lang=fr&grebi:type=biolink:Disease");
+        assertEquals(200, res.status());
+        var page = res.json().getAsJsonObject();
+        assertEquals(2, page.get("totalElements").getAsInt());
+        assertEquals(2, page.getAsJsonObject("facetFieldToCounts").getAsJsonObject("grebi:type").get("biolink:Disease").getAsInt());
+        var hub = page.getAsJsonArray("content").get(0).getAsJsonObject();
+        assertEquals(5, hub.getAsJsonArray("biolink:interacts_with").size());
+        assertEquals(30, hub.getAsJsonObject("grebi:truncated").get("biolink:interacts_with").getAsInt());
+        assertEquals("psoriasis (fr)", hub.getAsJsonArray("grebi:name").get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString(), "in the language asked for");
+        var small = page.getAsJsonArray("content").get(1).getAsJsonObject();
+        assertEquals("A kind of psoriasis", small.getAsJsonArray("grebi:description").get(0).getAsString());
+        assertFalse(small.has("grebi:truncated"));
+
+        // maxValues is not a filter, and the nodes are asked for by the hits' ids, in their order
+        var filters = ArgumentCaptor.forClass(Map.class);
+        verify(app.postgres).searchNodesPaginated(eq("g1"), eq("psor"), filters.capture(), eq(false), eq(false), any());
+        assertEquals(Map.of("grebi:type", List.of("biolink:Disease")), filters.getValue());
+        verify(app.pgClient).fetchBlobs("g1", List.of(NODE, "mondo:1"));
+        // no node is read whole
+        verify(app.postgres, never()).searchNodesPaginated(any(), any(), any(), anyBoolean(), eq(true), any());
+
+        // without resolving there is nothing to abridge
+        app.get("/api/v1/graphs/g1/search?q=psor&maxValues=5&resolve=false");
+        verify(app.pgClient, times(1)).fetchBlobs(any(), any());
+        assertEquals(400, app.get("/api/v1/graphs/g1/search?q=psor&maxValues=0").status());
+    }
+
+    @Test
+    void theNodeListingIsAbridgedWhenMaxValuesIsAsked() {
+        stubASearchWithAHubNodeAmongItsHits();
+
+        var page = app.get("/api/v1/graphs/g1/nodes?grebi:type=biolink:Disease&maxValues=5").json().getAsJsonObject();
+        var hub = page.getAsJsonArray("content").get(0).getAsJsonObject();
+        assertEquals(5, hub.getAsJsonArray("biolink:interacts_with").size());
+        assertEquals(30, hub.getAsJsonObject("grebi:truncated").get("biolink:interacts_with").getAsInt());
+        verify(app.postgres).searchNodesPaginated(eq("g1"), isNull(), eq(Map.of("grebi:type", List.of("biolink:Disease"))), eq(false), eq(false), any());
+        assertEquals(400, app.get("/api/v1/graphs/g1/nodes?maxValues=many").status());
+    }
+
+    @Test
+    void lookedUpNodesAreAbridgedWhenMaxValuesIsAsked() {
+        var hit = TestApp.row("grebi:nodeId", NODE, "grebi:name", "Psoriasis", "grebi:sourceIds", List.of(NODE));
+        when(app.postgres.lookupNodes(eq("g1"), any(), any(), anyInt())).thenReturn(List.of(hit));
+        when(app.pgClient.fetchBlobs(eq("g1"), any())).thenReturn(Map.of(NODE, AbridgementTest.blob(AbridgementTest.translatedHub(30))));
+
+        var res = app.post("/api/v1/graphs/g1/lookup?resolve=true&maxValues=5&lang=fr", "[\"" + NODE + "\"]");
+        assertEquals(200, res.status());
+        var node = res.json().getAsJsonObject().getAsJsonArray("results").get(0).getAsJsonObject().getAsJsonArray("nodes").get(0).getAsJsonObject();
+        assertEquals(5, node.getAsJsonArray("biolink:interacts_with").size());
+        assertEquals(30, node.getAsJsonObject("grebi:truncated").get("biolink:interacts_with").getAsInt());
+        assertEquals(2, node.getAsJsonArray("grebi:name").size(), "the language asked for, then English");
+        verify(app.pgClient, never()).resolveToMap(any(), any());
+
+        // without resolve the hits are the light rows, whatever maxValues says
+        var light = app.post("/api/v1/graphs/g1/lookup?maxValues=5", "[\"" + NODE + "\"]").json().getAsJsonObject()
+            .getAsJsonArray("results").get(0).getAsJsonObject().getAsJsonArray("nodes").get(0).getAsJsonObject();
+        assertEquals("Psoriasis", light.get("grebi:name").getAsString());
+        assertEquals(400, app.post("/api/v1/graphs/g1/lookup?resolve=true&maxValues=501", "[\"" + NODE + "\"]").status());
+    }
+
     @Test
     void maxValuesMustBeANumberFromOneToFiveHundred() {
         for (var bad : List.of("0", "-3", "501")) {

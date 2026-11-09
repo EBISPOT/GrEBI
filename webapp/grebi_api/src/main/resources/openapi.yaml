@@ -420,6 +420,7 @@ paths:
         - $ref: "#/components/parameters/nodeDatasourcesExclusion"
         - $ref: "#/components/parameters/nodeTypeExclusion"
         - $ref: "#/components/parameters/resolveNodes"
+        - $ref: "#/components/parameters/maxValues"
         - $ref: "#/components/parameters/lang"
         - $ref: "#/components/parameters/page"
         - $ref: "#/components/parameters/size"
@@ -452,6 +453,7 @@ paths:
           in: query
           description: Return the full nodes instead of references.
           schema: { type: boolean, default: false }
+        - $ref: "#/components/parameters/maxValues"
         - $ref: "#/components/parameters/lang"
       requestBody:
         required: true
@@ -496,10 +498,7 @@ paths:
       operationId: node
       parameters:
         - $ref: "#/components/parameters/lang"
-        - name: maxValues
-          in: query
-          description: Abridge the node. Each property keeps its first `maxValues` values, `grebi:truncated` maps every property that was cut to the number of values it has in all, `_refs` keeps the nodes that the kept values mention and that name the properties, and the embedding vectors are left out. The node's relationships are available in full, a page at a time, from its edges.
-          schema: { type: integer, minimum: 1, maximum: 500 }
+        - $ref: "#/components/parameters/maxValues"
       responses:
         "200":
           description: The node.
@@ -780,6 +779,7 @@ paths:
         - $ref: "#/components/parameters/nodeDatasourcesExclusion"
         - $ref: "#/components/parameters/nodeTypeExclusion"
         - $ref: "#/components/parameters/resolveNodes"
+        - $ref: "#/components/parameters/maxValues"
         - $ref: "#/components/parameters/lang"
         - $ref: "#/components/parameters/page"
         - $ref: "#/components/parameters/size"
@@ -891,6 +891,7 @@ paths:
           in: query
           description: Return the full nodes instead of references.
           schema: { type: boolean, default: false }
+        - $ref: "#/components/parameters/maxValues"
         - $ref: "#/components/parameters/lang"
         - $ref: "#/components/parameters/nodeTypeFilter"
         - $ref: "#/components/parameters/nodeDatasourcesFilter"
@@ -1051,6 +1052,11 @@ components:
       in: query
       description: Return the full nodes (the default) or only references.
       schema: { type: boolean, default: true }
+    maxValues:
+      name: maxValues
+      in: query
+      description: Abridge the full nodes returned. Each property keeps its first `maxValues` values, `grebi:truncated` maps every property that was cut to the number of values it has in all, `_refs` keeps the nodes that the kept values mention and that name the properties, and the embedding vectors are left out. A hub node is tens of megabytes whole, and far quicker to return abridged; its relationships are available in full, a page at a time, from its edges. Without it full nodes are whole.
+      schema: { type: integer, minimum: 1, maximum: 500 }
     sortBy:
       name: sortBy
       in: query

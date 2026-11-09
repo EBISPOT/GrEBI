@@ -1020,6 +1020,33 @@ public class GrebiPostgresClient {
     }
 
     /**
+     * The stored blobs of several nodes, by id; an id with no blob is not in
+     * the map. As {@link #fetchBlob}, in one query.
+     */
+    public Map<String, byte[]> fetchBlobs(String graph, Collection<String> ids) {
+        if (ids == null || ids.isEmpty()) return Map.of();
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
+        }
+        Map<String, byte[]> blobs = new LinkedHashMap<>();
+        String sql = "SELECT id, json FROM \"blobs_" + graph + "\" WHERE id = ANY(?)";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            byte[][] byteIds = ids.stream().map(id -> id.getBytes(java.nio.charset.StandardCharsets.UTF_8)).toArray(byte[][]::new);
+            ps.setArray(1, conn.createArrayOf("bytea", byteIds));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    blobs.put(new String(rs.getBytes(1), java.nio.charset.StandardCharsets.UTF_8), rs.getBytes(2));
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Blob fetch failed for graph {}", graph, e);
+            throw new RuntimeException(e);
+        }
+        return blobs;
+    }
+
+    /**
      * Resolve IDs to their decompressed JSON blobs, returned as a list in the same order as the input.
      */
     public List<Map<String, Object>> resolveToList(String graph, Collection<String> ids) {

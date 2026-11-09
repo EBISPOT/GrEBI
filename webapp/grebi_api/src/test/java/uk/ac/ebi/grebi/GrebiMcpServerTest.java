@@ -238,7 +238,7 @@ class GrebiMcpServerTest {
 
     @Test
     void getNodeResolvesAndReportsMissingNodes() {
-        when(app.pgClient.resolveToList("g1", List.of("mondo:0005083"))).thenReturn(List.of(TestApp.row("grebi:nodeId", "mondo:0005083", "grebi:name", List.of("psoriasis"))));
+        when(app.pgClient.fetchBlob("g1", "mondo:0005083")).thenReturn(AbridgementTest.blob(TestApp.row("grebi:nodeId", "mondo:0005083", "grebi:name", List.of("psoriasis"))));
         var result = client.callTool(call("get_node", Map.of("graph", "g1", "nodeId", "mondo:0005083")));
         assertEquals("psoriasis", text(result).getAsJsonObject("node").getAsJsonArray("grebi:name").get(0).getAsString());
         assertTrue(result.structuredContent().containsKey("node"));
@@ -274,7 +274,11 @@ class GrebiMcpServerTest {
             refs.put(v, Map.of("grebi:name", "node " + v));
         }
         var node = TestApp.row("grebi:nodeId", "hgnc:613", "grebi:name", List.of("APOE"), "biolink:interacts_with", values, "_refs", refs);
-        when(app.pgClient.resolveToList("g1", List.of("hgnc:613"))).thenReturn(List.of(node));
+        // the node as it is stored: every tool reads it abridged from there
+        var blob = AbridgementTest.blob(node);
+        var hit = TestApp.row("grebi:nodeId", "hgnc:613", "grebi:name", "APOE", "grebi:sourceIds", List.of("hgnc:613"));
+        when(app.pgClient.fetchBlob("g1", "hgnc:613")).thenReturn(blob);
+        when(app.pgClient.fetchBlobs(eq("g1"), any())).thenReturn(Map.of("hgnc:613", blob));
 
         var got = text(client.callTool(call("get_node", Map.of("graph", "g1", "nodeId", "hgnc:613")))).getAsJsonObject("node");
         assertEquals(20, got.getAsJsonArray("biolink:interacts_with").size());
@@ -287,19 +291,23 @@ class GrebiMcpServerTest {
         assertEquals(5, five.getAsJsonArray("biolink:interacts_with").size());
         assertTrue(toolError(client, call("get_node", Map.of("graph", "g1", "nodeId", "hgnc:613", "maxValues", 0))).contains("maxValues must be between 1 and 500"));
 
-        when(app.postgres.searchNodesPaginated(eq("g1"), eq("APOE"), any(), anyBoolean(), eq(true), any()))
-            .thenReturn(TestApp.facetedPage(List.of(node), Map.of(), 1));
-        var hit = text(client.callTool(call("search_nodes", Map.of("graph", "g1", "q", "APOE", "resolve", true)))).getAsJsonArray("rows").get(0).getAsJsonObject();
-        assertEquals(20, hit.getAsJsonArray("biolink:interacts_with").size());
-        assertEquals(30, hit.getAsJsonObject(Abridgement.TRUNCATED).get("biolink:interacts_with").getAsInt());
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("APOE"), any(), anyBoolean(), eq(false), any()))
+            .thenReturn(TestApp.facetedPage(List.of(hit), Map.of(), 1));
+        var found = text(client.callTool(call("search_nodes", Map.of("graph", "g1", "q", "APOE", "resolve", true)))).getAsJsonArray("rows").get(0).getAsJsonObject();
+        assertEquals(20, found.getAsJsonArray("biolink:interacts_with").size());
+        assertEquals(30, found.getAsJsonObject(Abridgement.TRUNCATED).get("biolink:interacts_with").getAsInt());
+        assertEquals(20, found.getAsJsonObject("_refs").size());
 
-        when(app.postgres.lookupNodes(eq("g1"), any(), any(), anyInt()))
-            .thenReturn(List.of(TestApp.row("grebi:nodeId", "hgnc:613", "grebi:name", "APOE", "grebi:sourceIds", List.of("hgnc:613"))));
-        when(app.pgClient.resolveToMap(eq("g1"), any())).thenReturn(Map.of("hgnc:613", node));
+        when(app.postgres.lookupNodes(eq("g1"), any(), any(), anyInt())).thenReturn(List.of(hit));
         var looked = text(client.callTool(call("lookup_nodes", Map.of("graph", "g1", "ids", List.of("hgnc:613"), "resolve", true, "maxValues", 10))))
             .getAsJsonArray("results").get(0).getAsJsonObject().getAsJsonArray("nodes").get(0).getAsJsonObject();
         assertEquals(10, looked.getAsJsonArray("biolink:interacts_with").size());
         assertEquals(30, looked.getAsJsonObject(Abridgement.TRUNCATED).get("biolink:interacts_with").getAsInt());
+
+        // a hub node is 100 MB and more whole: no tool reads it whole to cut it
+        verify(app.pgClient, never()).resolveToList(any(), any());
+        verify(app.pgClient, never()).resolveToMap(any(), any());
+        verify(app.postgres, never()).searchNodesPaginated(any(), any(), any(), anyBoolean(), eq(true), any());
 
         var tools = client.listTools().tools().stream().collect(Collectors.toMap(McpSchema.Tool::name, t -> t));
         for (var tool : List.of("get_node", "search_nodes", "lookup_nodes")) {
@@ -309,15 +317,17 @@ class GrebiMcpServerTest {
 
     @Test
     void nodesCanBeAskedForInALanguage() {
-        when(app.pgClient.resolveToList("g1", List.of("mondo:0005083"))).thenReturn(List.of(GrebiApiNodeRoutesTest.translatedNode()));
+        var blob = AbridgementTest.blob(GrebiApiNodeRoutesTest.translatedNode());
+        when(app.pgClient.fetchBlob("g1", "mondo:0005083")).thenReturn(blob);
+        when(app.pgClient.fetchBlobs(eq("g1"), any())).thenReturn(Map.of("mondo:0005083", blob));
         var node = text(client.callTool(call("get_node", Map.of("graph", "g1", "nodeId", "mondo:0005083", "lang", "fr")))).getAsJsonObject("node");
         var names = node.getAsJsonArray("grebi:name");
         assertEquals(2, names.size());
         assertEquals("psoriasis (fr)", names.get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString());
         assertEquals(List.of("en", "de", "fr", "ja"), TestApp.GSON.fromJson(node.get("grebi:languages"), List.class));
 
-        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), anyBoolean(), eq(true), any()))
-            .thenReturn(TestApp.facetedPage(List.of(GrebiApiNodeRoutesTest.translatedNode()), Map.of(), 1));
+        when(app.postgres.searchNodesPaginated(eq("g1"), eq("psoriasis"), any(), anyBoolean(), eq(false), any()))
+            .thenReturn(TestApp.facetedPage(List.of(TestApp.row("grebi:nodeId", "mondo:0005083", "grebi:name", "psoriasis")), Map.of(), 1));
         var hit = text(client.callTool(call("search_nodes", Map.of("graph", "g1", "q", "psoriasis", "lang", "de", "resolve", true)))).getAsJsonArray("rows").get(0).getAsJsonObject();
         assertEquals("Schuppenflechte", hit.getAsJsonArray("grebi:synonym").get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString());
         assertEquals(1, hit.getAsJsonArray("grebi:name").size(), "no German name, so English alone");

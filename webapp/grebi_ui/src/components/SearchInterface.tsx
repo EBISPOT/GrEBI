@@ -5,6 +5,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getPaginated } from "../app/api";
 import { usePrevious, copyToClipboard, joinSearchParams } from "../app/util";
+import { NODE_MAX_VALUES } from "../app/nodePath";
 import GraphNode from "../model/GraphNode";
 import CollapsingIdList from "./CollapsingIdList";
 import { DatasourceTags } from "./DatasourceTag";
@@ -136,6 +137,8 @@ export default function SeachInterface(opts:{ graph:string }
           ['q', search],
           ['model', model],
           ['resolve', 'true'],
+          // the hits' nodes abridged: a hub node among them is over 100 MB whole
+          ['maxValues', NODE_MAX_VALUES.toString()],
         ];
         for (const ds of datasourceFacetselected) {
           semanticParams.push(['grebi:datasources', ds]);
@@ -169,7 +172,10 @@ export default function SeachInterface(opts:{ graph:string }
           ['size', rowsPerPage.toString()],
           ['q', search],
           ['facet', 'grebi:datasources'],
-          ['facet', 'grebi:type']
+          ['facet', 'grebi:type'],
+          // the hits come as full nodes, for their descriptions: abridged, as a
+          // hub node among them is over 100 MB whole
+          ['maxValues', NODE_MAX_VALUES.toString()],
         ];
         for (const ds of datasourceFacetselected) {
           filterParams.push(['grebi:datasources', ds]);

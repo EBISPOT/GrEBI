@@ -125,8 +125,31 @@ class AbridgementTest {
         assertEquals(Map.of("grebi:name", "interacts with"), forAPage.get("biolink:interacts_with"), "a page labels the property with it");
 
         var read = (Map<String, Object>) readAsTheWholeNodeGives(blob(node), 20, null).get("_refs");
-        assertTrue(read.containsKey("biolink:interacts_with"), "and a stored node read abridged keeps them");
+        assertTrue(read.containsKey("biolink:interacts_with"), "and a stored node read abridged for a page keeps them");
         assertTrue(readInOnePass(blob(node), 20, null));
+        var readForAnAgent = (Map<String, Object>) readAsTheWholeNodeGives(blob(node), 20, null, false).get("_refs");
+        assertEquals(20, readForAnAgent.size(), "and read abridged for an agent does not");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void hitsAreReadAbridgedFromTheirBlobsInTheirOrder() {
+        var hits = List.of(
+            TestApp.row("grebi:nodeId", "hub", "grebi:name", "APOE"),
+            TestApp.row("grebi:nodeId", "gone", "grebi:name", "a hit with no blob", "grebi:sourceIds", List.of("a:1", "a:2", "a:3")),
+            TestApp.row("grebi:nodeId", "small", "grebi:name", "a small node"));
+        var blobs = Map.of("hub", blob(hub(30)), "small", blob(hub(2)));
+
+        var nodes = Abridgement.readHits(hits, blobs, 2, null, false);
+        assertEquals(3, nodes.size());
+        assertEquals(2, ((List<Object>) nodes.get(0).get("biolink:interacts_with")).size());
+        assertEquals(Map.of("biolink:interacts_with", 30), nodes.get(0).get(Abridgement.TRUNCATED));
+        // the hit is all there is of it: cut like a node
+        assertEquals("a hit with no blob", nodes.get(1).get("grebi:name"));
+        assertEquals(List.of("a:1", "a:2"), nodes.get(1).get("grebi:sourceIds"));
+        assertEquals(Map.of("grebi:sourceIds", 3), nodes.get(1).get(Abridgement.TRUNCATED));
+        assertFalse(nodes.get(2).containsKey(Abridgement.TRUNCATED));
+        assertEquals(List.of(), Abridgement.readHits(List.of(), Map.of(), 2, null, true));
     }
 
     @Test
@@ -150,21 +173,21 @@ class AbridgementTest {
         return bytes.toByteArray();
     }
 
-    /** What the whole node gives: read in full, put in the language asked for, then abridged, keeping the nodes that name its properties. */
-    static Map<String, Object> fromTheWholeNode(byte[] blob, int maxValues, String lang) {
+    /** What the whole node gives: read in full, put in the language asked for, then abridged, with or without the nodes that name its properties. */
+    static Map<String, Object> fromTheWholeNode(byte[] blob, int maxValues, String lang, boolean propertyRefs) {
         try (var reader = new InputStreamReader(new InflaterInputStream(new ByteArrayInputStream(blob)), StandardCharsets.UTF_8)) {
             Map<String, Object> node = GSON.fromJson(reader, new TypeToken<Map<String, Object>>() {}.getType());
-            return Abridgement.abridge(Languages.localise(node, lang), maxValues, true);
+            return Abridgement.abridge(Languages.localise(node, lang), maxValues, propertyRefs);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     /** Reads the blob abridged and checks it is what the whole node gives, down to the order of its properties. */
-    static Map<String, Object> readAsTheWholeNodeGives(byte[] blob, int maxValues, String lang) {
-        var expected = fromTheWholeNode(blob, maxValues, lang);
-        var read = Abridgement.read(blob, maxValues, lang);
-        var what = "maxValues " + maxValues + ", lang " + lang;
+    static Map<String, Object> readAsTheWholeNodeGives(byte[] blob, int maxValues, String lang, boolean propertyRefs) {
+        var expected = fromTheWholeNode(blob, maxValues, lang, propertyRefs);
+        var read = Abridgement.read(blob, maxValues, lang, propertyRefs);
+        var what = "maxValues " + maxValues + ", lang " + lang + ", propertyRefs " + propertyRefs;
         assertEquals(expected, read, what);
         if (expected != null) {
             assertEquals(List.copyOf(expected.keySet()), List.copyOf(read.keySet()), "the order of the properties, " + what);
@@ -172,9 +195,15 @@ class AbridgementTest {
         return read;
     }
 
+    /** As a page reads a node: with the nodes that name its properties. */
+    static Map<String, Object> readAsTheWholeNodeGives(byte[] blob, int maxValues, String lang) {
+        assertEquals(Abridgement.read(blob, maxValues, lang, true), Abridgement.read(blob, maxValues, lang));
+        return readAsTheWholeNodeGives(blob, maxValues, lang, true);
+    }
+
     static boolean readInOnePass(byte[] blob, int maxValues, String lang) {
         try {
-            return Abridgement.readStreamed(blob, maxValues, lang) != null;
+            return Abridgement.readStreamed(blob, maxValues, lang, true) != null;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -302,7 +331,8 @@ class AbridgementTest {
             var blob = blob(randomNode(random));
             var maxValues = 1 + random.nextInt(5);
             var lang = languages.get(random.nextInt(languages.size()));
-            readAsTheWholeNodeGives(blob, maxValues, lang);
+            // as a page reads a node, with the nodes that name its properties, and as an agent does, without
+            readAsTheWholeNodeGives(blob, maxValues, lang, random.nextBoolean());
             if (readInOnePass(blob, maxValues, lang)) {
                 onePass++;
             }

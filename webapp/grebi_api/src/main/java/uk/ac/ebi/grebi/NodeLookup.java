@@ -124,6 +124,15 @@ public final class NodeLookup {
      * matches may be missing.
      */
     public Map<String, Object> lookup(String graph, List<String> ids, boolean matchNames, boolean resolve, String lang) {
+        return lookup(graph, ids, matchNames, resolve, lang, null, false);
+    }
+
+    /**
+     * The lookup with its resolved nodes abridged to maxValues values per
+     * property (see {@link Abridgement}), or whole when maxValues is null.
+     */
+    public Map<String, Object> lookup(String graph, List<String> ids, boolean matchNames, boolean resolve, String lang,
+                                      Integer maxValues, boolean propertyRefs) {
         if (ids.isEmpty()) {
             throw badRequest("No identifiers given");
         }
@@ -162,7 +171,8 @@ public final class NodeLookup {
                     nodeIds.add(String.valueOf(node.get("grebi:nodeId")));
                 }
             }
-            resolved = nodeIds.isEmpty() ? Map.of() : postgres.getPgClient().resolveToMap(graph, nodeIds);
+            // in the language asked for, and abridged if the request says how far
+            resolved = ResolvedNodes.byId(postgres.getPgClient(), graph, nodeIds, maxValues, lang, propertyRefs);
         }
 
         var results = new ArrayList<Map<String, Object>>();
@@ -170,8 +180,9 @@ public final class NodeLookup {
         for (var id : ids) {
             var nodes = new ArrayList<Map<String, Object>>();
             for (var row : matches.get(id)) {
-                var blob = resolved.get(String.valueOf(row.get("grebi:nodeId")));
-                nodes.add(blob != null ? Languages.localise(blob, lang) : row);
+                var node = resolved.get(String.valueOf(row.get("grebi:nodeId")));
+                // a row with no node to resolve to stays a row, cut like the nodes if they are
+                nodes.add(node != null ? node : resolve && maxValues != null ? Abridgement.abridge(row, maxValues, propertyRefs) : row);
             }
             if (nodes.isEmpty()) {
                 notFound.add(id);

@@ -505,6 +505,7 @@ public class GrebiApi {
                                 param.getKey().equals("exactMatch") ||
                                 param.getKey().equals("includeObsoleteEntries") ||
                                 param.getKey().equals("resolve") ||
+                                param.getKey().equals("maxValues") ||
                                 param.getKey().equals("lang") ||
                                     param.getKey().equals("facet")
                         ) {
@@ -514,17 +515,18 @@ public class GrebiApi {
                     }
 
                     var resolve = ! "false".equals(ctx.queryParam("resolve"));
-                    var lang = ctx.queryParam("lang");
-                    var res = postgres.searchNodesPaginated(
+                    ctx.json(ResolvedNodes.searchPage(
+                        postgres,
                         ctx.pathParam("graph"),
                         null,
                         filters,
                         false,
                         resolve,
+                        limits.maxValues(ctx.queryParam("maxValues")),
+                        ctx.queryParam("lang"),
+                        true,
                         limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"))
-                    );
-
-                    ctx.json(resolve ? res.map(node -> Languages.localise(node, lang)) : res);
+                    ));
                 })
                 .post("/api/v1/graphs/{graph}/lookup", ctx -> {
                     // Many identifiers at once: the body is a JSON object with an
@@ -540,7 +542,8 @@ public class GrebiApi {
                     var ids = NodeLookup.parseIds(new String(bodyBytes, StandardCharsets.UTF_8));
                     var matchNames = "true".equals(ctx.queryParam("matchNames"));
                     var resolve = "true".equals(ctx.queryParam("resolve"));
-                    ctx.result(gson.toJson(lookup.lookup(graph, ids, matchNames, resolve, ctx.queryParam("lang"))));
+                    var maxValues = limits.maxValues(ctx.queryParam("maxValues"));
+                    ctx.result(gson.toJson(lookup.lookup(graph, ids, matchNames, resolve, ctx.queryParam("lang"), maxValues, true)));
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}", ctx -> {
                     ctx.contentType("application/json");
@@ -713,6 +716,7 @@ public class GrebiApi {
                     var model = ctx.queryParam("model");
                     var n = limits.vectorLimit(ctx.queryParam("n"));
                     var resolve = Boolean.parseBoolean(Objects.requireNonNullElse(ctx.queryParam("resolve"), "false"));
+                    var maxValues = limits.maxValues(ctx.queryParam("maxValues"));
 
                     if (q == null || q.isBlank()) {
                         ctx.status(400).result("{\"error\":\"q parameter is required\"}");
@@ -750,10 +754,11 @@ public class GrebiApi {
                         var from = (int) Math.min(pageable.getOffset(), candidates.size());
                         var to = Math.min(from + pageable.getPageSize(), candidates.size());
                         var hits = candidates.subList(from, to);
-                        var resolvedMap = resolve && !hits.isEmpty()
-                                ? postgres.getPgClient().resolveToMap(graph, hits.stream().map(r -> r.nodeId).toList())
-                                : Map.<String, Map<String, Object>>of();
                         var lang = ctx.queryParam("lang");
+                        // the hits' nodes in the language asked for: whole, or abridged with maxValues
+                        var resolvedMap = resolve && !hits.isEmpty()
+                                ? ResolvedNodes.byId(postgres.getPgClient(), graph, hits.stream().map(r -> r.nodeId).toList(), maxValues, lang, true)
+                                : Map.<String, Map<String, Object>>of();
                         var content = new ArrayList<Map<String, Object>>();
                         for (var hit : hits) {
                             var row = resolvedMap.get(hit.nodeId);
@@ -764,8 +769,8 @@ public class GrebiApi {
                                 row.put("grebi:type", hit.type);
                                 row.put("grebi:datasources", hit.datasources);
                                 row.put("grebi:sourceIds", hit.sourceIds);
+                                row = Languages.localise(row, lang);
                             }
-                            row = Languages.localise(row, lang);
                             row.put("grebi:searchScore", 1.0 - hit.distance);
                             content.add(row);
                         }
@@ -779,8 +784,7 @@ public class GrebiApi {
                     if (resolve) {
                         var lang = ctx.queryParam("lang");
                         var nodeIds = vectorResults.stream().map(r -> r.nodeId).toList();
-                        var pgClient = postgres.getPgClient();
-                        var resolvedMap = pgClient.resolveToMap(graph, nodeIds);
+                        var resolvedMap = ResolvedNodes.byId(postgres.getPgClient(), graph, nodeIds, maxValues, lang, true);
                         var results = new java.util.ArrayList<Map<String, Object>>();
                         for (var vr : vectorResults) {
                             var resolved = resolvedMap.get(vr.nodeId);
@@ -788,8 +792,8 @@ public class GrebiApi {
                                 resolved = new java.util.HashMap<>();
                                 resolved.put("grebi:nodeId", vr.nodeId);
                                 resolved.put("grebi:name", vr.name != null ? List.of(vr.name) : List.of());
+                                resolved = Languages.localise(resolved, lang);
                             }
-                            resolved = Languages.localise(resolved, lang);
                             resolved.put("grebi:searchScore", 1.0 - vr.distance);
                             results.add(resolved);
                         }
@@ -929,6 +933,7 @@ public class GrebiApi {
                                 param.getKey().equals("exactMatch") ||
                                 param.getKey().equals("includeObsoleteEntries") ||
                                 param.getKey().equals("resolve") ||
+                                param.getKey().equals("maxValues") ||
                                 param.getKey().equals("lang") ||
                                     param.getKey().equals("facet")
                         ) {
@@ -938,11 +943,11 @@ public class GrebiApi {
                     }
                     var resolve = ! "false".equals(ctx.queryParam("resolve"));
                     var exactMatch = "true".equals(ctx.queryParam("exactMatch"));
-                    var lang = ctx.queryParam("lang");
                     var page = limits.pageRequest(ctx.queryParam("page"), ctx.queryParam("size"));
-                    var res = postgres.searchNodesPaginated(ctx.pathParam("graph"), searchText, filters, exactMatch, resolve, page);
+                    var res = ResolvedNodes.searchPage(postgres, ctx.pathParam("graph"), searchText, filters, exactMatch, resolve,
+                        limits.maxValues(ctx.queryParam("maxValues")), ctx.queryParam("lang"), true, page);
                     ctx.contentType("application/json");
-                    ctx.json(resolve ? res.map(node -> Languages.localise(node, lang)) : res);
+                    ctx.json(res);
                 })
                 .get("/api/v1/graphs/{graph}/suggest", ctx -> {
                     limits.validateText(ctx.queryParam("q"), "q");
@@ -1189,7 +1194,7 @@ public class GrebiApi {
     private static Map<String, List<String>> nodeFilters(io.javalin.http.Context ctx) {
         Map<String, List<String>> filters = new LinkedHashMap<>();
         for (var param : ctx.queryParamMap().entrySet()) {
-            if (Set.of("q", "page", "size", "exactMatch", "includeObsoleteEntries", "resolve", "lang", "facet", "model", "n").contains(param.getKey())) {
+            if (Set.of("q", "page", "size", "exactMatch", "includeObsoleteEntries", "resolve", "maxValues", "lang", "facet", "model", "n").contains(param.getKey())) {
                 continue;
             }
             filters.put(param.getKey(), param.getValue());

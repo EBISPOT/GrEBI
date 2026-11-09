@@ -54,15 +54,15 @@ public final class Abridgement {
     /**
      * The node stored in a blob (its JSON, deflated) in the language asked
      * for and abridged: what {@code abridge(Languages.localise(node, lang),
-     * maxValues, true)} makes of the whole node, without holding the whole node. A
-     * hub node's blob inflates to over 100 MB, nearly all of it the values and
-     * referenced nodes that an abridgement leaves out, so the blob is read as
-     * a stream that keeps each property's first values and skips the rest.
-     * Where one pass over the stream cannot tell what the whole node would
-     * give (see {@link #readStreamed}), the whole node is read after all.
-     * Null for no blob.
+     * maxValues, propertyRefs)} makes of the whole node, without holding the
+     * whole node. A hub node's blob inflates to over 100 MB, nearly all of it
+     * the values and referenced nodes that an abridgement leaves out, so the
+     * blob is read as a stream that keeps each property's first values and
+     * skips the rest. Where one pass over the stream cannot tell what the
+     * whole node would give (see {@link #readStreamed}), the whole node is
+     * read after all. Null for no blob.
      */
-    public static Map<String, Object> read(byte[] blob, int maxValues, String lang) {
+    public static Map<String, Object> read(byte[] blob, int maxValues, String lang, boolean propertyRefs) {
         if (blob == null) {
             return null;
         }
@@ -70,17 +70,38 @@ public final class Abridgement {
             throw new IllegalArgumentException("maxValues must be at least 1");
         }
         try {
-            var streamed = readStreamed(blob, maxValues, lang);
+            var streamed = readStreamed(blob, maxValues, lang, propertyRefs);
             if (streamed != null) {
                 return streamed;
             }
             try (var reader = inflated(blob)) {
                 Map<String, Object> node = GSON.fromJson(reader, new TypeToken<Map<String, Object>>() {}.getType());
-                return abridge(Languages.localise(node, lang), maxValues, true);
+                return abridge(Languages.localise(node, lang), maxValues, propertyRefs);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /** As {@link #read(byte[], int, String, boolean)} for a page, with the nodes that name the properties. */
+    public static Map<String, Object> read(byte[] blob, int maxValues, String lang) {
+        return read(blob, maxValues, lang, true);
+    }
+
+    /**
+     * The nodes of some hits (rows with a grebi:nodeId), each read abridged
+     * from its blob in the map, in the hits' order. A hit whose blob is not
+     * there is abridged as the row it is.
+     */
+    public static List<Map<String, Object>> readHits(
+        List<Map<String, Object>> hits, Map<String, byte[]> blobs, int maxValues, String lang, boolean propertyRefs
+    ) {
+        var nodes = new ArrayList<Map<String, Object>>();
+        for (var hit : hits) {
+            var blob = blobs.get(String.valueOf(hit.get("grebi:nodeId")));
+            nodes.add(blob != null ? read(blob, maxValues, lang, propertyRefs) : abridge(hit, maxValues, propertyRefs));
+        }
+        return nodes;
     }
 
     private static Reader inflated(byte[] blob) {
@@ -100,7 +121,7 @@ public final class Abridgement {
      * the long properties of a hub node are its relationships, which carry no
      * language, so a hub node is read in one pass.
      */
-    static Map<String, Object> readStreamed(byte[] blob, int maxValues, String lang) throws IOException {
+    static Map<String, Object> readStreamed(byte[] blob, int maxValues, String lang, boolean propertyRefs) throws IOException {
         var languageAsked = lang != null && !lang.isBlank();
         var node = new LinkedHashMap<String, Object>();
         var truncated = new TreeMap<String, Integer>();
@@ -130,10 +151,10 @@ public final class Abridgement {
                         continue;
                     }
                     // with nothing cut every referenced node stays; else the ones the kept
-                    // values mention and the ones that name the properties
+                    // values mention and, if asked for, the ones that name the properties
                     Set<String> mentioned = null;
                     if (!truncated.isEmpty()) {
-                        mentioned = new HashSet<>(localised.keySet());
+                        mentioned = propertyRefs ? new HashSet<>(localised.keySet()) : new HashSet<>();
                         collectStrings(localised, mentioned);
                     }
                     refs = new LinkedHashMap<>();

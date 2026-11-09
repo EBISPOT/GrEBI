@@ -112,8 +112,18 @@ class GrebiApiEdgeAndVectorRoutesTest {
         var unresolved = app.get("/api/v1/graphs/g1/semantic_search?q=psoriasis&model=m1&n=5&resolve=true").json().getAsJsonArray();
         assertEquals("N1", unresolved.get(0).getAsJsonObject().getAsJsonArray("grebi:name").get(0).getAsString());
 
+        // with maxValues the hits' nodes are read abridged from their blobs, never whole
+        clearInvocations(app.pgClient);
+        when(app.pgClient.fetchBlobs("g1", List.of("n1"))).thenReturn(Map.of("n1", AbridgementTest.blob(AbridgementTest.hub(30))));
+        var abridged = app.get("/api/v1/graphs/g1/semantic_search?q=psoriasis&model=m1&n=5&resolve=true&maxValues=4").json().getAsJsonArray().get(0).getAsJsonObject();
+        assertEquals(4, abridged.getAsJsonArray("biolink:interacts_with").size());
+        assertEquals(30, abridged.getAsJsonObject("grebi:truncated").get("biolink:interacts_with").getAsInt());
+        assertEquals(0.75, abridged.get("grebi:searchScore").getAsDouble(), 1e-9);
+        verify(app.pgClient, never()).resolveToMap(any(), any());
+
         // n beyond the vector limit is refused
         assertEquals(400, app.get("/api/v1/graphs/g1/semantic_search?q=psoriasis&model=m1&n=500").status());
+        assertEquals(400, app.get("/api/v1/graphs/g1/semantic_search?q=psoriasis&model=m1&n=5&resolve=true&maxValues=0").status());
     }
 
     @Test
@@ -154,6 +164,17 @@ class GrebiApiEdgeAndVectorRoutesTest {
         var resolved = app.get("/api/v1/graphs/g1/semantic_search?q=psoriasis&model=m1&page=0&size=2&resolve=true&grebi:datasources=GWAS&grebi:datasources=OLS.mondo").json().getAsJsonObject();
         assertEquals("N1 full", resolved.getAsJsonArray("content").get(0).getAsJsonObject().getAsJsonArray("grebi:name").get(0).getAsString());
         assertEquals("N2", resolved.getAsJsonArray("content").get(1).getAsJsonObject().getAsJsonArray("grebi:name").get(0).getAsString(), "unresolved hits keep the index's name");
+
+        // and abridged, with maxValues: the page the search results of the website ask for
+        when(app.pgClient.fetchBlobs("g1", List.of("n1", "n2"))).thenReturn(Map.of("n1", AbridgementTest.blob(AbridgementTest.hub(30))));
+        var abridged = app.get("/api/v1/graphs/g1/semantic_search?q=psoriasis&model=m1&page=0&size=2&resolve=true&maxValues=3&grebi:datasources=GWAS&grebi:datasources=OLS.mondo").json().getAsJsonObject();
+        var hub = abridged.getAsJsonArray("content").get(0).getAsJsonObject();
+        assertEquals(3, hub.getAsJsonArray("biolink:interacts_with").size());
+        assertEquals(30, hub.getAsJsonObject("grebi:truncated").get("biolink:interacts_with").getAsInt());
+        assertEquals(0.9, hub.get("grebi:searchScore").getAsDouble(), 1e-9);
+        assertEquals("N2", abridged.getAsJsonArray("content").get(1).getAsJsonObject().getAsJsonArray("grebi:name").get(0).getAsString());
+        // maxValues is not one of the filters the candidates are searched with
+        verify(app.postgres, times(4)).searchByVector(eq("g1"), eq("m1"), any(), eq(ResourceLimits.DEFAULT_MAX_VECTOR_RESULTS), eq(Map.of("grebi:datasources", List.of("GWAS", "OLS.mondo"))));
     }
 
     @Test

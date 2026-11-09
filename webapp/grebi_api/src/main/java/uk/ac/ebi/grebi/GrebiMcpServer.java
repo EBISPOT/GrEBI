@@ -183,24 +183,6 @@ public class GrebiMcpServer {
         return maxValues;
     }
 
-    /** The lookup's answer with each resolved node abridged. */
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> abridgeLookup(Map<String, Object> answer, int maxValues) {
-        var abridged = new LinkedHashMap<>(answer);
-        var results = new ArrayList<Map<String, Object>>();
-        for (var entry : (List<Map<String, Object>>) answer.get("results")) {
-            var nodes = new ArrayList<Map<String, Object>>();
-            for (var node : (List<Map<String, Object>>) entry.get("nodes")) {
-                nodes.add(Abridgement.abridge(node, maxValues));
-            }
-            var copy = new LinkedHashMap<>(entry);
-            copy.put("nodes", nodes);
-            results.add(copy);
-        }
-        abridged.put("results", results);
-        return abridged;
-    }
-
     private static List<String> getIdsArg(Gson gson, Map<String, Object> args, String key) {
         var raw = args.get(key);
         if (raw == null) {
@@ -639,10 +621,7 @@ public class GrebiMcpServer {
                 limits.validateQueryParams(filters);
 
                 var page = limits.pageRequest(pageNum, pageSize);
-                var nodes = postgres.searchNodesPaginated(graph, q, filters, exactMatch, resolve, page);
-                var result = pagedResult(resolve
-                    ? nodes.map(node -> Abridgement.abridge(Languages.localise(node, lang), maxValues))
-                    : nodes);
+                var result = pagedResult(ResolvedNodes.searchPage(postgres, graph, q, filters, exactMatch, resolve, maxValues, lang, false, page));
                 return toolResult(gson, result, pagedRowsOutputSchema);
             }
         ));
@@ -712,10 +691,7 @@ public class GrebiMcpServer {
                 var resolve = getBooleanArg(request.arguments(), "resolve", false);
                 var maxValues = getMaxValuesArg(request.arguments());
                 var lang = getStringArg(request.arguments(), "lang", null);
-                var result = lookup.lookup(graph, ids, matchNames, resolve, lang);
-                if (resolve) {
-                    result = abridgeLookup(result, maxValues);
-                }
+                var result = lookup.lookup(graph, ids, matchNames, resolve, lang, maxValues, false);
                 return toolResult(gson, result, lookupOutputSchema);
             }
         ));
@@ -754,15 +730,14 @@ public class GrebiMcpServer {
                 validateGraph(graphs, graph);
                 limits.validateText(nodeId, "nodeId");
 
-                var resolved = postgres.getPgClient().resolveToList(graph, List.of(nodeId));
-                var node = resolved.isEmpty() ? null : resolved.get(0);
+                var lang = getStringArg(request.arguments(), "lang", null);
+                var maxValues = getMaxValuesArg(request.arguments());
+                // read abridged from its blob, so that a hub node is never held whole
+                var node = Abridgement.read(postgres.getPgClient().fetchBlob(graph, nodeId), maxValues, lang, false);
                 if (node == null) {
                     return Mono.error(new RuntimeException("Node not found"));
                 }
-
-                var lang = getStringArg(request.arguments(), "lang", null);
-                var maxValues = getMaxValuesArg(request.arguments());
-                return toolResult(gson, Map.of("node", Abridgement.abridge(Languages.localise(node, lang), maxValues)), nodeOutputSchema);
+                return toolResult(gson, Map.of("node", node), nodeOutputSchema);
             }
         ));
 
