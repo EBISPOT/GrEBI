@@ -1,6 +1,6 @@
 title: MetaboLights studies for an environmental exposure
 description: Metabolomics studies in MetaboLights that reference the chemical an ECTO exposure is to (its stimulus), or a more specific form of it (ECTO -> ChEBI -> MetaboLights).
-question: What [MetaboLights studies]{study} involve the [chemical]{chemical} that {exposure_id} is an exposure to?
+question: Which [MetaboLights studies]{study} relate to {exposure_id}?
 graphs:
   - ebi_monarch_xspecies
 topics:
