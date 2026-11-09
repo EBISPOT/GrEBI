@@ -19,7 +19,9 @@ const baseCurvedEdgeLabelDrawer = createDrawCurvedEdgeLabel({
 });
 
 /**
- * Edge label drawer that hides labels on faded edges (from DS/ET highlighting).
+ * Edge label drawer that hides labels on faded edges (from DS/ET highlighting),
+ * and draws the label of a category's stem, which names a group of edge types
+ * and not one of them, in bold.
  */
 const edgeLabelDrawer: EdgeLabelDrawingFunction = (
   context, edgeData, sourceData, targetData, settings,
@@ -27,7 +29,8 @@ const edgeLabelDrawer: EdgeLabelDrawingFunction = (
   if ((edgeData as any)._faded) {
     return;
   }
-  baseCurvedEdgeLabelDrawer(context, edgeData, sourceData, targetData, settings);
+  const isGroup = Array.isArray((edgeData as any).edgeTypes);
+  baseCurvedEdgeLabelDrawer(context, edgeData, sourceData, targetData, isGroup ? { ...settings, edgeLabelWeight: "bold" } : settings);
 };
 
 /**

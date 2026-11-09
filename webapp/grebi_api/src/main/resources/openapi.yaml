@@ -492,16 +492,22 @@ paths:
     get:
       tags: [Nodes]
       summary: One node in full
-      description: Every property of the node with its provenance. A node with labels in several languages lists them in `grebi:languages`; ask for one with `lang`.
+      description: Every property of the node with its provenance. A node with labels in several languages lists them in `grebi:languages`; ask for one with `lang`. A hub node is very large, tens of megabytes when it has tens of thousands of relationships; `maxValues` returns it abridged, which is far quicker.
       operationId: node
       parameters:
         - $ref: "#/components/parameters/lang"
+        - name: maxValues
+          in: query
+          description: Abridge the node. Each property keeps its first `maxValues` values, `grebi:truncated` maps every property that was cut to the number of values it has in all, `_refs` keeps the nodes that the kept values mention and that name the properties, and the embedding vectors are left out. The node's relationships are available in full, a page at a time, from its edges.
+          schema: { type: integer, minimum: 1, maximum: 500 }
       responses:
         "200":
           description: The node.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Node" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
   /api/v1/graphs/{graph}/nodes/{nodeId}/edge_counts:
@@ -1237,6 +1243,10 @@ components:
           type: object
           description: The nodes this node's values refer to, by id, in brief.
           additionalProperties: { $ref: "#/components/schemas/NodeRef" }
+        grebi:truncated:
+          type: object
+          description: On a node abridged with `maxValues`, the number of values each property that was cut has in all; absent when nothing was cut.
+          additionalProperties: { type: integer }
       required: [grebi:nodeId]
       additionalProperties:
         type: array

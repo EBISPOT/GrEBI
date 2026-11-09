@@ -153,6 +153,21 @@ public final class ResourceLimits {
         return PageRequest.of(pageNum, pageSize, sort);
     }
 
+    /**
+     * The maxValues parameter of a request for an abridged node: how many
+     * values each property keeps. Null when the request does not ask.
+     */
+    public Integer maxValues(String maxValuesParam) {
+        if (maxValuesParam == null || maxValuesParam.isBlank()) {
+            return null;
+        }
+        int maxValues = parseIntOrDefault(maxValuesParam, 0, "maxValues");
+        if (maxValues < 1 || maxValues > Abridgement.MAX_MAX_VALUES) {
+            throw badRequest("maxValues must be between 1 and " + Abridgement.MAX_MAX_VALUES);
+        }
+        return maxValues;
+    }
+
     public int vectorLimit(String nParam) {
         int n = parseIntOrDefault(nParam, Math.min(defaultPageSize, maxVectorResults), "n");
         if (n < 1) {

@@ -5,7 +5,7 @@ import { GraphLayout } from './graphLayout'
 
 // sigma needs WebGL, which jsdom does not have: the module even throws at import
 // time. Replace it with a fake that records the graph, settings and handlers.
-const { sigmaInstances, sigmaFails } = vi.hoisted(() => ({ sigmaInstances: [] as any[], sigmaFails: { value: false } }))
+const { sigmaInstances, sigmaFails, edgeLabelsDrawn } = vi.hoisted(() => ({ sigmaInstances: [] as any[], sigmaFails: { value: false }, edgeLabelsDrawn: [] as any[][] }))
 
 vi.mock('sigma', () => {
   class FakeSigma {
@@ -51,7 +51,8 @@ vi.mock('sigma/rendering', () => ({
 
 vi.mock('@sigma/edge-curve', () => ({
   createEdgeCurveProgram: () => class {},
-  createDrawCurvedEdgeLabel: () => () => {},
+  // stand-in for the label drawer: records what it was asked to draw
+  createDrawCurvedEdgeLabel: () => (...args: any[]) => { edgeLabelsDrawn.push(args) },
   // stand-in for the real indexer: number edges that share both endpoints
   indexParallelEdgesIndex: (graph: any) => {
     const groups = new Map<string, string[]>()
@@ -129,6 +130,7 @@ const edgeBetween = (graph: any, source: string, target: string, label: string) 
 let getContext: any
 beforeEach(() => {
   sigmaInstances.length = 0
+  edgeLabelsDrawn.length = 0
   sigmaFails.value = false
   getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => ({}) as any)
 })
@@ -271,6 +273,22 @@ describe('GraphRenderer', () => {
     expect(sigma.settings.nodeReducer(category.id, sigma.graph.getNodeAttributes(category.id))).toMatchObject({ color: '#2196f3', labelColor: '#333333' })
     const edge = sigma.graph.edges()[0]
     expect(sigma.settings.edgeReducer(edge, sigma.graph.getEdgeAttributes(edge))).toMatchObject({ color: '#2196f3', _faded: false })
+  })
+
+  it('draws the label of a category\'s stem in bold, a single edge type\'s as it is, and none on a faded edge', () => {
+    const { sigma } = renderGraph()
+    const draw = sigma.settings.defaultDrawEdgeLabel
+    const settings = { edgeLabelWeight: 'normal', edgeLabelSize: 11 }
+
+    draw({}, { label: 'Associations \u00b7 7 types', edgeTypes: ['a', 'b'] }, {}, {}, settings)
+    expect(edgeLabelsDrawn).toHaveLength(1)
+    expect(edgeLabelsDrawn[0][4]).toEqual({ edgeLabelWeight: 'bold', edgeLabelSize: 11 })
+
+    draw({}, { label: 'biolink:affects', edgeType: 'biolink:affects' }, {}, {}, settings)
+    expect(edgeLabelsDrawn[1][4]).toBe(settings)
+
+    draw({}, { label: 'Associations \u00b7 7 types', edgeTypes: ['a', 'b'], _faded: true }, {}, {}, settings)
+    expect(edgeLabelsDrawn).toHaveLength(2)
   })
 
   it('installs reducers that fade nodes and edges outside the highlighted datasource or edge type', () => {

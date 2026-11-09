@@ -10,7 +10,7 @@ import { DatasourceTags } from "../../../components/DatasourceTag";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import ErrorMessage from "../../../components/ErrorMessage";
 import EdgeMetadataDialog from "../../../components/query/EdgeMetadataDialog";
-import encodeNodeId from "../../../encodeNodeId";
+import { nodePath } from "../../../app/nodePath";
 import { Pagination } from "@mui/material";
 import { Close, KeyboardArrowDown, Info, ArrowUpward, ArrowDownward } from "@mui/icons-material";
 
@@ -63,7 +63,7 @@ export default function EbiEdgeSearchPage() {
   useEffect(() => {
     for (const nodeId of [fromNodeId, toNodeId]) {
       if (!nodeId || endNodes[nodeId]) continue;
-      get<any>(`api/v1/graphs/${graph}/nodes/${encodeNodeId(nodeId)}`)
+      get<any>(nodePath(graph, nodeId))
         .then((props) => setEndNodes((prev) => ({ ...prev, [nodeId]: new GraphNodeRef(props) })))
         .catch(() => setEndNodes((prev) => ({ ...prev, [nodeId]: new GraphNodeRef({ "grebi:nodeId": nodeId }) })));
     }

@@ -226,7 +226,7 @@ describe('GraphView', () => {
   })
 
   it('restores the exploration the page hands it, then reports what changes', async () => {
-    mockedGet.mockImplementation(async (path: string) => ({ 'grebi:nodeId': atob(path.split('/').pop()!), 'grebi:name': ['Child'] }))
+    mockedGet.mockImplementation(async (path: string) => ({ 'grebi:nodeId': atob(path.split('/').pop()!.split('?')[0]), 'grebi:name': ['Child'] }))
     const onChange = vi.fn()
     const token = serialiseExploration({ steps: [{ direction: 'outgoing', edgeType: 'has_part', nodeId: 'child' }], excludedDatasources: [], hiddenEdgeTypes: [], shownEdgeTypes: [] })
     render(<GraphView graph="g" node={rootNode} exploration={token} onExplorationChange={onChange} />)
@@ -234,7 +234,8 @@ describe('GraphView', () => {
     // the chain is rebuilt from the URL: the child is fetched and expanded
     expect(await screen.findByRole('button', { name: 'child' })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'count::child::outgoing::regulates' })).toBeInTheDocument()
-    expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g/nodes/${encodeNodeId('child')}`)
+    // only the node's name is needed, so it is asked for abridged
+    expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g/nodes/${encodeNodeId('child')}?maxValues=100`)
     // what was restored is what the URL said, so nothing is written back
     expect(onChange).not.toHaveBeenCalled()
 

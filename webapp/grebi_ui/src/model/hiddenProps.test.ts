@@ -3,7 +3,7 @@ import { isHiddenProp } from './hiddenProps'
 
 describe('isHiddenProp', () => {
   it('hides the structure of an entity and the OLS bookkeeping, nothing else', () => {
-    for (const key of ['_refs', 'id', 'grebi:nodeId', 'grebi:edgeId', 'from', 'to', 'ols:definitionProperty', 'ols:isPreferredRoot']) {
+    for (const key of ['_refs', 'grebi:truncated', 'id', 'grebi:nodeId', 'grebi:edgeId', 'from', 'to', 'ols:definitionProperty', 'ols:isPreferredRoot', 'embedding:text-embedding-3-small_pca512']) {
       expect(isHiddenProp(key), key).toBe(true)
     }
     for (const key of ['grebi:name', 'grebi:type', 'ols:isObsolete', 'rdfs:isDefinedBy', 'gwas:pvalue']) {

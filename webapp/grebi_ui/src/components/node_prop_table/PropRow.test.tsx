@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import PropRow from './PropRow'
 import PropVal from '../../model/PropVal'
@@ -70,5 +70,48 @@ describe('PropRow', () => {
     renderRow([pv('hp:0000001', 'OLS.mondo')], ['OLS.mondo'], 'ro:0002200')
     expect(screen.getByText('has phenotype')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'All' })).toHaveAttribute('href', '/graphs/g/nodes/aHA6MDAwMDAwMQ')
+  })
+
+  describe('on a node loaded abridged', () => {
+    // the node has 99,807 values of this property; three were loaded
+    const abridged = makeNode({ 'grebi:truncated': { 'ro:0002200': 99807 } })
+    const loaded = [pv('hp:0000001', 'OLS.mondo'), pv('hp:0000002', 'OLS.mondo'), pv('hp:0000003', 'GWAS')]
+    const renderAbridged = (dsEnabled: string[], extra: object = {}) => render(
+      <MemoryRouter>
+        <PropRow graph="g" node={abridged} prop="ro:0002200" values={loaded} datasources={datasources} dsEnabled={dsEnabled} {...extra} />
+      </MemoryRouter>
+    )
+
+    it('says how many of a cut property\'s values are loaded and offers the whole node', () => {
+      const onLoadWhole = vi.fn()
+      renderAbridged(datasources, { onLoadWhole })
+      expect(screen.getByText(/The first 3 of 99,807 values are loaded\./)).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Load all' }))
+      expect(onLoadWhole).toHaveBeenCalledTimes(1)
+    })
+
+    it('says so while the whole node loads', () => {
+      renderAbridged(datasources, { onLoadWhole: vi.fn(), loadingWhole: true })
+      expect(screen.getByText('Loading the rest…')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Load all' })).toBeNull()
+    })
+
+    it('keeps the row when no loaded value is from an enabled datasource, as the rest may be', () => {
+      const { container } = renderAbridged(['UberGraph'], { onLoadWhole: vi.fn() })
+      expect(container.querySelector('dt')).toHaveTextContent('has phenotype')
+      expect(screen.getByText(/The first 3 of 99,807 values are loaded\./)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Load all' })).toBeInTheDocument()
+      expect(screen.queryByRole('link')).toBeNull()
+    })
+
+    it('says nothing on a property that is whole', () => {
+      const { container } = render(
+        <MemoryRouter>
+          <PropRow graph="g" node={abridged} prop="grebi:name" values={[pv('psoriasis', 'OLS.mondo')]} datasources={datasources} dsEnabled={datasources} onLoadWhole={vi.fn()} />
+        </MemoryRouter>
+      )
+      expect(container.textContent).not.toContain('are loaded')
+      expect(screen.queryByRole('button', { name: 'Load all' })).toBeNull()
+    })
   })
 })

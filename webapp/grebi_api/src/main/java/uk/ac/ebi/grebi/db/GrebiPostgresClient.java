@@ -998,6 +998,28 @@ public class GrebiPostgresClient {
     }
 
     /**
+     * The stored blob of one node or edge, its JSON deflated, or null when
+     * there is none: for a reader that takes the blob as a stream, such as
+     * Abridgement.read, and so need not hold a hub node whole.
+     */
+    public byte[] fetchBlob(String graph, String id) {
+        if (!graph.matches("[a-zA-Z0-9_]+")) {
+            throw new IllegalArgumentException("Invalid graph name");
+        }
+        String sql = "SELECT json FROM \"blobs_" + graph + "\" WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBytes(1, id.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getBytes(1) : null;
+            }
+        } catch (Exception e) {
+            logger.error("Blob fetch failed for graph {}", graph, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Resolve IDs to their decompressed JSON blobs, returned as a list in the same order as the input.
      */
     public List<Map<String, Object>> resolveToList(String graph, Collection<String> ids) {

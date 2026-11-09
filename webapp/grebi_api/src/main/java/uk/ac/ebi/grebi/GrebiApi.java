@@ -548,14 +548,21 @@ public class GrebiApi {
                     String nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));
 
                     var pgClient = postgres.getPgClient();
-                    var resolved = pgClient.resolveToList(ctx.pathParam("graph"), List.of(nodeId));
-                    var res = resolved.isEmpty() ? null : resolved.get(0);
+                    // with maxValues the node is abridged as it is read, so a hub node is never held whole
+                    var maxValues = limits.maxValues(ctx.queryParam("maxValues"));
+                    Map<String, Object> res;
+                    if (maxValues != null) {
+                        res = Abridgement.read(pgClient.fetchBlob(ctx.pathParam("graph"), nodeId), maxValues, ctx.queryParam("lang"));
+                    } else {
+                        var resolved = pgClient.resolveToList(ctx.pathParam("graph"), List.of(nodeId));
+                        res = resolved.isEmpty() ? null : Languages.localise(resolved.get(0), ctx.queryParam("lang"));
+                    }
 
                     if (res == null) {
                         ctx.status(404).result("{\"error\":\"Node not found\"}");
                         return;
                     }
-                    ctx.result(gson.toJson(Languages.localise(res, ctx.queryParam("lang"))));
+                    ctx.result(gson.toJson(res));
                 })
                 .get("/api/v1/graphs/{graph}/nodes/{nodeId}/edge_counts", ctx -> {
                     var nodeId = new String(Base64.getUrlDecoder().decode(ctx.pathParam("nodeId")));

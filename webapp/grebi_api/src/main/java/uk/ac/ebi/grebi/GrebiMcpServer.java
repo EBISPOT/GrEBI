@@ -172,8 +172,8 @@ public class GrebiMcpServer {
     /** How many values of a property a full node keeps unless the call says otherwise. */
     static final int DEFAULT_MAX_VALUES = 20;
 
-    /** The most values per property a call may ask for: 500 keep the largest hub nodes under a few megabytes. */
-    static final int MAX_MAX_VALUES = 500;
+    /** The most values per property a call may ask for. */
+    static final int MAX_MAX_VALUES = Abridgement.MAX_MAX_VALUES;
 
     private static int getMaxValuesArg(Map<String, Object> args) {
         int maxValues = getIntArg(args, "maxValues", DEFAULT_MAX_VALUES);

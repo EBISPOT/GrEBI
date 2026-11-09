@@ -63,4 +63,16 @@ describe('GraphNode', () => {
     expect(p['grebi:displayType'].map(v => v.value)).toEqual(['Disease'])
     expect(p['grebi:synonym'][0].datasources).toEqual(['OLS.mondo'])
   })
+
+  it('says which properties a node loaded abridged had cut short, and never lists that or the vectors', () => {
+    const abridged = new GraphNode({
+      ...props,
+      'grebi:truncated': { 'ro:0002200': 99807 },
+      'embedding:text-embedding-3-small_pca512': [0.1, 0.2],
+    })
+    expect(abridged.getTruncated()).toEqual({ 'ro:0002200': 99807 })
+    expect(Object.keys(abridged.getProps())).not.toContain('grebi:truncated')
+    expect(Object.keys(abridged.getProps())).not.toContain('embedding:text-embedding-3-small_pca512')
+    expect(new GraphNode(props).getTruncated()).toEqual({})
+  })
 })

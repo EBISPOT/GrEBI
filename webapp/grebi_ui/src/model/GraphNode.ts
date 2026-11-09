@@ -53,6 +53,14 @@ export default class GraphNode extends GraphNodeRef {
         return new Refs(refs)
     }
 
+    /**
+     * On a node loaded abridged (see nodePath): the number of values each
+     * property that was cut short has in all. Empty for a whole node.
+     */
+    getTruncated():{[prop:string]:number} {
+        return this.props['grebi:truncated'] || {}
+    }
+
     getProps():{[key:string]:PropVal[]} {
         let res_props = {}
         let keys = Object.keys(this.props)

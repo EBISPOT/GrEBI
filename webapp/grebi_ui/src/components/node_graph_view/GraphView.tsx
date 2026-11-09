@@ -11,7 +11,7 @@ import LoadingOverlay from "../LoadingOverlay";
 import { expandedKey } from "./useGraphViewState";
 import { explorationOf, parseExploration, serialiseExploration } from "./exploration";
 import { get } from "../../app/api";
-import encodeNodeId from "../../encodeNodeId";
+import { nodePath } from "../../app/nodePath";
 import { ArrowForward as ArrowForwardIcon, Close as CloseIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, Link as LinkIcon, Check as CheckIcon, Download as DownloadIcon } from "@mui/icons-material";
 import { IconButton } from "@mui/material";
 
@@ -149,7 +149,7 @@ export default function GraphView({
         state.collapseDescendants(rootId);
         let parent = rootId;
         for (const step of parsed.steps) {
-          const props = await get<any>(`api/v1/graphs/${graph}/nodes/${encodeNodeId(step.nodeId)}`);
+          const props = await get<any>(nodePath(graph, step.nodeId));
           await state.expandEdge(parent, step.direction, step.edgeType, new GraphNodeRef(props));
           parent = step.nodeId;
         }

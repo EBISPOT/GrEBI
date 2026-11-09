@@ -65,7 +65,7 @@ beforeEach(() => {
     }
     if (path === 'api/v1/graphs') return ['g1']
     if (path === 'api/v1/stats') return {}
-    if (path === `api/v1/graphs/g1/nodes/${encodeNodeId('a')}`) return alpha
+    if (path === `api/v1/graphs/g1/nodes/${encodeNodeId('a')}?maxValues=100`) return alpha
     throw new Error('unexpected GET ' + path)
   })
   mockedGetPaginated.mockImplementation(async () => new Page<any>(0, results.length, Math.ceil(total / 20), total, results, {} as any))

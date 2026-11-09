@@ -80,7 +80,7 @@ describe('EbiNodePage', () => {
     expect(screen.getByText('Loading node...')).toBeInTheDocument()
 
     expect(await screen.findByRole('heading', { name: /psoriasis/ })).toHaveTextContent('psoriasis Disease')
-    expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=en`)
+    expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=en&maxValues=100`)
     expect(screen.getByText('A skin disease')).toBeInTheDocument()
     // the source ids link out to their databases, with the database icon
     const mondo = screen.getByRole('link', { name: 'mondo:0005083' })
@@ -98,7 +98,7 @@ describe('EbiNodePage', () => {
   it('passes the lang query parameter on to the API', async () => {
     renderPage('?lang=fr')
     await screen.findByText('A skin disease')
-    expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=fr`)
+    expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=fr&maxValues=100`)
   })
 
   it('offers the languages a translated node has, and reads it in the one chosen', async () => {
@@ -126,7 +126,7 @@ describe('EbiNodePage', () => {
 
     fireEvent.change(picker, { target: { value: 'fr' } })
     expect(screen.getByTestId('location')).toHaveTextContent('?lang=fr')
-    await waitFor(() => expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=fr`))
+    await waitFor(() => expect(mockedGet).toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=fr&maxValues=100`))
     expect(await screen.findByRole('heading', { name: /psoriasis \(fr\)/ })).toBeInTheDocument()
     expect(screen.getByText('Une maladie de la peau')).toBeInTheDocument()
 
@@ -192,6 +192,53 @@ describe('EbiNodePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'go child tab' }))
     expect(open).toHaveBeenCalledWith(`/graphs/g1/nodes/${encodeNodeId('mondo:1')}?tab=graph`, '_blank', 'noopener')
     vi.unstubAllGlobals()
+  })
+
+  it('loads a hub node abridged, and the whole of it when the property view asks', async () => {
+    const value = (id: string) => ({ 'grebi:datasources': ['OLS.mondo'], 'grebi:value': id })
+    const abridged = {
+      ...nodeProps,
+      'biolink:affects': [value('gene:1'), value('gene:2')],
+      'grebi:truncated': { 'biolink:affects': 4, 'grebi:sourceIds': 5 },
+      _refs: {},
+    }
+    const wholeNode = {
+      ...nodeProps,
+      'grebi:sourceIds': ['mondo:0005083', 'doid:8893', 'mesh:D011565', 'umls:C0033860', 'ncit:C3346'],
+      'biolink:affects': [value('gene:1'), value('gene:2'), value('gene:3'), value('gene:4')],
+      _refs: {},
+    }
+    let finishWhole: (node: any) => void = () => {}
+    mockedGet.mockImplementation(async (path: string) => {
+      if (path === `api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=en&maxValues=100`) return abridged
+      if (path === `api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=en`) return new Promise((resolve) => { finishWhole = resolve })
+      if (path === 'api/v1/graphs/g1/embedding_models') return models
+      if (path === 'api/v1/graphs') return ['g1']
+      if (path === 'api/v1/stats') return {}
+      throw new Error('unexpected GET ' + path)
+    })
+
+    renderPage('?tab=properties')
+    expect(await screen.findByText(/The first 2 of 4 values are loaded\./)).toBeInTheDocument()
+    expect(screen.getByText(/gene:2/)).toBeInTheDocument()
+    expect(screen.queryByText(/gene:3/)).toBeNull()
+    // two of the node's five identifiers were loaded
+    expect(screen.getByRole('button', { name: '+ 3 more' })).toBeInTheDocument()
+    expect(mockedGet).not.toHaveBeenCalledWith(`api/v1/graphs/g1/nodes/${encodeNodeId(nodeId)}?lang=en`)
+
+    // both cut properties offer the whole node: the relationships and the identifiers
+    expect(screen.getByText(/The first 2 of 5 values are loaded\./)).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Load all' })[0])
+    // the abridged node stays up while the whole one loads
+    expect((await screen.findAllByText('Loading the rest…')).length).toBeGreaterThan(0)
+    expect(screen.getByText(/gene:2/)).toBeInTheDocument()
+
+    finishWhole(wholeNode)
+    expect(await screen.findByText(/gene:4/)).toBeInTheDocument()
+    expect(screen.queryByText(/are loaded\./)).toBeNull()
+    expect(screen.queryByText('Loading the rest…')).toBeNull()
+    expect(screen.getByRole('link', { name: 'ncit:C3346' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /more$/ })).toBeNull()
   })
 
   it('has no language picker for a node in one language', async () => {

@@ -68,6 +68,47 @@ class GrebiApiNodeRoutesTest {
         var missing = app.get("/api/v1/graphs/g1/nodes/" + TestApp.encodeId("mondo:0000000"));
         assertEquals(404, missing.status());
         assertEquals("Node not found", missing.json().getAsJsonObject().get("error").getAsString());
+        verify(app.pgClient, never()).fetchBlob(any(), any());
+    }
+
+    @Test
+    void aNodeIsAbridgedAsItIsReadWhenMaxValuesIsAsked() {
+        when(app.pgClient.fetchBlob("g1", NODE)).thenReturn(AbridgementTest.blob(AbridgementTest.translatedHub(30)));
+
+        var node = app.get("/api/v1/graphs/g1/nodes/" + ENC + "?maxValues=5").json().getAsJsonObject();
+        assertEquals(5, node.getAsJsonArray("biolink:interacts_with").size());
+        assertEquals(30, node.getAsJsonObject("grebi:truncated").get("biolink:interacts_with").getAsInt());
+        assertEquals(5, node.getAsJsonObject("_refs").size(), "only the nodes the kept values mention");
+        assertEquals(3, node.getAsJsonArray("grebi:name").size(), "a property within the limit is whole");
+
+        var french = app.get("/api/v1/graphs/g1/nodes/" + ENC + "?maxValues=5&lang=fr").json().getAsJsonObject();
+        assertEquals("psoriasis (fr)", french.getAsJsonArray("grebi:name").get(0).getAsJsonObject().getAsJsonObject("grebi:value").get("grebi:value").getAsString());
+        assertEquals(2, french.getAsJsonArray("grebi:name").size(), "the language asked for, then English");
+        assertEquals(5, french.getAsJsonArray("biolink:interacts_with").size());
+
+        var whole = app.get("/api/v1/graphs/g1/nodes/" + ENC + "?maxValues=500").json().getAsJsonObject();
+        assertEquals(30, whole.getAsJsonArray("biolink:interacts_with").size());
+        assertFalse(whole.has("grebi:truncated"), "nothing was cut");
+
+        // the node is never read whole
+        verify(app.pgClient, never()).resolveToList(any(), any());
+
+        var missing = app.get("/api/v1/graphs/g1/nodes/" + TestApp.encodeId("mondo:0000000") + "?maxValues=5");
+        assertEquals(404, missing.status());
+        assertEquals("Node not found", missing.json().getAsJsonObject().get("error").getAsString());
+    }
+
+    @Test
+    void maxValuesMustBeANumberFromOneToFiveHundred() {
+        for (var bad : List.of("0", "-3", "501")) {
+            var res = app.get("/api/v1/graphs/g1/nodes/" + ENC + "?maxValues=" + bad);
+            assertEquals(400, res.status(), bad);
+            assertEquals("maxValues must be between 1 and 500", res.json().getAsJsonObject().get("error").getAsString());
+        }
+        var res = app.get("/api/v1/graphs/g1/nodes/" + ENC + "?maxValues=many");
+        assertEquals(400, res.status());
+        assertEquals("maxValues must be an integer", res.json().getAsJsonObject().get("error").getAsString());
+        verify(app.pgClient, never()).fetchBlob(any(), any());
     }
 
     /** A node as the dataload merges it, with its name in three languages and a synonym in a fourth. */

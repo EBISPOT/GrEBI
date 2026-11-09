@@ -23,6 +23,7 @@ import GraphNode from "../../../model/GraphNode";
 import { get, getPaginated, ApiError } from "../../../app/api";
 import ErrorMessage from "../../../components/ErrorMessage";
 import encodeNodeId from "../../../encodeNodeId";
+import { nodePath } from "../../../app/nodePath";
 import EdgesList from "../../../components/node_edge_list/EdgesList";
 import NodeLinks from "../../../components/NodeLinks";
 import getNodeLinksTabs, { LinksTab } from "../../../components/getNodeLinksTabs";
@@ -41,6 +42,10 @@ export default function EbiNodePage() {
 
   let [node, setNode] = useState<GraphNode|null>(null);
   let [error, setError] = useState<any>(null);
+  // The node is loaded abridged, as a hub node is over 100 MB whole; the
+  // property view can ask for the whole of it, and this is the node it asked for.
+  const [wholeNodeId, setWholeNodeId] = useState<string|null>(null);
+  const whole = wholeNodeId === nodeId;
   const embedded = useEmbedded();
   // Inside a widget the graph view is a widget of its own (<grebi-graph>, which
   // asks for tab=graph, as the graph view's own links do): tab=graph is then
@@ -87,7 +92,7 @@ export default function EbiNodePage() {
     let cancelled = false;
     async function getNode() {
       try {
-        let graphNode = new GraphNode(await get<any>(`api/v1/graphs/${graph}/nodes/${encodeNodeId(nodeId)}?lang=${lang}`))
+        let graphNode = new GraphNode(await get<any>(nodePath(graph, nodeId, { lang, whole })))
         if (!cancelled) {
           setError(null)
           setNode(graphNode)
@@ -100,7 +105,12 @@ export default function EbiNodePage() {
     }
     getNode()
     return () => { cancelled = true }
-  }, [nodeId, lang]);
+  }, [nodeId, lang, whole]);
+
+  const loadWhole = useCallback(() => setWholeNodeId(nodeId), [nodeId]);
+  // the whole node was asked for and the node shown is still the abridged one
+  const loadingWhole = whole && node !== null && Object.keys(node.getTruncated()).length > 0;
+  const moreSourceIds = node ? (node.getTruncated()["grebi:sourceIds"] || 0) - node.getSourceIds().length : 0;
 
   useEffect(() => {
     setLinksTabs([]);
@@ -167,6 +177,12 @@ export default function EbiNodePage() {
               {orderSourceIds(node.getSourceIds().map(id => id.value)).map(id => <Grid item key={id}>
                 <SourceIdChip id={id} />
               </Grid>)}
+              {/* a node with more identifiers than were loaded */}
+              {moreSourceIds > 0 && <Grid item>
+                {loadingWhole
+                  ? <span className="text-sm italic text-neutral-dark">Loading the rest…</span>
+                  : <button type="button" className="link-default italic text-sm" onClick={loadWhole}>+ {moreSourceIds.toLocaleString()} more</button>}
+              </Grid>}
             </Grid>
             </div>
 
@@ -187,7 +203,7 @@ export default function EbiNodePage() {
          <GraphView graph={graph} node={node} exploration={exploration} onExplorationChange={onExplorationChange} onNavigateToNode={onNavigateToNode} />
         </TabPanel>
         <TabPanel value={tab} index={"properties"}>
-          <PropTable lang={lang} graph={graph} node={node} />
+          <PropTable lang={lang} graph={graph} node={node} onLoadWhole={loadWhole} loadingWhole={loadingWhole} />
         </TabPanel>
         <TabPanel value={tab} index={"edges_in"}>
           <EdgesList direction="incoming" graph={graph} node={node} />
