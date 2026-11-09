@@ -37,4 +37,21 @@ describe('PropLabel', () => {
     expect(label.style.fontFamily).toContain('monospace')
     expect(container.querySelector('i')).toBeNull()
   })
+
+  it('lets a long key or a name without spaces wrap after its separators', () => {
+    const { container, unmount } = render(<PropLabel prop="biolink:chemical_to_disease_or_phenotypic_feature_association" refs={refs} />)
+    expect(container.textContent).toBe('biolink:chemical_to_disease_or_phenotypic_feature_association')
+    expect(container.querySelectorAll('wbr')).toHaveLength(7)
+    unmount()
+
+    const urlNamed = new Refs({ 'chemrof:mass': { 'grebi:nodeId': 'chemrof:mass', 'grebi:name': ['https://w3id.org/chemrof/monoisotopic_mass'] } })
+    const named = render(<PropLabel prop="chemrof:mass" refs={urlNamed} />)
+    expect(named.container.querySelector('b')!.textContent).toBe('https://w3id.org/chemrof/monoisotopic_mass')
+    expect(named.container.querySelectorAll('wbr').length).toBeGreaterThan(3)
+    named.unmount()
+
+    // a name of several words wraps at its spaces as it is
+    const { container: spaced } = render(<PropLabel prop="ro:0002200" refs={refs} />)
+    expect(spaced.querySelector('wbr')).toBeNull()
+  })
 })

@@ -107,7 +107,7 @@ describe('computeRadialLayout', () => {
     expect(small.label).toBe('10')
   })
 
-  it('merges count=1 edges that resolve to the same node into one real node with one edge per edge type', () => {
+  it('merges count=1 edges that resolve to the same node into one real node, reached by one stem for all their types', () => {
     const target = ref('n1', 'Node One')
     const auto = new Map<string, GraphNodeRef>([
       [expandedKey('root', 'outgoing', 'a'), target],
@@ -123,9 +123,11 @@ describe('computeRadialLayout', () => {
       type: 'auto_expanded_node', label: 'Node One', count: 1, edgeType: 'a',
       datasources: ['ds1', 'ds2'], dsToCount: { ds1: 1, ds2: 1 }, parentNodeId: 'root',
     })
+    // one stem, not an edge per type: parallel edges swept across the neighbouring stems
     const toN1 = l.edges.filter((e) => e.target === 'n1')
-    expect(toN1.map((e) => e.label).sort()).toEqual(['a', 'b'])
-    expect(toN1.every((e) => e.source === 'root' && e.type === 'expanded' && !e.dashed)).toBe(true)
+    expect(toN1).toHaveLength(1)
+    expect(toN1[0]).toMatchObject({ source: 'root', type: 'expanded', dashed: false, label: 'a, b', edgeType: 'a', edgeTypes: ['a', 'b'], datasources: ['ds1', 'ds2'] })
+    expect(byId(l, 'n1')).toMatchObject({ edgeTypes: ['a', 'b'] })
     // a count=1 edge that has not been resolved yet stays a count bubble
     expect(byId(l, 'count::root::outgoing::c')?.type).toBe('count')
   })
@@ -196,9 +198,9 @@ describe('computeRadialLayout', () => {
     expect(l.edges).toEqual([])
   })
 
-  it('pushes overlapping bubbles apart and is deterministic', () => {
-    // four equally-sized (60px) bubbles on the outgoing arc are closer than
-    // their combined radii plus padding, so collision resolution must separate them
+  it('keeps bubbles apart and is deterministic', () => {
+    // four equally-sized (60px) bubbles at even angles on the outgoing arc of the
+    // usual ring would be closer than their combined radii plus padding
     const opts = { outgoing: ['a', 'b', 'c', 'd'].map((t) => agg(t, { ds: 100 })) }
     const l = layout(opts)
     const bubbles = l.nodes.filter((n) => n.type === 'count')
@@ -211,6 +213,104 @@ describe('computeRadialLayout', () => {
     // root never moves
     expect(byId(l, 'root')).toMatchObject({ x: 0, y: 0 })
     expect(layout(opts)).toEqual(l)
+  })
+})
+
+describe('where the stems and their labels go', () => {
+  // the padding the layout keeps between bubbles
+  const PAD = 15
+  const stems = (l: GraphLayout) => l.nodes.filter((n) => n.type !== 'root')
+  /** No two bubbles nearer than the padding, and, on one side of the root, each label with a row of its own clear of the other bubbles. */
+  function expectNothingToClash(l: GraphLayout) {
+    const nodes = stems(l)
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j]
+        expect(dist(a, b), `${a.id} and ${b.id} overlap`).toBeGreaterThanOrEqual(a.size + b.size + PAD - 1e-6)
+        if (a.outerLabelSide === b.outerLabelSide) {
+          // the label of the one nearer the root's axis runs past the other bubble
+          const outer = Math.abs(a.x) > Math.abs(b.x) ? a : b
+          expect(Math.abs(a.y - b.y), `the labels of ${a.id} and ${b.id}`).toBeGreaterThanOrEqual(Math.max(a.rowGap!, outer.size + a.rowGap! / 2) - 1e-6)
+        }
+      }
+    }
+  }
+  const ring = (l: GraphLayout) => Math.max(...stems(l).map((n) => Math.hypot(n.x, n.y)))
+  const many = (n: number, prefix: string) => Array.from({ length: n }, (_, i) => agg(`${prefix}:${i}`, { ds: 1000 - 37 * i }))
+
+  it('labels each stem beside its bubble, on the side away from the root, and not along the stem', () => {
+    const l = layout({ incoming: [agg('is_a', { ols: 5 })], outgoing: [agg('has_part', { ols: 3 })] })
+    expect(byId(l, 'count::root::incoming::is_a')).toMatchObject({ outerLabel: 'is_a', outerLabelSide: 'left' })
+    expect(byId(l, 'count::root::outgoing::has_part')).toMatchObject({ outerLabel: 'has_part', outerLabelSide: 'right' })
+    expect(l.edges.map((e) => e.labelled)).toEqual([false, false])
+    // the root is named under its circle when the name does not fit inside
+    expect(byId(l, 'root')).toMatchObject({ namePlacement: 'below' })
+    expect(byId(l, 'root')!.outerLabel).toBeUndefined()
+  })
+
+  it('says in the label of a node a single edge leads to which node it is, and which way the edge runs', () => {
+    const auto = new Map<string, GraphNodeRef>([
+      [expandedKey('root', 'outgoing', 'has_parent'), ref('p', 'The parent')],
+      [expandedKey('root', 'incoming', 'has_parent'), ref('c', 'A child')],
+    ])
+    const l = layout({ incoming: [agg('has_parent', { ds: 1 })], outgoing: [agg('has_parent', { ds: 1 })], auto })
+    expect(byId(l, 'p')).toMatchObject({ outerLabel: 'has_parent \u2192 The parent', outerLabelSide: 'right' })
+    expect(byId(l, 'c')).toMatchObject({ outerLabel: 'A child \u2192 has_parent', outerLabelSide: 'left' })
+  })
+
+  it('keeps a few stems on the usual ring, spread over their side, in order from the top down', () => {
+    const l = layout({ incoming: many(3, 'in'), outgoing: many(4, 'out') })
+    expect(ring(l)).toBeCloseTo(250)
+    expectNothingToClash(l)
+    for (const side of ['in', 'out']) {
+      const ys = stems(l).filter((n) => n.id.includes(`::${side}:`)).map((n) => n.y)
+      expect(ys).toEqual([...ys].sort((a, b) => b - a))
+      // spread out, not bunched at the top
+      expect(Math.min(...ys)).toBeLessThan(-50)
+    }
+  })
+
+  it('grows the ring for a busy node until every bubble and every label is clear of the others', () => {
+    const l = layout({ incoming: many(9, 'in'), outgoing: many(14, 'out') })
+    expect(stems(l)).toHaveLength(23)
+    expect(ring(l)).toBeGreaterThan(300)
+    expectNothingToClash(l)
+    // both sides are on the one ring
+    for (const n of stems(l)) expect(Math.hypot(n.x, n.y)).toBeCloseTo(ring(l))
+    expect(layout({ incoming: many(9, 'in'), outgoing: many(14, 'out') })).toEqual(l)
+  })
+
+  it('still fits a node with more stems than a view has rows for labels, with shorter rows', () => {
+    const l = layout({ outgoing: many(60, 'out') })
+    expect(stems(l)).toHaveLength(60)
+    expect(ring(l)).toBeLessThan(3000)
+    expectNothingToClash(l)
+    // the height kept for each label stops growing with the ring
+    expect(new Set(stems(l).map((n) => n.rowGap))).toEqual(new Set([44]))
+  })
+
+  it('lists an expanded node\'s stems from the top down on each half of its cone, and names the chain alternately above and below', () => {
+    const counts = Object.fromEntries(many(4, 'c').map((a) => [a.edgeType, a.dsToCount]))
+    const expanded = new Map<string, ExpandedNodeState>([
+      expansion('root', 'outgoing', 'has_part', ref('child', 'Child'), { incoming: counts, outgoing: counts }),
+      expansion('child', 'outgoing', 'c:0', ref('grandchild', 'Grandchild')),
+    ])
+    const one = layout({ outgoing: [agg('has_part', { ds1: 10 })], expanded: new Map([...expanded].slice(0, 1)) })
+    for (const direction of ['incoming', 'outgoing']) {
+      const ys = one.nodes.filter((n) => n.id.startsWith(`count::child::${direction}`)).map((n) => n.y)
+      expect(ys).toHaveLength(4)
+      expect(ys).toEqual([...ys].sort((a, b) => b - a))
+    }
+    // outgoing above the expanded node, incoming below it
+    expect(byId(one, 'count::child::outgoing::c:0')!.y).toBeGreaterThan(0)
+    expect(byId(one, 'count::child::incoming::c:0')!.y).toBeLessThan(0)
+    // the edge of an expansion is alone between its nodes and keeps its label along it
+    expect(one.edges.find((e) => e.id === 'edge::root::outgoing::has_part')).toMatchObject({ labelled: true, label: 'has_part' })
+
+    const two = layout({ outgoing: [agg('has_part', { ds1: 10 })], expanded })
+    expect(byId(two, 'root')!.namePlacement).toBe('below')
+    expect(byId(two, 'child')!.namePlacement).toBe('above')
+    expect(byId(two, 'grandchild')!.namePlacement).toBe('below')
   })
 })
 
@@ -227,21 +327,25 @@ describe('viewBBox', () => {
     expect(viewBBox(layout())).toEqual({ x: [-250, 250], y: [-250, 250] })
   })
 
-  it('centres the box on the layout when only a few stems are left', () => {
-    // one outgoing stem, straight out to the right of the root
-    expectBox(viewBBox(layout({ outgoing: [agg('a', { ds1: 3 })] })), [-125, 375], [-250, 250])
+  it('centres the box on the layout when only a few stems are left, with room for their labels', () => {
+    // one outgoing stem, straight out to the right of the root: the ring's size around
+    // the two nodes, and beside it, on the side the label is on, 45% of the box's height
+    expectBox(viewBBox(layout({ outgoing: [agg('a', { ds1: 3 })] })), [-125, 375 + 225], [-250, 250])
   })
 
   it('keeps the ring\'s height for a layout that is wide but flat', () => {
-    // one incoming and one outgoing stem: as wide as the ring, with no height
-    expectBox(viewBBox(layout({ incoming: [agg('a', { ds1: 3 })], outgoing: [agg('a', { ds1: 5 })] })), [-250, 250], [-250, 250])
+    // one incoming and one outgoing stem: as wide as the ring, with no height, labelled on both sides
+    expectBox(viewBBox(layout({ incoming: [agg('a', { ds1: 3 })], outgoing: [agg('a', { ds1: 5 })] })), [-250 - 225, 250 + 225], [-250, 250])
     // wider than the ring: keeps its own width
     expectBox(viewBBox({ nodes: [at('l', -400, 0), at('r', 400, 50)], edges: [] }), [-400, 400], [-225, 275])
   })
 
-  it('lets a layout larger than the ring both ways be fitted as it is', () => {
-    expect(viewBBox({ nodes: [at('a', -300, -300), at('b', 300, 300)], edges: [] })).toBeNull()
+  it('lets a layout larger than the ring both ways be fitted as it is, unless it has labels beside it', () => {
+    const a = at('a', -300, -300), b = at('b', 300, 300)
+    expect(viewBBox({ nodes: [a, b], edges: [] })).toBeNull()
     expect(viewBBox({ nodes: [], edges: [] })).toBeNull()
+    // labelled on the left only: room on the left only, 45% of the height of 600
+    expectBox(viewBBox({ nodes: [{ ...a, outerLabel: 'is_a', outerLabelSide: 'left' }, b], edges: [] }), [-300 - 270, 300], [-300, 300])
   })
 })
 

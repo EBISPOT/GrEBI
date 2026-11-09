@@ -19,18 +19,19 @@ const baseCurvedEdgeLabelDrawer = createDrawCurvedEdgeLabel({
 });
 
 /**
- * Edge label drawer that hides labels on faded edges (from DS/ET highlighting),
- * and draws the label of a category's stem, which names a group of edge types
- * and not one of them, in bold.
+ * Edge label drawer that hides labels on faded edges (from DS/ET highlighting)
+ * and draws none along a stem: a stem's label is written beside its bubble
+ * (drawOuterLabel), as the stems of a busy node cross near the node and labels
+ * along them ran into each other. Only the edge of an expansion, alone between
+ * its two nodes, is labelled along its length.
  */
 const edgeLabelDrawer: EdgeLabelDrawingFunction = (
   context, edgeData, sourceData, targetData, settings,
 ) => {
-  if ((edgeData as any)._faded) {
+  if ((edgeData as any)._faded || (edgeData as any).labelled === false) {
     return;
   }
-  const isGroup = Array.isArray((edgeData as any).edgeTypes);
-  baseCurvedEdgeLabelDrawer(context, edgeData, sourceData, targetData, isGroup ? { ...settings, edgeLabelWeight: "bold" } : settings);
+  baseCurvedEdgeLabelDrawer(context, edgeData, sourceData, targetData, settings);
 };
 
 /**
@@ -73,6 +74,7 @@ function updateReducers(
       } else if (data.nodeType !== "root") {
         res.color = "rgba(0,0,0,0)";
         res.label = "";
+        res.outerLabel = "";
         res.labelColor = "rgba(0,0,0,0)";
       }
     }
@@ -85,6 +87,7 @@ function updateReducers(
       } else if (data.nodeType !== "root") {
         res.color = "rgba(0,0,0,0)";
         res.label = "";
+        res.outerLabel = "";
         res.labelColor = "rgba(0,0,0,0)";
       }
     }
@@ -265,6 +268,13 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
         hasHiddenChildren: node.hasHiddenChildren || false,
         categoryId: node.categoryId,
         edgeTypes: node.edgeTypes,
+        outerLabel: node.outerLabel,
+        outerLabelSide: node.outerLabelSide,
+        outerLabelBold: node.outerLabelBold,
+        namePlacement: node.namePlacement,
+        rowGap: node.rowGap,
+        // the size in layout units: sigma hands the label drawer the size on screen
+        unitSize: node.size,
         forceLabel: true,
       });
     }
@@ -280,6 +290,7 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
         edgeTypes: edge.edgeTypes,
         direction: edge.direction,
         datasources: edge.datasources,
+        labelled: edge.labelled,
         forceLabel: true,
       });
     }
@@ -362,7 +373,9 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
         stagePadding: 60,
         minEdgeThickness: 1,
         zoomDuration: 200,
-        minCameraRatio: 1,
+        // the view starts fitted to the layout (ratio 1) and can be zoomed in fivefold:
+        // a node with many stems has a large ring, and its labels need the room
+        minCameraRatio: 0.2,
         autoRescale: true,
         autoCenter: true,
         itemSizesReference: "positions",
@@ -540,6 +553,8 @@ function drawNodeLabel(
 ): void {
   const nodeType = data.nodeType;
 
+  drawOuterLabel(context, data);
+
   const label = data.label;
   if (!label) return;
 
@@ -565,11 +580,19 @@ function drawNodeLabel(
       }
       displayLabel = displayLabel + "\u2026";
     }
+    const cut = displayLabel !== label;
 
-    context.fillStyle = data.labelColor || "#ffffff";
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.fillText(displayLabel, data.x, data.y);
+    // A name that fits is written inside the circle. One that does not is written in full
+    // outside it instead: the root's and an expanded node's above or below the circle, and
+    // that of a node a single edge leads to in the label beside it.
+    if (!cut || !(data.namePlacement || data.outerLabel)) {
+      context.fillStyle = data.labelColor || "#ffffff";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(displayLabel, data.x, data.y);
+    } else if (data.namePlacement) {
+      drawNameOutside(context, data, label);
+    }
 
     // Draw ring indicator if node has hidden children
     if (data.hasHiddenChildren) {
@@ -582,6 +605,69 @@ function drawNodeLabel(
       context.setLineDash([]);
     }
   }
+}
+
+const OUTER_LABEL_SIZE = 12;
+const OUTER_LABEL_GAP = 6;
+const OUTER_LABEL_MAX_WIDTH = 300;
+const NAME_MAX_WIDTH = 240;
+
+/** As much of the text as fits the width, with an ellipsis if it was cut. */
+function fitText(context: CanvasRenderingContext2D, text: string, width: number): string {
+  if (context.measureText(text).width <= width) return text;
+  let cut = text;
+  while (cut.length > 1 && context.measureText(cut + "\u2026").width > width) {
+    cut = cut.slice(0, -1);
+  }
+  return cut + "\u2026";
+}
+
+/**
+ * The full name of the root or of an expanded node, above or below its
+ * circle, with a halo in the canvas colour as it may lie across stems.
+ */
+function drawNameOutside(context: CanvasRenderingContext2D, data: any, name: string): void {
+  context.font = `bold ${OUTER_LABEL_SIZE}px 'Inter', 'Helvetica Neue', Arial, sans-serif`;
+  const text = fitText(context, name, NAME_MAX_WIDTH);
+  // clear of the dashed ring of a node with hidden children
+  const offset = data.size + (data.hasHiddenChildren ? 8 : 4) + OUTER_LABEL_SIZE / 2;
+  const y = data.namePlacement === "above" ? data.y - offset : data.y + offset;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.lineJoin = "round";
+  context.lineWidth = 3;
+  context.strokeStyle = "#fafafa";
+  context.strokeText(text, data.x, y);
+  context.fillStyle = "#333333";
+  context.fillText(text, data.x, y);
+}
+
+/**
+ * The label beside a stem's bubble: the edge type, or in bold the category it
+ * stands for. It is written outwards from the bubble, on the side away from
+ * the bubble's parent, and cut short where the canvas ends. The layout keeps a
+ * row of its own for each label (rowGap, in layout units); zoomed out so far
+ * that the row is shorter than the text, the label is left out.
+ */
+function drawOuterLabel(context: CanvasRenderingContext2D, data: any): void {
+  const text: string | undefined = data.outerLabel;
+  if (!text) return;
+  // pixels per layout unit, from the node's size on screen and its size in the layout
+  const scale = data.unitSize ? data.size / data.unitSize : 1;
+  if (data.rowGap && data.rowGap * scale < OUTER_LABEL_SIZE - 1) return;
+
+  const right = data.outerLabelSide !== "left";
+  const x = right ? data.x + data.size + OUTER_LABEL_GAP : data.x - data.size - OUTER_LABEL_GAP;
+  const canvasWidth = (context.canvas && context.canvas.clientWidth) || Infinity;
+  const room = Math.min(OUTER_LABEL_MAX_WIDTH, right ? canvasWidth - x - 4 : x - 4);
+  if (room < 24) return;
+
+  context.font = `${data.outerLabelBold ? "bold" : "normal"} ${OUTER_LABEL_SIZE}px 'Inter', 'Helvetica Neue', Arial, sans-serif`;
+  const label = fitText(context, text, room);
+  context.fillStyle = data.outerLabelBold ? "#444444" : "#666666";
+  context.textAlign = right ? "left" : "right";
+  context.textBaseline = "middle";
+  context.fillText(label, x, data.y);
 }
 
 /**

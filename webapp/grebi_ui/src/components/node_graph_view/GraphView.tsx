@@ -40,6 +40,11 @@ const HoverPathBar = forwardRef<HoverPathBarHandle, {
 }>(function HoverPathBar({ hidden, describe }, ref) {
   const [node, setNode] = useState<LayoutNode | null>(null);
   useImperativeHandle(ref, () => ({ show: setNode }), []);
+  // the graph goes while the bar is hidden (the expand panel takes its place), and the
+  // node the mouse was on never reports being left: forget it
+  useEffect(() => {
+    if (hidden) setNode(null);
+  }, [hidden]);
   const content = hidden || !node ? null : describe(node);
   if (!content) return null;
   return (
@@ -487,7 +492,8 @@ export default function GraphView({
     }
     if (!n.edgeType) return null;
     const isExpanded = n.type === "expanded_node" || n.type === "auto_expanded_node";
-    return renderPathBar(isExpanded ? n.label : null, n.direction!, n.edgeType, parentLabel, n.count);
+    // a node that edges of several types lead to names them all
+    return renderPathBar(isExpanded ? n.label : null, n.direction!, n.edgeTypes ? n.edgeTypes.join(", ") : n.edgeType, parentLabel, n.count);
   };
 
   return (

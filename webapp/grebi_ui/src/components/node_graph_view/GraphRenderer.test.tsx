@@ -77,7 +77,7 @@ const layout: GraphLayout = {
     {
       id: 'count::root::outgoing::has_part', x: 250, y: 0, size: 30, label: '5', type: 'count', color: '#eee', labelColor: '#666',
       direction: 'outgoing', edgeType: 'has_part', count: 5, datasources: ['ds1'], dsToCount: { ds1: 5 },
-      parentNodeId: 'root', parentEncodedNodeId: 'cm9vdA',
+      parentNodeId: 'root', parentEncodedNodeId: 'cm9vdA', outerLabel: 'has_part', outerLabelSide: 'right', rowGap: 24,
     },
     {
       id: 'child', x: -250, y: 0, size: 28, label: 'Child', type: 'expanded_node', color: '#4a90d9', labelColor: '#fff',
@@ -89,12 +89,12 @@ const layout: GraphLayout = {
     },
   ],
   edges: [
-    { id: 'e1', source: 'root', target: 'count::root::outgoing::has_part', label: 'has_part', color: '#ccc', type: 'stem', dashed: true, size: 1.5, direction: 'outgoing', edgeType: 'has_part', datasources: ['ds1'] },
-    { id: 'e2', source: 'child', target: 'root', label: 'is_a', color: '#4a90d9', type: 'expanded', dashed: false, size: 2, direction: 'incoming', edgeType: 'is_a', datasources: ['ds2'] },
-    { id: 'e3', source: 'root', target: 'auto', label: 'part_of', color: '#4a90d9', type: 'expanded', dashed: false, size: 2, direction: 'outgoing', edgeType: 'part_of', datasources: ['ds1'] },
-    { id: 'e4', source: 'root', target: 'auto', label: 'related_to', color: '#4a90d9', type: 'expanded', dashed: false, size: 2, direction: 'outgoing', edgeType: 'related_to', datasources: ['ds1'] },
+    { id: 'e1', source: 'root', target: 'count::root::outgoing::has_part', label: 'has_part', color: '#ccc', type: 'stem', dashed: true, size: 1.5, direction: 'outgoing', edgeType: 'has_part', datasources: ['ds1'], labelled: false },
+    { id: 'e2', source: 'child', target: 'root', label: 'is_a', color: '#4a90d9', type: 'expanded', dashed: false, size: 2, direction: 'incoming', edgeType: 'is_a', datasources: ['ds2'], labelled: true },
+    { id: 'e3', source: 'root', target: 'auto', label: 'part_of', color: '#4a90d9', type: 'expanded', dashed: false, size: 2, direction: 'outgoing', edgeType: 'part_of', datasources: ['ds1'], labelled: false },
+    { id: 'e4', source: 'root', target: 'auto', label: 'related_to', color: '#4a90d9', type: 'expanded', dashed: false, size: 2, direction: 'outgoing', edgeType: 'related_to', datasources: ['ds1'], labelled: false },
     // dangling edge: its target is not in the layout
-    { id: 'e5', source: 'root', target: 'missing', label: 'x', color: '#ccc', type: 'stem', dashed: true, size: 1, direction: 'outgoing', edgeType: 'x' },
+    { id: 'e5', source: 'root', target: 'missing', label: 'x', color: '#ccc', type: 'stem', dashed: true, size: 1, direction: 'outgoing', edgeType: 'x', labelled: false },
   ],
 }
 
@@ -258,7 +258,7 @@ describe('GraphRenderer', () => {
     }
     const categoryLayout: GraphLayout = {
       nodes: [layout.nodes[0], category],
-      edges: [{ id: 'e', source: 'root', target: category.id, label: 'Associations \u00b7 2 types', color: '#b39ddb', type: 'stem', dashed: true, size: 1.5, direction: 'outgoing', edgeTypes: ['a', 'b'] }],
+      edges: [{ id: 'e', source: 'root', target: category.id, label: 'Associations \u00b7 2 types', color: '#b39ddb', type: 'stem', dashed: true, size: 1.5, direction: 'outgoing', edgeTypes: ['a', 'b'], labelled: false }],
     }
     const onClickCategory = vi.fn()
     const { props, sigma, rerender } = renderGraph({ layout: categoryLayout, onClickCategory })
@@ -275,20 +275,114 @@ describe('GraphRenderer', () => {
     expect(sigma.settings.edgeReducer(edge, sigma.graph.getEdgeAttributes(edge))).toMatchObject({ color: '#2196f3', _faded: false })
   })
 
-  it('draws the label of a category\'s stem in bold, a single edge type\'s as it is, and none on a faded edge', () => {
+  it('draws a label along the edge of an expansion only: none along a stem, none on a faded edge', () => {
     const { sigma } = renderGraph()
     const draw = sigma.settings.defaultDrawEdgeLabel
     const settings = { edgeLabelWeight: 'normal', edgeLabelSize: 11 }
 
-    draw({}, { label: 'Associations \u00b7 7 types', edgeTypes: ['a', 'b'] }, {}, {}, settings)
+    draw({}, { label: 'is_a', edgeType: 'is_a', labelled: true }, {}, {}, settings)
     expect(edgeLabelsDrawn).toHaveLength(1)
-    expect(edgeLabelsDrawn[0][4]).toEqual({ edgeLabelWeight: 'bold', edgeLabelSize: 11 })
+    expect(edgeLabelsDrawn[0][4]).toBe(settings)
 
-    draw({}, { label: 'biolink:affects', edgeType: 'biolink:affects' }, {}, {}, settings)
-    expect(edgeLabelsDrawn[1][4]).toBe(settings)
+    // a stem's label is beside its bubble
+    draw({}, { label: 'biolink:affects', edgeType: 'biolink:affects', labelled: false }, {}, {}, settings)
+    draw({}, { label: 'is_a', edgeType: 'is_a', labelled: true, _faded: true }, {}, {}, settings)
+    expect(edgeLabelsDrawn).toHaveLength(1)
+    // and the graph carries which is which
+    const graph = sigma.graph
+    expect(graph.getEdgeAttribute(edgeBetween(graph, 'child', 'root', 'is_a'), 'labelled')).toBe(true)
+    expect(graph.getEdgeAttribute(edgeBetween(graph, 'root', 'count::root::outgoing::has_part', 'has_part'), 'labelled')).toBe(false)
+  })
 
-    draw({}, { label: 'Associations \u00b7 7 types', edgeTypes: ['a', 'b'], _faded: true }, {}, {}, settings)
-    expect(edgeLabelsDrawn).toHaveLength(2)
+  describe('the labels outside the nodes', () => {
+    /** A canvas context that records the text drawn on it; every character is 6px wide. */
+    function fakeContext(canvasWidth = 1000) {
+      const drawn: { text: string; x: number; y: number; font: string; align: string; stroked?: boolean }[] = []
+      const ctx: any = {
+        canvas: { clientWidth: canvasWidth },
+        font: '', textAlign: '', textBaseline: '', fillStyle: '', strokeStyle: '', lineWidth: 1, lineJoin: '',
+        measureText: (t: string) => ({ width: t.length * 6 }),
+        fillText: (text: string, x: number, y: number) => drawn.push({ text, x, y, font: ctx.font, align: ctx.textAlign }),
+        strokeText: (text: string, x: number, y: number) => drawn.push({ text, x, y, font: ctx.font, align: ctx.textAlign, stroked: true }),
+        beginPath: () => {}, arc: () => {}, stroke: () => {}, setLineDash: () => {},
+      }
+      return { ctx, drawn }
+    }
+    // a count bubble 20px across on screen at (500, 300), half its size in the layout
+    const bubble = { nodeType: 'count', label: '126', x: 500, y: 300, size: 20, unitSize: 40, rowGap: 30, outerLabel: 'biolink:subclass_of', outerLabelSide: 'right' }
+    const drawLabel = (data: any, canvasWidth?: number) => {
+      const { sigma } = renderGraph()
+      const { ctx, drawn } = fakeContext(canvasWidth)
+      sigma.settings.defaultDrawNodeLabel(ctx, data, {})
+      return drawn
+    }
+
+    it('hands the layout\'s labels to sigma with the node', () => {
+      const { sigma } = renderGraph()
+      expect(sigma.graph.getNodeAttributes('count::root::outgoing::has_part')).toMatchObject({
+        outerLabel: 'has_part', outerLabelSide: 'right', rowGap: 24, unitSize: 30,
+      })
+    })
+
+    it('writes a stem\'s label beside its bubble: to the right of one on the right, the count inside', () => {
+      const drawn = drawLabel(bubble)
+      expect(drawn).toEqual([
+        { text: 'biolink:subclass_of', x: 500 + 20 + 6, y: 300, font: expect.stringMatching(/^normal 12px/), align: 'left' },
+        { text: '126', x: 500, y: 300, font: expect.stringMatching(/^italic/), align: 'center' },
+      ])
+    })
+
+    it('writes it to the left of a bubble on the left, ending at the bubble', () => {
+      const drawn = drawLabel({ ...bubble, outerLabelSide: 'left' })
+      expect(drawn[0]).toMatchObject({ text: 'biolink:subclass_of', x: 500 - 20 - 6, align: 'right' })
+    })
+
+    it('writes a category\'s label in bold', () => {
+      const drawn = drawLabel({ ...bubble, nodeType: 'category', outerLabel: 'Associations · 7 types', outerLabelBold: true })
+      expect(drawn[0]).toMatchObject({ text: 'Associations · 7 types', font: expect.stringMatching(/^bold 12px/) })
+    })
+
+    it('cuts a label short where the canvas ends, and leaves it out when there is no room', () => {
+      // the label starts at 526 on a canvas 626 wide: 96px after the margin, 16 characters
+      const drawn = drawLabel({ ...bubble, outerLabel: 'biolink:chemical_to_disease_or_phenotypic_feature_association' }, 626)
+      expect(drawn[0].text).toBe('biolink:chemica…')
+      expect(drawLabel(bubble, 540).map((d) => d.text)).toEqual(['126'])
+    })
+
+    it('leaves the labels out when the view is zoomed too far out for their rows', () => {
+      // 30 layout units a row, at 0.3px a unit: 9px for 12px text
+      expect(drawLabel({ ...bubble, size: 12 }).map((d) => d.text)).toEqual(['126'])
+      // at 0.5px a unit, 15px
+      expect(drawLabel(bubble).map((d) => d.text)).toContain('biolink:subclass_of')
+    })
+
+    it('writes a name inside its circle when it fits, and in full outside when it does not', () => {
+      const root = { nodeType: 'root', label: 'exposure to nicotine', x: 500, y: 300, size: 100, namePlacement: 'below' }
+      // 100px across the circle holds the 20 characters
+      expect(drawLabel(root)).toEqual([{ text: 'exposure to nicotine', x: 500, y: 300, font: expect.stringMatching(/^bold 35px/), align: 'center' }])
+
+      // a small circle does not: the name goes under it, over a halo
+      const small = drawLabel({ ...root, size: 20 })
+      expect(small.map((d) => d.text)).toEqual(['exposure to nicotine', 'exposure to nicotine'])
+      expect(small[0]).toMatchObject({ stroked: true, y: 300 + 20 + 4 + 6, font: expect.stringMatching(/^bold 12px/) })
+      expect(small[1]).toMatchObject({ x: 500, y: 300 + 20 + 4 + 6 })
+
+      // above an expanded node, and clear of the ring of a node with hidden children
+      const above = drawLabel({ ...root, size: 20, nodeType: 'expanded_node', namePlacement: 'above', hasHiddenChildren: true })
+      expect(above[1]).toMatchObject({ y: 300 - 20 - 8 - 6 })
+    })
+
+    it('leaves the cut name out of a node that a single edge leads to: its label says it', () => {
+      const single = { nodeType: 'auto_expanded_node', label: 'bisphenol-A-polycarbonate', x: 500, y: 300, size: 20, unitSize: 28, rowGap: 30, outerLabel: 'ols:hierarchicalParent → bisphenol-A-polycarbonate', outerLabelSide: 'right' }
+      expect(drawLabel(single).map((d) => d.text)).toEqual(['ols:hierarchicalParent → bisphenol-A-polycarbonate'])
+      // a short name fits inside as well
+      expect(drawLabel({ ...single, label: 'GH1', outerLabel: 'part_of → GH1' }).map((d) => d.text)).toEqual(['part_of → GH1', 'GH1'])
+    })
+  })
+
+  it('lets the view be zoomed in, from the fitted view it starts with', () => {
+    const { sigma } = renderGraph()
+    expect(sigma.settings.minCameraRatio).toBeLessThan(1)
   })
 
   it('installs reducers that fade nodes and edges outside the highlighted datasource or edge type', () => {
@@ -300,7 +394,7 @@ describe('GraphRenderer', () => {
     rerender(<GraphRenderer {...props} highlightedDatasource="ds1" />)
     const nodeReducer = sigma.settings.nodeReducer
     expect(nodeReducer('n', data)).toMatchObject({ color: '#7323b7', labelColor: '#ffffff', label: '5' })
-    expect(nodeReducer('n', { ...data, datasources: ['ds2'] })).toMatchObject({ color: 'rgba(0,0,0,0)', label: '' })
+    expect(nodeReducer('n', { ...data, datasources: ['ds2'], outerLabel: 'has_part' })).toMatchObject({ color: 'rgba(0,0,0,0)', label: '', outerLabel: '' })
     expect(nodeReducer('n', { ...data, datasources: ['ds2'], nodeType: 'root' }).color).toBe('#eee')
     // ontology datasources get the ontology colour
     rerender(<GraphRenderer {...props} highlightedDatasource="OLS.mondo" />)

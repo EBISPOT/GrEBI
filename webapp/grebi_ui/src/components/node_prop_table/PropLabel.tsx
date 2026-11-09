@@ -4,6 +4,14 @@ import { Tooltip } from "@mui/material";
 import { pickBestDisplayName } from "../../app/util";
 import Refs from "../../model/Refs";
 
+/**
+ * An identifier with places to break it after its separators, so that a long
+ * one wraps there (biolink:chemical_to_ / disease_or_ ...) and not mid-word.
+ */
+function breakable(id:string) {
+    return id.split(/([:_/#.])/).map((part, i) => i % 2 === 1 ? <Fragment key={i}>{part}<wbr /></Fragment> : part)
+}
+
 export default function PropLabel(params:{prop:string,refs:Refs}) {
 
     let { prop, refs } = params
@@ -24,7 +32,7 @@ export default function PropLabel(params:{prop:string,refs:Refs}) {
     if(ref) {
         displayName = pickBestDisplayName(ref.getNames().map(n=>n.value as string))
         if(displayName) {
-                return <b>{displayName}
+                return <b>{displayName.indexOf(' ') === -1 ? breakable(displayName) : displayName}
                         <Tooltip
                         title={ref.getSourceIds().map(sid=>sid.value).join('; ')}
                         placement="top"
@@ -37,6 +45,6 @@ export default function PropLabel(params:{prop:string,refs:Refs}) {
     }
 
     return <b style={{fontFamily:"'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas, monospace"}}>
-        {prop}
+        {breakable(prop)}
     </b>
 }

@@ -57,10 +57,11 @@ vi.mock('../../app/api', () => ({ post: vi.fn(async () => ({})), get: vi.fn(), g
 vi.mock('./edgeCountsCache', () => ({ fetchNodeEdgeCounts: vi.fn(), prefetchNodeEdgeCounts: vi.fn() }))
 
 import { fetchNodeEdgeCounts } from './edgeCountsCache'
-import { get } from '../../app/api'
+import { get, post } from '../../app/api'
 import { parseExploration, serialiseExploration } from './exploration'
 const mockedFetch = vi.mocked(fetchNodeEdgeCounts)
 const mockedGet = vi.mocked(get)
+const mockedPost = vi.mocked(post)
 
 const rootNode = new GraphNode({ 'grebi:nodeId': 'root', 'grebi:name': ['Root'] })
 const counts: Record<string, any> = {
@@ -169,6 +170,34 @@ describe('GraphView', () => {
     expect(screen.getByText('5 nodes').parentElement).toHaveTextContent(/^5 nodes.*is_a.*Root$/)
     fireEvent.mouseLeave(bubble)
     expect(screen.queryByText('5 nodes')).toBeNull()
+  })
+
+  it('forgets the hovered node when the expand panel takes the graph\'s place', async () => {
+    await renderLoaded()
+    const bubble = screen.getByRole('button', { name: 'count::root::incoming::is_a' })
+    fireEvent.mouseEnter(bubble)
+    expect(screen.getByText('5 nodes')).toBeInTheDocument()
+    // the bubble is clicked while hovered, and the graph it was in goes: it never reports being left
+    fireEvent.click(bubble)
+    expect(screen.getByTestId('expand-panel')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('CloseIcon').closest('button')!)
+    expect(screen.getByTestId('renderer')).toBeInTheDocument()
+    expect(screen.queryByText('5 nodes')).toBeNull()
+  })
+
+  it('names every edge type that leads to a node when it is hovered', async () => {
+    counts.twice = { incoming: {}, outgoing: { parent_of: { ds1: 1 }, broader_than: { ds1: 1 } } }
+    const target = { 'grebi:nodeId': 'n1', 'grebi:name': ['Node One'] }
+    mockedPost.mockImplementation(async () => ({ 'outgoing::parent_of': target, 'outgoing::broader_than': target }) as any)
+    try {
+      render(<GraphView graph="g" node={new GraphNode({ 'grebi:nodeId': 'twice', 'grebi:name': ['Twice'] })} />)
+      const node = await screen.findByRole('button', { name: 'n1' })
+      fireEvent.mouseEnter(node)
+      expect(screen.getByText('Node One').parentElement).toHaveTextContent(/^Twice.*(parent_of, broader_than|broader_than, parent_of).*Node One$/)
+    } finally {
+      mockedPost.mockImplementation(async () => ({}) as any)
+      delete counts.twice
+    }
   })
 
   it('does not re-render the graph when a node is hovered', async () => {
