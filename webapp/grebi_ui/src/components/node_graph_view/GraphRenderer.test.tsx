@@ -14,13 +14,18 @@ vi.mock('sigma', () => {
     settings: Record<string, any>
     handlers: Record<string, Function[]> = {}
     camera = { animate: vi.fn() }
-    refresh = vi.fn()
+    // sigma reads the custom bounding box when it processes the graph (on
+    // construction, refresh and setGraph): record the box each of those saw
+    customBBox: any = null
+    processedBBox: any = undefined
+    refresh = vi.fn(() => { this.processedBBox = this.customBBox })
     kill = vi.fn()
     constructor(graph: any, container: HTMLElement, settings: Record<string, any>) {
       if (sigmaFails.value) throw new Error('WebGL context could not be created')
       this.graph = graph
       this.container = container
       this.settings = { ...settings }
+      this.processedBBox = this.customBBox
       sigmaInstances.push(this)
     }
     on(event: string, fn: Function) {
@@ -30,7 +35,8 @@ vi.mock('sigma', () => {
       for (const fn of this.handlers[event] || []) fn(payload)
     }
     getGraph() { return this.graph }
-    setGraph(graph: any) { this.graph = graph }
+    setGraph(graph: any) { this.graph = graph; this.processedBBox = this.customBBox }
+    setCustomBBox(bbox: any) { this.customBBox = bbox }
     setSetting(key: string, value: any) { this.settings[key] = value }
     getCamera() { return this.camera }
   }
@@ -108,6 +114,12 @@ function renderGraph(overrides: Partial<React.ComponentProps<typeof GraphRendere
   }
   const utils = render(<GraphRenderer {...props} />)
   return { props, sigma: sigmaInstances[sigmaInstances.length - 1], ...utils }
+}
+
+// a layout spanning more than the ring of stems (500 units) both ways
+const large: GraphLayout = {
+  nodes: [layout.nodes[0], { ...layout.nodes[2], id: 'a', x: -300, y: -300 }, { ...layout.nodes[2], id: 'b', x: 300, y: 300 }],
+  edges: [],
 }
 
 const edgeBetween = (graph: any, source: string, target: string, label: string) =>
@@ -214,6 +226,26 @@ describe('GraphRenderer', () => {
 
     unmount()
     expect(sigma.kill).toHaveBeenCalledTimes(1)
+  })
+
+  it('fits a layout smaller than the ring of stems at the ring\'s size, and a larger one as it is', () => {
+    // the root alone (every edge type hidden) has no extent of its own
+    const rootOnly: GraphLayout = { nodes: [layout.nodes[0]], edges: [] }
+    const { props, sigma, rerender } = renderGraph({ layout: rootOnly })
+    expect(sigma.processedBBox).toEqual({ x: [-250, 250], y: [-250, 250] })
+
+    rerender(<GraphRenderer {...props} layout={large} />)
+    expect(sigma.processedBBox).toBeNull()
+
+    rerender(<GraphRenderer {...props} layout={rootOnly} />)
+    expect(sigma.processedBBox).toEqual({ x: [-250, 250], y: [-250, 250] })
+    expect(sigmaInstances).toHaveLength(1)
+  })
+
+  it('leaves sigma to fit a layout larger than the ring from the start', () => {
+    const { sigma } = renderGraph({ layout: large })
+    expect(sigma.processedBBox).toBeNull()
+    expect(sigma.customBBox).toBeNull()
   })
 
   it('installs reducers that fade nodes and edges outside the highlighted datasource or edge type', () => {

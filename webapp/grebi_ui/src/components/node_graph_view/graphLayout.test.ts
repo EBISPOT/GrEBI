@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeRadialLayout, GraphLayout, LayoutNode } from './graphLayout'
+import { computeRadialLayout, GraphLayout, LayoutNode, viewBBox } from './graphLayout'
 import { AggregatedEdgeCount, ExpandedNodeState, expandedKey } from './useGraphViewState'
 import GraphNodeRef from '../../model/GraphNodeRef'
 import encodeNodeId from '../../encodeNodeId'
@@ -208,5 +208,36 @@ describe('computeRadialLayout', () => {
     // root never moves
     expect(byId(l, 'root')).toMatchObject({ x: 0, y: 0 })
     expect(layout(opts)).toEqual(l)
+  })
+})
+
+describe('viewBBox', () => {
+  const at = (id: string, x: number, y: number): LayoutNode =>
+    ({ id, x, y, size: 28, label: id, type: 'auto_expanded_node', color: '#4a90d9', labelColor: '#fff' })
+  const expectBox = (box: ReturnType<typeof viewBBox>, x: [number, number], y: [number, number]) => {
+    expect(box).not.toBeNull()
+    box!.x.forEach((v, i) => expect(v).toBeCloseTo(x[i]))
+    box!.y.forEach((v, i) => expect(v).toBeCloseTo(y[i]))
+  }
+
+  it('gives the root on its own (every edge type hidden) a box the size of the ring of stems', () => {
+    expect(viewBBox(layout())).toEqual({ x: [-250, 250], y: [-250, 250] })
+  })
+
+  it('centres the box on the layout when only a few stems are left', () => {
+    // one outgoing stem, straight out to the right of the root
+    expectBox(viewBBox(layout({ outgoing: [agg('a', { ds1: 3 })] })), [-125, 375], [-250, 250])
+  })
+
+  it('keeps the ring\'s height for a layout that is wide but flat', () => {
+    // one incoming and one outgoing stem: as wide as the ring, with no height
+    expectBox(viewBBox(layout({ incoming: [agg('a', { ds1: 3 })], outgoing: [agg('a', { ds1: 5 })] })), [-250, 250], [-250, 250])
+    // wider than the ring: keeps its own width
+    expectBox(viewBBox({ nodes: [at('l', -400, 0), at('r', 400, 50)], edges: [] }), [-400, 400], [-225, 275])
+  })
+
+  it('lets a layout larger than the ring both ways be fitted as it is', () => {
+    expect(viewBBox({ nodes: [at('a', -300, -300), at('b', 300, 300)], edges: [] })).toBeNull()
+    expect(viewBBox({ nodes: [], edges: [] })).toBeNull()
   })
 })

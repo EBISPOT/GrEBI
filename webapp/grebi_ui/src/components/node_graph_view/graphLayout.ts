@@ -7,6 +7,9 @@ const INNER_RADIUS = 250;
 const COLLISION_PADDING = 15; // extra padding between nodes during collision resolution
 const COLLISION_ITERATIONS = 30; // number of collision resolution passes
 
+/** The smallest span of the layout the view fits to the canvas: the ring of stems around the root. */
+const MIN_VIEW_EXTENT = 2 * INNER_RADIUS;
+
 export interface LayoutNode {
   id: string;
   x: number;
@@ -46,6 +49,43 @@ export interface LayoutEdge {
 export interface GraphLayout {
   nodes: LayoutNode[];
   edges: LayoutEdge[];
+}
+
+/** A box in layout coordinates, in the shape sigma's setCustomBBox takes. */
+export interface LayoutBBox {
+  x: [number, number];
+  y: [number, number];
+}
+
+/**
+ * The box the view should fit to the canvas, or null to fit the layout itself.
+ *
+ * Node sizes are in layout units and the renderer fits the layout's extent to
+ * the canvas, so the smaller the layout, the larger its nodes are drawn: the
+ * root on its own, when every edge type is hidden, has no extent at all, and
+ * sigma then takes it to be one unit wide. The view is fitted to a box at least
+ * the size of the ring of stems each way instead, around the layout's centre,
+ * so nodes are never drawn larger than at the scale of the ring.
+ */
+export function viewBBox(layout: GraphLayout): LayoutBBox | null {
+  if (layout.nodes.length === 0) return null;
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const n of layout.nodes) {
+    minX = Math.min(minX, n.x);
+    maxX = Math.max(maxX, n.x);
+    minY = Math.min(minY, n.y);
+    maxY = Math.max(maxY, n.y);
+  }
+  const width = maxX - minX;
+  const height = maxY - minY;
+  if (width >= MIN_VIEW_EXTENT && height >= MIN_VIEW_EXTENT) return null;
+
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const halfWidth = Math.max(width, MIN_VIEW_EXTENT) / 2;
+  const halfHeight = Math.max(height, MIN_VIEW_EXTENT) / 2;
+  return { x: [cx - halfWidth, cx + halfWidth], y: [cy - halfHeight, cy + halfHeight] };
 }
 
 const formatter = Intl.NumberFormat("en", { notation: "compact" });

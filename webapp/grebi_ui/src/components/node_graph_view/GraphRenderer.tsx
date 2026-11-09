@@ -146,7 +146,7 @@ class NoOpNodeHoverProgram extends NodeProgram {
   setUniforms() {}
   draw() {}
 }
-import { GraphLayout, LayoutNode } from "./graphLayout";
+import { GraphLayout, LayoutNode, viewBBox } from "./graphLayout";
 
 const formatter = Intl.NumberFormat("en", { notation: "compact" });
 
@@ -309,6 +309,9 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
     if (sigmaRef.current) {
       // Update existing sigma instance with new graph
       graphRef.current = graph;
+      // a layout smaller than the ring of stems is fitted at the ring's size (see
+      // viewBBox); sigma reads the box when it processes the graph, which setGraph does
+      sigmaRef.current.setCustomBBox(viewBBox(layout));
       sigmaRef.current.setGraph(graph);
       sigmaRef.current.refresh();
       return;
@@ -364,6 +367,13 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
     }
 
     sigmaRef.current = sigma;
+
+    // as above; the constructor has processed the graph already, so process it again with the box
+    const bbox = viewBBox(layout);
+    if (bbox) {
+      sigma.setCustomBBox(bbox);
+      sigma.refresh();
+    }
 
     // Set node + edge reducers (handles DS/ET highlight)
     updateReducers(sigma, highlightedDsRef, highlightedEtRef);
