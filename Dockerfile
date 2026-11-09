@@ -144,6 +144,7 @@ COPY --from=cypher-builder /opt/grebi_cypher_service/target/grebi_cypher_service
 
 # ---- Build grebi_ui (Node) ----
 COPY docs /opt/grebi_ui/docs
+COPY configs/ui_configs /opt/grebi_ui/configs/ui_configs
 COPY webapp/grebi_ui /opt/grebi_ui
 WORKDIR /opt/grebi_ui
 

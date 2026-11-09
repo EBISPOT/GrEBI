@@ -248,6 +248,31 @@ describe('GraphRenderer', () => {
     expect(sigma.customBBox).toBeNull()
   })
 
+  it('reports clicks on category bubbles, and highlights them for any of their edge types', () => {
+    const category = {
+      id: 'category::root::outgoing::assoc', x: 250, y: 0, size: 30, label: '9', type: 'category' as const, color: '#ede7f6', labelColor: '#4527a0',
+      direction: 'outgoing' as const, count: 9, edgeTypes: ['a', 'b'], categoryId: 'assoc', categoryLabel: 'Associations', open: false,
+      parentNodeId: 'root', parentEncodedNodeId: 'cm9vdA',
+    }
+    const categoryLayout: GraphLayout = {
+      nodes: [layout.nodes[0], category],
+      edges: [{ id: 'e', source: 'root', target: category.id, label: 'Associations \u00b7 2 types', color: '#b39ddb', type: 'stem', dashed: true, size: 1.5, direction: 'outgoing', edgeTypes: ['a', 'b'] }],
+    }
+    const onClickCategory = vi.fn()
+    const { props, sigma, rerender } = renderGraph({ layout: categoryLayout, onClickCategory })
+    expect(sigma.graph.getNodeAttributes(category.id)).toMatchObject({ nodeType: 'category', categoryId: 'assoc', edgeTypes: ['a', 'b'] })
+
+    sigma.emit('clickNode', { node: category.id })
+    expect(onClickCategory).toHaveBeenCalledWith(category)
+    sigma.emit('enterNode', { node: category.id })
+    expect(sigma.container.style.cursor).toBe('pointer')
+
+    rerender(<GraphRenderer {...props} highlightedEdgeType="b" />)
+    expect(sigma.settings.nodeReducer(category.id, sigma.graph.getNodeAttributes(category.id))).toMatchObject({ color: '#2196f3', labelColor: '#333333' })
+    const edge = sigma.graph.edges()[0]
+    expect(sigma.settings.edgeReducer(edge, sigma.graph.getEdgeAttributes(edge))).toMatchObject({ color: '#2196f3', _faded: false })
+  })
+
   it('installs reducers that fade nodes and edges outside the highlighted datasource or edge type', () => {
     const { props, sigma, rerender } = renderGraph()
     // nothing highlighted: data passes through untouched

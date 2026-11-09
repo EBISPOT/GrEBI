@@ -4,7 +4,8 @@ import GraphNodeRef from "../../model/GraphNodeRef";
 import useGraphViewState from "./useGraphViewState";
 import { computeRadialLayout, LayoutNode } from "./graphLayout";
 import GraphRenderer, { GraphRendererHandle } from "./GraphRenderer";
-import GraphViewControls from "./GraphViewControls";
+import GraphViewControls, { EdgeTypeGroup } from "./GraphViewControls";
+import { categoryOf, orderedCategories } from "./graphViewConfig";
 import EdgeExpandPanel, { ChainSegment } from "./EdgeExpandPanel";
 import LoadingOverlay from "../LoadingOverlay";
 import { expandedKey } from "./useGraphViewState";
@@ -34,11 +35,13 @@ interface HoverPathBarHandle {
  */
 const HoverPathBar = forwardRef<HoverPathBarHandle, {
   hidden: boolean;
+  /** What the bar says about a node, or null to say nothing */
   describe: (node: LayoutNode) => React.ReactNode;
 }>(function HoverPathBar({ hidden, describe }, ref) {
   const [node, setNode] = useState<LayoutNode | null>(null);
   useImperativeHandle(ref, () => ({ show: setNode }), []);
-  if (hidden || !node || !node.edgeType) return null;
+  const content = hidden || !node ? null : describe(node);
+  if (!content) return null;
   return (
     <div
       style={{
@@ -60,7 +63,7 @@ const HoverPathBar = forwardRef<HoverPathBarHandle, {
         pointerEvents: "none",
       }}
     >
-      {describe(node)}
+      {content}
     </div>
   );
 });
@@ -142,7 +145,7 @@ export default function GraphView({
     restoringRef.current = true;
     (async () => {
       try {
-        state.setFilters(parsed.excludedDatasources, parsed.hiddenEdgeTypes);
+        state.setFilters(parsed.excludedDatasources, parsed.hiddenEdgeTypes, parsed.shownEdgeTypes);
         state.collapseDescendants(rootId);
         let parent = rootId;
         for (const step of parsed.steps) {
@@ -161,7 +164,7 @@ export default function GraphView({
   // Tell the page what the view shows now, so the URL follows the exploration.
   useEffect(() => {
     if (!onExplorationChange || state.loading || !rootId || restoringRef.current) return;
-    const current = explorationOf(rootId, state.expandedNodes, state.dsExclude, state.hiddenEdgeTypes);
+    const current = explorationOf(rootId, state.expandedNodes, state.dsExclude, state.edgeTypeOverrides);
     const serialised = serialiseExploration(current);
     const key = rootId + "|" + (serialised ?? "");
     if (key === appliedRef.current) return;
@@ -170,7 +173,7 @@ export default function GraphView({
     chainRef.current = chain;
     appliedRef.current = key;
     onExplorationChange(serialised, { replace });
-  }, [onExplorationChange, state.loading, rootId, state.expandedNodes, state.dsExclude, state.hiddenEdgeTypes]);
+  }, [onExplorationChange, state.loading, rootId, state.expandedNodes, state.dsExclude, state.edgeTypeOverrides]);
 
   const copyLink = useCallback(() => {
     const done = () => {
@@ -195,6 +198,7 @@ export default function GraphView({
       state.dsExclude,
       state.hiddenEdgeTypes,
       state.autoExpandedNodes,
+      { config: state.config, openCategories: state.openCategories },
     );
   }, [
     state.root,
@@ -204,6 +208,8 @@ export default function GraphView({
     state.dsExclude,
     state.hiddenEdgeTypes,
     state.autoExpandedNodes,
+    state.config,
+    state.openCategories,
   ]);
 
   // Keep a stable layout that only updates when nothing is loading,
@@ -214,17 +220,33 @@ export default function GraphView({
   }
   const stableLayout = stableLayoutRef.current;
 
-  // All edge types for the controls
-  const allEdgeTypes = useMemo(() => {
-    const types = new Set<string>();
-    for (const edgeType of Object.keys(state.incomingEdgeCounts)) {
-      types.add(edgeType);
+  // The root's edge types for the filters: grouped by category, largest first,
+  // counting the edges of the datasources shown
+  const edgeTypeGroups = useMemo((): EdgeTypeGroup[] => {
+    const counts = new Map<string, number>();
+    for (const edgeCounts of [state.incomingEdgeCounts, state.outgoingEdgeCounts]) {
+      for (const [edgeType, dsToCount] of Object.entries(edgeCounts)) {
+        let n = counts.get(edgeType) || 0;
+        for (const [ds, count] of Object.entries(dsToCount)) {
+          if (!state.dsExclude.has(ds)) n += count;
+        }
+        counts.set(edgeType, n);
+      }
     }
-    for (const edgeType of Object.keys(state.outgoingEdgeCounts)) {
-      types.add(edgeType);
+    const groups = new Map<string, EdgeTypeGroup>();
+    for (const category of orderedCategories(state.config)) {
+      groups.set(category.id, { category: { id: category.id, label: category.label }, edgeTypes: [] });
     }
-    return Array.from(types).sort();
-  }, [state.incomingEdgeCounts, state.outgoingEdgeCounts]);
+    for (const [edgeType, count] of counts) {
+      groups.get(categoryOf(state.config, edgeType).id)!.edgeTypes.push({ edgeType, count });
+    }
+    // categories hidden at first go last
+    const hiddenAtFirst = new Set(orderedCategories(state.config).filter((c) => c.hidden).map((c) => c.id));
+    return Array.from(groups.values())
+      .filter((g) => g.edgeTypes.length > 0)
+      .sort((a, b) => Number(hiddenAtFirst.has(a.category.id)) - Number(hiddenAtFirst.has(b.category.id)))
+      .map((g) => ({ ...g, edgeTypes: g.edgeTypes.sort((a, b) => b.count - a.count || a.edgeType.localeCompare(b.edgeType)) }));
+  }, [state.incomingEdgeCounts, state.outgoingEdgeCounts, state.dsExclude, state.config]);
 
   const handleClickCountNode = useCallback(
     (parentNodeId: string, parentEncodedNodeId: string, direction: "incoming" | "outgoing", edgeType: string) => {
@@ -267,6 +289,16 @@ export default function GraphView({
       }
     },
     [state.autoExpandedNodes, state.expandEdge]
+  );
+
+  // A category's bubble opens it, or gathers it back when open; its "+N more" shows the rest
+  const handleClickCategory = useCallback(
+    (n: LayoutNode) => {
+      if (!n.parentNodeId || !n.direction || !n.categoryId) return;
+      const opening = n.type === "more" ? "all" : n.open ? null : "open";
+      state.setCategoryOpening(n.parentNodeId, n.direction, n.categoryId, opening);
+    },
+    [state.setCategoryOpening]
   );
 
   /** The node an expanded or auto-expanded slot shows. */
@@ -441,9 +473,21 @@ export default function GraphView({
   // The expand dialog's heading takes the place of the hover path bar
   const showExpandInline = expandDialog.open;
 
-  const describeHovered = (n: LayoutNode) => {
+  const describeHovered = (n: LayoutNode): React.ReactNode => {
+    const parentLabel = resolveParentLabel(n.parentNodeId);
+    if (n.type === "category" || n.type === "more") {
+      const types = n.edgeTypes?.length ?? 0;
+      const what = n.type === "more" ? `${types} more ${n.categoryLabel} edge types` : `${n.categoryLabel}: ${types} edge types`;
+      return (
+        <>
+          {renderPathBar(null, n.direction!, what, parentLabel, n.count)}
+          <span style={{ color: "#999", marginLeft: "8px" }}>{n.open ? "click to gather them" : "click to show them"}</span>
+        </>
+      );
+    }
+    if (!n.edgeType) return null;
     const isExpanded = n.type === "expanded_node" || n.type === "auto_expanded_node";
-    return renderPathBar(isExpanded ? n.label : null, n.direction!, n.edgeType!, resolveParentLabel(n.parentNodeId), n.count);
+    return renderPathBar(isExpanded ? n.label : null, n.direction!, n.edgeType, parentLabel, n.count);
   };
 
   return (
@@ -470,9 +514,10 @@ export default function GraphView({
             setDsEnabled={state.toggleDsExclude}
             onMouseoverDs={(ds) => debouncedSetHighlightedDs(ds)}
             onMouseoutDs={() => debouncedSetHighlightedDs(null)}
-            edgeTypes={allEdgeTypes}
+            edgeTypeGroups={edgeTypeGroups}
             hiddenEdgeTypes={state.hiddenEdgeTypes}
             onToggleEdgeType={state.toggleEdgeTypeHidden}
+            onSetEdgeTypesHidden={state.setEdgeTypesHidden}
             onShowAllEdgeTypes={state.showAllEdgeTypes}
             onHideAllEdgeTypes={state.hideAllEdgeTypes}
             onMouseoverEdgeType={(et) => debouncedSetHighlightedEt(et)}
@@ -629,6 +674,7 @@ export default function GraphView({
                 onClickCountNode={handleClickCountNode}
                 onClickExpandedNode={handleClickExpandedNode}
                 onClickAutoExpandedNode={handleClickAutoExpandedNode}
+                onClickCategory={handleClickCategory}
                 onDoubleClickExpandedNode={handleDoubleClickExpandedNode}
                 onContextMenuNode={handleContextMenuNode}
                 highlightedDatasource={highlightedDs}

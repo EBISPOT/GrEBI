@@ -10,11 +10,16 @@ export interface ExplorationStep {
 /**
  * What the user has done to the graph view: the chain of expansions from the
  * root (each node has at most one expansion, so it is a chain) and the filters.
+ * Edge types are recorded as changes to what the config hides at first, so a
+ * view whose filters are untouched has nothing to record.
  */
 export interface Exploration {
   steps: ExplorationStep[];
   excludedDatasources: string[];
+  /** Hidden by the user, though shown at first. */
   hiddenEdgeTypes: string[];
+  /** Shown by the user, though hidden at first. */
+  shownEdgeTypes: string[];
 }
 
 /** The exploration the view is currently showing. */
@@ -22,7 +27,8 @@ export function explorationOf(
   rootId: string,
   expandedNodes: Map<string, ExpandedNodeState>,
   dsExclude: Set<string>,
-  hiddenEdgeTypes: Set<string>,
+  /** The user's changes to which edge types are shown at first: true for shown, false for hidden. */
+  edgeTypeOverrides: Map<string, boolean>,
 ): Exploration {
   const steps: ExplorationStep[] = [];
   const seen = new Set<string>();
@@ -34,15 +40,17 @@ export function explorationOf(
     steps.push({ direction: next.direction, edgeType: next.edgeType, nodeId: next.node.getNodeId() });
     current = next.node.getNodeId();
   }
+  const overridden = (shown: boolean) => Array.from(edgeTypeOverrides).filter(([, s]) => s === shown).map(([t]) => t).sort();
   return {
     steps,
     excludedDatasources: Array.from(dsExclude).sort(),
-    hiddenEdgeTypes: Array.from(hiddenEdgeTypes).sort(),
+    hiddenEdgeTypes: overridden(false),
+    shownEdgeTypes: overridden(true),
   };
 }
 
 export function isEmptyExploration(e: Exploration): boolean {
-  return e.steps.length === 0 && e.excludedDatasources.length === 0 && e.hiddenEdgeTypes.length === 0;
+  return e.steps.length === 0 && e.excludedDatasources.length === 0 && e.hiddenEdgeTypes.length === 0 && e.shownEdgeTypes.length === 0;
 }
 
 /**
@@ -55,6 +63,7 @@ export function serialiseExploration(e: Exploration): string | null {
   if (e.steps.length > 0) compact.s = e.steps.map((s) => [s.direction === "incoming" ? "i" : "o", s.edgeType, s.nodeId]);
   if (e.excludedDatasources.length > 0) compact.x = [...e.excludedDatasources].sort();
   if (e.hiddenEdgeTypes.length > 0) compact.h = [...e.hiddenEdgeTypes].sort();
+  if (e.shownEdgeTypes.length > 0) compact.v = [...e.shownEdgeTypes].sort();
   return toBase64Url(JSON.stringify(compact));
 }
 
@@ -71,7 +80,7 @@ export function parseExploration(token: string | null | undefined): Exploration 
       }
       steps.push({ direction: s[0] === "i" ? "incoming" : "outgoing", edgeType: s[1], nodeId: s[2] });
     }
-    return { steps, excludedDatasources: strings(compact.x), hiddenEdgeTypes: strings(compact.h) };
+    return { steps, excludedDatasources: strings(compact.x), hiddenEdgeTypes: strings(compact.h), shownEdgeTypes: strings(compact.v) };
   } catch (e) {
     return null;
   }

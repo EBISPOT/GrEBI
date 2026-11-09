@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { post } from "../../app/api";
 import GraphNodeRef from "../../model/GraphNodeRef";
 import { EdgeCountByTypeAndDs, fetchNodeEdgeCounts } from "./edgeCountsCache";
+import { GraphViewConfig, graphViewConfig, isHiddenByDefault } from "./graphViewConfig";
 
 export type { EdgeCountByTypeAndDs } from "./edgeCountsCache";
 
@@ -33,6 +34,23 @@ export interface ExpandedNodeState {
  */
 export function expandedKey(parentNodeId: string, direction: string, edgeType: string): string {
   return `${parentNodeId}::${direction}::${edgeType}`;
+}
+
+/**
+ * How far a gathered category is opened: "open" draws its largest stems, "all"
+ * every one. A category that is not opened stays gathered in one bubble.
+ */
+export type CategoryOpening = "open" | "all";
+
+/** The key of a category's stems around one parent, in one direction. */
+export function categoryKey(parentNodeId: string, direction: string, categoryId: string): string {
+  return `${parentNodeId}::${direction}::${categoryId}`;
+}
+
+/** Whether an edge type is hidden: as the user set it, else as the config has it at first. */
+function hiddenGiven(config: GraphViewConfig, overrides: Map<string, boolean>, edgeType: string): boolean {
+  const shown = overrides.get(edgeType);
+  return shown === undefined ? isHiddenByDefault(config, edgeType) : !shown;
 }
 
 export function aggregateCounts(
@@ -76,7 +94,7 @@ function removeExpansionDescendants(map: Map<string, ExpandedNodeState>, nodeId:
   }
 }
 
-export default function useGraphViewState(graph: string) {
+export default function useGraphViewState(graph: string, config: GraphViewConfig = graphViewConfig) {
   const [root, setRoot] = useState<GraphNodeRef | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +104,11 @@ export default function useGraphViewState(graph: string) {
 
   const [allDatasources, setAllDatasources] = useState<string[]>([]);
   const [dsExclude, setDsExclude] = useState<Set<string>>(new Set());
-  const [hiddenEdgeTypes, setHiddenEdgeTypes] = useState<Set<string>>(new Set());
+  // The user's changes to which edge types the config shows at first: true
+  // for shown, false for hidden. Only changes are kept, so that is all the URL records.
+  const [edgeTypeOverrides, setEdgeTypeOverrides] = useState<Map<string, boolean>>(new Map());
+  // How far the user has opened each gathered category, by categoryKey
+  const [openCategories, setOpenCategories] = useState<Map<string, CategoryOpening>>(new Map());
 
   const [expandedNodes, setExpandedNodes] = useState<Map<string, ExpandedNodeState>>(new Map());
 
@@ -105,7 +127,8 @@ export default function useGraphViewState(graph: string) {
       setError(null);
       setExpandedNodes(new Map());
       setAutoExpandedNodes(new Map());
-      setHiddenEdgeTypes(new Set());
+      setEdgeTypeOverrides(new Map());
+      setOpenCategories(new Map());
 
       try {
         const bothCounts = await fetchNodeEdgeCounts(graph, node.getEncodedNodeId());
@@ -294,37 +317,88 @@ export default function useGraphViewState(graph: string) {
   );
 
 
+  /** The overrides with the given edge types shown or hidden, keeping only changes from the config's defaults. */
+  const withEdgeTypesHidden = useCallback(
+    (prev: Map<string, boolean>, edgeTypes: Iterable<string>, hidden: boolean) => {
+      const next = new Map(prev);
+      for (const t of edgeTypes) {
+        if (hidden === isHiddenByDefault(config, t)) next.delete(t);
+        else next.set(t, !hidden);
+      }
+      return next;
+    },
+    [config]
+  );
+
+  const setEdgeTypesHidden = useCallback(
+    (edgeTypes: string[], hidden: boolean) => {
+      setEdgeTypeOverrides((prev) => withEdgeTypesHidden(prev, edgeTypes, hidden));
+    },
+    [withEdgeTypesHidden]
+  );
+
   const toggleEdgeTypeHidden = useCallback(
     (edgeType: string) => {
-      setHiddenEdgeTypes((prev) => {
-        const next = new Set(prev);
-        if (next.has(edgeType)) {
-          next.delete(edgeType);
-        } else {
-          next.add(edgeType);
-        }
+      setEdgeTypeOverrides((prev) => withEdgeTypesHidden(prev, [edgeType], !hiddenGiven(config, prev, edgeType)));
+    },
+    [config, withEdgeTypesHidden]
+  );
+
+  /** The root's edge types: the ones the filters list. */
+  const rootEdgeTypes = useCallback(
+    () => [...Object.keys(incomingEdgeCounts), ...Object.keys(outgoingEdgeCounts)],
+    [incomingEdgeCounts, outgoingEdgeCounts]
+  );
+
+  const showAllEdgeTypes = useCallback(() => {
+    setEdgeTypesHidden(rootEdgeTypes(), false);
+  }, [rootEdgeTypes, setEdgeTypesHidden]);
+
+  /** Both filters at once, when an exploration is restored. */
+  const setFilters = useCallback(
+    (excludedDatasources: string[], hidden: string[], shown: string[] = []) => {
+      setDsExclude(new Set(excludedDatasources));
+      setEdgeTypeOverrides(withEdgeTypesHidden(withEdgeTypesHidden(new Map(), hidden, true), shown, false));
+    },
+    [withEdgeTypesHidden]
+  );
+
+  const hideAllEdgeTypes = useCallback(() => {
+    setEdgeTypesHidden(rootEdgeTypes(), true);
+  }, [rootEdgeTypes, setEdgeTypesHidden]);
+
+  /** Opens a gathered category around a parent a step further, or gathers it back with null. */
+  const setCategoryOpening = useCallback(
+    (parentNodeId: string, direction: "incoming" | "outgoing", categoryId: string, opening: CategoryOpening | null) => {
+      setOpenCategories((prev) => {
+        const next = new Map(prev);
+        const key = categoryKey(parentNodeId, direction, categoryId);
+        if (opening) next.set(key, opening);
+        else next.delete(key);
         return next;
       });
     },
     []
   );
 
-  const showAllEdgeTypes = useCallback(() => {
-    setHiddenEdgeTypes(new Set());
-  }, []);
+  // Every edge type the view knows of, the root's and its expanded nodes'
+  const knownEdgeTypes = useMemo(() => {
+    const types = new Set<string>();
+    const add = (counts: EdgeCountByTypeAndDs) => Object.keys(counts).forEach((t) => types.add(t));
+    add(incomingEdgeCounts);
+    add(outgoingEdgeCounts);
+    for (const e of expandedNodes.values()) {
+      add(e.incomingEdgeCounts);
+      add(e.outgoingEdgeCounts);
+    }
+    return types;
+  }, [incomingEdgeCounts, outgoingEdgeCounts, expandedNodes]);
 
-  /** Both filters at once, when an exploration is restored. */
-  const setFilters = useCallback((excludedDatasources: string[], hidden: string[]) => {
-    setDsExclude(new Set(excludedDatasources));
-    setHiddenEdgeTypes(new Set(hidden));
-  }, []);
-
-  const hideAllEdgeTypes = useCallback(() => {
-    const allTypes = new Set<string>();
-    for (const et of Object.keys(incomingEdgeCounts)) allTypes.add(et);
-    for (const et of Object.keys(outgoingEdgeCounts)) allTypes.add(et);
-    setHiddenEdgeTypes(allTypes);
-  }, [incomingEdgeCounts, outgoingEdgeCounts]);
+  // The edge types hidden now, by the user or by the config
+  const hiddenEdgeTypes = useMemo(
+    () => new Set(Array.from(knownEdgeTypes).filter((t) => hiddenGiven(config, edgeTypeOverrides, t))),
+    [knownEdgeTypes, edgeTypeOverrides, config]
+  );
 
   // Memoised so that they, and the layout computed from them, are the same
   // objects across renders that change nothing here, such as a hover: a new
@@ -483,6 +557,9 @@ export default function useGraphViewState(graph: string) {
     allDatasources,
     dsExclude,
     hiddenEdgeTypes,
+    edgeTypeOverrides,
+    openCategories,
+    config,
     expandedNodes,
     incomingAggregated,
     outgoingAggregated,
@@ -494,8 +571,10 @@ export default function useGraphViewState(graph: string) {
     collapseDescendants,
     toggleDsExclude,
     toggleEdgeTypeHidden,
+    setEdgeTypesHidden,
     showAllEdgeTypes,
     hideAllEdgeTypes,
     setFilters,
+    setCategoryOpening,
   };
 }

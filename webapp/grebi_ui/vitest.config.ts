@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config'
 import { createRequire } from 'module'
+import yaml from 'js-yaml'
 
 const require = createRequire(import.meta.url)
 
@@ -7,6 +8,18 @@ const require = createRequire(import.meta.url)
 // Run with `npm test`; CI runs them in .github/workflows/ui_tests.yml.
 export default defineConfig({
   esbuild: { jsx: 'automatic' },
+  plugins: [
+    {
+      // YAML files (such as configs/ui_configs/graph_view.yaml) are imported as
+      // the data they hold, as build.mjs does for the bundle.
+      name: 'yaml',
+      enforce: 'pre',
+      transform(code: string, id: string) {
+        if (!/\.ya?ml$/.test(id)) return null
+        return { code: `export default ${JSON.stringify(yaml.load(code))};`, map: null }
+      },
+    },
+  ],
   resolve: {
     // MUI's CommonJS build (the one Node loads here) requires emotion's
     // CommonJS build; the sources must get the same copy, or a CacheProvider

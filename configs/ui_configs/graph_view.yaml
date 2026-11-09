@@ -1,0 +1,366 @@
+# The graph view on a node's page: how it groups edge types into categories,
+# which edge types it hides until they are asked for, and how many stems it
+# draws around a node before gathering them into their categories.
+#
+# The UI reads this file when it is built (webapp/grebi_ui/build.mjs), so a
+# change here reaches the site with the next frontend build.
+#
+# Edge types are matched by their full name, such as biolink:subclass_of,
+# against the patterns below. * stands for any run of characters, and case is
+# ignored. An edge type belongs to the first category with a pattern that
+# matches it, so the order of the categories matters; one that no category
+# matches goes in "Other".
+
+# A node with more stems than this (incoming and outgoing together) has each
+# category's stems gathered into one bubble, which opens when clicked. An open
+# category draws at most this many of its stems, largest first, and gathers
+# the rest into a "+N more" bubble.
+max_stems: 12
+
+# Always drawn as stems of their own, never gathered into a category. Both are
+# kept: biolink:subclass_of and ols:hierarchicalParent are not always the same.
+pinned_edge_types:
+  - biolink:subclass_of
+  - ols:hierarchicalParent
+
+# Hidden until shown from the filters beside the graph, whatever their category.
+hidden_edge_types:
+  - ols:hierarchicalAncestor   # every ancestor; the parents are shown
+
+categories:
+
+  - id: hierarchy
+    label: Hierarchy
+    edge_types:
+      - biolink:subclass_of
+      - ols:hierarchicalParent
+      - ols:hierarchicalAncestor
+      - "*:is_a"
+      - "*subclass*"
+      - "*superclass*"
+      - "*broader*"
+      - "*narrower*"
+      - reactome:instanceOf
+      - reactome:superTaxon
+
+  - id: mappings
+    label: Mappings
+    edge_types:
+      - "*match"               # broad_match, close_match, relatedMatch, crossSpeciesNarrowMatch, ...
+      - "*mappedTo"
+      - skos:mappingRelation
+      - "*xref"
+      - "*cross_reference"
+      - "*crossReference"
+      - "*equivalentTo"
+      - "*sameAs"
+
+  - id: metadata
+    label: Identifiers and metadata
+    hidden: true
+    edge_types:
+      # ontology and RDF bookkeeping
+      - rdf:type
+      - monarch:type
+      - "rdfs:*"
+      - "ols:*"
+      - "owl:*"
+      - "oboinowl:*"
+      - "dc:*"
+      - "dcterms:*"
+      - "dcam:*"
+      - "foaf:*"
+      - "prov:*"
+      - "linkml:*"
+      - "edam:*"
+      - "edam.data:*"
+      - "cheminf:*"
+      - "*:subsets"
+      - "*:hasSubset"
+      - iao:has_curation_status
+      - iao:imported_from
+      - iao:term_editor
+      - iao:definition_source
+      - iao:editor_preferred_label
+      - iao:has_time_stamp
+      - iao:symbol
+      - iao:ontology_term_requester
+      - iao:term_tracker_item
+      - iao:term_replaced_by
+      - iao:has_ontology_root_term
+      - efo:#definition_citation
+      # names, labels and identifier strings
+      - "*synonym*"
+      - "*label"
+      - "*:symbol"
+      - "*:full_name"
+      - "*:prev_symbol"
+      - "*:alias_symbol"
+      - "*:abbreviation"
+      - "*:note"
+      - "*:scopeNote"
+      - "*:keyword"
+      - "*:keywords"
+      - "*:formula"
+      - "*:iupac"
+      - "*:inchi"
+      - "*:smiles"
+      - "inchi:*"
+      - "smiles:*"
+      - "*pubmed*"
+      - CAS Number
+      - IUPAC Name
+      - RUP_FLAG
+      - SITES
+      - Purity
+      # MeSH's own structure (its hierarchy, mappings and pharmacological actions are kept)
+      - mesh.vocab:preferredTerm
+      - mesh.vocab:term
+      - mesh.vocab:concept
+      - mesh.vocab:Concept
+      - mesh.vocab:preferredConcept
+      - mesh.vocab:relatedConcept
+      - mesh.vocab:hasDescriptor
+      - mesh.vocab:hasQualifier
+      - mesh.vocab:allowableQualifier
+      - mesh.vocab:treeNumber
+      - mesh.vocab:parentTreeNumber
+      - mesh.vocab:indexerConsiderAlso
+      - mesh.vocab:useInstead
+      - mesh.vocab:casn1_label
+      - mesh.vocab:source
+      - mesh.vocab:seeAlso
+      # database records: identifiers, curation and provenance
+      - "hgnc:*"
+      - ctd:AltGeneIDs
+      - ctd:UniProtIDs
+      - ctd:Definition
+      - ctd:ParentTreeNumbers
+      - ctd:ParentIDs
+      - ctd:ExternalSynonyms
+      - ctd:GeneSymbol
+      - ctd:Synonyms
+      - ctd:receptornotes
+      - ctd:assaynotes
+      - ctd:stressornotes
+      - ctd:medium
+      - ctd:mediums
+      - impc:parameterId
+      - impc:parameters
+      - impc:pipelineId
+      - impc:procedureId
+      - impc:procedures
+      - impc:observationIds
+      - impc:relatedObservationIds
+      - impc:textValue
+      - impc:unitX
+      - impc:ensemblAccId
+      - impc:meshHeadingList
+      - otar:datatypeId
+      - otar:literature
+      - otar:tradeNames
+      - pdb:SP_PRIMARY
+      - pdb:CHAIN
+      - metabolights:metabolite_name
+      - metabolights:study_design
+      - metabolights:curator_keywords
+      - biostudies:organisation
+      - pride:quantificationMethod
+      - reactome:created
+      - reactome:modified
+      - reactome:author
+      - reactome:authored
+      - reactome:edited
+      - reactome:revised
+      - reactome:reviewed
+      - reactome:internalReviewed
+      - reactome:reviewStatus
+      - reactome:previousReviewStatus
+      - reactome:structureModified
+      - reactome:identifier
+      - reactome:otherIdentifier
+      - reactome:secondaryIdentifier
+      - reactome:oldStId
+      - reactome:referenceDatabase
+      - reactome:literatureReference
+      - reactome:summation
+      - reactome:evidenceType
+      - reactome:speciesName
+      - reactome:geneName
+      - reactome:name
+      - reactome:firstname
+      - reactome:surname
+      - reactome:affiliation
+      - reactome:publisher
+      - reactome:figure
+      - reactome:reason
+      - reactome:keyword
+
+  - id: exposure
+    label: Exposure
+    edge_types:
+      - "*exposure*"
+      - "*exposome*"
+
+  - id: associations
+    label: Associations
+    edge_types:
+      - "*association*"
+      - "*associated*"
+      - "otar:*"
+      - "gwas:*"
+      - biolink:affects
+      - biolink:contributes_to
+      - biolink:causes
+      - biolink:caused_by
+      - biolink:has_phenotype
+      - biolink:has_disease
+      - biolink:model_of
+      - biolink:has_mode_of_inheritance
+      - biolink:biomarker_for
+      - biolink:diagnoses
+      - biolink:disrupts
+      - "*treat*"
+      - "*contraindicat*"
+      - "*indication*"
+      - "*off-label*"
+      - "*adverse*"
+      - "*ameliorates*"
+      - "*preventative*"
+      - "*correlated*"
+      - "*phenotype*"
+      - "*disease*"
+      - "*finding*"
+      - "*trait*"
+      - "*therapeutic*"
+      - "*has_material_basis_in*"
+      - "*drug_effect*"
+      - impc:ontologyTermCurie
+      - biostudies:ontologyTerm
+      - "*:is_about"
+
+  - id: taxonomy
+    label: Taxonomy
+    edge_types:
+      - "*taxon*"
+      - "taxrank:*"
+      - "*organism"
+      - "*:organism"
+      - "*_Organism"
+      - "*species*"
+      - "*NCBITAXON*"
+
+  - id: chemistry
+    label: Chemistry
+    edge_types:
+      - "*_form_of"
+      - "*tautomer*"
+      - "*enantiomer*"
+      - "*parent_hydride*"
+      - "*functional_parent*"
+      - "*substitu*"
+      - "*has_role*"
+      - "*chemical*"
+      - "*ingredient*"
+      - "*pharmacologicalAction*"
+      - "*food_substance*"
+      - "*AmountRole"
+      - "*empirical_formula"
+      - "hett:*"
+
+  - id: genes
+    label: Genes and variants
+    edge_types:
+      - "*variant*"
+      - "*ortholog*"
+      - "*homolog*"
+      - "*paralog*"
+      - "*evolutionarily*"
+      - "*gene*"
+      - "*allele*"
+      - "*coexpressed*"
+      - "*sequence*"
+      - "*isoform*"
+      - "*transcri*"
+
+  - id: interactions
+    label: Interactions and processes
+    edge_types:
+      - "*interact*"
+      - "*regulat*"
+      - "*catalyz*"
+      - "*catalyst*"
+      - "*participa*"
+      - "*involved*"
+      - "*capable_of"
+      - "*active_in"
+      - "*acts_upstream*"
+      - "*causal*"
+      - "*input*"
+      - "*output*"
+      - "*functionally_related*"
+      - "*pathway*"
+      - "*process*"
+      - "*produce*"
+      - "*expresses*"
+      - "*occurs_in"
+      - "*colocalizes*"
+      - "*coexists*"
+      - "*realized_in"
+      - "*results_in*"
+      - "*key_event*"
+      - "*molecular_initiating_event"
+      - "*adverse_outcome"
+      - "*increase_of"
+      - "*decrease_of"
+      - "gorel:*"
+      - "reactome:*"
+      - "primekg:*"
+      - "aopkb*"
+
+  - id: anatomy
+    label: Anatomy and development
+    edge_types:
+      - "*part_of*"
+      - "*has_part*"
+      - "*hasPart"
+      - "*componentOf"
+      - "*lacks_part*"
+      - "*overlaps*"
+      - "*mereotopolog*"
+      - "*located*"
+      - "*location*"
+      - "*expressed_in"
+      - "*connected*"
+      - "*attached*"
+      - "*composed*"
+      - "*surrounded*"
+      - "*synap*"
+      - "*dendrite*"
+      - "*soma*"
+      - "*axon*"
+      - "*neuron*"
+      - "*fasciculat*"
+      - "*innervat*"
+      - "*anatomic*"
+      - "*organism_part"
+      - "*organismPart"
+      - "*CellTypeContext"
+      - "*OrganContext"
+      - "*cellType"
+      - "*plasma_membrane*"
+      - "*biomechanically*"
+      - "bspo:*"
+      - "*develop*"
+      - "*precede*"
+      - "*succeeded*"
+      - "*existence*"
+      - "*temporally*"
+      - "*during*"
+      - "*derives_from*"
+
+  - id: similar
+    label: Similar terms
+    hidden: true               # precomputed embedding neighbours; the Similar tab shows them
+    edge_types:
+      - ols_top_k:*

@@ -3,15 +3,24 @@ import { Checkbox, FormControlLabel, FormGroup, Typography } from "@mui/material
 import { FilterAlt, Visibility } from "@mui/icons-material";
 import DatasourceSelector from "../DatasourceSelector";
 
+/** A category's edge types in the filters, each with its number of edges. */
+export interface EdgeTypeGroup {
+  category: { id: string; label: string };
+  edgeTypes: { edgeType: string; count: number }[];
+}
+
+const formatter = Intl.NumberFormat("en", { notation: "compact" });
+
 export default function GraphViewControls({
   datasources,
   dsEnabled,
   setDsEnabled,
   onMouseoverDs,
   onMouseoutDs,
-  edgeTypes,
+  edgeTypeGroups,
   hiddenEdgeTypes,
   onToggleEdgeType,
+  onSetEdgeTypesHidden,
   onShowAllEdgeTypes,
   onHideAllEdgeTypes,
   onMouseoverEdgeType,
@@ -22,16 +31,22 @@ export default function GraphViewControls({
   setDsEnabled: (ds: string[]) => void;
   onMouseoverDs?: (ds: string) => void;
   onMouseoutDs?: (ds: string) => void;
-  edgeTypes: string[];
+  /** The edge types to list, by category */
+  edgeTypeGroups: EdgeTypeGroup[];
   hiddenEdgeTypes: Set<string>;
   onToggleEdgeType: (edgeType: string) => void;
+  /** Shows or hides a whole category's edge types */
+  onSetEdgeTypesHidden?: (edgeTypes: string[], hidden: boolean) => void;
   onShowAllEdgeTypes: () => void;
   onHideAllEdgeTypes: () => void;
   onMouseoverEdgeType?: (et: string) => void;
   onMouseoutEdgeType?: (et: string) => void;
 }) {
-  const allEdgeTypesVisible = hiddenEdgeTypes.size === 0;
-  const noneEdgeTypesVisible = hiddenEdgeTypes.size === edgeTypes.length;
+  const edgeTypes = edgeTypeGroups.flatMap((g) => g.edgeTypes.map((e) => e.edgeType));
+  const visibleCount = edgeTypes.filter((et) => !hiddenEdgeTypes.has(et)).length;
+  const allEdgeTypesVisible = visibleCount === edgeTypes.length;
+  const noneEdgeTypesVisible = visibleCount === 0;
+  const grouped = edgeTypeGroups.length > 1;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px", height: "100%" }}>
@@ -61,7 +76,7 @@ export default function GraphViewControls({
           <div style={{ display: "flex", alignItems: "center", marginBottom: "4px", flexShrink: 0 }}>
             <Visibility sx={{ mr: 0.5, color: "#888", fontSize: "14px" }} />
             <Typography variant="caption" fontWeight="bold" sx={{ fontSize: "11px" }}>
-              Edge Types ({edgeTypes.length - hiddenEdgeTypes.size}/{edgeTypes.length})
+              Edge Types ({visibleCount}/{edgeTypes.length})
             </Typography>
           </div>
           {edgeTypes.length > 1 && (
@@ -87,36 +102,71 @@ export default function GraphViewControls({
             </div>
           )}
           <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
-          <FormGroup>
-            {edgeTypes.map((et) => (
-              <FormControlLabel
-                key={et}
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={!hiddenEdgeTypes.has(et)}
-                    onChange={() => onToggleEdgeType(et)}
-                    sx={{ py: 0, px: 0.5 }}
-                  />
-                }
-                label={
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontFamily: "monospace", fontSize: "10px", lineHeight: 1.1,
-                      cursor: "pointer", borderRadius: "3px", px: 0.5,
-                      '&:hover': { outline: '2px solid #1976d2', outlineOffset: '1px' },
-                    }}
-                    onMouseEnter={() => onMouseoverEdgeType && onMouseoverEdgeType(et)}
-                    onMouseLeave={() => onMouseoutEdgeType && onMouseoutEdgeType(et)}
-                  >
-                    {et}
-                  </Typography>
-                }
-                sx={{ mx: 0, my: -0.25 }}
-              />
-            ))}
-          </FormGroup>
+            {edgeTypeGroups.map((group) => {
+              const types = group.edgeTypes.map((e) => e.edgeType);
+              const shown = types.filter((et) => !hiddenEdgeTypes.has(et)).length;
+              return (
+                <div key={group.category.id} style={{ marginBottom: grouped ? "4px" : 0 }}>
+                  {/* The category, with a checkbox for all of its edge types */}
+                  {grouped && (
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={shown === types.length}
+                          indeterminate={shown > 0 && shown < types.length}
+                          onChange={() => onSetEdgeTypesHidden?.(types, shown === types.length)}
+                          inputProps={{ "aria-label": group.category.label }}
+                          sx={{ py: 0, px: 0.5 }}
+                        />
+                      }
+                      label={
+                        <Typography variant="caption" sx={{ fontSize: "10px", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.03em", color: "#666" }}>
+                          {group.category.label}
+                        </Typography>
+                      }
+                      sx={{ mx: 0, my: -0.25 }}
+                    />
+                  )}
+                  <FormGroup sx={grouped ? { pl: 1.5 } : undefined}>
+                    {group.edgeTypes.map(({ edgeType: et, count }) => (
+                      <FormControlLabel
+                        key={et}
+                        control={
+                          <Checkbox
+                            size="small"
+                            checked={!hiddenEdgeTypes.has(et)}
+                            onChange={() => onToggleEdgeType(et)}
+                            inputProps={{ "aria-label": et }}
+                            sx={{ py: 0, px: 0.5 }}
+                          />
+                        }
+                        label={
+                          <span style={{ display: "flex", alignItems: "baseline", gap: "4px", minWidth: 0 }}>
+                            <Typography
+                              variant="body2"
+                              title={et}
+                              sx={{
+                                fontFamily: "monospace", fontSize: "10px", lineHeight: 1.1,
+                                cursor: "pointer", borderRadius: "3px", px: 0.5,
+                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0,
+                                '&:hover': { outline: '2px solid #1976d2', outlineOffset: '1px' },
+                              }}
+                              onMouseEnter={() => onMouseoverEdgeType && onMouseoverEdgeType(et)}
+                              onMouseLeave={() => onMouseoutEdgeType && onMouseoutEdgeType(et)}
+                            >
+                              {et}
+                            </Typography>
+                            <span style={{ fontSize: "10px", color: "#999", flexShrink: 0 }}>{formatter.format(count)}</span>
+                          </span>
+                        }
+                        sx={{ mx: 0, my: -0.25, maxWidth: "100%", '& .MuiFormControlLabel-label': { minWidth: 0, overflow: "hidden" } }}
+                      />
+                    ))}
+                  </FormGroup>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

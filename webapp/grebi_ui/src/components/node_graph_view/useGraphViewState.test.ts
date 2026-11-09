@@ -7,7 +7,8 @@ vi.mock('./edgeCountsCache', () => ({ fetchNodeEdgeCounts: vi.fn(), prefetchNode
 
 import { post } from '../../app/api'
 import { fetchNodeEdgeCounts } from './edgeCountsCache'
-import useGraphViewState, { aggregateCounts, expandedKey } from './useGraphViewState'
+import useGraphViewState, { aggregateCounts, categoryKey, expandedKey } from './useGraphViewState'
+import { parseGraphViewConfig } from './graphViewConfig'
 
 const mockedFetch = vi.mocked(fetchNodeEdgeCounts)
 const mockedPost = vi.mocked(post)
@@ -200,5 +201,83 @@ describe('useGraphViewState', () => {
     })
     expect(result.current.root?.getNodeId()).toBe('other')
     expect(result.current.incomingAggregated.map((a) => a.edgeType)).toEqual(['second'])
+  })
+})
+
+describe('useGraphViewState with a graph view config', () => {
+  // rootCounts has is_a and mentioned_by incoming, has_part outgoing; childCounts has regulates
+  const config = parseGraphViewConfig({
+    max_stems: 12,
+    hidden_edge_types: ['mentioned_by', 'regulates'],
+    categories: [{ id: 'meta', label: 'Meta', hidden: true, edge_types: ['has_part'] }],
+  })
+  async function load() {
+    const hook = renderHook(() => useGraphViewState('g', config))
+    await act(async () => {
+      await hook.result.current.loadEdgeCounts(root)
+    })
+    return hook
+  }
+
+  it('hides what the config hides at first, and keeps only the user\'s changes to that', async () => {
+    const { result } = await load()
+    expect(Array.from(result.current.hiddenEdgeTypes).sort()).toEqual(['has_part', 'mentioned_by'])
+    expect(result.current.edgeTypeOverrides.size).toBe(0)
+    expect(result.current.incomingAggregated.map((a) => a.edgeType)).toEqual(['is_a'])
+    expect(result.current.outgoingAggregated).toEqual([])
+
+    act(() => result.current.toggleEdgeTypeHidden('has_part'))
+    expect(result.current.hiddenEdgeTypes.has('has_part')).toBe(false)
+    expect(Array.from(result.current.edgeTypeOverrides)).toEqual([['has_part', true]])
+    act(() => result.current.toggleEdgeTypeHidden('is_a'))
+    expect(result.current.edgeTypeOverrides.get('is_a')).toBe(false)
+    // hidden again, as it is at first: no longer a change
+    act(() => result.current.toggleEdgeTypeHidden('has_part'))
+    expect(result.current.edgeTypeOverrides.has('has_part')).toBe(false)
+
+    act(() => result.current.showAllEdgeTypes())
+    expect(result.current.hiddenEdgeTypes.size).toBe(0)
+    act(() => result.current.hideAllEdgeTypes())
+    expect(Array.from(result.current.hiddenEdgeTypes).sort()).toEqual(['has_part', 'is_a', 'mentioned_by'])
+    expect(Array.from(result.current.edgeTypeOverrides)).toEqual([['is_a', false]])
+
+    act(() => result.current.setEdgeTypesHidden(['has_part', 'mentioned_by'], false))
+    expect(Array.from(result.current.hiddenEdgeTypes)).toEqual(['is_a'])
+  })
+
+  it('restores filters from the URL as changes to the defaults', async () => {
+    const { result } = await load()
+    act(() => result.current.setFilters(['pubmed'], ['is_a', 'has_part'], ['has_part', 'mentioned_by', 'x:shown_anyway']))
+    expect(Array.from(result.current.dsExclude)).toEqual(['pubmed'])
+    // has_part is both: shown wins, as it is applied second
+    expect(Object.fromEntries(result.current.edgeTypeOverrides)).toEqual({ is_a: false, has_part: true, mentioned_by: true })
+    expect(Array.from(result.current.hiddenEdgeTypes)).toEqual(['is_a'])
+  })
+
+  it('hides what the config hides at expanded nodes too', async () => {
+    const { result } = await load()
+    await act(async () => {
+      await result.current.expandEdge('root', 'outgoing', 'has_part', child)
+    })
+    expect(result.current.hiddenEdgeTypes.has('regulates')).toBe(true)
+  })
+
+  it('remembers how far each category is opened, until another node is loaded', async () => {
+    const { result } = await load()
+    const key = categoryKey('root', 'outgoing', 'assoc')
+    act(() => result.current.setCategoryOpening('root', 'outgoing', 'assoc', 'open'))
+    expect(result.current.openCategories.get(key)).toBe('open')
+    act(() => result.current.setCategoryOpening('root', 'outgoing', 'assoc', 'all'))
+    expect(result.current.openCategories.get(key)).toBe('all')
+    act(() => result.current.setCategoryOpening('root', 'outgoing', 'assoc', null))
+    expect(result.current.openCategories.size).toBe(0)
+
+    act(() => result.current.setCategoryOpening('root', 'outgoing', 'assoc', 'open'))
+    act(() => result.current.toggleEdgeTypeHidden('is_a'))
+    await act(async () => {
+      await result.current.loadEdgeCounts(child)
+    })
+    expect(result.current.openCategories.size).toBe(0)
+    expect(result.current.edgeTypeOverrides.size).toBe(0)
   })
 })

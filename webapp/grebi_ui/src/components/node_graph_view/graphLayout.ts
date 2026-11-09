@@ -1,4 +1,5 @@
-import { AggregatedEdgeCount, ExpandedNodeState, aggregateCounts, expandedKey } from "./useGraphViewState";
+import { AggregatedEdgeCount, CategoryOpening, ExpandedNodeState, aggregateCounts, categoryKey, expandedKey } from "./useGraphViewState";
+import { EdgeTypeCategory, GraphViewConfig, categoryOf, isPinned, orderedCategories } from "./graphViewConfig";
 import GraphNodeRef from "../../model/GraphNodeRef";
 
 const MIN_COUNT_NODE_SIZE = 20;
@@ -10,13 +11,22 @@ const COLLISION_ITERATIONS = 30; // number of collision resolution passes
 /** The smallest span of the layout the view fits to the canvas: the ring of stems around the root. */
 const MIN_VIEW_EXTENT = 2 * INNER_RADIUS;
 
+// A category's bubble, its "+N more" bubble, and the stems to them
+const CATEGORY_COLOR = "#ede7f6";
+const CATEGORY_OPEN_COLOR = "#d1c4e9";
+const CATEGORY_LABEL_COLOR = "#4527a0";
+const CATEGORY_EDGE_COLOR = "#b39ddb";
+const OPEN_CATEGORY_SIZE = 16;
+const MORE_SIZE = 20;
+
 export interface LayoutNode {
   id: string;
   x: number;
   y: number;
   size: number;
   label: string;
-  type: "root" | "count" | "expanded_node" | "auto_expanded_node";
+  /** A category bubble stands for several edge types' stems; "more" for the rest of an open category's */
+  type: "root" | "count" | "expanded_node" | "auto_expanded_node" | "category" | "more";
   hasHiddenChildren?: boolean;
   color: string;
   labelColor: string;
@@ -30,6 +40,12 @@ export interface LayoutNode {
   parentNodeId?: string;
   /** Encoded version for API calls */
   parentEncodedNodeId?: string;
+  /** For a category or "more" bubble: its category, and the edge types it stands for */
+  categoryId?: string;
+  categoryLabel?: string;
+  edgeTypes?: string[];
+  /** For a category bubble: whether its stems are drawn (it then gathers them back when clicked) */
+  open?: boolean;
 }
 
 export interface LayoutEdge {
@@ -43,6 +59,8 @@ export interface LayoutEdge {
   size: number;
   direction?: "incoming" | "outgoing";
   edgeType?: string;
+  /** For the stem to a category or "more" bubble: the edge types it stands for */
+  edgeTypes?: string[];
   datasources?: string[];
 }
 
@@ -96,6 +114,75 @@ function countToSize(count: number, maxCount: number): number {
   return MIN_COUNT_NODE_SIZE + ratio * (MAX_COUNT_NODE_SIZE - MIN_COUNT_NODE_SIZE);
 }
 
+/** How the stems around a node are grouped: the config, and which categories the user opened. */
+export interface StemGrouping {
+  config: GraphViewConfig;
+  /** How far each category is opened, by categoryKey(parent, direction, category) */
+  openCategories: Map<string, CategoryOpening>;
+}
+
+/** One thing drawn around a parent in one direction: a stem, a category's bubble, or its "+N more". */
+export type StemGroup =
+  | { kind: "stem"; agg: AggregatedEdgeCount }
+  | { kind: "category"; category: EdgeTypeCategory; aggs: AggregatedEdgeCount[]; opening: CategoryOpening | null }
+  | { kind: "more"; category: EdgeTypeCategory; aggs: AggregatedEdgeCount[] };
+
+/**
+ * What to draw around a parent in one direction, in order. Stems are grouped
+ * by category, in the config's order, largest first within each. When the
+ * parent has more stems than the config's max_stems (`gathered`), each
+ * category's stems are gathered into one bubble, except pinned edge types and
+ * a category with a single stem; an opened category draws its bubble (to
+ * gather them back) and then its largest max_stems stems, with the rest in a
+ * "+N more" bubble until that is opened too.
+ */
+export function groupStems(
+  aggregated: AggregatedEdgeCount[],
+  grouping: StemGrouping | undefined,
+  gathered: boolean,
+  parentId: string,
+  direction: "incoming" | "outgoing",
+): StemGroup[] {
+  if (!grouping) return aggregated.map((agg) => ({ kind: "stem", agg }));
+  const { config, openCategories } = grouping;
+
+  const byCategory = new Map<EdgeTypeCategory, AggregatedEdgeCount[]>();
+  for (const agg of [...aggregated].sort((a, b) => b.totalCount - a.totalCount)) {
+    const category = categoryOf(config, agg.edgeType);
+    if (!byCategory.has(category)) byCategory.set(category, []);
+    byCategory.get(category)!.push(agg);
+  }
+
+  const groups: StemGroup[] = [];
+  const stem = (agg: AggregatedEdgeCount) => groups.push({ kind: "stem", agg });
+  for (const category of orderedCategories(config)) {
+    const aggs = byCategory.get(category);
+    if (!aggs) continue;
+    if (!gathered) {
+      aggs.forEach(stem);
+      continue;
+    }
+    const rest = aggs.filter((agg) => !isPinned(config, agg.edgeType));
+    aggs.filter((agg) => isPinned(config, agg.edgeType)).forEach(stem);
+    if (rest.length <= 1) {
+      rest.forEach(stem);
+      continue;
+    }
+    const opening = openCategories.get(categoryKey(parentId, direction, category.id)) ?? null;
+    groups.push({ kind: "category", category, aggs: rest, opening });
+    if (!opening) continue;
+    const shown = opening === "all" ? rest : rest.slice(0, config.maxStems);
+    shown.forEach(stem);
+    if (shown.length < rest.length) groups.push({ kind: "more", category, aggs: rest.slice(shown.length) });
+  }
+  return groups;
+}
+
+/** Whether a parent with these stems has its categories gathered into bubbles. */
+function isGathered(grouping: StemGrouping | undefined, ...aggregated: AggregatedEdgeCount[][]): boolean {
+  return !!grouping && aggregated.reduce((n, a) => n + a.length, 0) > grouping.config.maxStems;
+}
+
 export function computeRadialLayout(
   rootId: string,
   rootLabel: string,
@@ -106,6 +193,8 @@ export function computeRadialLayout(
   dsExclude: Set<string>,
   hiddenEdgeTypes: Set<string>,
   autoExpandedNodes: Map<string, GraphNodeRef>,
+  /** Without it, every stem is drawn, ungrouped */
+  grouping?: StemGrouping,
 ): GraphLayout {
   const nodes: LayoutNode[] = [];
   const edges: LayoutEdge[] = [];
@@ -136,6 +225,7 @@ export function computeRadialLayout(
 
   const totalStems = incomingAggregated.length + outgoingAggregated.length;
   if (totalStems === 0) return { nodes, edges };
+  const gathered = isGathered(grouping, incomingAggregated, outgoingAggregated);
 
   // Gap (in radians) at the top and bottom to visually separate incoming/outgoing
   const GAP = 0.5;
@@ -149,17 +239,20 @@ export function computeRadialLayout(
     INNER_RADIUS,
     expandedNodes, dsExclude, hiddenEdgeTypes,
     nodes, edges, usedNodeIds, maxCount, 0, autoExpandedNodes,
+    grouping, gathered,
   );
 
-  // Outgoing: right semicircle (-PI/2 → PI/2) with gap inset
+  // Outgoing: right semicircle (PI/2 → -PI/2) with gap inset. Sigma draws y
+  // upwards, so both sides list their stems from the top down.
   layoutChildren(
     rootId, rootEncodedId,
     0, 0,
     outgoingAggregated, "outgoing",
-    -Math.PI / 2 + GAP, Math.PI / 2 - GAP,
+    Math.PI / 2 - GAP, -Math.PI / 2 + GAP,
     INNER_RADIUS,
     expandedNodes, dsExclude, hiddenEdgeTypes,
     nodes, edges, usedNodeIds, maxCount, 0, autoExpandedNodes,
+    grouping, gathered,
   );
 
   // Resolve overlapping nodes by pushing them apart
@@ -198,6 +291,9 @@ function layoutChildren(
   maxCount: number,
   depth: number,
   autoExpandedNodes: Map<string, GraphNodeRef>,
+  grouping: StemGrouping | undefined,
+  /** Whether this parent's categories are gathered into bubbles */
+  gathered: boolean,
 ) {
   if (aggregated.length === 0) return;
 
@@ -259,6 +355,7 @@ function layoutChildren(
       const coneSpan = Math.PI * 1.2;
       const subMid = angle;
       const nextRadius = Math.max(radius * 0.65, 100);
+      const subGathered = isGathered(grouping, subIncoming, subOutgoing);
 
       if (subIncoming.length > 0) {
         layoutChildren(
@@ -269,6 +366,7 @@ function layoutChildren(
           nextRadius,
           expandedNodes, dsExclude, hiddenEdgeTypes,
           nodes, edges, usedNodeIds, maxCount, depth + 1, autoExpandedNodes,
+          grouping, subGathered,
         );
       }
 
@@ -281,118 +379,144 @@ function layoutChildren(
           nextRadius,
           expandedNodes, dsExclude, hiddenEdgeTypes,
           nodes, edges, usedNodeIds, maxCount, depth + 1, autoExpandedNodes,
+          grouping, subGathered,
         );
       }
     }
   } else {
-    // --- No expansion: show all children (with de-duplicated singulars) ---
-
-    // Separate singulars (auto-expanded count=1) from regular counts
-    const singularAggs: AggregatedEdgeCount[] = [];
-    const countAggs: AggregatedEdgeCount[] = [];
-
-    for (const agg of aggregated) {
-      const autoKey = expandedKey(parentId, direction, agg.edgeType);
-      if (agg.totalCount === 1 && autoExpandedNodes.has(autoKey)) {
-        singularAggs.push(agg);
-      } else {
-        countAggs.push(agg);
+    // --- No expansion: show the children, grouped as groupStems says ---
+    // A count=1 edge already resolved to its node is drawn as that node, and
+    // edges of several types to the same node share it, one edge per type.
+    type Slot =
+      | { kind: "count"; agg: AggregatedEdgeCount }
+      | { kind: "single"; nodeId: string; node: GraphNodeRef; aggs: AggregatedEdgeCount[] }
+      | Exclude<StemGroup, { kind: "stem" }>;
+    const slots: Slot[] = [];
+    const singles = new Map<string, Extract<Slot, { kind: "single" }>>();
+    for (const group of groupStems(aggregated, grouping, gathered, parentId, direction)) {
+      if (group.kind !== "stem") {
+        slots.push(group);
+        continue;
       }
-    }
-
-    // De-duplicate singulars by target node ID: if multiple edge types
-    // each have count=1 pointing to the same node, show one node with
-    // multiple labelled edges.
-    const singularsByNodeId = new Map<string, { node: GraphNodeRef; aggs: AggregatedEdgeCount[] }>();
-    for (const agg of singularAggs) {
-      const autoKey = expandedKey(parentId, direction, agg.edgeType);
-      const autoNode = autoExpandedNodes.get(autoKey)!;
+      const agg = group.agg;
+      const autoNode = agg.totalCount === 1 ? autoExpandedNodes.get(expandedKey(parentId, direction, agg.edgeType)) : undefined;
+      if (!autoNode) {
+        slots.push({ kind: "count", agg });
+        continue;
+      }
       const nodeId = autoNode.getNodeId();
-      if (!singularsByNodeId.has(nodeId)) {
-        singularsByNodeId.set(nodeId, { node: autoNode, aggs: [] });
-      }
-      singularsByNodeId.get(nodeId)!.aggs.push(agg);
-    }
-
-    const totalItems = countAggs.length + singularsByNodeId.size;
-    if (totalItems === 0) return;
-
-    const angleStep = (endAngle - startAngle) / (totalItems + 1);
-    let slotIndex = 0;
-
-    // Layout de-duplicated singulars — use real node ID as graph ID
-    // Skip self-references (edges pointing back to an already-visible node)
-    for (const [nodeId, { node: autoNode, aggs }] of singularsByNodeId) {
-      if (usedNodeIds.has(nodeId)) continue;
-
-      slotIndex++;
-      const angle = startAngle + angleStep * slotIndex;
-      const cx = parentX + Math.cos(angle) * radius;
-      const cy = parentY + Math.sin(angle) * radius;
-
-      usedNodeIds.add(nodeId);
-      nodes.push({
-        id: nodeId,
-        x: cx,
-        y: cy,
-        size: 28,
-        label: autoNode.getName(),
-        type: "auto_expanded_node",
-        color: "#4a90d9",
-        labelColor: "#ffffff",
-        direction,
-        edgeType: aggs[0].edgeType,
-        count: 1,
-        datasources: aggs.flatMap(a => a.datasources).filter((v, i, arr) => arr.indexOf(v) === i),
-        dsToCount: aggs.reduce<{ [ds: string]: number }>((acc, a) => ({ ...acc, ...a.dsToCount }), {}),
-        parentNodeId: parentId,
-        parentEncodedNodeId: parentEncodedId,
-      });
-
-      // One edge per edge type pointing to the same node
-      for (const agg of aggs) {
-        const edgeId = `edge::${parentId}::${direction}::${agg.edgeType}`;
-        if (direction === "outgoing") {
-          edges.push({ id: edgeId, source: parentId, target: nodeId, label: agg.edgeType, color: "#4a90d9", type: "expanded", dashed: false, size: 2, direction, edgeType: agg.edgeType, datasources: agg.datasources });
-        } else {
-          edges.push({ id: edgeId, source: nodeId, target: parentId, label: agg.edgeType, color: "#4a90d9", type: "expanded", dashed: false, size: 2, direction, edgeType: agg.edgeType, datasources: agg.datasources });
-        }
-      }
-    }
-
-    // Layout regular count bubbles
-    for (const agg of countAggs) {
-      slotIndex++;
-      const angle = startAngle + angleStep * slotIndex;
-      const cx = parentX + Math.cos(angle) * radius;
-      const cy = parentY + Math.sin(angle) * radius;
-      const countNodeId = `count::${parentId}::${direction}::${agg.edgeType}`;
-
-      nodes.push({
-        id: countNodeId,
-        x: cx,
-        y: cy,
-        size: countToSize(agg.totalCount, maxCount),
-        label: formatter.format(agg.totalCount),
-        type: "count",
-        color: "#e8e8e8",
-        labelColor: "#666666",
-        direction,
-        edgeType: agg.edgeType,
-        count: agg.totalCount,
-        datasources: agg.datasources,
-        dsToCount: agg.dsToCount,
-        parentNodeId: parentId,
-        parentEncodedNodeId: parentEncodedId,
-      });
-
-      const edgeId = `edge::${parentId}::${direction}::${agg.edgeType}`;
-      if (direction === "outgoing") {
-        edges.push({ id: edgeId, source: parentId, target: countNodeId, label: agg.edgeType, color: "#cccccc", type: "stem", dashed: true, size: 1.5, direction, edgeType: agg.edgeType, datasources: agg.datasources });
+      const single = singles.get(nodeId);
+      if (single) {
+        single.aggs.push(agg);
       } else {
-        edges.push({ id: edgeId, source: countNodeId, target: parentId, label: agg.edgeType, color: "#cccccc", type: "stem", dashed: true, size: 1.5, direction, edgeType: agg.edgeType, datasources: agg.datasources });
+        const slot = { kind: "single" as const, nodeId, node: autoNode, aggs: [agg] };
+        singles.set(nodeId, slot);
+        slots.push(slot);
       }
     }
+
+    // Skip self-references (edges pointing back to an already-visible node)
+    const placed = slots.filter((slot) => slot.kind !== "single" || !usedNodeIds.has(slot.nodeId));
+    if (placed.length === 0) return;
+    const angleStep = (endAngle - startAngle) / (placed.length + 1);
+
+    const stemTo = (nodeId: string, id: string, rest: Omit<LayoutEdge, "id" | "source" | "target">) => {
+      edges.push(direction === "outgoing"
+        ? { id, source: parentId, target: nodeId, ...rest }
+        : { id, source: nodeId, target: parentId, ...rest });
+    };
+
+    placed.forEach((slot, i) => {
+      const angle = startAngle + angleStep * (i + 1);
+      const cx = parentX + Math.cos(angle) * radius;
+      const cy = parentY + Math.sin(angle) * radius;
+
+      if (slot.kind === "single") {
+        // use the real node ID as the graph ID
+        const { nodeId, node: autoNode, aggs } = slot;
+        usedNodeIds.add(nodeId);
+        nodes.push({
+          id: nodeId,
+          x: cx,
+          y: cy,
+          size: 28,
+          label: autoNode.getName(),
+          type: "auto_expanded_node",
+          color: "#4a90d9",
+          labelColor: "#ffffff",
+          direction,
+          edgeType: aggs[0].edgeType,
+          count: 1,
+          datasources: aggs.flatMap(a => a.datasources).filter((v, i, arr) => arr.indexOf(v) === i),
+          dsToCount: aggs.reduce<{ [ds: string]: number }>((acc, a) => ({ ...acc, ...a.dsToCount }), {}),
+          parentNodeId: parentId,
+          parentEncodedNodeId: parentEncodedId,
+        });
+        // One edge per edge type pointing to the same node
+        for (const agg of aggs) {
+          stemTo(nodeId, `edge::${parentId}::${direction}::${agg.edgeType}`, {
+            label: agg.edgeType, color: "#4a90d9", type: "expanded", dashed: false, size: 2, direction, edgeType: agg.edgeType, datasources: agg.datasources,
+          });
+        }
+      } else if (slot.kind === "count") {
+        const agg = slot.agg;
+        const countNodeId = `count::${parentId}::${direction}::${agg.edgeType}`;
+        nodes.push({
+          id: countNodeId,
+          x: cx,
+          y: cy,
+          size: countToSize(agg.totalCount, maxCount),
+          label: formatter.format(agg.totalCount),
+          type: "count",
+          color: "#e8e8e8",
+          labelColor: "#666666",
+          direction,
+          edgeType: agg.edgeType,
+          count: agg.totalCount,
+          datasources: agg.datasources,
+          dsToCount: agg.dsToCount,
+          parentNodeId: parentId,
+          parentEncodedNodeId: parentEncodedId,
+        });
+        stemTo(countNodeId, `edge::${parentId}::${direction}::${agg.edgeType}`, {
+          label: agg.edgeType, color: "#cccccc", type: "stem", dashed: true, size: 1.5, direction, edgeType: agg.edgeType, datasources: agg.datasources,
+        });
+      } else {
+        // a category's bubble, or the "+N more" of an open one
+        const { category, aggs } = slot;
+        const total = aggs.reduce((n, a) => n + a.totalCount, 0);
+        const edgeTypes = aggs.map((a) => a.edgeType);
+        const datasources = Array.from(new Set(aggs.flatMap((a) => a.datasources)));
+        const dsToCount: { [ds: string]: number } = {};
+        for (const a of aggs) for (const [ds, n] of Object.entries(a.dsToCount)) dsToCount[ds] = (dsToCount[ds] || 0) + n;
+        const open = slot.kind === "category" && slot.opening !== null;
+        const id = `${slot.kind}::${parentId}::${direction}::${category.id}`;
+        nodes.push({
+          id,
+          x: cx,
+          y: cy,
+          size: slot.kind === "more" ? MORE_SIZE : open ? OPEN_CATEGORY_SIZE : countToSize(total, maxCount),
+          label: slot.kind === "more" ? `+${aggs.length}` : open ? "\u2212" : formatter.format(total),
+          type: slot.kind,
+          color: open ? CATEGORY_OPEN_COLOR : CATEGORY_COLOR,
+          labelColor: CATEGORY_LABEL_COLOR,
+          direction,
+          count: total,
+          datasources,
+          dsToCount,
+          edgeTypes,
+          categoryId: category.id,
+          categoryLabel: category.label,
+          ...(slot.kind === "category" ? { open } : {}),
+          parentNodeId: parentId,
+          parentEncodedNodeId: parentEncodedId,
+        });
+        stemTo(id, `edge::${parentId}::${direction}::${slot.kind}::${category.id}`, {
+          label: slot.kind === "more" ? `${aggs.length} more` : `${category.label} \u00b7 ${aggs.length} types`,
+          color: CATEGORY_EDGE_COLOR, type: "stem", dashed: true, size: 1.5, direction, edgeTypes, datasources,
+        });
+      }
+    });
   }
 }
 

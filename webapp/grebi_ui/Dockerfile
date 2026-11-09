@@ -27,6 +27,7 @@ COPY webapp/grebi_ui/package.json webapp/grebi_ui/package-lock.json /opt/grebi_u
 RUN npm install
 
 COPY docs /opt/grebi_ui/docs
+COPY configs/ui_configs /opt/grebi_ui/configs/ui_configs
 COPY webapp/query2code.mjs webapp/api2code.mjs /opt/grebi_ui/../
 COPY webapp/grebi_ui /opt/grebi_ui
 

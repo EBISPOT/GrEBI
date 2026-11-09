@@ -589,3 +589,14 @@ Then either name your Helm release `grebi`, or set `postgres.secret.name` to the
 The backend reads query templates from the directory in `GREBI_QUERY_TEMPLATES_PATH` (default `query_templates`; the Helm chart points it at `/data_import/query_templates` on the release volume). They are read from disk, not baked into the image, so they can be edited in place: the backend re-scans the directory every `GREBI_QUERY_TEMPLATES_POLL_SECONDS` (default 5; `0` disables) and reloads when any file changes. No restart is needed.
 
 Templates are loaded one file at a time. A file that does not parse — malformed YAML, a key this version of the backend does not know, a duplicate template id — is skipped with an error in the log, and the rest keep serving. If a whole reload fails (for example the directory is briefly unreadable), the previously loaded templates stay in place.
+
+### The graph view
+
+How the graph view on a node's page groups edge types, and which ones it shows at first, is set in [`configs/ui_configs/graph_view.yaml`](https://github.com/EBISPOT/GrEBI/blob/dev/configs/ui_configs/graph_view.yaml). Unlike the query templates, it is read when the frontend is built (the frontend image copies it in and `build.mjs` bundles it), so a change reaches the site with the next frontend build.
+
+- `categories` is an ordered list of edge type categories, each with an `id`, a `label` and the `edge_types` it takes. Edge types are matched by their full name, with `*` for any run of characters and case ignored; an edge type belongs to the first category that matches it, and one that none match goes in "Other" (or in a category of your own with the id `other`). A category marked `hidden: true` has its edge types hidden until they are ticked in the filters beside the graph.
+- `hidden_edge_types` lists more edge types to hide at first, whatever their category.
+- `pinned_edge_types` lists edge types that always keep a stem of their own.
+- `max_stems` is the number of stems above which a node's stems are gathered: each category becomes one bubble, which opens when clicked, and an open category draws at most this many of its stems, largest first, with the rest behind a "+N more" bubble.
+
+The UI's tests check that the file parses and that it puts a sample of real edge types in the categories meant for them (`graphViewConfig.test.ts`); a key the UI does not know, a duplicate id or a pattern that is not a string fails them. A link to a view records only the changes a user made to these defaults, so changing the defaults changes what old links show too.

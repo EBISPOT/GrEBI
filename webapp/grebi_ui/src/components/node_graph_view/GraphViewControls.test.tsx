@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, within, cleanup } from '@testing-library/react'
-import GraphViewControls from './GraphViewControls'
+import GraphViewControls, { EdgeTypeGroup } from './GraphViewControls'
+
+/** A category of edge types, each with ten times its place in the list as its count */
+const group = (label: string, edgeTypes: string[]): EdgeTypeGroup => ({
+  category: { id: label.toLowerCase(), label },
+  edgeTypes: edgeTypes.map((edgeType, i) => ({ edgeType, count: (i + 1) * 10 })),
+})
 
 function renderControls(overrides: Partial<React.ComponentProps<typeof GraphViewControls>> = {}) {
   const props = {
@@ -9,7 +15,7 @@ function renderControls(overrides: Partial<React.ComponentProps<typeof GraphView
     setDsEnabled: vi.fn(),
     onMouseoverDs: vi.fn(),
     onMouseoutDs: vi.fn(),
-    edgeTypes: ['has_part', 'is_a', 'regulates'],
+    edgeTypeGroups: [group('Other', ['has_part', 'is_a', 'regulates'])],
     hiddenEdgeTypes: new Set<string>(),
     onToggleEdgeType: vi.fn(),
     onShowAllEdgeTypes: vi.fn(),
@@ -39,14 +45,14 @@ describe('GraphViewControls', () => {
     const { unmount } = render(
       <GraphViewControls
         datasources={['a']} dsEnabled={['a']} setDsEnabled={vi.fn()}
-        edgeTypes={['x', 'y', 'z']} hiddenEdgeTypes={new Set(['z'])}
+        edgeTypeGroups={[group('Other', ['x', 'y', 'z'])]} hiddenEdgeTypes={new Set(['z'])}
         onToggleEdgeType={vi.fn()} onShowAllEdgeTypes={vi.fn()} onHideAllEdgeTypes={vi.fn()}
       />
     )
     expect(screen.getByText('Edge Types (2/3)')).toBeInTheDocument()
     unmount()
 
-    renderControls({ edgeTypes: [] })
+    renderControls({ edgeTypeGroups: [] })
     expect(screen.queryByText(/Edge Types/)).toBeNull()
   })
 
@@ -79,7 +85,7 @@ describe('GraphViewControls', () => {
   })
 
   it('only offers All/None for edge types when there is more than one', () => {
-    renderControls({ datasources: ['a'], dsEnabled: ['a'], edgeTypes: ['only'] })
+    renderControls({ datasources: ['a'], dsEnabled: ['a'], edgeTypeGroups: [group('Other', ['only'])] })
     expect(screen.queryByRole('button', { name: 'All' })).toBeNull()
     expect(screen.getByLabelText('only')).toBeInTheDocument()
   })
@@ -95,5 +101,39 @@ describe('GraphViewControls', () => {
     expect(props.onMouseoverEdgeType).toHaveBeenCalledWith('regulates')
     fireEvent.mouseLeave(screen.getByText('regulates'))
     expect(props.onMouseoutEdgeType).toHaveBeenCalledWith('regulates')
+  })
+
+  it('lists edge types under their categories, with their counts, and shows or hides a category at once', () => {
+    const props = renderControls({
+      edgeTypeGroups: [group('Hierarchy', ['biolink:subclass_of', 'ols:hierarchicalParent']), group('Identifiers and metadata', ['rdf:type'])],
+      hiddenEdgeTypes: new Set(['ols:hierarchicalParent', 'rdf:type']),
+      onSetEdgeTypesHidden: vi.fn(),
+    })
+    expect(screen.getByText('Edge Types (1/3)')).toBeInTheDocument()
+    expect(screen.getByText('Hierarchy')).toBeInTheDocument()
+    expect(screen.getByText('20')).toBeInTheDocument()
+
+    // partly shown: the category's box is indeterminate, and ticking it shows them all
+    const hierarchy = screen.getByLabelText('Hierarchy')
+    expect(hierarchy).toHaveAttribute('data-indeterminate', 'true')
+    fireEvent.click(hierarchy)
+    expect(props.onSetEdgeTypesHidden).toHaveBeenCalledWith(['biolink:subclass_of', 'ols:hierarchicalParent'], false)
+
+    // all hidden: unticked, and ticking shows them
+    const metadata = screen.getByLabelText('Identifiers and metadata')
+    expect(metadata).not.toBeChecked()
+    fireEvent.click(metadata)
+    expect(props.onSetEdgeTypesHidden).toHaveBeenCalledWith(['rdf:type'], false)
+  })
+
+  it('hides a category\'s edge types when they are all shown and its box is unticked', () => {
+    const props = renderControls({ edgeTypeGroups: [group('A', ['a:1', 'a:2']), group('B', ['b:1'])], onSetEdgeTypesHidden: vi.fn() })
+    fireEvent.click(screen.getByLabelText('A'))
+    expect(props.onSetEdgeTypesHidden).toHaveBeenCalledWith(['a:1', 'a:2'], true)
+  })
+
+  it('does not head the list with a category when there is only one', () => {
+    renderControls({ edgeTypeGroups: [group('Other', ['x', 'y'])] })
+    expect(screen.queryByLabelText('Other')).toBeNull()
   })
 })

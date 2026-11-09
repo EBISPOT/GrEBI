@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { computeRadialLayout, GraphLayout, LayoutNode, viewBBox } from './graphLayout'
-import { AggregatedEdgeCount, ExpandedNodeState, expandedKey } from './useGraphViewState'
+import { computeRadialLayout, groupStems, GraphLayout, LayoutNode, StemGrouping, viewBBox } from './graphLayout'
+import { AggregatedEdgeCount, CategoryOpening, ExpandedNodeState, categoryKey, expandedKey } from './useGraphViewState'
+import { parseGraphViewConfig } from './graphViewConfig'
 import GraphNodeRef from '../../model/GraphNodeRef'
 import encodeNodeId from '../../encodeNodeId'
 
@@ -45,6 +46,7 @@ function layout(opts: {
   auto?: Map<string, GraphNodeRef>
   dsExclude?: Set<string>
   hidden?: Set<string>
+  grouping?: StemGrouping
 } = {}): GraphLayout {
   return computeRadialLayout(
     'root',
@@ -55,7 +57,8 @@ function layout(opts: {
     opts.expanded || new Map(),
     opts.dsExclude || new Set(),
     opts.hidden || new Set(),
-    opts.auto || new Map()
+    opts.auto || new Map(),
+    opts.grouping
   )
 }
 
@@ -239,5 +242,100 @@ describe('viewBBox', () => {
   it('lets a layout larger than the ring both ways be fitted as it is', () => {
     expect(viewBBox({ nodes: [at('a', -300, -300), at('b', 300, 300)], edges: [] })).toBeNull()
     expect(viewBBox({ nodes: [], edges: [] })).toBeNull()
+  })
+})
+
+describe('grouping stems by category', () => {
+  const config = parseGraphViewConfig({
+    max_stems: 4,
+    pinned_edge_types: ['biolink:subclass_of'],
+    categories: [
+      { id: 'hierarchy', label: 'Hierarchy', edge_types: ['biolink:subclass_of', '*:parent'] },
+      { id: 'assoc', label: 'Associations', edge_types: ['*association', 'biolink:affects'] },
+      { id: 'parts', label: 'Parts', edge_types: ['*part*'] },
+    ],
+  })
+  const grouping = (open: [string, CategoryOpening][] = []): StemGrouping => ({ config, openCategories: new Map(open) })
+  const describeGroups = (groups: ReturnType<typeof groupStems>) =>
+    groups.map((g) => (g.kind === 'stem' ? g.agg.edgeType : `${g.kind}:${g.category.id}(${g.aggs.map((a) => a.edgeType).join(',')})${g.kind === 'category' && g.opening ? '/' + g.opening : ''}`))
+
+  const outgoing = [
+    agg('z:one', { d: 3 }),
+    agg('biolink:affects', { d: 10 }),
+    agg('x:parent', { d: 1 }),
+    agg('a_association', { d: 100 }),
+    agg('biolink:subclass_of', { d: 2 }),
+    agg('biolink:has_part', { d: 5 }),
+    agg('b_association', { d: 50 }),
+    agg('z:two', { d: 4 }),
+  ]
+
+  it('draws every stem, in the categories\' order and largest first, when there are no more than max_stems', () => {
+    expect(describeGroups(groupStems(outgoing, grouping(), false, 'root', 'outgoing'))).toEqual([
+      'biolink:subclass_of', 'x:parent', 'a_association', 'b_association', 'biolink:affects', 'biolink:has_part', 'z:two', 'z:one',
+    ])
+    // without grouping, as the counts came
+    expect(describeGroups(groupStems(outgoing, undefined, false, 'root', 'outgoing'))).toEqual(outgoing.map((a) => a.edgeType))
+  })
+
+  it('gathers each category into a bubble, but not pinned edge types or a category with one stem', () => {
+    expect(describeGroups(groupStems(outgoing, grouping(), true, 'root', 'outgoing'))).toEqual([
+      'biolink:subclass_of', 'x:parent', 'category:assoc(a_association,b_association,biolink:affects)', 'biolink:has_part', 'category:other(z:two,z:one)',
+    ])
+  })
+
+  it('opens a category to its largest max_stems stems and a "+N more", then to all of them', () => {
+    const many = ['a', 'b', 'c', 'd', 'e', 'f'].map((x, i) => agg(`${x}_association`, { d: 60 - i }))
+    const key = categoryKey('root', 'outgoing', 'assoc')
+    expect(describeGroups(groupStems(many, grouping([[key, 'open']]), true, 'root', 'outgoing'))).toEqual([
+      'category:assoc(a_association,b_association,c_association,d_association,e_association,f_association)/open',
+      'a_association', 'b_association', 'c_association', 'd_association',
+      'more:assoc(e_association,f_association)',
+    ])
+    expect(describeGroups(groupStems(many, grouping([[key, 'all']]), true, 'root', 'outgoing')).slice(1)).toEqual(many.map((a) => a.edgeType))
+    // opened around another parent or in the other direction, it stays gathered
+    expect(groupStems(many, grouping([[categoryKey('root', 'incoming', 'assoc'), 'all']]), true, 'root', 'outgoing')).toHaveLength(1)
+  })
+
+  it('counts both directions of the root against max_stems, and lays out category bubbles with their stems', () => {
+    // 3 + 2 stems is more than 4: gathered
+    const l = layout({
+      incoming: [agg('p_association', { ds1: 7 }), agg('q_association', { ds2: 8 }), agg('r:one', { ds1: 1 })],
+      outgoing: [agg('a_association', { ds1: 100 }), agg('b_association', { ds1: 50, ds2: 5 })],
+      grouping: grouping(),
+    })
+    expect(byId(l, 'category::root::outgoing::assoc')).toMatchObject({
+      type: 'category', label: '155', count: 155, open: false, categoryId: 'assoc', categoryLabel: 'Associations',
+      edgeTypes: ['a_association', 'b_association'], datasources: ['ds1', 'ds2'], dsToCount: { ds1: 150, ds2: 5 },
+      direction: 'outgoing', parentNodeId: 'root',
+    })
+    expect(byId(l, 'count::root::outgoing::a_association')).toBeUndefined()
+    expect(l.edges.find((e) => e.target === 'category::root::outgoing::assoc')).toMatchObject({
+      source: 'root', label: 'Associations \u00b7 2 types', dashed: true, edgeTypes: ['a_association', 'b_association'],
+    })
+    // incoming: the stem runs from the bubble to the root
+    expect(l.edges.find((e) => e.source === 'category::root::incoming::assoc')).toMatchObject({ target: 'root' })
+    // the lone stem in "other" is drawn as itself
+    expect(byId(l, 'count::root::incoming::r:one')).toBeDefined()
+
+    // fewer stems than max_stems: no bubbles
+    const small = layout({ outgoing: [agg('a_association', { ds1: 100 }), agg('b_association', { ds1: 50 })], grouping: grouping() })
+    expect(small.nodes.some((n) => n.type === 'category')).toBe(false)
+  })
+
+  it('draws an open category as a small bubble that gathers its stems back, with a "+N more" for the rest', () => {
+    const many = ['a', 'b', 'c', 'd', 'e', 'f'].map((x, i) => agg(`${x}_association`, { d: 60 - i }))
+    const l = layout({ outgoing: many, grouping: grouping([[categoryKey('root', 'outgoing', 'assoc'), 'open']]) })
+    expect(byId(l, 'category::root::outgoing::assoc')).toMatchObject({ open: true, label: '\u2212', size: 16 })
+    expect(l.nodes.filter((n) => n.type === 'count').map((n) => n.edgeType)).toEqual(['a_association', 'b_association', 'c_association', 'd_association'])
+    expect(byId(l, 'more::root::outgoing::assoc')).toMatchObject({ type: 'more', label: '+2', count: 111, edgeTypes: ['e_association', 'f_association'], categoryId: 'assoc' })
+    expect(l.edges.find((e) => e.target === 'more::root::outgoing::assoc')).toMatchObject({ label: '2 more' })
+  })
+
+  it('gathers an expanded node\'s children by its own count', () => {
+    const counts = Object.fromEntries(['a', 'b', 'c', 'd', 'e'].map((x) => [`${x}_association`, { ds1: 2 }]))
+    const expanded = new Map<string, ExpandedNodeState>([expansion('root', 'outgoing', 'has_part', ref('child', 'Child'), { outgoing: counts })])
+    const l = layout({ outgoing: [agg('has_part', { ds1: 10 })], expanded, grouping: grouping() })
+    expect(byId(l, 'category::child::outgoing::assoc')).toMatchObject({ parentNodeId: 'child', edgeTypes: Object.keys(counts) })
   })
 })

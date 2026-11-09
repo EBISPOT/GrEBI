@@ -75,9 +75,10 @@ function updateReducers(
     }
 
     if (hiEt) {
-      if (data.edgeType === hiEt) {
+      // a category's bubble stands for all its edge types
+      if (data.edgeType === hiEt || data.edgeTypes?.includes(hiEt)) {
         res.color = "#2196f3";
-        res.labelColor = data.nodeType === "count" ? "#333333" : "#ffffff";
+        res.labelColor = data.nodeType === "count" || data.nodeType === "category" || data.nodeType === "more" ? "#333333" : "#ffffff";
       } else if (data.nodeType !== "root") {
         res.color = "rgba(0,0,0,0)";
         res.label = "";
@@ -107,7 +108,7 @@ function updateReducers(
     }
 
     if (hiEt) {
-      if (data.edgeType === hiEt) {
+      if (data.edgeType === hiEt || data.edgeTypes?.includes(hiEt)) {
         res.color = "#2196f3";
         res.size = Math.max(data.size, 2);
         res._faded = false;
@@ -156,6 +157,8 @@ export interface GraphRendererProps {
   onClickCountNode: (parentNodeId: string, parentEncodedNodeId: string, direction: "incoming" | "outgoing", edgeType: string) => void;
   onClickExpandedNode: (parentNodeId: string, parentEncodedNodeId: string, direction: "incoming" | "outgoing", edgeType: string) => void;
   onClickAutoExpandedNode: (parentNodeId: string, parentEncodedNodeId: string, direction: "incoming" | "outgoing", edgeType: string) => void;
+  /** A click on a category's bubble or on its "+N more" */
+  onClickCategory?: (node: LayoutNode) => void;
   /** `newTab` when the double click came with ctrl or cmd held */
   onDoubleClickExpandedNode: (parentNodeId: string, direction: "incoming" | "outgoing", edgeType: string, nodeId: string, options?: { newTab: boolean }) => void;
   /** A right click on an expanded node, with where in the container it happened */
@@ -188,6 +191,7 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
   onClickCountNode,
   onClickExpandedNode,
   onClickAutoExpandedNode,
+  onClickCategory,
   onDoubleClickExpandedNode,
   onContextMenuNode,
   highlightedDatasource,
@@ -219,6 +223,8 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
   onClickExpandedNodeRef.current = onClickExpandedNode;
   const onClickAutoExpandedNodeRef = useRef(onClickAutoExpandedNode);
   onClickAutoExpandedNodeRef.current = onClickAutoExpandedNode;
+  const onClickCategoryRef = useRef(onClickCategory);
+  onClickCategoryRef.current = onClickCategory;
   const onDoubleClickExpandedNodeRef = useRef(onDoubleClickExpandedNode);
   onDoubleClickExpandedNodeRef.current = onDoubleClickExpandedNode;
   const onContextMenuNodeRef = useRef(onContextMenuNode);
@@ -254,6 +260,8 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
         parentNodeId: node.parentNodeId,
         parentEncodedNodeId: node.parentEncodedNodeId,
         hasHiddenChildren: node.hasHiddenChildren || false,
+        categoryId: node.categoryId,
+        edgeTypes: node.edgeTypes,
         forceLabel: true,
       });
     }
@@ -266,6 +274,7 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
         size: edge.size,
         type: "curvedArrow",
         edgeType: edge.edgeType,
+        edgeTypes: edge.edgeTypes,
         direction: edge.direction,
         datasources: edge.datasources,
         forceLabel: true,
@@ -389,6 +398,9 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
         onClickAutoExpandedNodeRef.current(attrs.parentNodeId, attrs.parentEncodedNodeId, attrs.direction, attrs.edgeType);
       } else if (attrs.nodeType === "expanded_node") {
         onClickExpandedNodeRef.current(attrs.parentNodeId, attrs.parentEncodedNodeId, attrs.direction, attrs.edgeType);
+      } else if (attrs.nodeType === "category" || attrs.nodeType === "more") {
+        const layoutNode = layoutNodesRef.current.get(node);
+        if (layoutNode) onClickCategoryRef.current?.(layoutNode);
       }
     });
 
@@ -425,7 +437,9 @@ const GraphRenderer = forwardRef<GraphRendererHandle, GraphRendererProps>(functi
           attrs.nodeType === "root" ||
           attrs.nodeType === "count" ||
           attrs.nodeType === "expanded_node" ||
-          attrs.nodeType === "auto_expanded_node"
+          attrs.nodeType === "auto_expanded_node" ||
+          attrs.nodeType === "category" ||
+          attrs.nodeType === "more"
         ) {
           containerRef.current.style.cursor = "pointer";
         }
@@ -527,8 +541,8 @@ function drawNodeLabel(
   if (!label) return;
 
   // All node types: draw label centred inside the circle
-  if (nodeType === "count") {
-    // Italic numeric labels
+  if (nodeType === "count" || nodeType === "category" || nodeType === "more") {
+    // Italic numeric labels: counts, a category's total, its "+N more"
     const fontSize = Math.max(data.size * 0.45, 9);
     context.fillStyle = data.labelColor || "#666666";
     context.font = `italic ${fontSize}px 'Inter', 'Helvetica Neue', Arial, sans-serif`;

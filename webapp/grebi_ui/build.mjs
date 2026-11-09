@@ -137,12 +137,15 @@ console.log("### Building bundle.js");
 
 // Resolve imports that use relative paths escaping the source tree.
 // In the repo, webapp/grebi_ui/ is nested under webapp/ which is under the root.
-// In Docker, /opt/grebi_ui/ has docs/ as a child and ../query2code.mjs etc as siblings.
+// In Docker, /opt/grebi_ui/ has docs/ and configs/ui_configs/ as children and
+// ../query2code.mjs etc as siblings.
 // We resolve known imports to their actual locations.
+const configsDir = fs.existsSync(path.resolve("../../configs")) ? path.resolve("../../configs") : path.resolve("configs");
 const resolveMap = {
   'pubmed_cache.json': path.resolve(docsDir, 'pubmed_cache.json'),
   'query2code.mjs': path.resolve('..', 'query2code.mjs'),
   'api2code.mjs': path.resolve('..', 'api2code.mjs'),
+  'graph_view.yaml': path.resolve(configsDir, 'ui_configs', 'graph_view.yaml'),
 };
 
 const resolveExternalPlugin = {
@@ -159,13 +162,25 @@ const resolveExternalPlugin = {
   },
 };
 
+// YAML files (such as configs/ui_configs/graph_view.yaml) are imported as the
+// data they hold; vitest.config.ts does the same for the tests.
+const yamlPlugin = {
+  name: 'yaml',
+  setup(build) {
+    build.onLoad({ filter: /\.ya?ml$/ }, (args) => ({
+      contents: JSON.stringify(yaml.load(fs.readFileSync(args.path, 'utf8'))),
+      loader: 'json',
+    }));
+  },
+};
+
 await build({
   entryPoints: [`src/index_${process.env.GREBI_FRONTEND}.tsx`],
   bundle: true,
   platform: "browser",
   outfile: "dist/bundle.js",
   define,
-  plugins: [resolveExternalPlugin],
+  plugins: [resolveExternalPlugin, yamlPlugin],
   logLevel: "info",
   sourcemap: "linked",
 
@@ -190,7 +205,7 @@ await build({
   format: "iife",
   outfile: "dist/widgets.js",
   define,
-  plugins: [resolveExternalPlugin],
+  plugins: [resolveExternalPlugin, yamlPlugin],
   logLevel: "info",
   sourcemap: "linked",
 

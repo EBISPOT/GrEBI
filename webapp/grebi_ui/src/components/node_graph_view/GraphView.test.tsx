@@ -24,6 +24,7 @@ vi.mock('./GraphRenderer', async () => {
                 if (n.type === 'root') props.onClickRoot()
                 else if (n.type === 'count') props.onClickCountNode(n.parentNodeId, n.parentEncodedNodeId, n.direction, n.edgeType)
                 else if (n.type === 'expanded_node') props.onClickExpandedNode(n.parentNodeId, n.parentEncodedNodeId, n.direction, n.edgeType)
+                else if (n.type === 'category' || n.type === 'more') props.onClickCategory(n)
                 else props.onClickAutoExpandedNode(n.parentNodeId, n.parentEncodedNodeId, n.direction, n.edgeType)
               }}
               onDoubleClick={(e) => props.onDoubleClickExpandedNode(n.parentNodeId, n.direction, n.edgeType, n.id, { newTab: e.ctrlKey || e.metaKey })}
@@ -57,7 +58,7 @@ vi.mock('./edgeCountsCache', () => ({ fetchNodeEdgeCounts: vi.fn(), prefetchNode
 
 import { fetchNodeEdgeCounts } from './edgeCountsCache'
 import { get } from '../../app/api'
-import { serialiseExploration } from './exploration'
+import { parseExploration, serialiseExploration } from './exploration'
 const mockedFetch = vi.mocked(fetchNodeEdgeCounts)
 const mockedGet = vi.mocked(get)
 
@@ -65,6 +66,20 @@ const rootNode = new GraphNode({ 'grebi:nodeId': 'root', 'grebi:name': ['Root'] 
 const counts: Record<string, any> = {
   root: { incoming: { is_a: { 'OLS.mondo': 5 } }, outgoing: { has_part: { ds1: 3 } } },
   child: { incoming: {}, outgoing: { regulates: { ds1: 2 } } },
+  // two edge types the shipped config hides at first
+  meta: { incoming: {}, outgoing: { has_part: { ds1: 3 }, 'rdf:type': { ds1: 2 }, 'ols_top_k:matches': { ds1: 40 } } },
+  // more stems than the shipped config's max_stems (12), so they are gathered by category
+  busy: {
+    incoming: {},
+    outgoing: Object.fromEntries([
+      'biolink:subclass_of',
+      'biolink:gene_to_disease_association', 'biolink:chemical_to_disease_or_phenotypic_feature_association',
+      'biolink:affects', 'biolink:contributes_to', 'biolink:causes', 'biolink:treats',
+      'biolink:has_part', 'biolink:part_of', 'biolink:overlaps',
+      'biolink:orthologous_to', 'biolink:homologous_to',
+      'x:one', 'x:two',
+    ].map((t, i) => [t, { ds1: 100 - i }])),
+  },
 }
 
 beforeEach(() => {
@@ -213,7 +228,7 @@ describe('GraphView', () => {
   it('restores the exploration the page hands it, then reports what changes', async () => {
     mockedGet.mockImplementation(async (path: string) => ({ 'grebi:nodeId': atob(path.split('/').pop()!), 'grebi:name': ['Child'] }))
     const onChange = vi.fn()
-    const token = serialiseExploration({ steps: [{ direction: 'outgoing', edgeType: 'has_part', nodeId: 'child' }], excludedDatasources: [], hiddenEdgeTypes: [] })
+    const token = serialiseExploration({ steps: [{ direction: 'outgoing', edgeType: 'has_part', nodeId: 'child' }], excludedDatasources: [], hiddenEdgeTypes: [], shownEdgeTypes: [] })
     render(<GraphView graph="g" node={rootNode} exploration={token} onExplorationChange={onChange} />)
 
     // the chain is rebuilt from the URL: the child is fetched and expanded
@@ -244,6 +259,46 @@ describe('GraphView', () => {
     await waitFor(() => expect(screen.getByTitle('Link copied')).toBeInTheDocument())
     expect(writeText).toHaveBeenCalledWith(window.location.href)
     vi.unstubAllGlobals()
+  })
+
+  it('hides the edge types the config hides at first, and records showing one in the URL', async () => {
+    const onChange = vi.fn()
+    render(<GraphView graph="g" node={new GraphNode({ 'grebi:nodeId': 'meta', 'grebi:name': ['Meta'] })} onExplorationChange={onChange} />)
+    await screen.findByTestId('renderer')
+    expect(screen.getByRole('button', { name: 'count::meta::outgoing::has_part' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'count::meta::outgoing::rdf:type' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'count::meta::outgoing::ols_top_k:matches' })).toBeNull()
+    expect(screen.getByText('Edge Types (1/3)')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'rdf:type' })).not.toBeChecked()
+    // the defaults are not a change, so there is nothing to put in the URL
+    expect(onChange).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'rdf:type' }))
+    expect(await screen.findByRole('button', { name: 'count::meta::outgoing::rdf:type' })).toBeInTheDocument()
+    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1))
+    expect(parseExploration(onChange.mock.calls[0][0])).toMatchObject({ hiddenEdgeTypes: [], shownEdgeTypes: ['rdf:type'] })
+  })
+
+  it('gathers a busy node\'s stems into category bubbles that open and gather back', async () => {
+    render(<GraphView graph="g" node={new GraphNode({ 'grebi:nodeId': 'busy', 'grebi:name': ['Busy'] })} />)
+    await screen.findByTestId('renderer')
+    const associations = screen.getByRole('button', { name: 'category::busy::outgoing::associations' })
+    // pinned edge types keep their own stems
+    expect(screen.getByRole('button', { name: 'count::busy::outgoing::biolink:subclass_of' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'count::busy::outgoing::biolink:affects' })).toBeNull()
+
+    fireEvent.mouseEnter(associations)
+    expect(screen.getByText('Associations: 6 edge types')).toBeInTheDocument()
+    expect(screen.getByText('click to show them')).toBeInTheDocument()
+    fireEvent.mouseLeave(associations)
+
+    fireEvent.click(associations)
+    expect(screen.getByRole('button', { name: 'count::busy::outgoing::biolink:affects' })).toBeInTheDocument()
+    fireEvent.mouseEnter(screen.getByRole('button', { name: 'category::busy::outgoing::associations' }))
+    expect(screen.getByText('click to gather them')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'category::busy::outgoing::associations' }))
+    expect(screen.queryByRole('button', { name: 'count::busy::outgoing::biolink:affects' })).toBeNull()
   })
 
   it('goes to the node the page asks for on double click instead of re-rooting', async () => {
