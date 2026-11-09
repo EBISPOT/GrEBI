@@ -160,6 +160,18 @@ describe('useGraphViewState', () => {
     expect(result.current.hiddenEdgeTypes.size).toBe(0)
   })
 
+  it('keeps the same aggregates across renders until the counts or filters change', async () => {
+    const { result, rerender } = await loadRoot()
+    const { incomingAggregated, outgoingAggregated } = result.current
+    rerender()
+    expect(result.current.incomingAggregated).toBe(incomingAggregated)
+    expect(result.current.outgoingAggregated).toBe(outgoingAggregated)
+
+    act(() => result.current.toggleEdgeTypeHidden('is_a'))
+    expect(result.current.incomingAggregated).not.toBe(incomingAggregated)
+    expect(result.current.incomingAggregated.map((a) => a.edgeType)).toEqual(['mentioned_by'])
+  })
+
   it('reports an error when the counts fail to load', async () => {
     mockedFetch.mockRejectedValue(new Error('boom'))
     const { result } = renderHook(() => useGraphViewState('g'))

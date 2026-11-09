@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { post } from "../../app/api";
 import GraphNodeRef from "../../model/GraphNodeRef";
 import { EdgeCountByTypeAndDs, fetchNodeEdgeCounts } from "./edgeCountsCache";
@@ -326,8 +326,17 @@ export default function useGraphViewState(graph: string) {
     setHiddenEdgeTypes(allTypes);
   }, [incomingEdgeCounts, outgoingEdgeCounts]);
 
-  const incomingAggregated = aggregateCounts(incomingEdgeCounts, dsExclude, hiddenEdgeTypes);
-  const outgoingAggregated = aggregateCounts(outgoingEdgeCounts, dsExclude, hiddenEdgeTypes);
+  // Memoised so that they, and the layout computed from them, are the same
+  // objects across renders that change nothing here, such as a hover: a new
+  // layout makes the renderer rebuild the graph and reset the camera.
+  const incomingAggregated = useMemo(
+    () => aggregateCounts(incomingEdgeCounts, dsExclude, hiddenEdgeTypes),
+    [incomingEdgeCounts, dsExclude, hiddenEdgeTypes]
+  );
+  const outgoingAggregated = useMemo(
+    () => aggregateCounts(outgoingEdgeCounts, dsExclude, hiddenEdgeTypes),
+    [outgoingEdgeCounts, dsExclude, hiddenEdgeTypes]
+  );
 
   // Resolve count=1 edges to their actual connected node.
   // Fires whenever the root, filters, or expanded nodes change.

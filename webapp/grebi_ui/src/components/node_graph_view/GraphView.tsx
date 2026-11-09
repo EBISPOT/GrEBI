@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import React, { forwardRef, useEffect, useState, useMemo, useCallback, useImperativeHandle, useRef } from "react";
 import GraphNode from "../../model/GraphNode";
 import GraphNodeRef from "../../model/GraphNodeRef";
 import useGraphViewState from "./useGraphViewState";
@@ -21,6 +21,49 @@ interface ExpandDialogState {
   direction: "incoming" | "outgoing";
   edgeType: string;
 }
+
+interface HoverPathBarHandle {
+  /** Shows the bar for a hovered node, or hides it with null. */
+  show: (node: LayoutNode | null) => void;
+}
+
+/**
+ * The bar across the top of the graph that names the edge under the mouse. It
+ * keeps the hovered node itself, so that a hover re-renders only the bar and not
+ * the whole view with its filters.
+ */
+const HoverPathBar = forwardRef<HoverPathBarHandle, {
+  hidden: boolean;
+  describe: (node: LayoutNode) => React.ReactNode;
+}>(function HoverPathBar({ hidden, describe }, ref) {
+  const [node, setNode] = useState<LayoutNode | null>(null);
+  useImperativeHandle(ref, () => ({ show: setNode }), []);
+  if (hidden || !node || !node.edgeType) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+        height: "32px",
+        background: "#fafafa",
+        borderBottom: "1px solid #e0e0e0",
+        borderRadius: "8px 8px 0 0",
+        padding: "0 14px",
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+        fontSize: "13px",
+        color: "#333",
+        pointerEvents: "none",
+      }}
+    >
+      {describe(node)}
+    </div>
+  );
+});
 
 export default function GraphView({
   graph,
@@ -284,8 +327,10 @@ export default function GraphView({
     setExpandDialog((prev) => ({ ...prev, open: false }));
   }, []);
 
-  // Hovered node state (lifted from GraphRenderer for the path bar)
-  const [hoveredNode, setHoveredNode] = useState<LayoutNode | null>(null);
+  // The hovered node is kept by the path bar, so a hover does not re-render the view
+  const hoverBarRef = useRef<HoverPathBarHandle>(null);
+  const handleHoverNode = useCallback((n: LayoutNode) => hoverBarRef.current?.show(n), []);
+  const handleLeaveNode = useCallback(() => hoverBarRef.current?.show(null), []);
 
   // Resolve the parentLabel for a given node (hovered or expand dialog)
   const resolveParentLabel = useCallback(
@@ -393,9 +438,13 @@ export default function GraphView({
     );
   }
 
-  // Determine what to show in the path bar: expand dialog takes priority, then hover
-  const pathBarNode = expandDialog.open ? null : hoveredNode;
+  // The expand dialog's heading takes the place of the hover path bar
   const showExpandInline = expandDialog.open;
+
+  const describeHovered = (n: LayoutNode) => {
+    const isExpanded = n.type === "expanded_node" || n.type === "auto_expanded_node";
+    return renderPathBar(isExpanded ? n.label : null, n.direction!, n.edgeType!, resolveParentLabel(n.parentNodeId), n.count);
+  };
 
   return (
     <div style={{
@@ -528,43 +577,9 @@ export default function GraphView({
               </div>
             );
           }
-          // Hover path bar
-          if (pathBarNode && pathBarNode.edgeType) {
-            const parentLabel = resolveParentLabel(pathBarNode.parentNodeId);
-            const isExpanded = pathBarNode.type === "expanded_node" || pathBarNode.type === "auto_expanded_node";
-            return (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  zIndex: 10,
-                  height: "32px",
-                  background: "#fafafa",
-                  borderBottom: "1px solid #e0e0e0",
-                  borderRadius: "8px 8px 0 0",
-                  padding: "0 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  fontSize: "13px",
-                  color: "#333",
-                  pointerEvents: "none",
-                }}
-              >
-                {renderPathBar(
-                  isExpanded ? pathBarNode.label : null,
-                  pathBarNode.direction!,
-                  pathBarNode.edgeType,
-                  parentLabel,
-                  pathBarNode.count,
-                )}
-              </div>
-            );
-          }
           return null;
         })()}
+        <HoverPathBar ref={hoverBarRef} hidden={showExpandInline} describe={describeHovered} />
 
         {/* Inline expand panel or graph */}
         {showExpandInline ? (
@@ -619,8 +634,8 @@ export default function GraphView({
                 highlightedDatasource={highlightedDs}
                 highlightedEdgeType={highlightedEdgeType}
                 focusNodeIds={null}
-                onHoverNode={setHoveredNode}
-                onLeaveNode={() => setHoveredNode(null)}
+                onHoverNode={handleHoverNode}
+                onLeaveNode={handleLeaveNode}
               />
             )}
 

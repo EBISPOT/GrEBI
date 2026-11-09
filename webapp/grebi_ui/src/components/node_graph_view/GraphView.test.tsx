@@ -7,11 +7,14 @@ import GraphView from './GraphView'
 // GraphRenderer wraps sigma (WebGL). Replace it with a stub that exposes the
 // layout as buttons so the click/hover wiring in GraphView can be exercised.
 const downloadImage = vi.hoisted(() => vi.fn())
+// the layout the stub was given on each of its renders
+const rendererLayouts = vi.hoisted(() => [] as any[])
 vi.mock('./GraphRenderer', async () => {
   const React = await import('react')
   return {
     default: React.forwardRef((props: any, ref: any) => {
       React.useImperativeHandle(ref, () => ({ downloadImage }))
+      rendererLayouts.push(props.layout)
       return (
         <div data-testid="renderer" data-ds={props.highlightedDatasource ?? ''} data-et={props.highlightedEdgeType ?? ''}>
           {props.layout.nodes.map((n: any) => (
@@ -65,6 +68,7 @@ const counts: Record<string, any> = {
 }
 
 beforeEach(() => {
+  rendererLayouts.length = 0
   mockedFetch.mockReset()
   mockedFetch.mockImplementation(async (_g, enc) => counts[atob(enc)] || { incoming: {}, outgoing: {} })
 })
@@ -150,6 +154,27 @@ describe('GraphView', () => {
     expect(screen.getByText('5 nodes').parentElement).toHaveTextContent(/^5 nodes.*is_a.*Root$/)
     fireEvent.mouseLeave(bubble)
     expect(screen.queryByText('5 nodes')).toBeNull()
+  })
+
+  it('does not re-render the graph when a node is hovered', async () => {
+    await renderLoaded()
+    const renders = rendererLayouts.length
+    const bubble = screen.getByRole('button', { name: 'count::root::incoming::is_a' })
+    fireEvent.mouseEnter(bubble)
+    expect(screen.getByText('5 nodes')).toBeInTheDocument()
+    fireEvent.mouseLeave(bubble)
+    expect(rendererLayouts).toHaveLength(renders)
+  })
+
+  it('hands the renderer the same layout when only the highlight changes', async () => {
+    await renderLoaded()
+    const layout = rendererLayouts[rendererLayouts.length - 1]
+    vi.useFakeTimers()
+    fireEvent.mouseEnter(screen.getByTitle('ds1'))
+    act(() => { vi.advanceTimersByTime(30) })
+    expect(screen.getByTestId('renderer').dataset.ds).toBe('ds1')
+    // a new layout object would make the renderer rebuild the graph and reset the camera
+    expect(rendererLayouts[rendererLayouts.length - 1]).toBe(layout)
   })
 
   it('debounces datasource and edge type highlighting from the controls', async () => {
