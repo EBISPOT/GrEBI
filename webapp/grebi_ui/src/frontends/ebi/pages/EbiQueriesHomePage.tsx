@@ -102,7 +102,11 @@ export default function EbiQueriesHomePage({ initialTopic }: { initialTopic?: st
 
           {error && <ErrorMessage what="The queries" error={error} />}
 
-          {!error && <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "250px 1fr" }, gap: 3 }}>
+          {/* alignItems start: a grid stretches its items to the row's height, and a
+              table stretched to the height of the facets beside it shares the extra
+              height out among its rows, so a filter leaving three queries drew
+              three rows a screen and a half tall each */}
+          {!error && <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "250px 1fr" }, gap: 3, alignItems: "start" }}>
             {topics && queries ? (
               <QueryFacets
                 topics={topics}
