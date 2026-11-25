@@ -32,6 +32,7 @@ dist/bundle.js.map
 dist/widgets.js
 dist/widgets.js.map
 dist/widgets.css
+dist/ready
 dist/styles.css
 dist/docs-manifest.json
 

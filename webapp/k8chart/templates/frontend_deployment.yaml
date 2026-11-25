@@ -41,11 +41,12 @@ spec:
               cpu: 0.5
           ports:
             - containerPort: 8080
-          # the container builds the bundle on start, for minutes: a pod takes
-          # traffic, and replaces the old one, only once the bundle is there
+          # the container builds the bundles on start, for minutes: a pod takes
+          # traffic, and replaces the old one, only once the build has finished
+          # (entrypoint.dockersh writes dist/ready then)
           readinessProbe:
             httpGet:
-              path: {{ .Values.contextPath }}/bundle.js
+              path: {{ .Values.contextPath }}/ready
               port: 8080
             periodSeconds: 10
             failureThreshold: 90

@@ -4,6 +4,10 @@ cd /opt/grebi_ui
 
 echo Building frontend. REACT_APP_ENV: $REACT_APP_ENV
 
+rm -f dist/ready
 npm run build || { echo "The frontend build failed; not serving" >&2; exit 1; }
+# the readiness probe reads this: the build writes bundle.js before the widgets
+# script and the stylesheets, so no single build output says the build is done
+date -u +%Y-%m-%dT%H:%M:%SZ > dist/ready
 
 caddy run --config ./Caddyfile
