@@ -11,7 +11,7 @@ The endpoint is `/api/v1/mcp` on the same host as the API, over the streamable H
 {
   "mcpServers": {
     "grebi": {
-      "url": "https://www.ebi.ac.uk/spot/kg/api/v1/mcp"
+      "url": "https://www.ebi.ac.uk/spot/grebi/api/v1/mcp"
     }
   }
 }

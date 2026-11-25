@@ -17,8 +17,8 @@ function element(tag: string, attrs: Record<string, string>): Element {
 
 describe('widgetPath', () => {
   it.each([
-    ['grebi-node', { graph: 'dismech', node: 'hgnc:1100' }, '/graphs/dismech/nodes/aGduYzoxMTAw'],
-    ['grebi-node', { graph: 'dismech', node: 'hgnc:1100', tab: 'properties', lang: 'fr' }, '/graphs/dismech/nodes/aGduYzoxMTAw?tab=properties&lang=fr'],
+    ['grebi-node-details', { graph: 'dismech', node: 'hgnc:1100' }, '/graphs/dismech/nodes/aGduYzoxMTAw'],
+    ['grebi-node-details', { graph: 'dismech', node: 'hgnc:1100', tab: 'properties', lang: 'fr' }, '/graphs/dismech/nodes/aGduYzoxMTAw?tab=properties&lang=fr'],
     ['grebi-graph', { graph: 'dismech', node: 'hgnc:1100' }, '/graphs/dismech/nodes/aGduYzoxMTAw?tab=graph'],
     ['grebi-graph', { graph: 'dismech', node: 'hgnc:1100', g: 'abc' }, '/graphs/dismech/nodes/aGduYzoxMTAw?tab=graph&g=abc'],
     ['grebi-edge', { graph: 'dismech', edge: 'e1' }, '/graphs/dismech/edges/ZTE'],
@@ -35,8 +35,8 @@ describe('widgetPath', () => {
   })
 
   it('is null while the page is not named, and for other elements', () => {
-    expect(widgetPath(element('grebi-node', { graph: 'dismech' }))).toBeNull()
-    expect(widgetPath(element('grebi-node', { node: 'hgnc:1100' }))).toBeNull()
+    expect(widgetPath(element('grebi-node-details', { graph: 'dismech' }))).toBeNull()
+    expect(widgetPath(element('grebi-node-details', { node: 'hgnc:1100' }))).toBeNull()
     expect(widgetPath(element('grebi-query', { graph: 'dismech' }))).toBeNull()
     expect(widgetPath(element('grebi-search', {}))).toBeNull()
     expect(widgetPath(element('grebi-page', { path: 'graphs/dismech' }))).toBeNull()
@@ -44,7 +44,7 @@ describe('widgetPath', () => {
   })
 
   it('passes on every attribute but the HTML ones', () => {
-    const el = element('grebi-node', {
+    const el = element('grebi-node-details', {
       graph: 'g', node: 'n', class: 'card', style: 'margin: 1em', id: 'w', title: 'tip', hidden: '', role: 'region',
       tabindex: '0', 'data-x': '1', 'aria-label': 'node', tab: 'graph',
     })
@@ -73,8 +73,8 @@ describe('the widget elements', () => {
 
   it('renders the page in a shadow root with the site\'s stylesheet', async () => {
     configureInstance({ siteUrl: 'https://kg.example/spot/kg/' })
-    document.body.innerHTML = '<grebi-node graph="dismech" node="hgnc:1100"></grebi-node>'
-    const el = document.querySelector('grebi-node')!
+    document.body.innerHTML = '<grebi-node-details graph="dismech" node="hgnc:1100"></grebi-node-details>'
+    const el = document.querySelector('grebi-node-details')!
     const sheet = el.shadowRoot!.querySelector('link[rel="stylesheet"]')!
     expect(sheet.getAttribute('href')).toBe('https://kg.example/spot/kg/widgets.css')
     await waitFor(() => expect(widgetIn(el)).toHaveTextContent('/graphs/dismech/nodes/aGduYzoxMTAw'))
@@ -92,8 +92,8 @@ describe('the widget elements', () => {
   })
 
   it('shows nothing until the page is named', async () => {
-    document.body.innerHTML = '<grebi-node graph="g"></grebi-node>'
-    const el = document.querySelector('grebi-node')!
+    document.body.innerHTML = '<grebi-node-details graph="g"></grebi-node-details>'
+    const el = document.querySelector('grebi-node-details')!
     await new Promise((r) => setTimeout(r, 20))
     expect(widgetIn(el)).toBeNull()
     el.setAttribute('node', 'n')

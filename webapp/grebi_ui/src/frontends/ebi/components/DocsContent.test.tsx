@@ -90,6 +90,15 @@ describe('DocsContent', () => {
     await act(async () => {})
   })
 
+  it('renders a widget-example as a framed live widget', () => {
+    renderDocs('<widget-example>\n<grebi-graph graph="g1" node="hgnc:1"></grebi-graph>\n</widget-example>')
+    expect(screen.getByText('Live widget')).toBeInTheDocument()
+    expect(screen.getByText('<grebi-graph>')).toBeInTheDocument()
+    const widget = document.querySelector('grebi-graph')!
+    expect(widget.getAttribute('node')).toBe('hgnc:1')
+    expect(widget.closest('figure')).not.toBeNull()
+  })
+
   it('renders the openapi-reference element, which loads the description from the API', () => {
     renderDocs('# API reference\n\n<openapi-reference></openapi-reference>')
     expect(screen.getByText('Loading the API description…')).toBeInTheDocument()

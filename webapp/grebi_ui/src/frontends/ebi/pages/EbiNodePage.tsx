@@ -49,7 +49,8 @@ export default function EbiNodePage() {
   const embedded = useEmbedded();
   // Inside a widget the graph view is a widget of its own (<grebi-graph>, which
   // asks for tab=graph, as the graph view's own links do): tab=graph is then
-  // the graph alone, and the tabs of <grebi-node> leave the graph out.
+  // the graph alone, and the tabs of <grebi-node-details> leave the graph out.
+  // Neither has the search box: searching is <grebi-search>.
   const graphOnly = embedded && searchParams.get("tab") === "graph";
   const tab = searchParams.get("tab") || (embedded ? "properties" : "graph");
   // the link tabs this kind of node has (see getNodeLinksTabs); the Links tab appears when there are any
@@ -144,11 +145,11 @@ export default function EbiNodePage() {
         { node == null && error == null && <LoadingOverlay message="Loading node..." /> }
         { error &&
       <main className="container mx-auto px-4 pt-1">
-        <SearchBox graph={graph} />
+        {!embedded && <SearchBox graph={graph} />}
         {notFound ? (
           <div role="alert" className="text-center mt-8">
             <Typography variant="h5">No node with the id <code>{nodeId}</code> in {graph}</Typography>
-            <p className="mt-2 text-neutral-dark">It may be absent from this graph or have been merged into another node. Try searching for it above.</p>
+            <p className="mt-2 text-neutral-dark">It may be absent from this graph or have been merged into another node.{!embedded && " Try searching for it above."}</p>
           </div>
         ) : (
           <ErrorMessage what="The node" error={error} />
@@ -156,7 +157,7 @@ export default function EbiNodePage() {
       </main>}
         {node !== null && !error &&
       <main className="container mx-auto px-4 pt-1">
-        {!graphOnly &&
+        {!embedded &&
           <SearchBox graph={graph} availableModels={availableModels} selectedModel={selectedModel} onModelChange={setSelectedModel} />}
         <div className="relative text-center pb-5">
         <Typography variant="h5">{node.getName(lang)} {

@@ -5,7 +5,7 @@ import { siteUrl } from "../app/instance";
 import GrebiWidget from "./GrebiWidget";
 
 /**
- * The widget elements, <grebi-node>, <grebi-query> and the rest: one per kind
+ * The widget elements, <grebi-node-details>, <grebi-query> and the rest: one per kind
  * of page, documented on the "Embedding widgets" page of the docs. A few
  * attributes name the page; every other attribute, apart from the HTML ones,
  * becomes the page's query string, so a node's `tab` or a query's parameters
@@ -23,7 +23,7 @@ type Kind = {
 const enc = encodeURIComponent;
 
 export const KINDS: Record<string, Kind> = {
-  "grebi-node": { attrs: ["graph", "node"], path: (a) => (a.graph && a.node ? `/graphs/${enc(a.graph)}/nodes/${encodeNodeId(a.node)}` : null) },
+  "grebi-node-details": { attrs: ["graph", "node"], path: (a) => (a.graph && a.node ? `/graphs/${enc(a.graph)}/nodes/${encodeNodeId(a.node)}` : null) },
   // the node page's graph view alone (EbiNodePage shows it so inside a widget)
   "grebi-graph": { attrs: ["graph", "node"], path: (a) => (a.graph && a.node ? `/graphs/${enc(a.graph)}/nodes/${encodeNodeId(a.node)}?tab=graph` : null) },
   "grebi-edge": { attrs: ["graph", "edge"], path: (a) => (a.graph && a.edge ? `/graphs/${enc(a.graph)}/edges/${encodeNodeId(a.edge)}` : null) },

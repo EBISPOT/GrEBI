@@ -323,7 +323,8 @@ describe('EbiNodePage in a widget', () => {
     expect(screen.queryByTestId('graph-view')).toBeNull()
     expect(screen.queryByLabelText('breadcrumb')).toBeNull()
     expect(screen.getByText('A skin disease')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/Search for knowledge/)).toBeInTheDocument()
+    // the search box is the site's; a widget for searching is <grebi-search>
+    expect(screen.queryByPlaceholderText(/Search for knowledge/)).toBeNull()
   })
 
   it('shows the graph view alone for tab=graph, as the graph widget asks', async () => {

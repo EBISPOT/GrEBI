@@ -11,6 +11,7 @@ import "prismjs/components/prism-r";
 import "prismjs/components/prism-json";
 import "prismjs/components/prism-yaml";
 import ApiExample from "./ApiExample";
+import WidgetExample from "./WidgetExample";
 import OpenApiReference from "./OpenApiReference";
 import McpReference from "./McpReference";
 import QueryTemplateExample from "./QueryTemplateExample";
@@ -278,6 +279,7 @@ export default function DocsContent({
       "mcp-reference": (props: any) => <McpReference {...props} />,
       "query-template": (props: any) => <QueryTemplateExample {...props} />,
       "pubmed": (props: any) => <PubmedCitation {...props} />,
+      "widget-example": ({ children }: any) => <WidgetExample>{children}</WidgetExample>,
       "todo": ({ children, ...props }: any) => (
         <div className="flex items-start gap-2 my-4 px-4 py-3 rounded-md bg-yellow-50 border border-yellow-300 text-yellow-900" {...props}>
           <span className="font-bold shrink-0">TODO:</span>

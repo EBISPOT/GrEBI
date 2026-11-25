@@ -48,7 +48,7 @@ Graphs with embedding models also have `/semantic_search?q=…&model=…`, which
 A list of identifiers (CURIEs, IRIs or database accessions) is resolved in one request by posting it to `/lookup`. The body is a JSON object with an `ids` array, a bare JSON array, or plain text with one identifier per line, up to 1,000 identifiers:
 
 ```
-curl -X POST "https://www.ebi.ac.uk/spot/kg/api/v1/graphs/dismech/lookup" \
+curl -X POST "https://www.ebi.ac.uk/spot/grebi/api/v1/graphs/dismech/lookup" \
   -H "Content-Type: application/json" \
   -d '{"ids": ["hgnc:1100", "MONDO:0005083", "http://purl.obolibrary.org/obo/CHEBI_15365", "nope:1"]}'
 ```

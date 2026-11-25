@@ -1,20 +1,20 @@
 
 # Embedding widgets
 
-GrEBI's pages can be embedded in your own website as widgets: a node and everything around it, a query and its results, a search box over a graph. Each widget is a custom HTML element, `<grebi-node>`, `<grebi-query>` and so on, that renders the same interface as GrEBI itself inside your page and talks to the GrEBI API from there. Links inside a widget stay inside it, so a visitor can follow edges from node to node, or go from a query's results to a node, without leaving your page; every widget has an **Open in GrEBI** link to the same view on the GrEBI site, and a **Back** button once it has navigated.
+GrEBI's pages can be embedded in your own website as widgets: a node's graph view, a node's details, a query and its results, a search box over a graph. Each widget is a custom HTML element, `<grebi-graph>`, `<grebi-query>` and so on, that renders the same interface as GrEBI itself inside your page and talks to the GrEBI API from there. Links inside a widget stay inside it, so a visitor can follow edges from node to node, or go from a query's results to a node, without leaving your page; every widget has an **Open in GrEBI** link to the same view on the GrEBI site, and a **Back** button once it has navigated.
 
 ## Setup
 
 Include the widgets script once, anywhere on the page:
 
 ```html
-<script src="https://www.ebi.ac.uk/spot/kg/widgets.js"></script>
+<script src="https://www.ebi.ac.uk/spot/grebi/widgets.js"></script>
 ```
 
 Then put the elements wherever the widgets should appear:
 
 ```html
-<grebi-node graph="dismech" node="hgnc:1100"></grebi-node>
+<grebi-graph graph="dismech" node="hgnc:1100"></grebi-graph>
 ```
 
 A widget fills the width of the element that holds it and takes the height its content needs, like any block element, so it can be sized and placed with CSS on the element itself. Its own styles live in a shadow root and do not reach your page, nor your page's stylesheet it, apart from the inherited font size. The script loads the fonts GrEBI uses into your page.
@@ -29,22 +29,7 @@ The widgets talk to the GrEBI instance the script came from. To point them at an
 
 Every element names a graph, as in GrEBI's URLs (`dismech`, `impc`, …) and the page it shows with a few attributes of its own, listed below. Any other attribute, apart from the usual HTML ones (`class`, `style`, `id`, `title`, …), is passed to the page as its query string, so the same options as in the page's URL on the GrEBI site are available: a node's `tab`, a query's parameters, a search's `q`. Change an attribute and the widget shows the new page.
 
-### `<grebi-node>`
-
-A node: its names, identifiers and description, with its properties, its edges in and out, links to other resources and similar nodes in tabs, as on the node's page in GrEBI, and a search box for another node. The visitor can follow the edges to other nodes inside the widget. The graph view is a widget of its own, `<grebi-graph>` below.
-
-```html
-<grebi-node graph="dismech" node="hgnc:1100"></grebi-node>
-```
-
-| Attribute | |
-|-----------|---|
-| `graph` | The graph. |
-| `node` | The node, by its CURIE (`hgnc:1100`, `MONDO:0005083`) or any other identifier it carries, as the API's node lookup resolves it. |
-| `tab` | The tab to open: `properties` (the default), `edges_in`, `edges_out`, `links` or `similar`. |
-| `lang` | The language of the node's labels, where it has several. |
-
-<grebi-node graph="dismech" node="hgnc:1100"></grebi-node>
+The first three elements are shown live below their descriptions, each in a dashed frame marked **Live widget**. The frame and its label belong to this page; everything inside the frame is the widget itself, as your page would show it.
 
 ### `<grebi-graph>`
 
@@ -57,10 +42,31 @@ The graph view of a node: the node and its neighbours drawn as a graph, with the
 | Attribute | |
 |-----------|---|
 | `graph` | The graph. |
-| `node` | The node to start from, as for `<grebi-node>`. |
+| `node` | The node to start from, by its CURIE (`hgnc:1100`, `MONDO:0005083`) or any other identifier it carries, as the API's node lookup resolves it. |
 | `g` | An exploration to start with: the `g` parameter of a graph view's URL on the GrEBI site, which records the edges expanded. |
 
+<widget-example>
 <grebi-graph graph="dismech" node="hgnc:1100"></grebi-graph>
+</widget-example>
+
+### `<grebi-node-details>`
+
+A node's details: its names, identifiers and description, with its properties, its edges in and out, links to other resources and similar nodes in tabs, as on the node's page in GrEBI. The visitor can follow the edges to other nodes inside the widget. The graph view is the widget above, and searching is `<grebi-search>`.
+
+```html
+<grebi-node-details graph="dismech" node="hgnc:1100"></grebi-node-details>
+```
+
+| Attribute | |
+|-----------|---|
+| `graph` | The graph. |
+| `node` | The node, as for `<grebi-graph>`. |
+| `tab` | The tab to open: `properties` (the default), `edges_in`, `edges_out`, `links` or `similar`. |
+| `lang` | The language of the node's labels, where it has several. |
+
+<widget-example>
+<grebi-node-details graph="dismech" node="hgnc:1100"></grebi-node-details>
+</widget-example>
 
 ### `<grebi-query>`
 
@@ -77,7 +83,9 @@ A query template with its parameters. Given every parameter, the widget shows th
 | `inputs` | `true` to show the inputs form even when every parameter is given. |
 | *the parameters* | One attribute per parameter of the template, with the names and values the API takes (a `SourceId` parameter takes a CURIE). |
 
+<widget-example>
 <grebi-query graph="dismech" query="disease_to_treatments" disease_id="mondo:0005002"></grebi-query>
+</widget-example>
 
 ### `<grebi-queries>`
 
